@@ -59,6 +59,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+print("\n=== ROUTES ===")
+for r in app.routes:
+    print(r.path)
+print("==============\n")
 
 @app.on_event("startup")
 async def startup():
