@@ -76,8 +76,10 @@ async def get_current_user(request: Request) -> dict:
     return user
 
 async def require_active_subscription(user: dict = Depends(get_current_user)) -> dict:
-    allowed_statuses = ["trialing", "active"]
+    if user.get("role") == "admin":
+        return user
 
+    allowed_statuses = ["trialing", "active"]
     subscription_status = user.get("subscription_status", "none")
 
     if subscription_status not in allowed_statuses:
@@ -87,7 +89,6 @@ async def require_active_subscription(user: dict = Depends(get_current_user)) ->
         )
 
     return user
-
 
 # --- Simple in-memory cache ---
 _cache: dict = {}

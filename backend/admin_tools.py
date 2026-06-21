@@ -78,7 +78,23 @@ def reset_cache():
     subprocess.run(["sudo", "supervisorctl", "restart", "backend"], check=False)
     print("✓ Backend reiniciado — cache em memória limpa.")
 
+async def promote_user(email: str):
+    res = await db.users.update_one(
+        {"email": email.lower()},
+        {
+            "$set": {
+                "role": "admin",
+                "subscription_status": "active",
+                "subscription_plan": "admin"
+            }
+        }
+    )
 
+    if res.matched_count == 0:
+        print(f"Utilizador não encontrado: {email}")
+    else:
+        print(f"Admin ativado para: {email}")
+        
 async def main():
     args = sys.argv[1:]
     if not args:
@@ -93,9 +109,12 @@ async def main():
         await delete_unverified()
     elif cmd == "reset-cache":
         reset_cache()
+    elif cmd == "reset-cache":
+        reset_cache()
+    elif cmd == "promote" and len(args) >= 2:
+        await promote_user(args[1])
     else:
         print(__doc__)
-
 
 if __name__ == "__main__":
     if sys.argv[1:2] == ["reset-cache"]:
