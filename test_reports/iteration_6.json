@@ -1,0 +1,43 @@
+{
+  "summary": "Iteration 6 e2e — bug fix (register no longer auto-logs in; login blocks unverified email with 403 + structured detail) + post-refactor regression (server.py split into core.py/models.py/email_utils.py/prices.py + routes/*.py). Backend: 23/23 pytest passed (test_iter6.py). Frontend: 6/6 Playwright flows passed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Register success screen", "issues": ["UI is in English ('Check your inbox.', 'Go to sign in →', 'Resend confirmation email') while rest of dashboard is PT — minor i18n carryover, NOT a regression of this iteration's fix."]},
+      {"screen": "Login verify-prompt", "issues": ["Error message and resend button are EN-only. Dashboard runs in PT after login — same i18n carryover noted in iter4 & iter5."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter6.py",
+    "/app/test_reports/pytest/pytest_iter6.xml"
+  ],
+  "action_items": [
+    "Minor i18n: translate the Register success screen and Login verify-prompt strings via t(). Carryover gap, not a regression.",
+    "Optional: add a backend index on users.verify_token_hash and users.reset_token_hash to speed up verify/reset lookups (currently scans the users collection)."
+  ],
+  "critical_code_review_comments": [
+    "core.py is now the new heart of auth/db/JWT — confirm it has unit-test coverage in a future iteration (e.g. hash_password/verify_password roundtrip, create_access_token decode, get_current_user with both cookie and Bearer header). Currently exercised only via integration tests.",
+    "routes/auth.py register endpoint uses asyncio.create_task(send_email(...)) without storing the task reference. If send_email raises, the exception is silently swallowed by the event loop. Add a done-callback that logs failures (logger.warning) so that Resend API issues are observable in backend logs.",
+    "POST /api/auth/register currently does NOT enforce password complexity (only Pydantic min_length, if any). Confirm models.UserRegister has min_length=8 to match the frontend hint 'At least 8 characters'. (Frontend currently relies on input minLength=8 which is bypassable.)",
+    "/api/auth/verify-email and /api/auth/reset-password do not invalidate other active sessions on success. Consider rotating JWT secret or storing a per-user 'jwt_min_iat' to revoke older tokens after a password reset.",
+    "Resend endpoint is unrate-limited and idempotent → DoS / email-bombing risk on legitimate accounts. Add a per-email 60s cooldown stored in Mongo (last_verification_sent_at) before regenerating the token + dispatching email.",
+    "Code-review carryovers from iter5 (sub-watchlist duplicate-prevention, per-group 10-cap race condition, Default-group dedup helper) are still open."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter6.py",
+    "/app/test_reports/iteration_6.json",
+    "/app/test_reports/pytest/pytest_iter6.xml"
+  ],
+  "success_rate": {"backend": "100% (23/23 on test_iter6.py)", "frontend": "100% (6/6 flows: register-success screen, no auto-redirect, goto-login, resend on register, verify-prompt + resend on login, smoke-user login still works)"},
+  "test_credentials": "smoke@test.com / smoke123 (verified, works after refactor). Fresh unverified accounts created at runtime with prefix test_iter6_*.",
+  "seed_data_creation": "test_iter6.py creates 4 disposable unverified users (test_iter6_reg_*, test_iter6_noauth_*, test_iter6_unv_*, test_iter6_e2e_*, test_iter6_resend_*) and deletes each via direct Mongo write after the test. The end-to-end verify test injects a known verify_token_hash directly into users collection (since the raw token is only emailed) and then exercises /api/auth/verify-email + /api/auth/login.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Bug fix verified end-to-end. New auth contract: POST /api/auth/register -> 200 {ok, email, email_verified:false, verification_sent:true} (NO token, NO access_token cookie). POST /api/auth/login on unverified user -> 403 {detail:{code:'email_not_verified', email, message}}. POST /api/auth/verify-email {token} -> 200. POST /api/auth/resend-verification {email} is PUBLIC and always returns 200 regardless of email existence/verification status (anti-enumeration). Frontend testids added/confirmed: register-success, goto-login, resend-verification (used on BOTH Register and Login pages — same testid; scope by data-testid='verify-prompt' container on Login), resend-message, verify-prompt. Refactored module layout: /app/backend/{server.py(79), core.py, models.py, email_utils.py, prices.py}/routes/{auth,wallets,transactions,portfolio,alerts,search,market,watchlists,news,preferences,security}.py.",
+  "rca of the issue": "Original bug: legacy register endpoint called create_access_token + response.set_cookie('access_token', ...) and returned {token:...} in the body, so the frontend AuthContext.register() naturally moved the user into an authenticated state. Fix (verified): /api/auth/register no longer issues a JWT or cookie — it only writes the user doc with email_verified=false + verify_token_hash and queues send_email. Frontend AuthContext.register() also updated to not set user state. Login now explicitly checks user.email_verified and raises 403 with structured detail before issuing a token. Server.py refactor moved this logic into routes/auth.py (180 lines) — all other endpoints verified working via the regression parametrized tests."
+}

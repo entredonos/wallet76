@@ -1,0 +1,42 @@
+{
+  "summary": "Iteration 7 e2e — DE/IT i18n addition, auth-screens translation, resend rate-limit 60s, edit-tx modal, retro 'ALL' history, Mongo indices, silent-email logging. Backend: 27/27 pytest passed (test_iter7.py). Frontend: i18n + edit-tx modal verified end-to-end.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "VerifyEmail (invalid token)", "issues": ["Backend HTTPException 'Invalid or expired token' is shown raw in the UI; the page chrome (CONFIRM EMAIL header, 'Impossibile verificare.', 'Torna all'accesso') is correctly translated. Minor — surface the backend error via a generic t('auth.verify_failed') message instead of dumping detail string."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter7.py",
+    "/app/test_reports/pytest/pytest_iter7.xml"
+  ],
+  "action_items": [
+    "(Minor) VerifyEmail: replace raw backend 'Invalid or expired token' string with i18n key (already have 'auth.verify_failed' shown). The backend detail leaks an English fragment under the localized headline.",
+    "(Optional) Add a UI test for the 'ALL' chart range on Dashboard — backend already validated."
+  ],
+  "critical_code_review_comments": [
+    "routes/auth.py register endpoint does NOT set last_verification_sent_at when the initial verification email is queued. As a result, a user can hit /auth/resend-verification within ~1s of registering and the first resend will fire a second email immediately. Recommend setting last_verification_sent_at inside register() as well so the 60s cooldown starts the moment the first email is queued.",
+    "routes/transactions.py PATCH /transactions/{id} updates the document but never recomputes/persists wallet aggregates. Holdings are computed on-the-fly from the txns collection (in /holdings), so this is OK today, but if you later cache holdings or wallet totals, PATCH will need to invalidate that cache.",
+    "Resend endpoint allows ANY syntactically valid email to set last_verification_sent_at; combined with anti-enumeration response, an attacker can probe MANY emails quickly (still 200). This is by design but consider request-level IP throttling in addition to per-email cooldown.",
+    "routes/portfolio.py _build_retro_history uses yfinance period='max' per asset on the request thread (cached 30 min). First call for a user with many assets may exceed reverse-proxy timeouts. Consider running this as a background job and serving cached results, or limit to last N years for the 'all' range.",
+    "Carryover from iter6: /api/auth/verify-email and /api/auth/reset-password still do not invalidate other active sessions on success.",
+    "Carryover: sub-watchlist duplicate-prevention, per-group 10-cap race condition, Default-group dedup helper still open."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter7.py",
+    "/app/test_reports/iteration_7.json",
+    "/app/test_reports/pytest/pytest_iter7.xml"
+  ],
+  "success_rate": {"backend": "100% (27/27 on test_iter7.py)", "frontend": "100% on tested flows: language dropdown shows 5 langs; DE Register='Konto erstellen.'; IT Register='Crea account.'; DE Login contains 'Anmelden'; DE Forgot shows 'Passwort vergessen?'; IT VerifyEmail shows 'Impossibile verificare.'; Transactions page renders 9 tx-edit pencil buttons; edit-tx-dialog with all 6 testids (date/quantity/price/fee/notes/save) works; saving 9.999 closes dialog, shows 'Transazione aggiornata' toast, persists in row."},
+  "test_credentials": "smoke@test.com / smoke123 (verified). Fresh unverified accounts test_iter7_resend_* created and deleted at test teardown.",
+  "seed_data_creation": "test_iter7.py creates 1 disposable BTC transaction on smoke user's first wallet (and deletes it after the PATCH test), 1 disposable unverified user per resend-cooldown test (deleted on teardown), and parametrizes preferences PUT across en/pt/fr/de/it (leaves smoke user's lang on 'it' — restorable via UI).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend endpoint contract clarifications for next iter: /api/preferences uses key 'language' (not 'lang') and is updated via PUT (not PATCH). /api/auth/resend-verification accepts pydantic EmailStr (must be syntactically valid e.g. *@example.com). /api/transactions/{id} supports PATCH with partial body {date,quantity,price,fee,notes} → 200 returns updated doc; 404 on missing; 400 on empty body. /api/history?range=all returns a list of points with at least key 'total_usd' (or 'value_usd') and 'date' starting at user's first transaction. Mongo indices on users.verify_token_hash and users.reset_token_hash are created sparse. Frontend: data-testid catalog for this iter — tx-edit-{id}, edit-tx-dialog, edit-tx-date, edit-tx-quantity, edit-tx-price, edit-tx-fee, edit-tx-notes, edit-tx-save. To switch UI language deterministically: localStorage.setItem('folio-lang', 'de'|'it'|'en'|'pt'|'fr') then page.goto(...). 5-language LANGUAGES export at /app/frontend/src/context/I18nContext.jsx:1300.",
+  "rca of the issue": "N/A — feature addition iteration, no bugs to RCA. Minor design nit: VerifyEmail page surfaces the raw backend HTTPException detail (English) under the localized headline; recommend replacing with a static i18n key. Test-script bumps: initial test draft assumed PATCH+lang keys on /api/preferences but the actual contract is PUT+language; corrected in test_iter7.py."
+}

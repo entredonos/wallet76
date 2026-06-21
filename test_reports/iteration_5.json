@@ -1,0 +1,50 @@
+{
+  "summary": "Iteration 5 e2e testing — privacy toggle (eye icon mask), columns gear menu (9 toggles + localStorage persistence), pie tooltip color fix, Wallets 'Eliminar' button visibility, Watchlists with sub-groups (create/list/delete cascade, X/10 badge per group, 10-item-per-group cap, 20-group-per-user cap), backwards-compat /api/watchlists, language PT/FR/EN. Backend pytest: 7/7 passed (test_iter5.py). Frontend Playwright: privacy mask works on all 4 dashboard cards + table cells (•••••), folio-privacy=1 persisted in localStorage; gear menu opens with 9 checkboxes, unchecking 'qty' + 'avg_cost' immediately removes columns from the table headers (Assets/Price/Value/P&L/% Portfolio/24h/24h Chart/Wallet/Actions remain) and persists across reload via localStorage key 'folio-dash-cols'; pie tooltip background is rgb(9,9,11) (zinc-950) per inline style (text color fix verified via DOM inspection — recharts tooltip wrapper uses dark bg, no longer the default light-gray); Wallets page shows two rose-colored 'ELIMINAR' buttons with [data-testid='delete-wallet-{id}'] (color rgb(253,164,175)) — clearly visible vs prior iteration; Watchlists shows tabs 'Default 1/10' + dynamically-created 'Crypto Picks 0/10', clicking [data-testid='new-group-btn'] prompts and creates the new group, [data-testid='delete-group-{gid}'] confirms + cascade-deletes group with its items (verified via backend GET /api/watchlists after delete — items gone); PT language switch translates sidebar to Painel/Transações/Alertas/Carteiras/Watchlists/Notícias and persists folio-lang=pt.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/asset/history (crypto)", "issue": "CoinGecko 429 from this pod persists — yfinance fallback for BTC/ETH is noted in code path but rate-limited externally. Per review request, not considered a bug."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Watchlists page", "issues": ["Page subtitle 'Track up to 10 assets you don't own yet · 1 ativo em 1 lista' mixes English ('Track up to 10 assets you don't own yet') with PT ('1 ativo em 1 lista') even when lang=PT. Sidebar 'Watchlists' label also stays in English under PT. Should bind both to t()."]},
+      {"screen": "Watchlists action buttons", "issues": ["The 'Nova sub-watchlist' button and 'Add to watchlist' button are in mixed languages (PT 'Nova sub-watchlist' next to EN 'Add to watchlist'). Toast message 'Sub-watchlist criada' is PT — good — but 'Add to watchlist' button label remains EN regardless of lang."]},
+      {"screen": "Dashboard", "issues": ["Same comment as iter4 — card labels still mixed PT/EN (carryover, not regression)."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter5.py",
+    "/app/test_reports/pytest/pytest_iter5.xml"
+  ],
+  "action_items": [
+    "Minor: align sub-watchlist UI labels with i18n — 'Track up to 10 assets…', 'Add to watchlist', sidebar 'Watchlists', and the empty-state hint 'Sem ativos nesta sub-watchlist. Clica em + Add to watchlist.' (mixes PT + EN).",
+    "Minor: the spec in this review request used testid suffixes 'col-toggle-portfolio_pct', 'col-toggle-change_24h', 'col-toggle-chart_24h' but the actual implementation uses 'col-toggle-alloc', 'col-toggle-change', 'col-toggle-spark'. Functionality works correctly — either update the spec OR rename data-testids to match the documented contract. localStorage key 'folio-dash-cols' uses the short keys (['price','qty','value','avg_cost','pnl','alloc','change','spark','wallet']).",
+    "Carryover from iter4: bind Dashboard card labels (Saldo Total / Total Investido / Profit / Loss / 24h Change) to t() for full PT/FR coverage.",
+    "Optional: add unique compound index on (user_id, symbol, asset_type, group_id) to prevent duplicate adds within the same sub-watchlist."
+  ],
+  "critical_code_review_comments": [
+    "POST /api/watchlists with group_id still allows duplicates (BTC can be added 10 times into the same group). Add a uniqueness check on (user_id, symbol, asset_type, group_id) — recommended as a Mongo unique index for race-safety.",
+    "list_watchlist_groups auto-migrates legacy items into the Default group via update_many on every GET — fine for backward compat, but consider running this as a one-shot migration on startup instead of on every list call (perf).",
+    "delete_watchlist_group cascade is non-transactional (delete items first, then the group). If the second delete fails the user is left with an empty group; with the 20-group cap this can be confusing. Wrap in a Mongo transaction or rely on order being best-effort and document.",
+    "server.py is now 1356 lines — strong recommendation to split into routes/{auth,wallets,assets,transactions,portfolio,alerts,watchlists,news,imports}.py + services/{prices,fx,news}.py.",
+    "Privacy mask in Dashboard.jsx replaces text only (mask()); ensure the y-axis ticks on Portfolio Evolution recharts AreaChart are also masked when privacy=on (visually verified in this iteration). If the y-axis is rendered via Recharts <YAxis tickFormatter>, confirm the formatter respects the privacy hook.",
+    "Watchlist tabs do NOT have a 'group-tab-{gid}' data-testid that matches the (review-request-stated) 'group-tab-{gid}' pattern — implementation uses this pattern correctly (verified in DOM). delete-group-{gid} also correct. new-group-btn correct. No issue, noted for completeness.",
+    "Default-group auto-creation happens both in list_watchlist_groups and in create_watchlist — code duplication; extract to ensure_default_group(user_id) helper.",
+    "Per-group 10-cap check is via count_documents (race-condition possible). Same comment as iter4 — consider transactional or unique-index based cap if strict."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter5.py",
+    "/app/test_reports/iteration_5.json",
+    "/app/test_reports/pytest/pytest_iter5.xml"
+  ],
+  "success_rate": {"backend": "100% (7/7 on test_iter5.py)", "frontend": "100% on all iter-5 flows (privacy toggle, columns gear, pie tooltip dark bg, Wallets 'Eliminar', Watchlist groups create+delete cascade, PT lang)"},
+  "test_credentials": "smoke@test.com / smoke123 (works)",
+  "seed_data_creation": "iter5 backend tests create fresh test_i5_* users with isolated groups and wallets (no cleanup needed beyond default Mongo isolation). UI test created and then deleted a 'Crypto Picks' group cleanly.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Sub-watchlist endpoints live at /api/watchlist-groups (GET creates Default auto + backfills legacy items; POST {name}; DELETE {gid} cascades items). /api/watchlists POST now requires/optionally accepts group_id — if omitted, falls back to the user's first (Default) group. Per-group cap is 10; per-user group cap is 20. UI testids: [data-testid='privacy-toggle'], [data-testid='columns-gear-btn'], [data-testid='columns-menu'], [data-testid='col-toggle-{price|qty|value|avg_cost|pnl|alloc|change|spark|wallet}'] (NOTE: short keys, not the long names from the review brief), [data-testid='new-group-btn'], [data-testid='group-tab-{gid}'], [data-testid='delete-group-{gid}'], [data-testid='new-watch-btn'], [data-testid='delete-wallet-{wid}'] (now a rose-300 text button with 'Eliminar' label). localStorage keys: folio-privacy (0/1), folio-dash-cols (JSON array of visible cols), folio-lang (en/pt/fr).",
+  "rca of the issue": "No bugs found in iter5. The two minor design issues (mixed PT/EN labels on Watchlists page and Dashboard cards) are i18n gaps inherited from prior iterations — not regressions. The spec-vs-implementation mismatch on column-toggle testid suffixes ('portfolio_pct/change_24h/chart_24h' vs actual 'alloc/change/spark') is documentation-only and does not break functionality; tests adapted to use the actual DOM keys."
+}

@@ -1,0 +1,51 @@
+{
+  "summary": "Iteration 4 e2e testing — language switching PT/FR/EN, sidebar nav, dashboard action icons (sell/delete/chart per asset), AssetChart with 5m/15m/30m/1h/2h/4h/1d/1w/1m/1y/all ranges, Watchlist add/limit-10/delete, News page (Crypto/Stocks tabs + AAPL search), /api/transactions/import (JSON rows), and health-check on /api/portfolio, /api/history, /api/sparklines, /api/news, /api/asset/history. Backend pytest: 22/23 passed (1 fail = empty asset/history for BTC due to CoinGecko 429 rate-limit from this pod; endpoint returns 200 with []). Frontend: login → no runtime overlay, no ShoppingCart ReferenceError; sidebar testids found (nav-dashboard/transactions/alerts/wallets/watchlist/news — note SINGULAR 'nav-watchlist', not plural); lang-select is a native <select>; PT applied folio-lang=pt and sidebar translated (Painel/Transações/Alertas/Carteiras/Notícias); FR translated (Tableau de bord/Transactions/Alertes/Portefeuilles/Actualités); EN restored; localStorage persistence verified after reload. Currency USD/EUR/CHF tabs present and clickable. All 3 action icons (sell/delete/chart) exist with correct symbol-keyed testids for all 5 holdings (AAPL/3DVELO/ETH/SOL/BTC); action-chart-BTC navigates to /asset/crypto/BTC. AssetChart shows all 11 range buttons. News page: AAPL search returned articles with target='_blank' Yahoo Finance links and thumbnails. Watchlist new-watch-btn opens dialog with search input + tabs (watch-tab-crypto/stock); existing row present.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/asset/history (crypto)", "issue": "Returns [] for all ranges (5m,15m,30m,1h,...) for BTC because api.coingecko.com responds 429 Too Many Requests from this pod. Endpoint code is correct — it returns 200 with [] when CoinGecko fails. Consider: (a) add yfinance fallback for crypto (BTC-USD, ETH-USD etc.) when CoinGecko 429s, (b) negative-cache empty results for ~60s to avoid hammering, (c) surface a 'data unavailable, retrying' state to the FE instead of just []."},
+      {"endpoint": "POST /api/transactions/import", "issue": "Endpoint accepts JSON {wallet_id, rows[]} only — the CSV/HTML parsing happens in the frontend (Transactions.jsx ~ lines 380-460). The review request mentioned curl-posting a CSV file or an HTML file but that is NOT how the endpoint works. Tests adapted to send parsed rows JSON. Functionality works correctly (imported count + per-row errors)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "AssetChart range click (BTC 5m/15m)", "issue": "Shows 'No data' for all crypto ranges because backend /api/asset/history returns [] (CoinGecko 429 from pod). Not a FE bug — the FE correctly renders 'No data' on empty payload. Will resolve when CG rate-limit lifts or backend adds a yfinance fallback.", "affected_selectors": ["[data-testid='asset-range-5m']", "[data-testid='asset-range-15m']"]},
+      {"flow": "Binance WS live prices", "issue": "wss://stream.binance.com:9443 returns 451 from this region (carry-over from iter 2/3). Static prices from /api/portfolio still work. Not a regression.", "affected_selectors": []}
+    ],
+    "design_issues": [
+      {"screen": "Dashboard cards (Saldo Total / Total Investido / Lucro/Prejuízo / Variação 24h)", "issues": ["Card labels appear in PT-BR even when lang-select is set to 'English' on first render after login (default app language seems to be PT-BR if folio-lang is unset). Layout sidebar items DO honor the lang-select. Verify Dashboard.jsx uses t() consistently — current code mixes hardcoded PT-BR labels with i18n keys."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter4.py",
+    "/app/test_reports/pytest/pytest_iter4.xml"
+  ],
+  "action_items": [
+    "Optional: add a yfinance fallback (BTC-USD/ETH-USD etc.) to /api/asset/history when CoinGecko returns 429/empty, so BTC chart never shows 'No data' from this pod.",
+    "Optional: negative-cache CoinGecko 429 responses (~60s) to avoid amplifying rate-limit pressure on every range click.",
+    "Optional: audit Dashboard.jsx card labels — some appear hard-coded in PT-BR (Saldo Total, Total Investido, Evolução do Patrimônio, Alocação do Portfólio). Wire them to t() so EN/FR users see translated labels.",
+    "Cosmetic: the sidebar 'CARTEIRAS' / 'NOVA' subheading is hardcoded PT-BR; switch to t() for consistency.",
+    "Documentation: clarify that /api/transactions/import expects {wallet_id, rows[]} JSON (FE parses CSV/HTML)."
+  ],
+  "critical_code_review_comments": [
+    "POST /api/transactions/import does no per-row symbol normalization beyond uppercasing — duplicate-import detection (same date+symbol+qty+price for same wallet) would prevent users importing the same CSV twice.",
+    "Watchlist limit check uses count_documents before insert (race-condition possible for two concurrent POSTs). Use a unique index on (user_id, symbol, asset_type) or a transactional check if strict 10-limit matters.",
+    "/api/asset/history (crypto branch) does not cache empty results — every 'No data' state re-hits CoinGecko 1-by-1. Cache empties with a shorter TTL (60s) so the FE doesn't hammer the rate-limited upstream.",
+    "/api/news has 5-min cache via _cache_get/_cache_set but no negative-cache for empty responses; same comment as above.",
+    "server.py is 1238 lines (was 867 last iter). Strong recommendation to split: routes/{auth,portfolio,alerts,watchlists,news,assets,imports}.py + services/{prices,fx,news}.py.",
+    "I18nContext.jsx is 209 lines for 3 languages — fine, but consider externalizing translations to JSON files for easier reviewer-friendly diffs and to enable translators without touching code.",
+    "AssetChart period_map for stocks maps 5m→(1d,5m) which is correct, but 2h and 4h both map to (1mo,60m) i.e. the same Yahoo bucket — the 'interval' label in the UI is then misleading. Either downsample server-side or remove the 2h/4h options for stocks.",
+    "Layout sidebar testid is 'nav-watchlist' (singular) but the page is plural 'Watchlists' — fine, but the review request used 'nav-watchlists' (plural); align with the request for consistency, or document.",
+    "POST /api/watchlists doesn't dedupe by (symbol, asset_type) for the same user — user can add 'BTC crypto' 10 times. Add a uniqueness check.",
+    "Dashboard.jsx mixes literal PT-BR strings with t() — confirmed via 'Saldo Total', 'Total Investido', 'Evolução do Patrimônio'. Bind via i18n."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter4.py", "/app/test_reports/iteration_4.json"],
+  "success_rate": {"backend": "95% (22/23, 1 fail due to CoinGecko 429 — external)", "frontend": "100% on all iter-4 flows except 'No data' on BTC chart which is the same CG 429 issue"},
+  "test_credentials": "smoke@test.com / smoke123 (works)",
+  "seed_data_creation": "iter4 backend tests create fresh TEST_I4_* users (auto-cleaned via deleted assets/wallets at end of test); UI test left 1 existing watchlist row untouched.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Run: REACT_APP_BACKEND_URL=https://wealth-dashboard-413.preview.emergentagent.com pytest /app/backend/tests/test_iter4.py -v. The single failing test test_btc_has_data_in_15m is an environmental CoinGecko 429 issue — not a code bug. To bypass, either (a) add yfinance fallback in backend or (b) skip this test when curl on coingecko.com returns 429. Watchlist results testid is 'watch-result-{id}' (NOT 'watch-add-*'). Sidebar nav testid is 'nav-watchlist' (singular). Currency tabs use [data-testid=currency-{usd|eur|chf}]. Lang-select is a native <select> — use page.select_option, not click+option-click.",
+  "rca of the issue": "BTC chart shows 'No data' for 5m/15m on first iteration of testing because the backend /api/asset/history endpoint receives 429 Too Many Requests from CoinGecko's free tier (no API key configured). The pod's outbound IP is heavily rate-limited because it shares a region/IP-range with many other free-tier consumers. Mitigations: (1) add a CoinGecko Pro API key via env var, (2) implement yfinance fallback for BTC-USD/ETH-USD as crypto data source, (3) negative-cache empty CoinGecko responses for 60s to avoid amplification."
+}

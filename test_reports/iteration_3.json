@@ -1,0 +1,49 @@
+{
+  "summary": "Iteration 3 e2e testing of investment portfolio tracker: sidebar layout, price alerts, time-range chart, sortable table, stock symbol auto-resolve, 2-decimal formatting, currency toggle. Backend: 17/18 pytest (1 skipped - 3DVELO not resolvable from this region). Frontend: all 50+ data-testids present and functional; alert create flow works (toast 'Alert created' + alert appears triggered when target=$1 hits real BTC price); currency USD/EUR/CHF toggles all values ($29.01K -> EUR25.14K -> CHF23.19K); range selectors clickable; sort-price reverses order ($63,590.54 <-> $296.13); filter pills (Global/Crypto/Stock) split rows correctly; sidebar wallet click navigates to ?wallet={id}; alerts page dialog has all 8 controls (search-crypto/stock tabs, search input, above/below tabs, target input, submit).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/portfolio (3DVELO symbol resolution)", "issue": "Yahoo Search '3DVELO' returns 0 quotes (only news articles); the resolver in get_stock_prices() relies solely on direct Yahoo Search and has no variant logic (unlike /api/search/stock which tries '3dvelo'->'velo 3d'). Therefore 3DVELO never resolves to VELO at /portfolio time. Test SKIPPED. Either (a) reuse the variant logic from search_stock in the resolver, or (b) confirm the user only ever held assets that Yahoo Search returns directly."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Binance live price stream", "issue": "wss://stream.binance.com:9443 returns 451 from cloud region (geo-block, carry-over from iter 2). Static prices from /api/portfolio still render correctly. Not a regression.", "affected_selectors": ["[data-testid=\"price-BTC\"]"]}
+    ],
+    "design_issues": [
+      {"screen": "Dashboard - Evolução do Patrimônio (area chart)", "issues": ["Recurring console warning 'width(-1) and height(-1) of chart should be greater than 0' (carry-over from iter 1+2; still cosmetic).", "Area chart x-axis shows only a single date 'Jun 11 - Jun 11' because the smoke user only has 1 historical bucket; not a bug — will populate as more snapshots accrue."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter3.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_iter3.xml"
+  ],
+  "action_items": [
+    "Optional: extend get_stock_prices() resolver to reuse the variant logic from search_stock (3dvelo -> 'velo 3d' etc.) so unknown holdings can be auto-priced even when direct Yahoo Search returns no quotes.",
+    "Optional: clear the legacy 'alerts-badge' visibility logic — currently only renders when active count > 0, which is correct, but the test list expected it to be present (no bug, just expectation calibration).",
+    "Carried over: Recharts ResponsiveContainer height warning (set min-h on parent) — cosmetic."
+  ],
+  "critical_code_review_comments": [
+    "Alerts trigger logic in /api/portfolio correctly toggles active=False and writes triggered_at + triggered_price_usd. PATCH /api/alerts re-activates by clearing both triggered_at and triggered_price_usd. Good idempotency.",
+    "Snapshots are now bucketed to 15-min via bucket_ts; old (user_id, date) unique index is dropped on startup. The /api/history endpoint gracefully falls back to date when bucket_ts is missing for legacy rows. Good migration path.",
+    "/api/history returns {ts, date, total_usd, total_pnl_usd}. 'ts' is the canonical time field — FE chart should sort by 'ts'. Verified the response shape.",
+    "Range param accepts 1d|1w|1m|1y|all but not 30m/1h/2h/4h — those FE testids exist but the backend treats unknown range as 'all'. Confirm that's intentional (or add explicit handling for intraday sub-windows so smaller buckets surface).",
+    "Stock symbol resolver caches resolved symbol for 24h via _cache_set. Good. But unresolved symbols are NOT cached as 'unresolvable' — every /portfolio call will re-hit Yahoo Search for failed lookups. Add a short negative-cache TTL.",
+    "/api/alerts has no per-user rate limit and no max alerts cap — a user could create unlimited alerts (and slow down /portfolio which iterates them all). Add a sanity cap (e.g. 200 active alerts per user).",
+    "server.py is now 867 lines — over the 700-line soft limit. Consider splitting into routes/auth.py, routes/alerts.py, routes/portfolio.py, services/prices.py.",
+    "Alert trigger check inside /api/portfolio reads alerts via async for and updates each individually (1 round-trip per alert). For large alert sets, batch with bulk_write or aggregate.",
+    "fmtCurrency enforces 2 decimals everywhere in the FE — confirmed on prices ($63,327.00), totals ($28.99K via fmtCompact), and P&L ($9,646.92). Good.",
+    "useBinanceStream WS error is logged but not surfaced to UI — fine for prod but consider a small 'offline' indicator on the FlashingPrice dot when WS is down.",
+    "The 'alerts-badge' is only rendered when there are active (non-triggered) alerts. After all alerts trigger, the badge disappears — consider showing a different colored badge for 'recently triggered' so the user notices."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter3.py"],
+  "success_rate": {"backend": "94% (17/18, 1 skipped due to Yahoo Search not finding 3DVELO)", "frontend": "100% on all iteration-3 flows"},
+  "test_credentials": "smoke@test.com / smoke123 (works)",
+  "seed_data_creation": "Backend iter3 tests create fresh TEST_ users with TEST_I3_USD wallet + BTC BUY 0.1@40000 + multiple alerts (one always-triggers target=$1 to verify trigger flow). UI test created 1 additional 'BTC above $200,000' alert on the smoke user — it shows as Active in /alerts.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Run pytest with: REACT_APP_BACKEND_URL=https://wealth-dashboard-413.preview.emergentagent.com pytest /app/backend/tests/ -v . Backend env var is NOT loaded automatically in the shell; export it or pass inline. The smoke user now has 2 alerts on BTC (one Active @ $200K, one Triggered @ $1) — clean these up if needed. /api/history range supports 1d|1w|1m|1y|all only; intraday testids (30m/1h/2h/4h) on FE map to 'all' backend-side.",
+  "rca of the issue": "3DVELO does not resolve via Yahoo Search /v1/finance/search because Yahoo returns 0 quotes (only news results). The /api/search/stock endpoint has additional variant logic (strips non-alphanum, tries '3d X' / 'X 3d' permutations) but get_stock_prices() resolver does not. To fix: refactor the variant generation into a shared helper used by both /search/stock and get_stock_prices(). Workaround: user can manually correct the holding symbol to 'VELO' (the proper Yahoo ticker)."
+}

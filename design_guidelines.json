@@ -1,0 +1,82 @@
+{
+  "project_domain": "Investment Portfolio Tracker (SaaS / Dashboard)",
+  "theme": "dark",
+  "archetype": "Archetype 4 (Swiss & High-Contrast adapted for Dark Mode)",
+  "vibe": "Authority, Clarity, Truth. Sleek, professional trader terminal. Data is the hero.",
+  "typography": {
+    "font_family_headings": "Outfit",
+    "font_family_body": "Manrope",
+    "font_family_mono": "JetBrains Mono",
+    "rules": {
+      "h1": "text-4xl sm:text-5xl font-light tracking-tight text-zinc-50",
+      "h2": "text-2xl sm:text-3xl font-medium tracking-tight text-zinc-50",
+      "h3": "text-xl sm:text-2xl font-medium text-zinc-50",
+      "body": "text-base text-zinc-400 leading-relaxed",
+      "labels": "text-xs font-mono uppercase tracking-[0.2em] text-zinc-500",
+      "metrics": "text-3xl font-mono tracking-tighter text-zinc-50",
+      "tickers": "font-mono font-medium text-zinc-100"
+    }
+  },
+  "colors": {
+    "background": "bg-zinc-950",
+    "surface": "bg-zinc-900/40",
+    "border": "border-zinc-800/50",
+    "text": {
+      "primary": "text-zinc-50",
+      "secondary": "text-zinc-400",
+      "tertiary": "text-zinc-500"
+    },
+    "accents": {
+      "positive": "text-emerald-400",
+      "negative": "text-rose-400",
+      "neutral": "text-zinc-300"
+    },
+    "buttons": {
+      "primary_bg": "bg-zinc-100",
+      "primary_text": "text-zinc-950",
+      "primary_hover": "hover:bg-white",
+      "secondary_bg": "bg-transparent",
+      "secondary_text": "text-zinc-300",
+      "secondary_border": "border-zinc-800",
+      "secondary_hover": "hover:bg-zinc-800/50"
+    },
+    "chart_palette": [
+      "#e4e4e7",
+      "#a1a1aa",
+      "#52525b",
+      "#27272a",
+      "#18181b"
+    ]
+  },
+  "spacing_and_layout": {
+    "strategy": "The 'Control Room' Grid",
+    "dashboard_grid": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6",
+    "card_padding": "p-6",
+    "border_radius": "rounded-lg",
+    "app_container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+  },
+  "components": {
+    "cards": "Flat background (bg-zinc-900/40), 1px solid border (border-zinc-800/50), NO heavy box-shadows. Hover state: border-zinc-700/50 transition-colors.",
+    "tables": "Shadcn Table style. Remove all vertical borders. Use very subtle horizontal borders (border-zinc-800/30). Align numeric data to the right. Use font-mono for numbers.",
+    "forms": "Inputs should have bg-zinc-900/50, border-zinc-800. Focus states MUST use higher contrast: focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500.",
+    "charts": "Recharts library. Minimalist execution. Remove bounding boxes, hide Y-axis lines if possible, keep grid lines very faint (opacity 0.1). Line chart should be a single crisp line (e.g., #FAFAFA or #34D399). Donut chart uses monochrome palette.",
+    "navigation": "Top navigation bar with blur (backdrop-blur-md bg-zinc-950/80) and a subtle bottom border. Mobile responsive with a hamburger menu."
+  },
+  "icons_and_media": {
+    "ui_icons": "lucide-react",
+    "brand_icons": "react-icons/si (use SiBinance, SiEthereum, SiBitcoin, etc. for asset and broker logos)",
+    "image_urls": [],
+    "image_rules": "Do NOT use placeholder image URLs. Rely entirely on lucide-react and react-icons/si for all visual assets."
+  },
+  "instructions_to_main_agent": [
+    "1. CRITICAL: Implement a strict Dark Theme using Tailwind classes. The document body MUST be bg-zinc-950 text-zinc-50.",
+    "2. CRITICAL: All numerical monetary values, percentages, and asset tickers MUST use the JetBrains Mono font (font-mono).",
+    "3. Display positive P&L metrics with text-emerald-400 and negative with text-rose-400. Do not use generic green/red.",
+    "4. For the Assets Table, ensure every row has a brand icon (use react-icons/si) next to the Ticker.",
+    "5. Use Recharts for the 'Evolução de Patrimônio' (Line Chart) and 'Alocação' (Donut Chart).",
+    "6. Ensure the layout is fully responsive. Use 1 column on mobile (grid-cols-1), expanding to 3 or 4 on desktop.",
+    "7. Include a sleek USD/EUR toggle in the dashboard header using a Shadcn Tabs or custom segmented control.",
+    "8. Form elements for the 'Add Asset' modal/page must use the dark theme inputs with clear focus states.",
+    "9. Provide robust data-testid attributes (e.g., data-testid='total-balance', data-testid='add-asset-btn') on all interactive elements."
+  ]
+}

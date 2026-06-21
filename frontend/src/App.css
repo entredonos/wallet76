@@ -1,0 +1,114 @@
+.App {
+  min-height: 100vh;
+  background-color: #09090b;
+}
+
+/* Subtle background grid */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.glow-text {
+  text-shadow: 0 0 24px rgba(250, 250, 250, 0.15);
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Price flash animation for real-time updates */
+@keyframes pulseFlash {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+.flash-pulse {
+  animation: pulseFlash 0.35s ease-out;
+}
+
+/* ============== LIGHT THEME ============== */
+/* Brute-force overrides for zinc-based dark utilities when theme-light is on root. */
+html.theme-light, html.theme-light body, html.theme-light #root, html.theme-light .App {
+  background-color: #fafafa !important;
+  color: #18181b !important;
+}
+html.theme-light .grid-bg {
+  background-image:
+    linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+}
+
+/* Backgrounds */
+html.theme-light .bg-zinc-950 { background-color: #ffffff !important; }
+html.theme-light .bg-zinc-950\/80 { background-color: rgba(255,255,255,0.85) !important; }
+html.theme-light .bg-zinc-900 { background-color: #f4f4f5 !important; }
+html.theme-light .bg-zinc-900\/40 { background-color: #ffffff !important; }
+html.theme-light .bg-zinc-900\/50 { background-color: #ffffff !important; }
+html.theme-light .bg-zinc-900\/30 { background-color: #fafafa !important; }
+html.theme-light .bg-zinc-800 { background-color: #e4e4e7 !important; }
+html.theme-light .bg-zinc-800\/40 { background-color: #f4f4f5 !important; }
+html.theme-light .bg-zinc-800\/50 { background-color: #f4f4f5 !important; }
+html.theme-light .bg-zinc-800\/80 { background-color: #e4e4e7 !important; }
+html.theme-light .bg-zinc-100 { background-color: #18181b !important; }
+html.theme-light .hover\:bg-white:hover { background-color: #18181b !important; }
+html.theme-light .hover\:bg-zinc-800:hover { background-color: #e4e4e7 !important; }
+html.theme-light .hover\:bg-zinc-800\/40:hover { background-color: #e4e4e7 !important; }
+html.theme-light .hover\:bg-zinc-800\/50:hover { background-color: #e4e4e7 !important; }
+html.theme-light .hover\:bg-zinc-800\/60:hover { background-color: #e4e4e7 !important; }
+html.theme-light .hover\:bg-zinc-900\/40:hover { background-color: #f4f4f5 !important; }
+
+/* Borders */
+html.theme-light .border-zinc-800,
+html.theme-light .border-zinc-800\/50,
+html.theme-light .border-zinc-800\/30,
+html.theme-light .border-zinc-700,
+html.theme-light .border-zinc-700\/60,
+html.theme-light .hover\:border-zinc-700\/60:hover {
+  border-color: #e4e4e7 !important;
+}
+html.theme-light .border-r.border-zinc-800\/50 { border-color: #e4e4e7 !important; }
+
+/* Text */
+html.theme-light .text-zinc-50 { color: #18181b !important; }
+html.theme-light .text-zinc-100 { color: #18181b !important; }
+html.theme-light .text-zinc-200 { color: #27272a !important; }
+html.theme-light .text-zinc-300 { color: #3f3f46 !important; }
+html.theme-light .text-zinc-400 { color: #52525b !important; }
+html.theme-light .text-zinc-500 { color: #71717a !important; }
+html.theme-light .text-zinc-600 { color: #a1a1aa !important; }
+html.theme-light .text-zinc-950 { color: #fafafa !important; }
+html.theme-light .hover\:text-zinc-100:hover,
+html.theme-light .hover\:text-zinc-200:hover,
+html.theme-light .hover\:text-zinc-300:hover { color: #18181b !important; }
+
+/* Primary button (zinc-100 bg) inverted: keep dark in light theme as accent */
+html.theme-light .bg-zinc-100 { background-color: #18181b !important; }
+html.theme-light .text-zinc-950 { color: #fafafa !important; }
+html.theme-light .data-\[state\=active\]\:bg-zinc-100[data-state="active"] {
+  background-color: #18181b !important;
+}
+html.theme-light .data-\[state\=active\]\:text-zinc-950[data-state="active"] {
+  color: #fafafa !important;
+}
+
+/* Inputs */
+html.theme-light input,
+html.theme-light select,
+html.theme-light textarea {
+  color: #18181b !important;
+  background-color: #ffffff !important;
+}
+html.theme-light input::placeholder { color: #a1a1aa !important; }
+
+/* Scrollbar */
+html.theme-light ::-webkit-scrollbar-track { background: #fafafa; }
+html.theme-light ::-webkit-scrollbar-thumb { background: #d4d4d8; }
+html.theme-light ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+html.theme-light ::selection { background: #18181b; color: #fafafa; }
