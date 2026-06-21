@@ -22,6 +22,9 @@ from routes import (
 
 app = FastAPI(title="Wallet76 API")
 api_router = APIRouter(prefix="/api")
+@app.get("/ping")
+async def ping():
+    return {"ok": True, "app": "wallet76"}
 
 
 @api_router.get("/")
