@@ -28,7 +28,11 @@ async def get_portfolio(user=Depends(require_active_subscription)):
     wallets = await db.wallets.find({"user_id": user["id"]}, {"_id": 0}).to_list(500)
     holdings = compute_holdings_from_txns(txns)
 
-    crypto_ids = [h["coingecko_id"] for h in holdings if h["asset_type"] == "crypto" and h.get("coingecko_id") and h["quantity"] > 0]
+    crypto_ids = [
+    h.get("coingecko_id") or h["symbol"].lower()
+    for h in holdings
+    if h["asset_type"] == "crypto" and h["quantity"] > 0
+]
     stock_syms = [h["symbol"] for h in holdings if h["asset_type"] == "stock" and h["quantity"] > 0]
 
     crypto_prices, stock_prices, fx_rates = await asyncio.gather(
@@ -47,11 +51,12 @@ async def get_portfolio(user=Depends(require_active_subscription)):
     for h in holdings:
         price_usd = 0.0
         change_24h = 0.0
-        if h["asset_type"] == "crypto" and h.get("coingecko_id"):
-            p = crypto_prices.get(h["coingecko_id"], {})
+        if h["asset_type"] == "crypto":
+            cg_id = h.get("coingecko_id") or h["symbol"].lower()
+            p = crypto_prices.get(cg_id, {})
             price_usd = float(p.get("usd") or 0)
             change_24h = float(p.get("usd_24h_change") or 0)
-        elif h["asset_type"] == "stock":
+    elif h["asset_type"] == "stock":
             p = stock_prices.get(h["symbol"].upper(), {})
             price_usd = float(p.get("usd") or 0)
             change_24h = float(p.get("change_pct") or 0)
