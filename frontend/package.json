@@ -1,7 +1,8 @@
 {
-  "name": "frontend",
-  "version": "0.1.0",
+  "name": "wallet76",
+  "version": "1.0.0",
   "private": true,
+  "main": "electron/main.js",
   "dependencies": {
     "@hookform/resolvers": "5.0.1",
     "@radix-ui/react-accordion": "1.2.8",
@@ -67,7 +68,9 @@
   "scripts": {
     "start": "craco start",
     "build": "craco build",
-    "test": "craco test"
+    "test": "craco test",
+    "electron": "electron .",
+    "dist": "electron-builder"
   },
   "browserslist": {
     "production": [
@@ -81,6 +84,32 @@
       "last 1 safari version"
     ]
   },
+  "build": {
+    "extends": null,
+    "appId": "com.wallet76.app",
+    "productName": "Wallet76",
+    "extraMetadata": {
+      "main": "electron/main.js"
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": "nsis",
+      "icon": "electron/assets/wallet76.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "7.21.11",
     "@craco/craco": "7.1.0",
@@ -88,6 +117,8 @@
     "@types/lodash": "4.17.24",
     "autoprefixer": "10.4.20",
     "dotenv": "16.4.5",
+    "electron": "^41.7.1",
+    "electron-builder": "^26.15.3",
     "eslint": "9.23.0",
     "eslint-plugin-import": "2.31.0",
     "eslint-plugin-jsx-a11y": "6.10.2",

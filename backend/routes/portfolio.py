@@ -56,7 +56,7 @@ async def get_portfolio(user=Depends(require_active_subscription)):
             p = crypto_prices.get(cg_id, {})
             price_usd = float(p.get("usd") or 0)
             change_24h = float(p.get("usd_24h_change") or 0)
-    elif h["asset_type"] == "stock":
+        elif h["asset_type"] == "stock":
             p = stock_prices.get(h["symbol"].upper(), {})
             price_usd = float(p.get("usd") or 0)
             change_24h = float(p.get("change_pct") or 0)
