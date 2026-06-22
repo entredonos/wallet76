@@ -51,10 +51,21 @@ for sub in (
 
 app.include_router(api_router)
 
+allowed_origins = [
+    "https://wallet76.com",
+    "https://www.wallet76.com",
+    "https://wallet76.vercel.app",
+    "http://localhost:3000",
+]
+
+frontend_url = os.environ.get("FRONTEND_URL")
+if frontend_url and frontend_url not in allowed_origins:
+    allowed_origins.append(frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=[os.environ.get("FRONTEND_URL", "*")],
+    allow_origins=allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
