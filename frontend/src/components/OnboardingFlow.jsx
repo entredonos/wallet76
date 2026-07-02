@@ -72,7 +72,7 @@ function Step1({ onNext }) {
     if (!n) return;
     setLoading(true);
     try {
-      const { data } = await api.post("/wallets", { name: n, type: "general", currency: "USD" });
+      const { data } = await api.post("/wallets", { name: n, type: "broker", currency: "USD" });
       onNext({ wallet: data });
     } catch {
       toast.error("Could not create wallet. Try again.");
