@@ -79,6 +79,8 @@ const COPY = {
     cta2_sub: "Join investors who track smarter with Wallet76. Free to start, powerful to grow.",
     cta2_btn: "Create your free account",
     footer_rights: "All rights reserved.",
+    footer_login: "Login", footer_register: "Register", footer_pricing: "Pricing",
+    footer_privacy: "Privacy Policy", footer_terms: "Terms of Service",
     most_popular: "Most Popular",
     best_value: "Best Value",
   },
@@ -143,6 +145,8 @@ const COPY = {
     cta2_sub: "Junte-se aos investidores que acompanham de forma mais inteligente com o Wallet76. Grátis para começar, poderoso para crescer.",
     cta2_btn: "Criar a sua conta grátis",
     footer_rights: "Todos os direitos reservados.",
+    footer_login: "Entrar", footer_register: "Criar conta", footer_pricing: "Preços",
+    footer_privacy: "Política de Privacidade", footer_terms: "Termos de Serviço",
     most_popular: "Mais Popular",
     best_value: "Melhor Valor",
   },
@@ -207,6 +211,8 @@ const COPY = {
     cta2_sub: "Rejoignez les investisseurs qui suivent plus intelligemment avec Wallet76. Gratuit pour commencer, puissant pour grandir.",
     cta2_btn: "Créer votre compte gratuit",
     footer_rights: "Tous droits réservés.",
+    footer_login: "Connexion", footer_register: "Créer un compte", footer_pricing: "Tarifs",
+    footer_privacy: "Politique de confidentialité", footer_terms: "Conditions d'utilisation",
     most_popular: "Le Plus Populaire",
     best_value: "Meilleur Rapport",
   },
@@ -271,6 +277,8 @@ const COPY = {
     cta2_sub: "Schließen Sie sich Investoren an, die mit Wallet76 intelligenter verfolgen. Kostenlos zum Starten, leistungsstark zum Wachsen.",
     cta2_btn: "Kostenloses Konto erstellen",
     footer_rights: "Alle Rechte vorbehalten.",
+    footer_login: "Anmelden", footer_register: "Konto erstellen", footer_pricing: "Preise",
+    footer_privacy: "Datenschutzerklärung", footer_terms: "Nutzungsbedingungen",
     most_popular: "Beliebteste",
     best_value: "Bestes Angebot",
   },
@@ -335,6 +343,8 @@ const COPY = {
     cta2_sub: "Unisciti agli investitori che monitorano in modo più intelligente con Wallet76. Gratis per iniziare, potente per crescere.",
     cta2_btn: "Crea il tuo account gratuito",
     footer_rights: "Tutti i diritti riservati.",
+    footer_login: "Accedi", footer_register: "Crea account", footer_pricing: "Prezzi",
+    footer_privacy: "Informativa sulla Privacy", footer_terms: "Termini di Servizio",
     most_popular: "Più Popolare",
     best_value: "Miglior Valore",
   },
@@ -399,6 +409,8 @@ const COPY = {
     cta2_sub: "Únete a los inversores que siguen de forma más inteligente con Wallet76. Gratis para empezar, potente para crecer.",
     cta2_btn: "Crear tu cuenta gratis",
     footer_rights: "Todos los derechos reservados.",
+    footer_login: "Iniciar sesión", footer_register: "Crear cuenta", footer_pricing: "Precios",
+    footer_privacy: "Política de Privacidad", footer_terms: "Términos de Servicio",
     most_popular: "Más Popular",
     best_value: "Mejor Valor",
   },
@@ -786,11 +798,11 @@ export default function LandingPage() {
             <span className="text-sm text-zinc-600">© {new Date().getFullYear()} · {c.footer_rights}</span>
           </div>
           <div className="flex flex-wrap gap-5 text-xs text-zinc-600">
-            <Link to="/login" className="hover:text-zinc-300 transition-colors">Login</Link>
-            <Link to="/register" className="hover:text-zinc-300 transition-colors">Register</Link>
-            <Link to="/pricing" className="hover:text-zinc-300 transition-colors">Pricing</Link>
-            <Link to="/privacy" className="hover:text-zinc-300 transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-zinc-300 transition-colors">Terms of Service</Link>
+            <Link to="/login" className="hover:text-zinc-300 transition-colors">{c.footer_login}</Link>
+            <Link to="/register" className="hover:text-zinc-300 transition-colors">{c.footer_register}</Link>
+            <Link to="/pricing" className="hover:text-zinc-300 transition-colors">{c.footer_pricing}</Link>
+            <Link to="/privacy" className="hover:text-zinc-300 transition-colors">{c.footer_privacy}</Link>
+            <Link to="/terms" className="hover:text-zinc-300 transition-colors">{c.footer_terms}</Link>
           </div>
         </div>
       </footer>
