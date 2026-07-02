@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api, formatApiErrorDetail } from "../lib/api";
+import { usePlan } from "../hooks/usePlan";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -18,8 +19,10 @@ import InlineAlertDialog from "../components/InlineAlertDialog";
 import { fmtCurrency, fmtPct, fmtCompact } from "../lib/format";
 import { useI18n } from "../context/I18nContext";
 
-const MAX_PER_GROUP = 20;
-const MAX_GROUPS = 20;
+const MAX_PER_GROUP_PRO = 20;
+const MAX_GROUPS_PRO = 20;
+const MAX_PER_GROUP_FREE = 10;
+const MAX_GROUPS_FREE = 1;
 
 // Toggleable columns
 const WATCH_COLUMNS = [
@@ -35,6 +38,10 @@ const DEFAULT_WATCH_COLS = ["price","change","pct_7d","mcap","vol","spark"];
 
 export default function Watchlist() {
   const { t } = useI18n();
+  const navigate = useNavigate();
+  const { isPro } = usePlan();
+  const MAX_GROUPS = isPro ? MAX_GROUPS_PRO : MAX_GROUPS_FREE;
+  const MAX_PER_GROUP = isPro ? MAX_PER_GROUP_PRO : MAX_PER_GROUP_FREE;
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
@@ -86,7 +93,14 @@ export default function Watchlist() {
       setNewGroupOpen(false);
       load();
     } catch (e) {
-      toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Failed");
+      const detail = e.response?.data?.detail;
+      if (e.response?.status === 402 && detail?.reason === "watchlist_group_limit") {
+        toast.error(t("watchlists.group_limit_msg", { limit: detail.limit }), {
+          action: { label: t("common.upgrade"), onClick: () => navigate("/pricing") },
+        });
+      } else {
+        toast.error(formatApiErrorDetail(detail) || "Failed");
+      }
     } finally {
       setSavingGroup(false);
     }
@@ -445,6 +459,7 @@ export default function Watchlist() {
 
 function NewWatchDialog({ open, setOpen, onSaved, currentGroupId, groupCount, maxPerGroup }) {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const [assetType, setAssetType] = useState("crypto");
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
@@ -488,7 +503,14 @@ function NewWatchDialog({ open, setOpen, onSaved, currentGroupId, groupCount, ma
       setOpen(false);
       onSaved?.();
     } catch (e) {
-      toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Failed");
+      const detail = e.response?.data?.detail;
+      if (e.response?.status === 402 && detail?.reason === "watchlist_item_limit") {
+        toast.error(t("watchlists.item_limit_msg", { limit: detail.limit }), {
+          action: { label: t("common.upgrade"), onClick: () => navigate("/pricing") },
+        });
+      } else {
+        toast.error(formatApiErrorDetail(detail) || "Failed");
+      }
     } finally {
       setSaving(false);
     }

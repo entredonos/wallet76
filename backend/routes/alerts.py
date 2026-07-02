@@ -4,19 +4,25 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends
 
-from core import db, get_current_user, require_active_subscription, _cache_get, _cache_set
+from core import db, get_current_user, is_pro_user, _cache_get, _cache_set
 from models import AlertCreate, AlertUpdate
 
 router = APIRouter()
 
+FREE_ALERT_LIMIT = 3
+
 
 @router.get("/alerts")
-async def list_alerts(user=Depends(require_active_subscription)):
+async def list_alerts(user=Depends(get_current_user)):
     return await db.alerts.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(500)
 
 
 @router.post("/alerts")
-async def create_alert(payload: AlertCreate, user=Depends(require_active_subscription)):
+async def create_alert(payload: AlertCreate, user=Depends(get_current_user)):
+    if not is_pro_user(user):
+        count = await db.alerts.count_documents({"user_id": user["id"]})
+        if count >= FREE_ALERT_LIMIT:
+            raise HTTPException(402, detail={"reason": "alert_limit", "limit": FREE_ALERT_LIMIT})
     doc = {
         "id": str(uuid.uuid4()),
         "user_id": user["id"],
@@ -38,7 +44,7 @@ async def create_alert(payload: AlertCreate, user=Depends(require_active_subscri
 
 
 @router.patch("/alerts/{alert_id}")
-async def update_alert(alert_id: str, payload: AlertUpdate, user=Depends(require_active_subscription)):
+async def update_alert(alert_id: str, payload: AlertUpdate, user=Depends(get_current_user)):
     upd = {k: v for k, v in payload.model_dump().items() if v is not None}
     if "active" in upd and upd["active"]:
         upd["triggered_at"] = None
@@ -52,7 +58,7 @@ async def update_alert(alert_id: str, payload: AlertUpdate, user=Depends(require
 
 
 @router.delete("/alerts/{alert_id}")
-async def delete_alert(alert_id: str, user=Depends(require_active_subscription)):
+async def delete_alert(alert_id: str, user=Depends(get_current_user)):
     res = await db.alerts.delete_one({"id": alert_id, "user_id": user["id"]})
     if res.deleted_count == 0:
         raise HTTPException(404, "Alert not found")

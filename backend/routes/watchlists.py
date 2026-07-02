@@ -7,15 +7,20 @@ import httpx
 import yfinance as yf
 from fastapi import APIRouter, HTTPException, Depends
 
-from core import db, get_current_user, require_active_subscription, _cache_get, _cache_set, logger
+from core import db, get_current_user, is_pro_user, _cache_get, _cache_set, logger
 from models import WatchlistCreate, WatchlistUpdate, WatchlistGroupCreate
 from prices import get_crypto_prices, get_stock_prices
 
 router = APIRouter()
 
+FREE_GROUP_LIMIT = 1
+FREE_ITEMS_PER_GROUP_LIMIT = 10
+PRO_GROUP_LIMIT = 20
+PRO_ITEMS_PER_GROUP_LIMIT = 20
+
 
 @router.get("/watchlist-groups")
-async def list_watchlist_groups(user=Depends(require_active_subscription)):
+async def list_watchlist_groups(user=Depends(get_current_user)):
     """Returns groups with their items embedded; ensures a default group exists."""
     groups = await db.watchlist_groups.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", 1).to_list(50)
     if not groups:
@@ -162,13 +167,14 @@ async def list_watchlist_groups(user=Depends(require_active_subscription)):
 
 
 @router.post("/watchlist-groups")
-async def create_watchlist_group(payload: WatchlistGroupCreate, user=Depends(require_active_subscription)):
+async def create_watchlist_group(payload: WatchlistGroupCreate, user=Depends(get_current_user)):
     name = (payload.name or "").strip()
     if not name:
         raise HTTPException(400, "Name required")
     count = await db.watchlist_groups.count_documents({"user_id": user["id"]})
-    if count >= 20:
-        raise HTTPException(400, "Maximum 20 sub-watchlists")
+    limit = PRO_GROUP_LIMIT if is_pro_user(user) else FREE_GROUP_LIMIT
+    if count >= limit:
+        raise HTTPException(402, detail={"reason": "watchlist_group_limit", "limit": limit})
     doc = {
         "id": str(uuid.uuid4()),
         "user_id": user["id"],
@@ -181,7 +187,7 @@ async def create_watchlist_group(payload: WatchlistGroupCreate, user=Depends(req
 
 
 @router.delete("/watchlist-groups/{gid}")
-async def delete_watchlist_group(gid: str, user=Depends(require_active_subscription)):
+async def delete_watchlist_group(gid: str, user=Depends(get_current_user)):
     grp = await db.watchlist_groups.find_one({"id": gid, "user_id": user["id"]})
     if not grp:
         raise HTTPException(404, "Group not found")
@@ -191,7 +197,7 @@ async def delete_watchlist_group(gid: str, user=Depends(require_active_subscript
 
 
 @router.get("/watchlists")
-async def list_watchlists(user=Depends(require_active_subscription)):
+async def list_watchlists(user=Depends(get_current_user)):
     items = await db.watchlists.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", 1).to_list(500)
     if not items:
         return []
@@ -218,7 +224,7 @@ async def list_watchlists(user=Depends(require_active_subscription)):
 
 
 @router.post("/watchlists")
-async def create_watchlist(payload: WatchlistCreate, user=Depends(require_active_subscription)):
+async def create_watchlist(payload: WatchlistCreate, user=Depends(get_current_user)):
     group_id = payload.group_id
     if not group_id:
         grp = await db.watchlist_groups.find_one({"user_id": user["id"]}, sort=[("created_at", 1)])
@@ -237,8 +243,9 @@ async def create_watchlist(payload: WatchlistCreate, user=Depends(require_active
             raise HTTPException(404, "Group not found")
 
     count_in_group = await db.watchlists.count_documents({"user_id": user["id"], "group_id": group_id})
-    if count_in_group >= 20:
-        raise HTTPException(400, "Sub-watchlist full (max 20 items)")
+    item_limit = PRO_ITEMS_PER_GROUP_LIMIT if is_pro_user(user) else FREE_ITEMS_PER_GROUP_LIMIT
+    if count_in_group >= item_limit:
+        raise HTTPException(402, detail={"reason": "watchlist_item_limit", "limit": item_limit})
     existing = await db.watchlists.find_one({
         "user_id": user["id"],
         "group_id": group_id,
@@ -264,7 +271,7 @@ async def create_watchlist(payload: WatchlistCreate, user=Depends(require_active
 
 
 @router.patch("/watchlists/{wid}")
-async def update_watchlist(wid: str, payload: WatchlistUpdate, user=Depends(require_active_subscription)):
+async def update_watchlist(wid: str, payload: WatchlistUpdate, user=Depends(get_current_user)):
     upd = {k: v for k, v in payload.model_dump().items() if v is not None}
     if not upd:
         raise HTTPException(400, "Nothing to update")
@@ -275,7 +282,7 @@ async def update_watchlist(wid: str, payload: WatchlistUpdate, user=Depends(requ
 
 
 @router.delete("/watchlists/{wid}")
-async def delete_watchlist(wid: str, user=Depends(require_active_subscription)):
+async def delete_watchlist(wid: str, user=Depends(get_current_user)):
     res = await db.watchlists.delete_one({"id": wid, "user_id": user["id"]})
     if res.deleted_count == 0:
         raise HTTPException(404, "Not found")

@@ -18,12 +18,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error?.response?.status === 402) {
-      if (window.location.pathname !== "/pricing") {
-        window.location.href = "/pricing";
-      }
-    }
-
+    // 402 (subscription/limit required) is handled inline by whichever page
+    // triggered the request (toast + "Upgrade" action) — see Wallets.jsx,
+    // Transactions.jsx, etc. We deliberately do NOT force-navigate to
+    // /pricing here: a free-tier user hitting a soft limit on one feature
+    // (e.g. 2nd wallet) should stay right where they are, not get yanked
+    // out of the whole app.
     return Promise.reject(error);
   }
 );

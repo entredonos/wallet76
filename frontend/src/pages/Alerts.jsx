@@ -16,7 +16,7 @@ import AssetIcon from "../components/AssetIcon";
 import { fmtCurrency, fmtPct } from "../lib/format";
 import { useI18n } from "../context/I18nContext";
 import { SkeletonTableRow } from "../components/SkeletonRow";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 export default function Alerts() {
   const { t } = useI18n();
@@ -184,6 +184,7 @@ export default function Alerts() {
 
 function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defaultAssetType, defaultPrice }) {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const [pickedKey, setPickedKey] = useState("");
   const [searchPicked, setSearchPicked] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -255,7 +256,16 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
       toast.success("Alert created");
       setOpen(false);
       onSaved?.();
-    } catch (e) { toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Failed"); }
+    } catch (e) {
+      const detail = e.response?.data?.detail;
+      if (e.response?.status === 402 && detail?.reason === "alert_limit") {
+        toast.error(t("alerts.limit_msg", { limit: detail.limit }), {
+          action: { label: t("common.upgrade"), onClick: () => navigate("/pricing") },
+        });
+      } else {
+        toast.error(formatApiErrorDetail(detail) || "Failed");
+      }
+    }
     finally { setSaving(false); }
   };
 

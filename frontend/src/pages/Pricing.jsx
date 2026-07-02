@@ -1,9 +1,12 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import { useI18n } from "../context/I18nContext";
+import { useAuth } from "../context/AuthContext";
 
 export default function Pricing() {
   const { t } = useI18n();
+  const { user } = useAuth();
 
   async function choosePlan(plan) {
     const res = await api.post(`/billing/create-checkout-session/${plan}`);
@@ -42,6 +45,14 @@ export default function Pricing() {
         <p className="text-center text-sm text-zinc-500 mt-8">
           {t("pricing.footer")}
         </p>
+
+        {user && (
+          <p className="text-center mt-4">
+            <Link to="/dashboard" className="text-sm text-zinc-400 hover:text-white underline underline-offset-4 transition-colors">
+              {t("pricing.continue_free")}
+            </Link>
+          </p>
+        )}
       </div>
     </div>
   );
