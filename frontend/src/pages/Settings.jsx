@@ -277,22 +277,22 @@ export default function Settings() {
 
       <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-6">
         <div className="text-sm font-medium text-zinc-200 mb-4">
-          Subscription
+          {t("settings.subscription_title")}
         </div>
 
         {subscription ? (
           <div className="space-y-3">
             <div className="text-zinc-300">
-              Plan: <span className="text-white">{subscription.subscription_plan || "Free"}</span>
+              {t("settings.subscription_plan")}: <span className="text-white">{subscription.subscription_plan || t("settings.subscription_free")}</span>
             </div>
 
             <div className="text-zinc-300">
-              Status: <span className="text-white">{subscription.subscription_status || "inactive"}</span>
+              {t("settings.subscription_status")}: <span className="text-white">{subscription.subscription_status || t("settings.subscription_inactive")}</span>
             </div>
 
             {subscription.trial_ends_at && (
               <div className="text-zinc-300">
-                Trial ends:{" "}
+                {t("settings.subscription_trial_ends")}:{" "}
                 <span className="text-white">
                   {new Date(subscription.trial_ends_at * 1000).toLocaleDateString()}
                 </span>
@@ -305,12 +305,12 @@ export default function Settings() {
                 window.location.href = data.url;
               }}
             >
-              Manage Subscription
+              {t("settings.subscription_manage")}
             </Button>
           </div>
         ) : (
           <div className="text-zinc-500 text-sm">
-            Loading subscription...
+            {t("settings.subscription_loading")}
           </div>
         )}
       </div>
