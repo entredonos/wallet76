@@ -134,3 +134,24 @@ de ANTES destas guardas existirem (ou que passaram por uma falha isolada de
 entre dois normais) e `bucket_ts` duplicados. Corre em modo *dry run* por
 omissão — só reporta o que apagaria; usar `--apply` para apagar de facto, e
 `--user-id <id>` para limitar a um utilizador.
+
+---
+
+## REGRA #3 — QUANDO O UTILIZADOR FAZ UMA PERGUNTA, NÃO AGIR SEM ORDEM
+
+Sempre que o utilizador fizer uma **pergunta** (em vez de um pedido claro
+para executar uma tarefa), a resposta tem de vir em duas partes, por esta
+ordem:
+
+1. **Opinião** — a análise/avaliação honesta sobre o assunto perguntado
+   (o que penso, prós/contras, riscos, recomendação, se aplicável).
+2. **Pergunta de volta** — perguntar explicitamente o que o utilizador
+   quer fazer a seguir.
+
+**Não avançar para código, ficheiros, comandos ou qualquer alteração**
+depois disso sem uma ordem clara e explícita do utilizador. Uma pergunta
+não é uma autorização para agir — só dar a resposta é.
+
+Isto NÃO se aplica quando o utilizador já dá uma instrução direta ("faz
+X", "corrige Y", "manda um ficheiro com Z") — nesses casos a ordem já foi
+dada e o trabalho segue normalmente.

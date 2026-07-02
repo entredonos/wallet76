@@ -26,9 +26,11 @@ const COPY = {
     hero_sub: "Wallet76 is the professional-grade portfolio tracker built for serious investors. Real-time prices, multi-broker sync, advanced analytics and price alerts — all encrypted, GDPR-compliant, and yours alone.",
     cta_primary: "Start free — no credit card", cta_secondary: "See how it works",
     trust1: "AES-256 Encrypted", trust2: "GDPR Compliant", trust3: "EU Servers", trust4: "No ads. Ever.",
+    sec_badge: "Bank-grade security",
     mock_balance: "Total Balance", mock_invested: "Invested", mock_pnl: "Total P&L", mock_today: "Today",
     mock_top: "TOP PERFORMERS", mock_alloc: "ALLOCATION",
     mock_stocks: "Stocks", mock_crypto: "Crypto", mock_etf: "ETF",
+    mock_alert: "NVDA crossed $950 target",
     feat_title: "Everything you need to invest smarter",
     feat_sub: "From real-time tracking to deep analytics — Wallet76 puts institutional-grade tools in your hands.",
     features: [
@@ -39,7 +41,7 @@ const COPY = {
       { title: "Broker & Exchange Sync", body: "Connect DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase and Kraken directly. Or import from any other broker via CSV or XLSX — we support all major export formats." },
       { title: "Market Intelligence", body: "Live market movers, top gainers and losers, and curated financial news personalised to your holdings — all in one feed." },
       { title: "Deep Asset Research", body: "Click any asset to see analyst consensus, price targets, key metrics (P/E, EPS, Beta, 52W range, dividend yield) plus interactive charts across 11 time ranges." },
-      { title: "5 Languages & 4 Currencies", body: "Full interface in English, Portuguese, French, German and Italian. Display values in USD, EUR, CHF or BRL. The app adapts to you." },
+      { title: "6 Languages & 4 Currencies", body: "Full interface in English, Portuguese, French, German, Italian and Spanish. Display values in USD, EUR, CHF or BRL. The app adapts to you." },
       { title: "PWA — Works Everywhere", body: "Install Wallet76 on Windows, Mac, Android and iOS as a Progressive Web App. Native-like experience on every device, with full offline support." },
       { title: "Portfolio Sharing", body: "Generate a private link to share your portfolio performance with your advisor, partner or community. Revoke access at any time." },
       { title: "Watchlist & Discovery", body: "Build watchlists to monitor assets you do not yet own. Track prices, 24h moves and market cap without adding them to your portfolio." },
@@ -61,17 +63,17 @@ const COPY = {
     stats: [
       { value: "11", label: "Chart time ranges" },
       { value: "6+", label: "Broker integrations" },
-      { value: "5",  label: "Languages" },
+      { value: "6",  label: "Languages" },
       { value: "4",  label: "Currencies (USD · EUR · CHF · BRL)" },
     ],
     plan_title: "Simple, transparent pricing",
     plan_sub: "Start free. Upgrade when you are ready for the full power.",
-    free_label: "Free", free_price: "$0", free_period: "forever", free_desc: "Everything you need to get started.",
-    monthly_label: "Pro Monthly", monthly_price: "$6.99", monthly_period: "/ month", monthly_desc: "Full power, billed monthly.",
-    annual_label: "Pro Annual", annual_price: "$4.99", annual_period: "/ month", annual_desc: "Best value — billed $59.99/year.",
+    free_label: "Free", free_price: "€0", free_period: "forever", free_desc: "Everything you need to get started.",
+    monthly_label: "Pro Monthly", monthly_price: "€6.99", monthly_period: "/ month", monthly_desc: "Full power, billed monthly.",
+    annual_label: "Pro Annual", annual_price: "€4.99", annual_period: "/ month", annual_desc: "Best value — billed €59.99/year.",
     annual_save: "Save 28%",
     pro_trial: "30-day free trial · Cancel anytime",
-    free_features: ["1 portfolio wallet","Up to 10 assets","Real-time price tracking","Transaction history","5 languages & 4 currencies","Basic dashboard"],
+    free_features: ["1 portfolio wallet","Up to 10 assets","Real-time price tracking","Transaction history","6 languages & 4 currencies","Basic dashboard"],
     free_limits: ["No price alerts","No broker sync","No analytics","No watchlist","No portfolio sharing"],
     pro_features: ["Unlimited wallets","Unlimited assets","Price alerts via email","6 broker & exchange integrations","Advanced analytics (CAGR, Sharpe, drawdown)","Watchlist & market movers","Deep asset research & analyst data","Portfolio sharing link","CSV / XLSX import","Market news feed","Priority support","30-day free trial"],
     btn_free: "Get started free", btn_monthly: "Start free trial", btn_annual: "Start free trial",
@@ -92,9 +94,11 @@ const COPY = {
     hero_sub: "O Wallet76 é o gestor de carteira profissional para investidores sérios. Preços em tempo real, sincronização com brokers, análises avançadas e alertas de preço — tudo encriptado, conforme o RGPD e exclusivamente seu.",
     cta_primary: "Começar grátis — sem cartão", cta_secondary: "Ver como funciona",
     trust1: "Encriptação AES-256", trust2: "Conforme RGPD", trust3: "Servidores na UE", trust4: "Sem publicidade.",
+    sec_badge: "Segurança de nível bancário",
     mock_balance: "Saldo Total", mock_invested: "Investido", mock_pnl: "P&L Total", mock_today: "Hoje",
     mock_top: "MELHORES ATIVOS", mock_alloc: "ALOCAÇÃO",
     mock_stocks: "Ações", mock_crypto: "Crypto", mock_etf: "ETF",
+    mock_alert: "NVDA ultrapassou o alvo de $950",
     feat_title: "Tudo o que precisa para investir melhor",
     feat_sub: "Do acompanhamento em tempo real à análise profunda — o Wallet76 coloca ferramentas de nível institucional nas suas mãos.",
     features: [
@@ -105,7 +109,7 @@ const COPY = {
       { title: "Sincronização com Brokers", body: "Ligue diretamente o DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase e Kraken. Ou importe de qualquer outro broker via CSV ou XLSX — suportamos todos os formatos de exportação principais." },
       { title: "Inteligência de Mercado", body: "Movers de mercado ao vivo, maiores subidas e descidas, e notícias financeiras personalizadas para as suas posições — tudo num feed." },
       { title: "Pesquisa de Ativos em Profundidade", body: "Clique em qualquer ativo para ver consenso de analistas, alvos de preço, métricas-chave (P/E, EPS, Beta, range 52S, yield de dividendo) e gráficos históricos." },
-      { title: "5 Línguas e 4 Moedas", body: "Interface completa em inglês, português, francês, alemão e italiano. Valores em USD, EUR, CHF ou BRL. A app adapta-se a si." },
+      { title: "6 Línguas e 4 Moedas", body: "Interface completa em inglês, português, francês, alemão, italiano e espanhol. Valores em USD, EUR, CHF ou BRL. A app adapta-se a si." },
       { title: "PWA — Funciona em Tudo", body: "Instale o Wallet76 no Windows, Mac, Android e iOS como Progressive Web App. Experiência nativa em todos os dispositivos, com suporte offline." },
       { title: "Partilha de Carteira", body: "Gere um link privado para partilhar o desempenho com o seu consultor, parceiro ou comunidade. Revogue o acesso a qualquer momento." },
       { title: "Watchlist e Descoberta", body: "Crie watchlists para monitorizar ativos que ainda não possui. Acompanhe preços e movimentos 24h sem os adicionar à carteira." },
@@ -127,7 +131,7 @@ const COPY = {
     stats: [
       { value: "11", label: "Intervalos de gráfico" },
       { value: "6+", label: "Integrações de brokers" },
-      { value: "5",  label: "Línguas" },
+      { value: "6",  label: "Línguas" },
       { value: "4",  label: "Moedas (USD · EUR · CHF · BRL)" },
     ],
     plan_title: "Preços simples e transparentes",
@@ -137,7 +141,7 @@ const COPY = {
     annual_label: "Pro Anual", annual_price: "4,99€", annual_period: "/ mês", annual_desc: "Melhor valor — faturado 59,99€/ano.",
     annual_save: "Poupe 28%",
     pro_trial: "30 dias de teste grátis · Cancele a qualquer momento",
-    free_features: ["1 carteira","Até 10 ativos","Preços em tempo real","Histórico de transações","5 línguas e 4 moedas","Dashboard básico"],
+    free_features: ["1 carteira","Até 10 ativos","Preços em tempo real","Histórico de transações","6 línguas e 4 moedas","Dashboard básico"],
     free_limits: ["Sem alertas de preço","Sem sincronização com brokers","Sem análises avançadas","Sem watchlist","Sem partilha de carteira"],
     pro_features: ["Carteiras ilimitadas","Ativos ilimitados","Alertas de preço por email","6 integrações de brokers/exchanges","Análises avançadas (CAGR, Sharpe, drawdown)","Watchlist e movers de mercado","Pesquisa de ativos e dados de analistas","Link de partilha de carteira","Importação CSV / XLSX","Feed de notícias financeiras","Suporte prioritário","30 dias de teste grátis"],
     btn_free: "Criar conta grátis", btn_monthly: "Iniciar teste grátis", btn_annual: "Iniciar teste grátis",
@@ -158,9 +162,11 @@ const COPY = {
     hero_sub: "Wallet76 est le gestionnaire de portefeuille professionnel conçu pour les investisseurs sérieux. Prix en temps réel, synchronisation multi-courtiers, analyses avancées et alertes de prix — tout chiffré, conforme RGPD, et uniquement à vous.",
     cta_primary: "Commencer gratuitement — sans carte", cta_secondary: "Voir comment ça marche",
     trust1: "Chiffrement AES-256", trust2: "Conforme RGPD", trust3: "Serveurs UE", trust4: "Sans publicité.",
+    sec_badge: "Sécurité de niveau bancaire",
     mock_balance: "Solde Total", mock_invested: "Investi", mock_pnl: "P&L Total", mock_today: "Aujourd'hui",
     mock_top: "MEILLEURES PERFORMANCES", mock_alloc: "ALLOCATION",
     mock_stocks: "Actions", mock_crypto: "Crypto", mock_etf: "ETF",
+    mock_alert: "NVDA a dépassé l'objectif de 950 $",
     feat_title: "Tout ce qu'il vous faut pour investir mieux",
     feat_sub: "Du suivi en temps réel à l'analyse approfondie — Wallet76 met des outils de niveau institutionnel entre vos mains.",
     features: [
@@ -171,7 +177,7 @@ const COPY = {
       { title: "Synchronisation Courtiers", body: "Connectez directement DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase et Kraken. Ou importez depuis tout autre courtier via CSV ou XLSX." },
       { title: "Intelligence de Marché", body: "Movers de marché en direct, meilleures hausses et baisses, et actualités financières personnalisées selon vos positions." },
       { title: "Recherche d'Actifs en Profondeur", body: "Cliquez sur un actif pour voir le consensus des analystes, les cibles de prix, les métriques clés (P/E, EPS, Bêta, plage 52S, rendement du dividende) et des graphiques interactifs." },
-      { title: "5 Langues et 4 Devises", body: "Interface complète en anglais, portugais, français, allemand et italien. Valeurs en USD, EUR, CHF ou BRL. L'application s'adapte à vous." },
+      { title: "6 Langues et 4 Devises", body: "Interface complète en anglais, portugais, français, allemand, italien et espagnol. Valeurs en USD, EUR, CHF ou BRL. L'application s'adapte à vous." },
       { title: "PWA — Fonctionne Partout", body: "Installez Wallet76 sur Windows, Mac, Android et iOS en tant qu'application Web progressive. Expérience native sur tous les appareils, avec support hors ligne." },
       { title: "Partage de Portefeuille", body: "Générez un lien privé pour partager vos performances avec votre conseiller, partenaire ou communauté. Révoquez l'accès à tout moment." },
       { title: "Watchlist et Découverte", body: "Créez des listes de surveillance pour suivre des actifs que vous ne possédez pas encore sans les ajouter à votre portefeuille." },
@@ -193,7 +199,7 @@ const COPY = {
     stats: [
       { value: "11", label: "Plages de graphique" },
       { value: "6+", label: "Intégrations de courtiers" },
-      { value: "5",  label: "Langues" },
+      { value: "6",  label: "Langues" },
       { value: "4",  label: "Devises (USD · EUR · CHF · BRL)" },
     ],
     plan_title: "Tarifs simples et transparents",
@@ -203,7 +209,7 @@ const COPY = {
     annual_label: "Pro Annuel", annual_price: "4,99€", annual_period: "/ mois", annual_desc: "Meilleure valeur — facturé 59,99€/an.",
     annual_save: "Économisez 28%",
     pro_trial: "30 jours d'essai gratuit · Annulez à tout moment",
-    free_features: ["1 portefeuille","Jusqu'à 10 actifs","Suivi des prix en temps réel","Historique des transactions","5 langues et 4 devises","Tableau de bord de base"],
+    free_features: ["1 portefeuille","Jusqu'à 10 actifs","Suivi des prix en temps réel","Historique des transactions","6 langues et 4 devises","Tableau de bord de base"],
     free_limits: ["Sans alertes de prix","Sans synchro courtiers","Sans analyses avancées","Sans watchlist","Sans partage de portefeuille"],
     pro_features: ["Portefeuilles illimités","Actifs illimités","Alertes de prix par email","6 intégrations courtiers/exchanges","Analyses avancées (CAGR, Sharpe, drawdown)","Watchlist et movers de marché","Recherche d'actifs et données analystes","Lien de partage de portefeuille","Import CSV / XLSX","Fil d'actualités financières","Support prioritaire","30 jours d'essai gratuit"],
     btn_free: "Créer un compte gratuit", btn_monthly: "Démarrer l'essai gratuit", btn_annual: "Démarrer l'essai gratuit",
@@ -224,9 +230,11 @@ const COPY = {
     hero_sub: "Wallet76 ist der professionelle Portfolio-Tracker für ernsthafte Investoren. Echtzeitpreise, Multi-Broker-Synchronisierung, fortgeschrittene Analysen und Preisalarme — alles verschlüsselt, DSGVO-konform und nur für Sie.",
     cta_primary: "Kostenlos starten — keine Kreditkarte", cta_secondary: "So funktioniert es",
     trust1: "AES-256-Verschlüsselung", trust2: "DSGVO-konform", trust3: "EU-Server", trust4: "Keine Werbung.",
+    sec_badge: "Sicherheit auf Bankniveau",
     mock_balance: "Gesamtguthaben", mock_invested: "Investiert", mock_pnl: "Gesamt P&L", mock_today: "Heute",
     mock_top: "TOP-PERFORMER", mock_alloc: "AUFTEILUNG",
     mock_stocks: "Aktien", mock_crypto: "Krypto", mock_etf: "ETF",
+    mock_alert: "NVDA hat das Kursziel von 950 $ überschritten",
     feat_title: "Alles, was Sie brauchen, um klüger zu investieren",
     feat_sub: "Von der Echtzeit-Verfolgung bis zur Tiefenanalyse — Wallet76 bringt institutionelle Tools in Ihre Hände.",
     features: [
@@ -237,7 +245,7 @@ const COPY = {
       { title: "Broker- und Exchange-Synchronisierung", body: "Verbinden Sie DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase und Kraken direkt. Oder importieren Sie von jedem anderen Broker per CSV oder XLSX." },
       { title: "Marktintelligenz", body: "Live-Marktbewegungen, Top-Gewinner und -Verlierer sowie personalisierte Finanznachrichten für Ihre Positionen — alles in einem Feed." },
       { title: "Tiefe Asset-Recherche", body: "Klicken Sie auf ein Asset für Analystenempfehlungen, Kursziele, Kennzahlen (KGV, EPS, Beta, 52-Wochen-Spanne, Dividendenrendite) und interaktive Charts." },
-      { title: "5 Sprachen und 4 Währungen", body: "Vollständige Oberfläche auf Englisch, Portugiesisch, Französisch, Deutsch und Italienisch. Werte in USD, EUR, CHF oder BRL. Die App passt sich Ihnen an." },
+      { title: "6 Sprachen und 4 Währungen", body: "Vollständige Oberfläche auf Englisch, Portugiesisch, Französisch, Deutsch, Italienisch und Spanisch. Werte in USD, EUR, CHF oder BRL. Die App passt sich Ihnen an." },
       { title: "PWA — Überall verfügbar", body: "Installieren Sie Wallet76 auf Windows, Mac, Android und iOS als Progressive Web App. Native Erfahrung auf jedem Gerät, mit Offline-Unterstützung." },
       { title: "Portfolio-Freigabe", body: "Erstellen Sie einen privaten Link zum Teilen Ihrer Portfolio-Performance mit Ihrem Berater, Partner oder Ihrer Community. Widerrufen Sie den Zugriff jederzeit." },
       { title: "Watchlist und Entdeckung", body: "Erstellen Sie Watchlists für Assets, die Sie noch nicht besitzen. Verfolgen Sie Preise und 24h-Bewegungen ohne sie Ihrem Portfolio hinzuzufügen." },
@@ -259,7 +267,7 @@ const COPY = {
     stats: [
       { value: "11", label: "Chart-Zeitrahmen" },
       { value: "6+", label: "Broker-Integrationen" },
-      { value: "5",  label: "Sprachen" },
+      { value: "6",  label: "Sprachen" },
       { value: "4",  label: "Währungen (USD · EUR · CHF · BRL)" },
     ],
     plan_title: "Einfache, transparente Preise",
@@ -269,7 +277,7 @@ const COPY = {
     annual_label: "Pro Jährlich", annual_price: "4,99€", annual_period: "/ Monat", annual_desc: "Bestes Preis-Leistungs-Verhältnis — 59,99€/Jahr.",
     annual_save: "28% sparen",
     pro_trial: "30 Tage kostenlose Testversion · Jederzeit kündigen",
-    free_features: ["1 Portfolio-Depot","Bis zu 10 Assets","Echtzeit-Preisverfolgu ng","Transaktionshistorie","5 Sprachen und 4 Währungen","Basis-Dashboard"],
+    free_features: ["1 Portfolio-Depot","Bis zu 10 Assets","Echtzeit-Preisverfolgung","Transaktionshistorie","6 Sprachen und 4 Währungen","Basis-Dashboard"],
     free_limits: ["Keine Preisalarme","Keine Broker-Synchronisierung","Keine Analysen","Keine Watchlist","Keine Portfolio-Freigabe"],
     pro_features: ["Unbegrenzte Depots","Unbegrenzte Assets","Preisalarme per E-Mail","6 Broker/Exchange-Integrationen","Fortgeschrittene Analysen (CAGR, Sharpe, Drawdown)","Watchlist und Marktbewegungen","Asset-Recherche und Analystendaten","Portfolio-Freigabelink","CSV/XLSX-Import","Finanznachrichten-Feed","Prioritäts-Support","30 Tage kostenlose Testversion"],
     btn_free: "Kostenlos starten", btn_monthly: "Testversion starten", btn_annual: "Testversion starten",
@@ -290,9 +298,11 @@ const COPY = {
     hero_sub: "Wallet76 è il tracker di portafoglio professionale costruito per investitori seri. Prezzi in tempo reale, sincronizzazione multi-broker, analisi avanzate e alert di prezzo — tutto crittografato, conforme GDPR e solo tuo.",
     cta_primary: "Inizia gratis — senza carta", cta_secondary: "Scopri come funziona",
     trust1: "Crittografia AES-256", trust2: "Conforme GDPR", trust3: "Server UE", trust4: "Senza pubblicità.",
+    sec_badge: "Sicurezza di livello bancario",
     mock_balance: "Saldo Totale", mock_invested: "Investito", mock_pnl: "P&L Totale", mock_today: "Oggi",
     mock_top: "TOP PERFORMER", mock_alloc: "ALLOCAZIONE",
     mock_stocks: "Azioni", mock_crypto: "Crypto", mock_etf: "ETF",
+    mock_alert: "NVDA ha superato l'obiettivo di $950",
     feat_title: "Tutto ciò di cui hai bisogno per investire meglio",
     feat_sub: "Dal monitoraggio in tempo reale all'analisi approfondita — Wallet76 mette strumenti di livello istituzionale nelle tue mani.",
     features: [
@@ -303,7 +313,7 @@ const COPY = {
       { title: "Sincronizzazione Broker ed Exchange", body: "Connetti direttamente DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase e Kraken. O importa da qualsiasi altro broker tramite CSV o XLSX." },
       { title: "Intelligence di Mercato", body: "Movers di mercato in tempo reale, migliori rialzi e ribassi e notizie finanziarie personalizzate per le tue posizioni — tutto in un feed." },
       { title: "Ricerca Approfondita degli Asset", body: "Clicca su qualsiasi asset per vedere il consenso degli analisti, i target di prezzo, le metriche chiave (P/E, EPS, Beta, range 52S, rendimento dividendo) e grafici interattivi." },
-      { title: "5 Lingue e 4 Valute", body: "Interfaccia completa in inglese, portoghese, francese, tedesco e italiano. Valori in USD, EUR, CHF o BRL. L'app si adatta a te." },
+      { title: "6 Lingue e 4 Valute", body: "Interfaccia completa in inglese, portoghese, francese, tedesco, italiano e spagnolo. Valori in USD, EUR, CHF o BRL. L'app si adatta a te." },
       { title: "PWA — Funziona Ovunque", body: "Installa Wallet76 su Windows, Mac, Android e iOS come Progressive Web App. Esperienza nativa su ogni dispositivo, con supporto offline." },
       { title: "Condivisione del Portafoglio", body: "Genera un link privato per condividere le performance del tuo portafoglio con il tuo consulente, partner o community. Revoca l'accesso in qualsiasi momento." },
       { title: "Watchlist e Scoperta", body: "Crea watchlist per monitorare asset che non possiedi ancora. Segui prezzi e movimenti 24h senza aggiungerli al portafoglio." },
@@ -325,7 +335,7 @@ const COPY = {
     stats: [
       { value: "11", label: "Intervalli di grafico" },
       { value: "6+", label: "Integrazioni broker" },
-      { value: "5",  label: "Lingue" },
+      { value: "6",  label: "Lingue" },
       { value: "4",  label: "Valute (USD · EUR · CHF · BRL)" },
     ],
     plan_title: "Prezzi semplici e trasparenti",
@@ -335,7 +345,7 @@ const COPY = {
     annual_label: "Pro Annuale", annual_price: "4,99€", annual_period: "/ mese", annual_desc: "Miglior valore — fatturato 59,99€/anno.",
     annual_save: "Risparmia 28%",
     pro_trial: "30 giorni di prova gratuita · Cancella in qualsiasi momento",
-    free_features: ["1 portafoglio","Fino a 10 asset","Tracciamento prezzi in tempo reale","Storico transazioni","5 lingue e 4 valute","Dashboard di base"],
+    free_features: ["1 portafoglio","Fino a 10 asset","Tracciamento prezzi in tempo reale","Storico transazioni","6 lingue e 4 valute","Dashboard di base"],
     free_limits: ["Nessun alert di prezzo","Nessuna sincronizzazione broker","Nessuna analisi avanzata","Nessuna watchlist","Nessuna condivisione portafoglio"],
     pro_features: ["Portafogli illimitati","Asset illimitati","Alert di prezzo via email","6 integrazioni broker/exchange","Analisi avanzate (CAGR, Sharpe, drawdown)","Watchlist e movers di mercato","Ricerca asset e dati analisti","Link di condivisione portafoglio","Import CSV / XLSX","Feed notizie finanziarie","Supporto prioritario","30 giorni di prova gratuita"],
     btn_free: "Crea account gratuito", btn_monthly: "Inizia la prova gratuita", btn_annual: "Inizia la prova gratuita",
@@ -356,9 +366,11 @@ const COPY = {
     hero_sub: "Wallet76 es el gestor de portafolio profesional para inversores serios. Precios en tiempo real, sincronización multi-broker, análisis avanzados y alertas de precio — todo cifrado, conforme al RGPD y solo tuyo.",
     cta_primary: "Empezar gratis — sin tarjeta", cta_secondary: "Ver cómo funciona",
     trust1: "Cifrado AES-256", trust2: "Conforme RGPD", trust3: "Servidores UE", trust4: "Sin publicidad.",
+    sec_badge: "Seguridad de nivel bancario",
     mock_balance: "Saldo Total", mock_invested: "Invertido", mock_pnl: "P&L Total", mock_today: "Hoy",
     mock_top: "MEJORES ACTIVOS", mock_alloc: "ASIGNACIÓN",
     mock_stocks: "Acciones", mock_crypto: "Cripto", mock_etf: "ETF",
+    mock_alert: "NVDA superó el objetivo de $950",
     feat_title: "Todo lo que necesitas para invertir mejor",
     feat_sub: "Del seguimiento en tiempo real al análisis profundo — Wallet76 pone herramientas de nivel institucional en tus manos.",
     features: [
@@ -515,7 +527,7 @@ function MockDashboard({ c }) {
             </div>
             <div className="mt-4 border border-amber-500/20 bg-amber-500/5 rounded-lg px-3 py-2 flex items-center gap-2">
               <Bell className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="text-[10px] text-amber-300 font-mono">NVDA crossed $950 target</span>
+              <span className="text-[10px] text-amber-300 font-mono">{c.mock_alert}</span>
             </div>
           </div>
         </div>
@@ -535,8 +547,9 @@ export default function LandingPage() {
       {/* NAV */}
       <header className="sticky top-0 z-50 border-b border-zinc-800/60 bg-zinc-950/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <img src={logo} alt="Wallet76" className="h-8 w-auto" />
+            <span className="text-lg font-extrabold tracking-tight text-white">Wallet76</span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-zinc-400">
             <a href="#features" className="hover:text-white transition-colors">{c.nav_features}</a>
@@ -658,7 +671,7 @@ export default function LandingPage() {
       <section id="security" className="py-24 max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-xs text-emerald-400">
-            <ShieldCheck className="w-3.5 h-3.5" /> Bank-grade security
+            <ShieldCheck className="w-3.5 h-3.5" /> {c.sec_badge}
           </div>
           <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">{c.sec_title}</h2>
           <p className="text-zinc-400 text-lg max-w-2xl mx-auto">{c.sec_sub}</p>
@@ -795,6 +808,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <img src={logo} alt="Wallet76" className="h-6 w-auto opacity-60" />
+            <span className="text-sm font-bold text-zinc-500">Wallet76</span>
             <span className="text-sm text-zinc-600">© {new Date().getFullYear()} · {c.footer_rights}</span>
           </div>
           <div className="flex flex-wrap gap-5 text-xs text-zinc-600">
