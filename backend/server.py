@@ -86,8 +86,23 @@ app.add_middleware(
 )
 
 
-@app.on_event("startup")
-async def startup():
+async def _ensure_indexes():
+    """Creates all MongoDB indexes. Runs as a background task (see startup()
+    below) instead of being awaited directly during FastAPI startup.
+
+    Why: each of these is a network round-trip to MongoDB Atlas. If Atlas is
+    briefly unreachable (paused free-tier cluster, network hiccup, IP
+    allowlist change, etc.), every one of these ~15 sequential awaits can
+    hang for the full server-selection timeout before failing over — worst
+    case several minutes of total blocking. While `startup()` hadn't
+    returned, uvicorn never finished "Waiting for application startup" and
+    never bound its port, so Render's port scan timed out and killed the
+    instance — a full outage caused by a slow/unreachable DB, not a real
+    crash. Backgrounding this means the app always binds its port and starts
+    serving immediately; if Mongo really is down, individual DB-backed
+    routes fail with a normal error instead of the whole process refusing
+    to start.
+    """
     async def _idx(*args, **kwargs):
         try:
             await args[0].create_index(*args[1:], **kwargs)
@@ -115,6 +130,13 @@ async def startup():
     await _idx(db.share_links, [("user_id", 1)])
     await _idx(db.share_links, [("slug", 1)], unique=True, sparse=True)
     logger.info("MongoDB indexes ensured.")
+
+
+@app.on_event("startup")
+async def startup():
+    # Fire-and-forget — see _ensure_indexes() docstring for why this must
+    # NOT be awaited here.
+    asyncio.create_task(_ensure_indexes())
 
     # Keeps portfolio snapshot history growing every 15 min for every user,
     # independent of whether anyone has the app open (see run_snapshot_scheduler
