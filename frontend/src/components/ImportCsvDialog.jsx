@@ -88,6 +88,12 @@ export function detectColumns(header) {
     fee:        find("commission", "fee", "taxa", "fees"),
     currency:   find("currency", "moeda", "fee currency", "ccy"),
     asset_type: find("asset_type", "category", "instrument", "class"),
+    // Optional — lets a CSV pin the exact CoinGecko id per row (e.g.
+    // "bitcoin", "ethereum") instead of relying on the backend's fallback
+    // of lowercasing the symbol, which only coincidentally matches
+    // CoinGecko's real ids for a handful of coins. Without this column,
+    // crypto rows still import fine but may not get live pricing.
+    coingecko_id: find("coingecko_id", "coingecko id", "cgid", "cg_id"),
   };
 }
 
@@ -155,7 +161,8 @@ export function processRows(rows, defaultAssetType = "crypto") {
     let asset_type = defaultAssetType;
     if (cols.asset_type >= 0 && (r[cols.asset_type] || "").toString().toLowerCase().includes("stock")) asset_type = "stock";
     if (isCryptoSym) asset_type = "crypto";
-    items.push({ date, type, asset_type, symbol, quantity: qty, price, fee, currency, name: symbol });
+    const coingecko_id = cols.coingecko_id >= 0 ? (r[cols.coingecko_id] || "").toString().trim().toLowerCase() : "";
+    items.push({ date, type, asset_type, symbol, quantity: qty, price, fee, currency, name: symbol, coingecko_id });
   }
   return { items, skipped, header, cols };
 }
