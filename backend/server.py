@@ -1,7 +1,11 @@
 """Wallet76 FastAPI entry point — thin router orchestration."""
 import asyncio
 import os
+import socket
+import ssl
+import sys
 
+import certifi
 from fastapi import FastAPI, APIRouter
 from starlette.middleware.cors import CORSMiddleware
 from routes import billing as billing_routes
@@ -34,6 +38,41 @@ api_router = APIRouter(prefix="/api")
 @app.get("/ping")
 async def ping():
     return {"ok": True, "app": "wallet76"}
+
+
+@app.get("/debug/tls")
+async def debug_tls():
+    """TEMPORARY diagnostic endpoint — remove once the Atlas TLS handshake
+    outage is resolved. No shell access on Render's free tier, so this runs
+    a raw (non-pymongo) TLS handshake against one of the Atlas shard hosts
+    directly from inside the running instance, to tell us whether the
+    failure is Python/OpenSSL-side or a network/firewall-level block on
+    Render's outbound connection to port 27017.
+    """
+    info = {
+        "python_version": sys.version,
+        "openssl_version": ssl.OPENSSL_VERSION,
+    }
+    host = "ac-fodcxgj-shard-00-00.uhrzgsb.mongodb.net"
+    port = 27017
+    try:
+        ctx = ssl.create_default_context(cafile=certifi.where())
+        with socket.create_connection((host, port), timeout=10) as sock:
+            with ctx.wrap_socket(sock, server_hostname=host) as ssock:
+                info["tcp_connect"] = "OK"
+                info["tls_handshake"] = "OK"
+                info["tls_version"] = ssock.version()
+                info["cipher"] = ssock.cipher()
+    except (socket.timeout, OSError) as e:
+        info["tcp_connect"] = "FAILED"
+        info["error"] = f"{type(e).__name__}: {e}"
+    except ssl.SSLError as e:
+        info["tcp_connect"] = "OK"
+        info["tls_handshake"] = "FAILED"
+        info["error"] = f"{type(e).__name__}: {e}"
+    except Exception as e:
+        info["error"] = f"{type(e).__name__}: {e}"
+    return info
 
 
 @api_router.get("/")
