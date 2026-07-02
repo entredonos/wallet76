@@ -59,3 +59,78 @@ No componente usa-se SEMPRE `t("secao.minha_chave")` — nunca texto fixo em JSX
 - [ ] A chave existe nos 6 blocos: `en`, `pt`, `fr`, `de`, `it`, `es`
 - [ ] O componente usa `t("chave")` em vez de texto fixo
 - [ ] Nenhum `placeholder`, `title` ou `aria-label` está hardcoded
+
+---
+
+## REGRA #2 — GRÁFICO "EVOLUÇÃO DA CARTEIRA": RECONSTRUÇÃO E REDE DE SEGURANÇA
+
+O gráfico de evolução do Dashboard (`GET /history`) nunca depende só de
+snapshots gravados — é reconstruído a partir das transações + histórico de
+preços de cada ativo, para uma conta nova (ou que acabou de ser reposta)
+não ficar com o gráfico vazio durante dias/semanas até acumular snapshots
+reais. Há dois caminhos, consoante o `range`:
+
+### 15m / 30m / 1h / 4h (intraday)
+
+`_build_retro_history_intraday()` em `backend/routes/portfolio.py`:
+
+1. Vai buscar a série intraday de cada ativo detido (mesma fonte dos
+   gráficos de ativo individual — CoinGecko para cripto, Yahoo como
+   fallback), com `_drop_price_spikes()` a filtrar candles isolados
+   implausíveis por ativo.
+2. Constrói a timeline como a união de todos os timestamps de todos os
+   ativos, e para cada instante usa o último preço conhecido de cada ativo
+   (carry-forward) multiplicado pela quantidade nessa data (aplicando as
+   transações pela ordem certa).
+3. **Rede de segurança**: se o resultado reconstruído tiver menos de 5
+   pontos (ex.: CoinGecko e Yahoo ambos indisponíveis/rate-limited para
+   algum ativo detido nesse momento), junta os snapshots reais já gravados
+   (`run_snapshot_scheduler`, a cada 15 min) na mesma janela, com a mesma
+   guarda contra outliers usada na escrita (rejeita um salto <10% ou >10x
+   face ao ponto anterior).
+
+Cada ponto devolvido tem um campo `"source"`:
+- `"reconstructed"` — veio da reconstrução normal (preços ao vivo).
+- `"safety_net"` — veio de um snapshot real gravado, usado como reserva.
+
+O frontend (`Dashboard.jsx`) calcula `usedSafetyNet` a partir disto e
+mostra um badge âmbar "Dados de reserva" (`dash.safety_net_badge` /
+`dash.safety_net_tooltip`, ícone `ShieldAlert`) junto ao título "Evolução
+da Carteira" sempre que algum ponto da resposta atual veio da rede de
+segurança — para o utilizador saber que aquele troço pode ser menos
+preciso, em vez de parecer uma reconstrução normal.
+
+Cache: 15 min (`history_intraday:*`, TTL=900s), invalidado sempre que as
+transações do utilizador mudam (ver `_cache_clear_prefix`).
+
+### 1D / 1W / 1M / 1Y / ALL (diário)
+
+`_build_retro_history()` faz uma caminhada dia-a-dia desde a primeira
+transação, usando o close diário do Yahoo Finance por ativo (cache 1h) com
+carry-forward. **Não tem rede de segurança** — não injeta snapshots reais,
+porque a reconstrução diária raramente fica escassa (yfinance tem histórico
+"period=max"). Os pontos vêm marcados `"source": "reconstructed"` na mesma;
+não acionam o badge.
+
+Existe ainda um terceiro caminho, mais antigo, que lê só snapshots reais
+diretamente (sem reconstrução) — na prática está morto: todo `range` válido
+é intercetado por um dos dois caminhos acima antes de lá chegar. Os pontos
+desse caminho vêm marcados `"source": "snapshot"` (dados reais, não é uma
+emergência) só por precaução, caso volte a ficar alcançável.
+
+### Guardas na escrita (`_save_snapshot`)
+
+Um snapshot só é gravado se: (a) pelo menos metade dos ativos detidos
+vierem com preço válido, e (b) o total não subir/descer de forma implausível
+face ao snapshot anterior (>10x subida ou queda para <10% são ignorados,
+não gravados — assume-se falha temporária da fonte de preços, não um
+crash/rally real).
+
+### Limpeza de dados antigos
+
+`backend/clean_snapshots.py` remove snapshots que ficaram na base de dados
+de ANTES destas guardas existirem (ou que passaram por uma falha isolada de
+1 único bucket): totais `<= 0`, quedas/subidas isoladas em V (um bucket mau
+entre dois normais) e `bucket_ts` duplicados. Corre em modo *dry run* por
+omissão — só reporta o que apagaria; usar `--apply` para apagar de facto, e
+`--user-id <id>` para limitar a um utilizador.

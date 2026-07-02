@@ -545,6 +545,7 @@ async def get_history(range: str = "1w", wallet_id: str | None = None, asset_typ
             "date": s.get("date"),
             "total_usd": total,
             "total_pnl_usd": pnl,
+            "source": "snapshot",
         })
 
     return result
@@ -849,6 +850,7 @@ async def _build_retro_history(user_id: str, wallet_id: str | None = None, asset
             "date": day_iso,
             "total_usd": total_v,
             "total_pnl_usd": total_v - total_cost,
+            "source": "reconstructed",
         })
 
     walk_elapsed = time.monotonic() - t1
@@ -1085,6 +1087,7 @@ async def _build_retro_history_intraday(user_id: str, range_key: str, wallet_id:
             "date": ts_iso[:10],
             "total_usd": total_v,
             "total_pnl_usd": total_v - total_cost,
+            "source": "reconstructed",
         })
 
     logger.info(
@@ -1140,7 +1143,7 @@ async def _build_retro_history_intraday(user_id: str, range_key: str, wallet_id:
                 continue
             prev_total = total
 
-            result.append({"ts": ts, "date": s.get("date"), "total_usd": total, "total_pnl_usd": pnl})
+            result.append({"ts": ts, "date": s.get("date"), "total_usd": total, "total_pnl_usd": pnl, "source": "safety_net"})
 
         result.sort(key=lambda p: p["ts"])
 

@@ -11,17 +11,35 @@ from core import _cache_get, _cache_set, logger, db
 
 # --- Crypto prices ---
 async def get_crypto_prices(coingecko_ids: List[str]) -> dict:
-    """Returns dict { coingecko_id: { usd, eur, usd_24h_change, eur_24h_change } }"""
+    """Returns dict { coingecko_id: { usd, eur, usd_24h_change, eur_24h_change } }.
+
+    Cached PER SYMBOL (not per combined request), and shared across every
+    user — not scoped to a single user's request. The old version cached by
+    the exact joined id-list ("crypto:bitcoin,ethereum"), so two users with
+    almost-identical holdings (both own BTC/ETH, one also owns SOL) each
+    triggered their own separate CoinGecko call for the SAME BTC/ETH prices
+    within the same 60s window, instead of the second user's request
+    reusing what the first one just fetched. Now each id has its own cache
+    entry, so only the ids NOT already cached actually hit CoinGecko."""
     if not coingecko_ids:
         return {}
-    ids_str = ",".join(sorted(set(coingecko_ids)))
-    cache_key = f"crypto:{ids_str}"
-    cached = _cache_get(cache_key, ttl=60)
-    if cached:
-        return cached
+    ids = sorted(set(coingecko_ids))
+
+    result = {}
+    missing = []
+    for cid in ids:
+        cached = _cache_get(f"crypto_price:{cid}", ttl=60)
+        if cached is not None:
+            result[cid] = cached
+        else:
+            missing.append(cid)
+
+    if not missing:
+        return result
+
     url = "https://api.coingecko.com/api/v3/simple/price"
     params = {
-        "ids": ids_str,
+        "ids": ",".join(missing),
         "vs_currencies": "usd,eur",
         "include_24hr_change": "true",
     }
@@ -30,11 +48,12 @@ async def get_crypto_prices(coingecko_ids: List[str]) -> dict:
             r = await client_http.get(url, params=params)
             r.raise_for_status()
             data = r.json()
-            _cache_set(cache_key, data)
-            return data
+            for cid, val in data.items():
+                _cache_set(f"crypto_price:{cid}", val)
+                result[cid] = val
     except Exception as e:
         logger.error(f"CoinGecko error: {e}")
-        return {}
+    return result
 
 
 # --- Stock prices (yfinance) ---
@@ -73,17 +92,35 @@ def _yf_fetch(symbols: List[str]) -> dict:
 
 
 async def get_stock_prices(symbols: List[str]) -> dict:
+    """Same shared per-symbol caching as get_crypto_prices above — each
+    symbol has its own cache entry so a second user requesting a stock
+    already fetched (for anyone) in the last 120s reuses it instead of
+    triggering another yfinance batch call for it. Still batches whatever's
+    actually missing into a single yfinance call (batching per request is
+    still cheaper than one call per symbol when there IS a real cache miss)."""
     if not symbols:
         return {}
     syms = sorted(set([s.upper() for s in symbols]))
-    cache_key = f"stocks:{','.join(syms)}"
-    cached = _cache_get(cache_key, ttl=120)
-    if cached:
-        return cached
-    data = await asyncio.to_thread(_yf_fetch, syms)
+
+    result = {}
+    missing = []
+    for sym in syms:
+        cached = _cache_get(f"stock_price:{sym}", ttl=120)
+        if cached is not None:
+            result[sym] = cached
+        else:
+            missing.append(sym)
+
+    if not missing:
+        return result
+
+    data = await asyncio.to_thread(_yf_fetch, missing)
+    for sym, val in data.items():
+        _cache_set(f"stock_price:{sym}", val)
+    result.update(data)
 
     # Resolve unknown symbols via Yahoo Search
-    unresolved = [s for s in syms if s not in data or not data[s].get("usd")]
+    unresolved = [s for s in missing if s not in result or not result[s].get("usd")]
     if unresolved:
         def _variants(s: str):
             cleaned = _re.sub(r"[^a-zA-Z0-9]", "", s).lower()
@@ -131,9 +168,9 @@ async def get_stock_prices(symbols: List[str]) -> dict:
             resolved_data = await asyncio.to_thread(_yf_fetch, new_syms)
             for orig, real in resolved_pairs:
                 if real in resolved_data and resolved_data[real].get("usd"):
-                    data[orig] = resolved_data[real]
-    _cache_set(cache_key, data)
-    return data
+                    result[orig] = resolved_data[real]
+                    _cache_set(f"stock_price:{orig}", resolved_data[real])
+    return result
 
 
 # --- FX rates ---

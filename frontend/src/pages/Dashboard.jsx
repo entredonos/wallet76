@@ -18,7 +18,7 @@ import { CHART_RANGES, CHART_RANGES_SHOW_DATE, CHART_RANGE_BUCKET_MS, CHART_RANG
 import {
   RefreshCw, ArrowUpRight, ArrowDownRight, Receipt, Bell, ChevronUp, ChevronDown,
   DollarSign, BarChart3, Activity, TrendingDown, ShoppingCart, Trash2, Eye, EyeOff, Settings2,
-  Share2, Link as LinkIcon, X, Check, GripVertical, LayoutDashboard, Tag,
+  Share2, Link as LinkIcon, X, Check, GripVertical, LayoutDashboard, Tag, ShieldAlert,
 } from "lucide-react";
 import DashboardWidgetDrawer from "../components/DashboardWidgetDrawer";
 import AssetIcon from "../components/AssetIcon";
@@ -405,54 +405,72 @@ export default function Dashboard({ currency }) {
       if (!silent) setLoading(true); else setRefreshing(true);
     }
 
-    // Fetch portfolio first — it's the critical one; history/sparklines are decorative
-    try {
-      const p = await api.get("/portfolio");
-      applyPortfolio(p.data);
-      writeCache("portfolio", p.data);
-      handleTriggeredAlerts(p.data);
-    } catch (e) {
-      const status = e.response?.status;
-      if (status === 401) {
-        toast.error(t("common.session_expired"), { id: "session-expired", duration: 8000 });
-      } else if (!cachedPortfolio) {
-        toast.error(formatApiErrorDetail(e.response?.data?.detail) || t("dash.load_error"), { id: "portfolio-error" });
+    // The 3 requests below are independent (different data, different
+    // error handling) so they run concurrently instead of one after another
+    // — sequential awaits meant total wait time was the SUM of all three
+    // round-trips (portfolio + history + sparklines), routinely 2-3s, even
+    // though none of them depend on each other's result. Running them in
+    // parallel cuts that to roughly the slowest single call. Portfolio is
+    // still "the critical one": its own promise clears the skeleton
+    // (setLoading(false)) the moment IT resolves, without waiting for
+    // history/sparklines — those stay decorative/progressive via their own
+    // chartLoading/sparklines state, same as before.
+    const portfolioPromise = (async () => {
+      try {
+        const p = await api.get("/portfolio");
+        applyPortfolio(p.data);
+        writeCache("portfolio", p.data);
+        handleTriggeredAlerts(p.data);
+      } catch (e) {
+        const status = e.response?.status;
+        if (status === 401) {
+          toast.error(t("common.session_expired"), { id: "session-expired", duration: 8000 });
+        } else if (!cachedPortfolio) {
+          toast.error(formatApiErrorDetail(e.response?.data?.detail) || t("dash.load_error"), { id: "portfolio-error" });
+        }
+      } finally {
+        setLoading(false);
       }
-    }
+    })();
 
-    // History and sparklines can fail silently — they only affect charts.
-    // Request-id guard: only apply this response if no newer /history fetch
-    // has started in the meantime (see historyReqIdRef declaration above).
+    // History can fail silently — it only affects the chart. Request-id
+    // guard: only apply this response if no newer /history fetch has
+    // started in the meantime (see historyReqIdRef declaration above).
     const myReqId = ++historyReqIdRef.current;
-    try {
-      const h = await api.get(`/history?range=${range}${filterWallet !== "all" ? `&wallet_id=${filterWallet}` : ""}${filterType !== "all" ? `&asset_type=${filterType}` : ""}`);
-      if (historyReqIdRef.current === myReqId) {
-        setHistory(h.data || []);
-        setChartLoading(false);
-        writeCache("history", h.data || []);
+    const historyPromise = (async () => {
+      try {
+        const h = await api.get(`/history?range=${range}${filterWallet !== "all" ? `&wallet_id=${filterWallet}` : ""}${filterType !== "all" ? `&asset_type=${filterType}` : ""}`);
+        if (historyReqIdRef.current === myReqId) {
+          setHistory(h.data || []);
+          setChartLoading(false);
+          writeCache("history", h.data || []);
+        }
+      } catch (e) {
+        if (historyReqIdRef.current === myReqId) setChartLoading(false);
+        if (e?.response?.status === 401) {
+          toast.error(t("common.session_expired"), { id: "session-expired", duration: 8000 });
+        }
+        /* else noop — chart stays empty */
       }
-    } catch (e) {
-      if (historyReqIdRef.current === myReqId) setChartLoading(false);
-      if (e?.response?.status === 401) {
-        toast.error(t("common.session_expired"), { id: "session-expired", duration: 8000 });
-      }
-      /* else noop — chart stays empty */
-    }
+    })();
 
-    try {
-      const sp = await api.get("/sparklines");
-      const spData = sp.data || {};
-      console.log("[sparklines] received keys:", Object.keys(spData));
-      setSparklines(spData);
-      // Only cache if we actually got data — empty response should be retried
-      if (Object.keys(spData).length > 0) {
-        writeCache("sparklines", spData);
+    const sparklinesPromise = (async () => {
+      try {
+        const sp = await api.get("/sparklines");
+        const spData = sp.data || {};
+        console.log("[sparklines] received keys:", Object.keys(spData));
+        setSparklines(spData);
+        // Only cache if we actually got data — empty response should be retried
+        if (Object.keys(spData).length > 0) {
+          writeCache("sparklines", spData);
+        }
+      } catch (e) {
+        // Log sparkline errors to browser console to help debug
+        console.warn("[sparklines] fetch failed:", e?.message || e);
       }
-    } catch (e) {
-      // Log sparkline errors to browser console to help debug
-      console.warn("[sparklines] fetch failed:", e?.message || e);
-    }
+    })();
 
+    await Promise.allSettled([portfolioPromise, historyPromise, sparklinesPromise]);
     setLastSync(new Date());
     setLoading(false);
     setRefreshing(false);
@@ -848,6 +866,18 @@ export default function Dashboard({ currency }) {
     // close instead basically always has something to show.
     return sliced.map((d, i) => (i > 0 ? { ...d, prevC: sliced[i - 1].c } : d));
   }, [strippedLineData, range]);
+
+  // True when any point in the raw /history response came from the backend's
+  // "rede de segurança" — the intraday reconstruction (15m/30m/1h/4h) falling
+  // back to real recorded snapshots because CoinGecko/Yahoo were temporarily
+  // too sparse to reconstruct from (see _build_retro_history_intraday in
+  // backend/routes/portfolio.py). Surfaced as a small badge so the user
+  // knows a stretch of the chart may be less precise than usual, instead of
+  // silently showing it as if it were a normal live reconstruction.
+  const usedSafetyNet = useMemo(
+    () => (history || []).some((p) => p.source === "safety_net"),
+    [history]
+  );
 
   // Gated by range: on 1D-or-coarser ranges every candle already starts its
   // own day/week/etc, so a "day changed" marker would draw on every single
@@ -1323,6 +1353,16 @@ const worstPerformer = useMemo(() => {
               {filterType !== "all" && (
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-zinc-700 text-zinc-400 bg-zinc-800/60">
                   {TYPE_LABELS[filterType] || filterType}
+                </span>
+              )}
+              {usedSafetyNet && (
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded border border-amber-500/30 text-amber-400 bg-amber-500/10"
+                  title={t("dash.safety_net_tooltip")}
+                  data-testid="safety-net-badge"
+                >
+                  <ShieldAlert className="w-3 h-3"/>
+                  {t("dash.safety_net_badge")}
                 </span>
               )}
             </div>
