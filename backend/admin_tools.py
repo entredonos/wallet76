@@ -57,7 +57,7 @@ async def delete_user(email: str):
     print(f"✓ Eliminado {email} (uid={uid})")
     for k, v in counts.items():
         if v:
-            print(f"   - {coll}: {v}" if False else f"   - {k}: {v}")
+            print(f"   - {k}: {v}")
 
 
 async def delete_unverified():
@@ -107,8 +107,6 @@ async def main():
         await delete_user(args[1])
     elif cmd == "delete-unverified":
         await delete_unverified()
-    elif cmd == "reset-cache":
-        reset_cache()
     elif cmd == "reset-cache":
         reset_cache()
     elif cmd == "promote" and len(args) >= 2:

@@ -458,7 +458,6 @@ export default function Dashboard({ currency }) {
       try {
         const sp = await api.get("/sparklines");
         const spData = sp.data || {};
-        console.log("[sparklines] received keys:", Object.keys(spData));
         setSparklines(spData);
         // Only cache if we actually got data — empty response should be retried
         if (Object.keys(spData).length > 0) {

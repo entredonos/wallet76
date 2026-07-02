@@ -7,7 +7,6 @@ import yfinance as yf
 from fastapi import APIRouter
 
 from core import _cache_get, _cache_set, logger
-from prices import _yf_fetch
 
 router = APIRouter()
 

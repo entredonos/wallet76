@@ -247,7 +247,6 @@ async def get_analytics(
 
         for t in txns_by_day.get(day_iso, []):
             key = (t["asset_type"], t["symbol"].upper())
-            key = (t["asset_type"], t["symbol"].upper())
             fx  = float(t.get("fx_to_usd") or 1.0)
             q   = float(t["quantity"])
             p_usd = float(t["price"]) * fx
