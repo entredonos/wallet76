@@ -35,7 +35,7 @@ export default function Login() {
       const detail = e2.response?.data?.detail;
       if (detail && typeof detail === "object" && detail.code === "email_not_verified") {
         setNeedsVerify(true);
-        setErr(detail.message || "Please verify your email before signing in.");
+        setErr(t("auth.email_not_verified"));
       } else if (isNetworkError(e2)) {
         setErr(t("errors.network"));
       } else {
