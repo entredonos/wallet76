@@ -11,13 +11,25 @@ from core import db, get_current_user, _cache_get, _cache_set, logger
 router = APIRouter()
 
 
+MOVERS_CRYPTO_TTL = 150
+MOVERS_STOCKS_TTL = 240
+
+
 @router.get("/market/movers/crypto")
 async def market_movers_crypto():
     """Top 10 gainers and losers over 24h from CoinGecko's top 250 (yfinance fallback)."""
     cache_key = "market_movers_crypto"
-    cached = _cache_get(cache_key, ttl=120)
+    cached = _cache_get(cache_key, ttl=MOVERS_CRYPTO_TTL)
     if cached and (cached.get("gainers") or cached.get("losers")):
         return cached
+    return await _fetch_movers_crypto()
+
+
+async def _fetch_movers_crypto():
+    """Actual fetch logic for crypto movers, split out of the route handler
+    so run_market_movers_refresher() (background warmer, see below) can call
+    it directly without going through a cache-check + HTTP layer."""
+    cache_key = "market_movers_crypto"
     out = {"gainers": [], "losers": []}
     try:
         async with httpx.AsyncClient(timeout=12) as ch:
@@ -118,9 +130,20 @@ _STOCK_UNIVERSE = [
 @router.get("/market/movers/stocks")
 async def market_movers_stocks():
     cache_key = "market_movers_stocks"
-    cached = _cache_get(cache_key, ttl=180)
+    cached = _cache_get(cache_key, ttl=MOVERS_STOCKS_TTL)
     if cached:
         return cached
+    return await _fetch_movers_stocks()
+
+
+async def _fetch_movers_stocks():
+    """Actual fetch logic for stock movers, split out of the route handler —
+    same reasoning as _fetch_movers_crypto() above. This is the slow one:
+    yf.download() pulls ~100 tickers from Yahoo Finance in one batch, which
+    routinely takes 10-20s. Without the background warmer, whoever's request
+    lands after the TTL expires (or right after a cold Render restart) eats
+    that full cost synchronously."""
+    cache_key = "market_movers_stocks"
 
     def _fetch():
         rows = []
@@ -273,3 +296,33 @@ async def market_portfolio_news(user=Depends(get_current_user)):
     items = items[:5]
     _cache_set(cache_key, items)
     return items
+
+
+# Refresh interval kept comfortably under both TTLs above, so a request
+# almost never lands on an expired cache entry and has to pay the full
+# fetch cost itself (the stocks fetch alone routinely takes 10-20s — see
+# _fetch_movers_stocks() docstring). Same background-loop pattern as
+# alert_checker.run_alert_checker() and portfolio.run_snapshot_scheduler().
+MARKET_REFRESH_INTERVAL_SECONDS = 120
+
+
+async def run_market_movers_refresher() -> None:
+    """Background loop — call once from FastAPI startup (server.py). Keeps
+    the Market tab's movers cache warm regardless of whether anyone is
+    looking at it, so the ~20s cold-cache cost (mostly yfinance's batch
+    download of ~100 stock tickers) is paid here in the background instead
+    of by whichever user's request happens to land after the TTL expires.
+    Doesn't help the very first request after a cold Render restart — this
+    loop only starts warming once the process is up — but it eliminates the
+    far more common "cache just expired" case."""
+    logger.info(f"Market movers refresher started (interval={MARKET_REFRESH_INTERVAL_SECONDS}s)")
+    while True:
+        try:
+            await _fetch_movers_crypto()
+        except Exception as e:
+            logger.warning(f"Market movers refresher (crypto) failed: {e}")
+        try:
+            await _fetch_movers_stocks()
+        except Exception as e:
+            logger.warning(f"Market movers refresher (stocks) failed: {e}")
+        await asyncio.sleep(MARKET_REFRESH_INTERVAL_SECONDS)

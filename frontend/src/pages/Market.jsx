@@ -7,6 +7,7 @@ import {
 import AssetIcon from "../components/AssetIcon";
 import { fmtCurrency, fmtPct, fmtCompact } from "../lib/format";
 import { useI18n } from "../context/I18nContext";
+import { SkeletonMoversList } from "../components/SkeletonRow";
 
 export default function Market() {
   const { t } = useI18n();
@@ -37,8 +38,6 @@ export default function Market() {
         <p className="text-zinc-500 mt-2">{t("market.subtitle")}</p>
       </div>
 
-      {loading && <div className="text-zinc-500 font-mono text-sm">{t("common.loading")}</div>}
-
       {/* Crypto movers */}
       <section className="space-y-4" data-testid="market-crypto-section">
         <div className="flex items-center gap-2">
@@ -46,8 +45,17 @@ export default function Market() {
           <div className="text-xs font-mono uppercase tracking-[0.2em] text-amber-400">{t("market.crypto_24h")}</div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <MoversList kind="crypto" type="gainers" items={crypto.gainers} t={t}/>
-          <MoversList kind="crypto" type="losers" items={crypto.losers} t={t}/>
+          {loading ? (
+            <>
+              <SkeletonMoversList/>
+              <SkeletonMoversList/>
+            </>
+          ) : (
+            <>
+              <MoversList kind="crypto" type="gainers" items={crypto.gainers} t={t}/>
+              <MoversList kind="crypto" type="losers" items={crypto.losers} t={t}/>
+            </>
+          )}
         </div>
       </section>
 
@@ -58,8 +66,17 @@ export default function Market() {
           <div className="text-xs font-mono uppercase tracking-[0.2em] text-blue-400">{t("market.stocks_day")}</div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <MoversList kind="stock" type="gainers" items={stocks.gainers} t={t}/>
-          <MoversList kind="stock" type="losers" items={stocks.losers} t={t}/>
+          {loading ? (
+            <>
+              <SkeletonMoversList/>
+              <SkeletonMoversList/>
+            </>
+          ) : (
+            <>
+              <MoversList kind="stock" type="gainers" items={stocks.gainers} t={t}/>
+              <MoversList kind="stock" type="losers" items={stocks.losers} t={t}/>
+            </>
+          )}
         </div>
       </section>
 
