@@ -1,11 +1,7 @@
 """Wallet76 FastAPI entry point — thin router orchestration."""
 import asyncio
 import os
-import socket
-import ssl
-import sys
 
-import certifi
 from fastapi import FastAPI, APIRouter
 from starlette.middleware.cors import CORSMiddleware
 from routes import billing as billing_routes
@@ -40,39 +36,26 @@ async def ping():
     return {"ok": True, "app": "wallet76"}
 
 
-@app.get("/debug/tls")
-async def debug_tls():
-    """TEMPORARY diagnostic endpoint — remove once the Atlas TLS handshake
-    outage is resolved. No shell access on Render's free tier, so this runs
-    a raw (non-pymongo) TLS handshake against one of the Atlas shard hosts
-    directly from inside the running instance, to tell us whether the
-    failure is Python/OpenSSL-side or a network/firewall-level block on
-    Render's outbound connection to port 27017.
+@app.get("/debug/promote-admin")
+async def debug_promote_admin():
+    """TEMPORARY — remove after use. Atlas TLS outage forced a cluster
+    recreation (new empty database), so the account seed script can't be
+    run locally against production without reconfiguring a local .env.
+    This does the same thing admin_tools.py's promote_user() does, over
+    HTTP, once, for the site owner's own account only.
     """
-    info = {
-        "python_version": sys.version,
-        "openssl_version": ssl.OPENSSL_VERSION,
-    }
-    host = "ac-fodcxgj-shard-00-00.uhrzgsb.mongodb.net"
-    port = 27017
-    try:
-        ctx = ssl.create_default_context(cafile=certifi.where())
-        with socket.create_connection((host, port), timeout=10) as sock:
-            with ctx.wrap_socket(sock, server_hostname=host) as ssock:
-                info["tcp_connect"] = "OK"
-                info["tls_handshake"] = "OK"
-                info["tls_version"] = ssock.version()
-                info["cipher"] = ssock.cipher()
-    except (socket.timeout, OSError) as e:
-        info["tcp_connect"] = "FAILED"
-        info["error"] = f"{type(e).__name__}: {e}"
-    except ssl.SSLError as e:
-        info["tcp_connect"] = "OK"
-        info["tls_handshake"] = "FAILED"
-        info["error"] = f"{type(e).__name__}: {e}"
-    except Exception as e:
-        info["error"] = f"{type(e).__name__}: {e}"
-    return info
+    email = "entredonos@gmail.com"
+    res = await db.users.update_one(
+        {"email": email},
+        {"$set": {
+            "role": "admin",
+            "subscription_status": "active",
+            "subscription_plan": "admin",
+        }},
+    )
+    if res.matched_count == 0:
+        return {"ok": False, "error": f"user not found: {email}"}
+    return {"ok": True, "email": email, "modified": res.modified_count}
 
 
 @api_router.get("/")
