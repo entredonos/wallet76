@@ -8,6 +8,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { TrendingUp, Eye, EyeOff, MailCheck } from "lucide-react";
 import walletLogo from "../assets/wallet76-logo80x60.png";
+import AuthLangSwitcher from "../components/AuthLangSwitcher";
 
 export default function Register() {
   const { register } = useAuth();
@@ -54,17 +55,20 @@ export default function Register() {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 grid-bg">
         <div className="w-full max-w-md fade-in" data-testid="register-success">
-          <div className="flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 rounded-md border border-zinc-800 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-zinc-200" />
+          <div className="flex items-center justify-between gap-3 mb-10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-md border border-zinc-800 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-zinc-200" />
+              </div>
+              <div>
+                  <div className="flex items-center gap-3">
+                    <img src={walletLogo} alt="Wallet76" className="w-10 h-10 object-contain" />
+                    <div className="font-display text-xl tracking-tight">Wallet76</div>
+                  </div>
+                <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">terminal</div>
+              </div>
             </div>
-            <div>
-                <div className="flex items-center gap-3">
-                  <img src={walletLogo} alt="Wallet76" className="w-10 h-10 object-contain" />
-                  <div className="font-display text-xl tracking-tight">Wallet76</div>
-                </div>
-              <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">terminal</div>
-            </div>
+            <AuthLangSwitcher />
           </div>
 
           <div className="w-12 h-12 rounded-md border border-emerald-500/30 bg-emerald-500/10 flex items-center justify-center mb-6">
@@ -112,14 +116,17 @@ export default function Register() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 grid-bg">
       <div className="w-full max-w-md fade-in">
-        <div className="flex items-center gap-3 mb-10">
+        <div className="flex items-center justify-between gap-3 mb-10">
+          <div className="flex items-center gap-3">
             <img src={walletLogo} alt="Wallet76" className="w-12 h-12 object-contain" />
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="font-display text-xl tracking-tight">Wallet76</div>
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="font-display text-xl tracking-tight">Wallet76</div>
+              </div>
+              <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">terminal</div>
             </div>
-            <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">terminal</div>
           </div>
+          <AuthLangSwitcher />
         </div>
 
         <h1 className="font-display text-4xl sm:text-5xl font-light tracking-tight mb-2">{t("auth.create_title")}</h1>

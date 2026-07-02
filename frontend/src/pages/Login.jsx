@@ -8,6 +8,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { TrendingUp, Eye, EyeOff } from "lucide-react";
 import walletLogo from "../assets/wallet76-logo80x60.png";
+import AuthLangSwitcher from "../components/AuthLangSwitcher";
 
 export default function Login() {
   const { login } = useAuth();
@@ -62,15 +63,17 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 grid-bg">
       <div className="w-full max-w-md fade-in">
-        <div className="flex items-center gap-3 mb-10">
-          <img src={walletLogo} alt="Wallet76" className="w-13 h-13 object-contain" />
-          <div>
-            <div className="flex items-center gap-3">
-              
-              <div className="font-display text-xl tracking-tight">Wallet76</div>
+        <div className="flex items-center justify-between gap-3 mb-10">
+          <div className="flex items-center gap-3">
+            <img src={walletLogo} alt="Wallet76" className="w-13 h-13 object-contain" />
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="font-display text-xl tracking-tight">Wallet76</div>
+              </div>
+              <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">terminal</div>
             </div>
-            <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">terminal</div>
           </div>
+          <AuthLangSwitcher />
         </div>
 
         <h1 className="font-display text-4xl sm:text-5xl font-light tracking-tight mb-2">{t("auth.signin_title")}</h1>
@@ -91,20 +94,15 @@ export default function Login() {
             />
           </div>
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("auth.password")}</Label>
-              <Link to="/forgot-password" className="text-[11px] font-mono text-zinc-400 hover:text-blue-400 underline-offset-4 hover:underline transition-colors" data-testid="link-forgot-password">
-                {t("auth.forgot")}
-              </Link>
-            </div>
-            <div className="relative">
+            <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("auth.password")}</Label>
+            <div className="relative mt-2">
               <Input
                 data-testid="login-password"
                 type={showPassword ? "text" : "password"}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-0 bg-zinc-900/50 border-zinc-800 focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500 h-12 pr-11"
+                className="bg-zinc-900/50 border-zinc-800 focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500 h-12 pr-11"
                 placeholder="••••••••"
                 autoComplete="current-password"
               />
@@ -118,6 +116,11 @@ export default function Login() {
               >
                 {showPassword ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>}
               </button>
+            </div>
+            <div className="mt-2 text-right">
+              <Link to="/forgot-password" className="text-[11px] font-mono text-zinc-400 hover:text-blue-400 underline-offset-4 hover:underline transition-colors" data-testid="link-forgot-password">
+                {t("auth.forgot")}
+              </Link>
             </div>
           </div>
 

@@ -116,6 +116,25 @@ async def admin_user_stats(user=Depends(get_current_user)):
     }
 
 
+@router.get("/admin/users/list")
+async def admin_user_list(
+    tier: str | None = Query(None, description="free|monthly|yearly; omit for all users"),
+    user=Depends(get_current_user),
+):
+    """Admin only -- full user list, optionally filtered by tier. Backs the
+    clickable stat cards (Total/Free/Pro Mensal/Pro Anual) on the admin
+    Users tab, as opposed to /admin/users/stats' last10 which is always
+    unfiltered and capped at 10."""
+    if user.get("email") not in ADMIN_EMAILS:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    all_users = await db.users.find({}, {"_id": 0}).sort("created_at", -1).to_list(10000)
+    safe = [_safe_user(u) for u in all_users]
+    if tier in ("free", "monthly", "yearly"):
+        safe = [u for u in safe if u["tier"] == tier]
+    return safe
+
+
 @router.get("/admin/users/search")
 async def admin_user_search(
     q: str = Query(..., min_length=1),

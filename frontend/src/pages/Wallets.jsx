@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useI18n } from "../context/I18nContext";
 import { useNavigate } from "react-router-dom";
 import { SkeletonCardGrid } from "../components/SkeletonRow";
+import UpgradeDialog from "../components/UpgradeDialog";
 import { usePlan } from "../hooks/usePlan";
 import { WALLET_COLOR_KEYS, WALLET_BORDER_CLASS, WALLET_TEXT_CLASS } from "../lib/walletColors";
 import { ALLOCATION_CLASSES, ALLOCATION_CLASS_LABEL_KEY, ALLOCATION_CLASS_COLOR, aggregateByClass } from "../lib/allocation";
@@ -40,6 +41,7 @@ export default function Wallets() {
   const [type, setType] = useState("broker");
   const [currency, setCurrency] = useState("USD");
   const [saving, setSaving] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -78,9 +80,8 @@ export default function Wallets() {
     } catch (e) {
       const detail = e.response?.data?.detail;
       if (e.response?.status === 402 && detail?.reason === "wallet_limit") {
-        toast.error(t("wallets.limit_msg"), {
-          action: { label: t("common.upgrade"), onClick: () => navigate("/pricing") },
-        });
+        setOpen(false);
+        setShowUpgrade(true);
       } else {
         toast.error(formatApiErrorDetail(detail) || t("wallets.toast_create_failed"));
       }
@@ -137,7 +138,7 @@ export default function Wallets() {
             <Button
               className="bg-zinc-100 text-zinc-950 hover:bg-white"
               data-testid="add-wallet-btn"
-              onClick={!isPro && wallets.length >= 1 ? (e) => { e.preventDefault(); navigate("/pricing"); } : undefined}
+              onClick={!isPro && wallets.length >= 1 ? (e) => { e.preventDefault(); setShowUpgrade(true); } : undefined}
             >
               {!isPro && wallets.length >= 1 ? <Lock className="w-4 h-4 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
               {t("wallets.new")}
@@ -314,6 +315,8 @@ export default function Wallets() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} reason="wallet_limit" />
     </div>
   );
 }

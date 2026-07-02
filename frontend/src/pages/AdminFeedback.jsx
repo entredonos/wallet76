@@ -106,6 +106,9 @@ function UsersTab() {
   const [toDelete, setToDelete]   = useState(null);
   const [deleting, setDeleting]   = useState(false);
   const [toast, setToast]         = useState(null);
+  const [tierFilter, setTierFilter]   = useState(null); // null | "total" | "free" | "monthly" | "yearly"
+  const [tierResults, setTierResults] = useState(null);
+  const [tierLoading, setTierLoading] = useState(false);
 
   const showToast = (msg, type = "ok") => {
     setToast({ msg, type });
@@ -126,12 +129,30 @@ function UsersTab() {
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) { setResults(null); return; }
+    setTierFilter(null); setTierResults(null);
     setSearching(true);
     try {
       const { data } = await api.get(`/admin/users/search?q=${encodeURIComponent(query.trim())}`);
       setResults(Array.isArray(data) ? data : []);
     } catch { setResults([]); }
     setSearching(false);
+  };
+
+  const loadTier = async (tier) => {
+    if (tierFilter === tier) { setTierFilter(null); setTierResults(null); return; }
+    setResults(null); setQuery("");
+    setTierFilter(tier);
+    setTierLoading(true);
+    try {
+      const q = tier === "total" ? "" : `?tier=${tier}`;
+      const { data } = await api.get(`/admin/users/list${q}`);
+      setTierResults(Array.isArray(data) ? data : []);
+    } catch { setTierResults([]); }
+    setTierLoading(false);
+  };
+
+  const clearTierOrSearch = () => {
+    setTierFilter(null); setTierResults(null); setResults(null); setQuery("");
   };
 
   const handleDelete = async () => {
@@ -158,7 +179,8 @@ function UsersTab() {
     { label: "Pro Anual",   key: "yearly",  icon: CalendarDays,  color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/30" },
   ];
 
-  const displayList = results ?? stats?.last10 ?? [];
+  const displayList = results ?? tierResults ?? stats?.last10 ?? [];
+  const isFiltered = results !== null || tierResults !== null;
 
   return (
     <div className="space-y-6">
@@ -173,13 +195,20 @@ function UsersTab() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {STAT_CARDS.map(({ label, key, icon: Icon, color, bg }) => (
-          <div key={key} className={`border rounded-xl p-4 flex items-center gap-3 ${bg}`}>
+          <button
+            key={key}
+            type="button"
+            onClick={() => loadTier(key)}
+            className={`text-left border rounded-xl p-4 flex items-center gap-3 transition-colors ${bg} ${
+              tierFilter === key ? "ring-2 ring-zinc-100/70" : "hover:brightness-125"
+            }`}
+          >
             <Icon className={`w-5 h-5 ${color} shrink-0`} />
             <div>
               <div className={`text-2xl font-mono font-light ${color}`}>{loading ? "-" : (stats?.[key] ?? 0)}</div>
               <div className="text-xs font-mono text-zinc-500">{label}</div>
             </div>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -189,7 +218,11 @@ function UsersTab() {
           <input
             type="text"
             value={query}
-            onChange={e => { setQuery(e.target.value); if (!e.target.value) setResults(null); }}
+            onChange={e => {
+              setQuery(e.target.value);
+              if (!e.target.value) setResults(null);
+              if (tierFilter) { setTierFilter(null); setTierResults(null); }
+            }}
             placeholder="Pesquisar por email ou nome..."
             className="w-full bg-zinc-900/60 border border-zinc-800 rounded-xl pl-9 pr-4 py-2.5 text-sm font-mono text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-600"
           />
@@ -197,8 +230,8 @@ function UsersTab() {
         <button type="submit" disabled={searching} className="px-4 py-2.5 bg-zinc-100 text-zinc-950 rounded-xl text-sm font-medium hover:bg-zinc-200 disabled:opacity-50 transition-colors">
           {searching ? "..." : "Pesquisar"}
         </button>
-        {results !== null && (
-          <button type="button" onClick={() => { setResults(null); setQuery(""); }} className="px-3 py-2.5 border border-zinc-700 text-zinc-400 rounded-xl hover:text-zinc-200 transition-colors">
+        {isFiltered && (
+          <button type="button" onClick={clearTierOrSearch} className="px-3 py-2.5 border border-zinc-700 text-zinc-400 rounded-xl hover:text-zinc-200 transition-colors">
             <X className="w-4 h-4" />
           </button>
         )}
@@ -206,16 +239,20 @@ function UsersTab() {
 
       <div className="flex items-center justify-between">
         <div className="text-xs font-mono text-zinc-500 uppercase tracking-wider">
-          {results !== null ? `${results.length} resultado(s) para "${query}"` : "Ultimos 10 registados"}
+          {results !== null
+            ? `${results.length} resultado(s) para "${query}"`
+            : tierResults !== null
+              ? `${tierResults.length} utilizador(es) — ${STAT_CARDS.find(c => c.key === tierFilter)?.label ?? "Todos"}`
+              : "Ultimos 10 registados"}
         </div>
-        {results === null && (
+        {!isFiltered && (
           <button onClick={loadStats} className="text-xs font-mono text-zinc-500 hover:text-zinc-300 flex items-center gap-1 transition-colors">
             <RefreshCw className="w-3 h-3" /> Atualizar
           </button>
         )}
       </div>
 
-      {loading && results === null ? (
+      {(loading && !isFiltered) || tierLoading ? (
         <div className="text-zinc-500 font-mono text-sm">A carregar...</div>
       ) : displayList.length === 0 ? (
         <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-10 text-center">
