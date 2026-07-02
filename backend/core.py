@@ -8,6 +8,7 @@ load_dotenv(ROOT_DIR / ".env")
 import os
 import logging
 import bcrypt
+import certifi
 import jwt
 import resend
 from datetime import datetime, timezone, timedelta
@@ -16,7 +17,13 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 # --- Config ---
 mongo_url = os.environ["MONGO_URL"]
-client = AsyncIOMotorClient(mongo_url)
+# tlsCAFile=certifi.where(): pin the CA bundle explicitly instead of relying
+# on whatever root certs the host OS happens to ship. Render's base image
+# has caused "SSL: TLSV1_ALERT_INTERNAL_ERROR" handshake failures against
+# Atlas when its system CA bundle drifts out of sync with what Atlas's TLS
+# stack expects — using certifi's bundle (updated independently of the OS)
+# avoids that class of failure.
+client = AsyncIOMotorClient(mongo_url, tlsCAFile=certifi.where())
 db = client[os.environ["DB_NAME"]]
 
 JWT_SECRET = os.environ["JWT_SECRET"]
