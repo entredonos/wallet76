@@ -28,6 +28,13 @@ api.interceptors.response.use(
   }
 );
 
+// True when the request never reached the server (backend down, no network,
+// CORS block, etc.) — axios sets `error.request` but leaves `error.response`
+// undefined in that case, as opposed to a normal 4xx/5xx which has a response.
+export function isNetworkError(error) {
+  return !!error && !error.response && !!error.request;
+}
+
 export function formatApiErrorDetail(detail) {
   if (detail == null) return "Something went wrong. Please try again.";
   if (typeof detail === "string") return detail;

@@ -1,69 +1,96 @@
-import React from "react";
-import {
-  SiBitcoin, SiEthereum, SiBinance, SiSolana, SiCardano, SiDogecoin,
-  SiTether, SiRipple, SiLitecoin, SiPolkadot,
-} from "react-icons/si";
-import { Coins, TrendingUp } from "lucide-react";
+import { useState } from "react";
 
-const CRYPTO_ICONS = {
-  bitcoin: { Icon: SiBitcoin, color: "#f7931a" },
-  btc: { Icon: SiBitcoin, color: "#f7931a" },
-  ethereum: { Icon: SiEthereum, color: "#627eea" },
-  eth: { Icon: SiEthereum, color: "#627eea" },
-  binancecoin: { Icon: SiBinance, color: "#f3ba2f" },
-  bnb: { Icon: SiBinance, color: "#f3ba2f" },
-  solana: { Icon: SiSolana, color: "#9945ff" },
-  sol: { Icon: SiSolana, color: "#9945ff" },
-  cardano: { Icon: SiCardano, color: "#0033ad" },
-  ada: { Icon: SiCardano, color: "#0033ad" },
-  dogecoin: { Icon: SiDogecoin, color: "#c2a633" },
-  doge: { Icon: SiDogecoin, color: "#c2a633" },
-  tether: { Icon: SiTether, color: "#26a17b" },
-  usdt: { Icon: SiTether, color: "#26a17b" },
-  ripple: { Icon: SiRipple, color: "#23292f" },
-  xrp: { Icon: SiRipple, color: "#ffffff" },
-  litecoin: { Icon: SiLitecoin, color: "#a6a9aa" },
-  ltc: { Icon: SiLitecoin, color: "#a6a9aa" },
-  polkadot: { Icon: SiPolkadot, color: "#e6007a" },
-  dot: { Icon: SiPolkadot, color: "#e6007a" },
-};
+// ── Deterministic colour by symbol ────────────────────────────────────────────
+const PALETTE = [
+  "#3b82f6","#8b5cf6","#ec4899","#f59e0b","#10b981",
+  "#ef4444","#06b6d4","#f97316","#84cc16","#6366f1",
+];
+function hashColor(str = "") {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) & 0xffffffff;
+  return PALETTE[Math.abs(h) % PALETTE.length];
+}
 
-export default function AssetIcon({ asset, size = 28 }) {
-  const key = (asset.asset_type === "crypto"
-    ? (asset.coingecko_id || asset.symbol)
-    : asset.symbol
-  )?.toLowerCase();
+// Module-level cache so failed URLs never retry across re-renders
+const _failedUrls = new Set();
 
-  if (asset.asset_type === "crypto") {
-    const entry = CRYPTO_ICONS[key];
-    if (entry) {
-      const { Icon, color } = entry;
-      return (
-        <div
-          className="rounded-full flex items-center justify-center border border-zinc-800"
-          style={{ width: size, height: size, backgroundColor: "#18181b" }}
-        >
-          <Icon style={{ color, width: size * 0.6, height: size * 0.6 }} />
-        </div>
-      );
-    }
-    return (
-      <div
-        className="rounded-full flex items-center justify-center bg-zinc-800 border border-zinc-700 text-zinc-300"
-        style={{ width: size, height: size }}
-      >
-        <Coins style={{ width: size * 0.55, height: size * 0.55 }} />
-      </div>
-    );
-  }
+// Logo CDN helpers
+function cryptoLogoUrl(sym) {
+  return `https://cryptologos.cc/logos/${sym.toLowerCase()}-logo.svg?v=40`;
+}
+function fmpUrl(sym) {
+  return `https://financialmodelingprep.com/image-stock/${sym.toUpperCase()}.png`;
+}
 
-  // Stock
+// Fallback coloured initials avatar
+function FallbackIcon({ symbol, size }) {
+  const bg = hashColor(symbol);
+  const initials = (symbol || "?").replace("-USD","").slice(0, 2).toUpperCase();
   return (
     <div
-      className="rounded-full flex items-center justify-center bg-zinc-100 text-zinc-950 font-mono font-semibold border border-zinc-800"
-      style={{ width: size, height: size, fontSize: size * 0.32 }}
+      className="rounded-full flex items-center justify-center shrink-0 font-mono font-bold select-none"
+      style={{
+        width: size, height: size,
+        background: bg + "28",
+        border: `1.5px solid ${bg}55`,
+        fontSize: Math.max(9, size * 0.33),
+        color: bg,
+      }}
     >
-      {asset.symbol?.slice(0, 2).toUpperCase() || <TrendingUp className="w-3 h-3" />}
+      {initials}
     </div>
   );
+}
+
+// Single-attempt image -- once a URL fails it never retries (no flicker)
+function LogoImg({ src, fallback, symbol, size, rounded }) {
+  const alreadyFailed = _failedUrls.has(src);
+  const [failed, setFailed] = useState(alreadyFailed);
+
+  if (failed || !src) {
+    if (fallback && !_failedUrls.has(fallback)) {
+      return <LogoImg src={fallback} fallback={null} symbol={symbol} size={size} rounded={rounded} />;
+    }
+    return <FallbackIcon symbol={symbol} size={size} />;
+  }
+
+  return (
+    <img
+      src={src}
+      alt={symbol}
+      width={size}
+      height={size}
+      className={`${rounded} shrink-0 object-contain`}
+      style={{ width: size, height: size, background: "transparent" }}
+      onError={() => { _failedUrls.add(src); setFailed(true); }}
+    />
+  );
+}
+
+/**
+ * AssetIcon -- real logo, fallback to coloured initials.
+ * Props: asset { symbol, asset_type, coingecko_id? }, size, logoUrl, rounded
+ */
+export default function AssetIcon({ asset, size = 28, logoUrl, rounded = "rounded-full" }) {
+  if (!asset) return null;
+  const sym = (asset.symbol || "").replace(/-USD$|-USDT$/, "").toUpperCase();
+  const type = asset.asset_type || "stock";
+
+  // Explicit URL override (e.g. from search backend)
+  if (logoUrl && !_failedUrls.has(logoUrl)) {
+    return <LogoImg src={logoUrl} symbol={sym} size={size} rounded={rounded} />;
+  }
+
+  if (type === "crypto") {
+    const cgId = asset.coingecko_id;
+    // Primary: CoinGecko URL if we have the id; fallback: CryptoLogos by symbol
+    const primary = cgId
+      ? `https://assets.coingecko.com/coins/images/1/small/${cgId}.png`
+      : cryptoLogoUrl(sym);
+    const fallback = cgId ? cryptoLogoUrl(sym) : null;
+    return <LogoImg src={primary} fallback={fallback} symbol={sym} size={size} rounded={rounded} />;
+  }
+
+  // Stocks / ETFs -- Financial Modeling Prep
+  return <LogoImg src={fmpUrl(sym)} symbol={sym} size={size} rounded={rounded} />;
 }

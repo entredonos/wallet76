@@ -15,15 +15,24 @@ import { Bell, Plus, Trash2, ArrowUp, ArrowDown, BellRing, Check } from "lucide-
 import AssetIcon from "../components/AssetIcon";
 import { fmtCurrency, fmtPct } from "../lib/format";
 import { useI18n } from "../context/I18nContext";
+import { SkeletonTableRow } from "../components/SkeletonRow";
+import { useSearchParams } from "react-router-dom";
 
 export default function Alerts() {
   const { t } = useI18n();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const prefillSymbol = searchParams.get("prefill");
+  const prefillType   = searchParams.get("type");
+  const prefillPrice  = searchParams.get("price");
+
   const [alerts, setAlerts] = useState([]);
   const [holdings, setHoldings] = useState([]);
   const [livePrices, setLivePrices] = useState({});
   const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(!!prefillSymbol);
   const [notifPerm, setNotifPerm] = useState(typeof Notification !== "undefined" ? Notification.permission : "denied");
+
+  useEffect(() => { if (prefillSymbol) setOpen(true); }, [prefillSymbol]);
 
   const load = async () => {
     setLoading(true);
@@ -85,7 +94,15 @@ export default function Alerts() {
               <Check className="w-3 h-3"/> {t("alert.notifs_enabled")}
             </div>
           )}
-          <NewAlertDialog open={open} setOpen={setOpen} holdings={holdings} onSaved={load}/>
+          <NewAlertDialog
+            open={open}
+            setOpen={(v) => { setOpen(v); if (!v && prefillSymbol) setSearchParams({}); }}
+            holdings={holdings}
+            onSaved={load}
+            defaultSymbol={prefillSymbol}
+            defaultAssetType={prefillType}
+            defaultPrice={prefillPrice}
+          />
         </div>
       </div>
 
@@ -104,7 +121,7 @@ export default function Alerts() {
               </tr>
             </thead>
             <tbody>
-              {loading && (<tr><td colSpan={7} className="px-6 py-8 text-center text-zinc-500 font-mono text-sm">Loading…</td></tr>)}
+              {loading && [0,1,2,3,4].map(i => <SkeletonTableRow key={i} cols={7} />)}
               {!loading && alerts.length === 0 && (
                 <tr><td colSpan={7} className="px-6 py-12 text-center text-zinc-600 font-mono text-sm" data-testid="no-alerts">
                   No alerts yet. Click <span className="text-zinc-300">+ New Alert</span>.
@@ -165,7 +182,7 @@ export default function Alerts() {
   );
 }
 
-function NewAlertDialog({ open, setOpen, holdings, onSaved }) {
+function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defaultAssetType, defaultPrice }) {
   const { t } = useI18n();
   const [pickedKey, setPickedKey] = useState("");
   const [searchPicked, setSearchPicked] = useState(null);
@@ -179,8 +196,24 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved }) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!open) { setPickedKey(""); setSearchPicked(null); setSearchTerm(""); setResults([]); setCondition("above"); setTarget(""); setNote(""); }
-  }, [open]);
+    if (!open) {
+      setPickedKey(""); setSearchPicked(null); setSearchTerm(""); setResults([]);
+      setCondition("above"); setTarget(""); setNote("");
+    } else if (defaultSymbol) {
+      // Pre-fill from asset page
+      const at = defaultAssetType === "crypto" ? "crypto" : "stock";
+      setSearchType(at);
+      setSearchTerm(defaultSymbol.toUpperCase());
+      setSearchPicked({
+        symbol: defaultSymbol.toUpperCase(),
+        name: defaultSymbol.toUpperCase(),
+        asset_type: defaultAssetType || "stock",
+        price_usd: defaultPrice ? parseFloat(defaultPrice) : undefined,
+      });
+      // Pre-fill target with current price if available
+      if (defaultPrice) setTarget(String(parseFloat(defaultPrice).toFixed(4)));
+    }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!searchTerm || searchTerm.length < 1) { setResults([]); return; }
@@ -241,10 +274,10 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved }) {
         <div className="space-y-4">
           {holdings.length > 0 && (
             <div>
-              <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">From your holdings</Label>
+              <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("alert.from_holdings")}</Label>
               <Select value={pickedKey} onValueChange={(v) => { setPickedKey(v); setSearchPicked(null); }}>
                 <SelectTrigger className="mt-2 bg-zinc-900/50 border-zinc-800" data-testid="alert-holding-select">
-                  <SelectValue placeholder="Pick a held asset"/>
+                  <SelectValue placeholder={t("alert.pick_held")}/>
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-900 border-zinc-800">
                   {holdings.map((h) => (
@@ -257,7 +290,7 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved }) {
             </div>
           )}
 
-          <div className="text-xs text-zinc-500 font-mono uppercase tracking-[0.2em] text-center">or search any asset</div>
+          <div className="text-xs text-zinc-500 font-mono uppercase tracking-[0.2em] text-center">{t("alert.or_search")}</div>
 
           <Tabs value={searchType} onValueChange={setSearchType}>
             <TabsList className="w-full bg-zinc-900/50 border border-zinc-800">
@@ -288,35 +321,46 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved }) {
           {pickedAsset && (
             <div className="border border-zinc-800 rounded-md p-3 bg-zinc-900/30 flex items-center justify-between">
               <div>
-                <div className="text-xs font-mono uppercase tracking-wider text-zinc-500">Selected</div>
+                <div className="text-xs font-mono uppercase tracking-wider text-zinc-500">{t("alert.selected")}</div>
                 <div className="font-mono text-zinc-100">{pickedAsset.symbol} · {pickedAsset.name}</div>
               </div>
               <div className="text-right">
-                <div className="text-xs font-mono text-zinc-500">Current</div>
+                <div className="text-xs font-mono text-zinc-500">{t("alert.current_price")}</div>
                 <div className="font-mono text-zinc-200">{currentPrice ? fmtCurrency(currentPrice, "USD") : "—"}</div>
               </div>
-            </div>
+          </div>
           )}
 
-          <Tabs value={condition} onValueChange={setCondition}>
-            <TabsList className="w-full bg-zinc-900/50 border border-zinc-800">
-              <TabsTrigger value="above" className="flex-1 data-[state=active]:bg-emerald-500/90 data-[state=active]:text-zinc-950" data-testid="alert-cond-above">
-                <ArrowUp className="w-3 h-3 mr-1"/> Above
-              </TabsTrigger>
-              <TabsTrigger value="below" className="flex-1 data-[state=active]:bg-rose-500/90 data-[state=active]:text-zinc-950" data-testid="alert-cond-below">
-                <ArrowDown className="w-3 h-3 mr-1"/> Below
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <div>
-            <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">Target price (USD)</Label>
-            <Input type="number" step="any" value={target} onChange={(e) => setTarget(e.target.value)} className="mt-2 bg-zinc-900/50 border-zinc-800" data-testid="alert-target-input"/>
-          </div>
-
-          <Button onClick={save} disabled={saving} className="w-full bg-zinc-100 text-zinc-950 hover:bg-white" data-testid="alert-submit">
-            {saving ? "Saving…" : "Create alert"}
-          </Button>
+          {pickedAsset && (
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("alert.condition")}</Label>
+                <Tabs value={condition} onValueChange={setCondition}>
+                  <TabsList className="mt-2 w-full bg-zinc-900/50 border border-zinc-800">
+                    <TabsTrigger value="above" className="flex-1 data-[state=active]:bg-emerald-500/90 data-[state=active]:text-zinc-950" data-testid="alert-condition-above">
+                      <ArrowUp className="w-3.5 h-3.5 mr-1"/> {t("alert.above")}
+                    </TabsTrigger>
+                    <TabsTrigger value="below" className="flex-1 data-[state=active]:bg-rose-500/90 data-[state=active]:text-zinc-950" data-testid="alert-condition-below">
+                      <ArrowDown className="w-3.5 h-3.5 mr-1"/> {t("alert.below")}
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+              <div>
+                <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("alert.target")} (USD)</Label>
+                <Input type="number" step="any" value={target} onChange={(e) => setTarget(e.target.value)}
+                  placeholder="50000" className="mt-2 bg-zinc-900/50 border-zinc-800" data-testid="alert-target-input"/>
+              </div>
+              <div>
+                <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("alert.note")}</Label>
+                <Input value={note} onChange={(e) => setNote(e.target.value)}
+                  placeholder={t("alert.note_placeholder")} className="mt-2 bg-zinc-900/50 border-zinc-800" data-testid="alert-note-input"/>
+              </div>
+              <Button onClick={save} disabled={saving} className="w-full bg-zinc-100 text-zinc-950 hover:bg-white font-medium" data-testid="alert-submit">
+                {saving ? t("common.saving") : t("alert.create")}
+              </Button>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

@@ -36,6 +36,7 @@ async def register(payload: UserRegister, response: Response):
         "verify_token_expires": verify_expires,
         "last_verification_sent_at": datetime.now(timezone.utc).isoformat(),
         "created_at": datetime.now(timezone.utc).isoformat(),
+        "plan": "free",
     }
     await db.users.insert_one(doc)
 
@@ -84,6 +85,13 @@ async def me(user=Depends(get_current_user)):
         {"id": user["id"]},
         {"_id": 0, "password_hash": 0, "verify_token_hash": 0, "reset_token_hash": 0},
     ) or user
+    # Garantir que plan está sempre presente
+    if "plan" not in full:
+        full["plan"] = "free"
+    # Considerar pro se subscrição ativa
+    sub_status = full.get("subscription_status", "none")
+    if sub_status in ("active", "trialing"):
+        full["plan"] = "pro"
     return full
 
 
@@ -185,9 +193,12 @@ async def resend_verification(payload: ResendVerificationBody):
     verify_url = f"{APP_URL}/verify-email/{token}"
     html = email_layout(
         title="Confirm your email",
-        body_html=f"Hi {me_doc.get('name') or email},<br><br>Click below to confirm your Wallet76 email. The link expires in 48 hours.",
-        cta_label="Confirm email",
-        cta_url=verify_url,
+        body_html=(
+            f"Hi {me_doc.get('name') or email},<br><br>"
+            "Please verify your Wallet76 email address:<br><br>"
+            f'<a href="{verify_url}" style="background:#16a34a;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block">Verify Email</a>'
+            "<br><br>Link expires in 48 hours."
+        ),
     )
-    asyncio.create_task(send_email(email, "Confirm your Wallet76 email", html)).add_done_callback(_log_email_task_result)
+    await send_email(email, "Confirm your Wallet76 email", html)
     return {"ok": True}

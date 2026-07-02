@@ -21,7 +21,7 @@ export function fmtNum(value, decimals = 2) {
 
 export function fmtCompact(value, currency = "USD") {
   const num = Number(value || 0);
-  const sym = currency === "EUR" ? "€" : currency === "CHF" ? "CHF " : "$";
+  const sym = currency === "EUR" ? "€" : currency === "CHF" ? "CHF " : currency === "BRL" ? "R$" : "$";
   if (Math.abs(num) >= 1_000_000) return `${sym}${(num/1_000_000).toFixed(2)}M`;
   if (Math.abs(num) >= 1_000) return `${sym}${(num/1_000).toFixed(2)}K`;
   return `${sym}${num.toFixed(2)}`;
@@ -37,9 +37,13 @@ export function convert(usdValue, currency, fxRates = {}) {
     const r = fxRates?.CHF || 0.88;
     return usdValue * r;
   }
+  if (currency === "BRL") {
+    const r = fxRates?.BRL || 5.0;
+    return usdValue * r;
+  }
   return usdValue;
 }
 
 export function curSymbol(c) {
-  return c === "EUR" ? "€" : c === "CHF" ? "CHF " : "$";
+  return c === "EUR" ? "€" : c === "CHF" ? "CHF " : c === "BRL" ? "R$" : "$";
 }

@@ -90,6 +90,13 @@ async def require_active_subscription(user: dict = Depends(get_current_user)) ->
 
     return user
 
+
+def is_pro_user(user: dict) -> bool:
+    """True if user has an active/trialing subscription or is admin."""
+    if user.get("role") == "admin":
+        return True
+    return user.get("subscription_status") in ("active", "trialing")
+
 # --- Simple in-memory cache ---
 _cache: dict = {}
 
@@ -108,9 +115,24 @@ def cache_set(key: str, data) -> None:
     _cache[key] = (datetime.now(timezone.utc), data)
 
 
+def cache_clear_prefix(prefix: str) -> int:
+    """Remove todas as entradas cuja chave começa por `prefix`. Usado quando
+    transações mudam (criar/editar/apagar/importar/reset) para invalidar de
+    imediato o cache de /history (history_all: 1h, history_intraday: 15min)
+    — sem isto, o gráfico da Dashboard continua a mostrar dados de ANTES da
+    mudança até o TTL expirar (ex.: depois de um reset de ativos de teste,
+    as gamas testadas nos 15 minutos anteriores ficavam presas ao resultado
+    antigo, mesmo com os dados novos já na DB)."""
+    keys = [k for k in _cache if k.startswith(prefix)]
+    for k in keys:
+        del _cache[k]
+    return len(keys)
+
+
 # Aliases kept for backwards compat with existing route code
 _cache_get = cache_get
 _cache_set = cache_set
+_cache_clear_prefix = cache_clear_prefix
 
 
 # --- WebAuthn helpers (used by security routes) ---
@@ -134,6 +156,8 @@ def detect_rp_id(req: Request) -> str:
 
 
 def origin_from_req(req: Request) -> str:
-    proto = req.headers.get("x-forwarded-proto") or "https"
-    host = req.headers.get("x-forwarded-host") or req.headers.get("host") or "localhost"
-    return f"{proto}://{host}"
+    """Return the expected WebAuthn origin derived from the incoming request."""
+    host = req.headers.get("host", "localhost")
+    # Strip port for comparison; browsers include it in origin
+    scheme = "https" if req.headers.get("x-forwarded-proto") == "https" else "http"
+    return f"{scheme}://{host}"

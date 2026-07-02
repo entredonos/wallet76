@@ -36,6 +36,12 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try { await api.post("/auth/logout"); } catch {}
     localStorage.removeItem("token");
+    // Clear dashboard cache so the next user doesn't see stale data
+    try {
+      Object.keys(sessionStorage)
+        .filter((k) => k.startsWith("w76_dash_"))
+        .forEach((k) => sessionStorage.removeItem(k));
+    } catch { /* noop */ }
     setUser(false);
   };
 

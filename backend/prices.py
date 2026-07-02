@@ -138,17 +138,17 @@ async def get_stock_prices(symbols: List[str]) -> dict:
 
 # --- FX rates ---
 async def get_fx_rates() -> dict:
-    """Returns { 'USD': 1.0, 'EUR': eur_per_usd, 'CHF': chf_per_usd }."""
+    """Returns { 'USD': 1.0, 'EUR': eur_per_usd, 'CHF': chf_per_usd, 'BRL': brl_per_usd }."""
     cached = _cache_get("fx:rates", ttl=600)
     if cached:
         return cached
-    rates = {"USD": 1.0, "EUR": 0.92, "CHF": 0.88}
+    rates = {"USD": 1.0, "EUR": 0.92, "CHF": 0.88, "BRL": 5.0}
     try:
         async with httpx.AsyncClient(timeout=10) as ch:
             r = await ch.get("https://open.er-api.com/v6/latest/USD")
             if r.status_code == 200:
                 data = r.json().get("rates", {})
-                for c in ("EUR", "CHF"):
+                for c in ("EUR", "CHF", "BRL"):
                     if data.get(c):
                         rates[c] = float(data[c])
     except Exception as e:
@@ -211,6 +211,74 @@ def compute_holdings_from_txns(txns: List[dict]) -> List[dict]:
                 h["quantity"] = 0
                 h["total_cost_usd"] = 0
     return list(holdings.values())
+
+
+def _yf_detect_types(symbols: List[str]) -> dict:
+    """Sync: returns { symbol: 'etf' | 'fund' | 'stock' } for each symbol."""
+    out = {}
+    if not symbols:
+        return out
+    try:
+        tickers = yf.Tickers(" ".join(symbols))
+        for sym in symbols:
+            try:
+                t = tickers.tickers.get(sym) or yf.Ticker(sym)
+                info = t.info or {}
+                qt = (info.get("quoteType") or "").upper()
+                if qt == "ETF":
+                    out[sym] = "etf"
+                elif qt in ("MUTUALFUND", "FUND"):
+                    out[sym] = "fund"
+                else:
+                    # fallback: try fast_info
+                    fi = getattr(t, "fast_info", None) or {}
+                    qt2 = (fi.get("quoteType") or fi.get("quote_type") or "").upper()
+                    if qt2 == "ETF":
+                        out[sym] = "etf"
+                    elif qt2 in ("MUTUALFUND", "FUND"):
+                        out[sym] = "fund"
+                    else:
+                        out[sym] = "stock"
+            except Exception:
+                out[sym] = "stock"
+    except Exception as e:
+        logger.warning(f"_yf_detect_types error: {e}")
+    return out
+
+
+async def detect_and_fix_equity_types(user_id: str) -> dict:
+    """
+    Check all transactions stored as    Check all transactions stored as 'stock' and update those that
+    are actually ETFs or funds in yfinance. Returns { updated: int }.
+    Cached for 1 hour per user so it doesn't re-run on every page load.
+    """
+    cache_key = f"fix_types:{user_id}"
+    if _cache_get(cache_key, ttl=3600):
+        return {"updated": 0, "cached": True}
+
+    txns = await db.transactions.find(
+        {"user_id": user_id, "asset_type": "stock"}, {"_id": 0, "symbol": 1}
+    ).to_list(5000)
+
+    symbols = list({t["symbol"].upper() for t in txns})
+    if not symbols:
+        _cache_set(cache_key, True)
+        return {"updated": 0}
+
+    detected = await asyncio.to_thread(_yf_detect_types, symbols)
+    updates = {sym: typ for sym, typ in detected.items() if typ != "stock"}
+
+    total_updated = 0
+    for sym, new_type in updates.items():
+        res = await db.transactions.update_many(
+            {"user_id": user_id, "asset_type": "stock", "symbol": sym},
+            {"$set": {"asset_type": new_type}},
+        )
+        total_updated += res.modified_count
+
+    _cache_set(cache_key, True)
+    logger.info(f"fix_asset_types user={user_id}: {total_updated} txns updated ({updates})")
+    return {"updated": total_updated, "changes": updates}
 
 
 async def migrate_legacy_assets(user_id: str):

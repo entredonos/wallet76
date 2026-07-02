@@ -6,7 +6,7 @@ import { Label } from "../components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "../components/ui/dialog";
-import { Lock, Fingerprint, ShieldOff, Check, Trash2, KeyRound } from "lucide-react";
+import { Lock, Fingerprint, ShieldOff, Check, Trash2, KeyRound, Bell, BellOff, AlertTriangle, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "../context/I18nContext";
 
@@ -35,16 +35,64 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [registeringBio, setRegisteringBio] = useState(false);
   const [subscription, setSubscription] = useState(null);
+  const [alertEmails, setAlertEmails] = useState(true);
+  const [wallets, setWallets] = useState([]);
+  const [resetModal, setResetModal] = useState(null); // { type:"wallet"|"all", walletId, walletName, code, input, loading }
+
+  const genCode = () => String(Math.floor(1000 + Math.random() * 9000));
+
+  const openReset = (type, walletId = null, walletName = null) => {
+    setResetModal({ type, walletId, walletName, code: genCode(), input: "", loading: false });
+  };
+
+  const submitReset = async () => {
+    if (!resetModal) return;
+    if (resetModal.input !== resetModal.code) {
+      toast.error(t("settings.danger_wrong_code"));
+      return;
+    }
+    setResetModal((m) => ({ ...m, loading: true }));
+    try {
+      if (resetModal.type === "wallet") {
+        await api.delete(`/transactions/wallet/${resetModal.walletId}`);
+        toast.success(t("settings.danger_success_wallet"));
+      } else {
+        await api.delete("/transactions/all");
+        toast.success(t("settings.danger_success_all"));
+      }
+      setResetModal(null);
+    } catch (e) {
+      toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Error");
+      setResetModal((m) => ({ ...m, loading: false }));
+    }
+  };
 
   const load = async () => {
     try {
-      const { data } = await api.get("/security/status");
-      setStatus(data);
-
-      const sub = await api.get("/billing/subscription-status");
-      setSubscription(sub.data);
+      const [secRes, subRes, prefsRes, wRes] = await Promise.all([
+        api.get("/security/status"),
+        api.get("/billing/subscription-status"),
+        api.get("/preferences"),
+        api.get("/wallets"),
+      ]);
+      setStatus(secRes.data);
+      setSubscription(subRes.data);
+      setAlertEmails(prefsRes.data.alert_emails !== false);
+      setWallets(wRes.data || []);
     } catch {
       /* noop */
+    }
+  };
+
+  const toggleAlertEmails = async () => {
+    const next = !alertEmails;
+    setAlertEmails(next);
+    try {
+      await api.put("/preferences", { alert_emails: next });
+      toast.success(next ? t("settings.alert_emails_on") : t("settings.alert_emails_off"));
+    } catch {
+      setAlertEmails(!next);
+      toast.error("Failed to save preference.");
     }
   };
     useEffect(() => { load(); }, []);
@@ -203,6 +251,30 @@ export default function Settings() {
         <p className="text-xs text-zinc-500 leading-relaxed">{t("settings.sync_desc")}</p>
       </div>
 
+      {/* Alert email notifications */}
+      <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-medium text-zinc-200 mb-1">{t("settings.alert_emails_title")}</div>
+            <p className="text-xs text-zinc-500">{t("settings.alert_emails_desc")}</p>
+          </div>
+          <button
+            onClick={toggleAlertEmails}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${alertEmails ? "bg-emerald-500" : "bg-zinc-700"}`}
+            aria-checked={alertEmails}
+            role="switch"
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${alertEmails ? "translate-x-6" : "translate-x-1"}`} />
+          </button>
+        </div>
+        <div className="mt-3 flex items-center gap-1.5 text-xs text-zinc-500">
+          {alertEmails
+            ? <><Bell className="w-3.5 h-3.5 text-emerald-400" /> {t("settings.alert_emails_active")}</>
+            : <><BellOff className="w-3.5 h-3.5" /> {t("settings.alert_emails_inactive")}</>
+          }
+        </div>
+      </div>
+
       <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-6">
         <div className="text-sm font-medium text-zinc-200 mb-4">
           Subscription
@@ -241,6 +313,56 @@ export default function Settings() {
             Loading subscription...
           </div>
         )}
+      </div>
+
+      {/* ── Danger Zone ─────────────────────────────────────────────── */}
+      <div className="bg-zinc-900/40 border border-rose-500/30 rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <AlertTriangle className="w-4 h-4 text-rose-400" />
+          <div className="text-sm font-medium text-rose-400">{t("settings.danger_title")}</div>
+        </div>
+        <p className="text-xs text-zinc-500 mb-5">{t("settings.danger_subtitle")}</p>
+
+        <div className="space-y-0">
+          {/* Clear a single wallet */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 border-t border-zinc-800 pt-4">
+            <div className="flex-1">
+              <div className="text-sm text-zinc-300">{t("settings.danger_clear_wallet")}</div>
+              <div className="text-xs text-zinc-500 mt-0.5">{t("settings.danger_clear_wallet_desc")}</div>
+            </div>
+            <select
+              className="bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs rounded-md px-2 py-1.5 shrink-0"
+              defaultValue=""
+              onChange={(e) => {
+                const w = wallets.find((w) => w.id === e.target.value);
+                if (w) openReset("wallet", w.id, w.name);
+                e.target.value = "";
+              }}
+            >
+              <option value="">{t("settings.danger_select_wallet")}</option>
+              {wallets.map((w) => (
+                <option key={w.id} value={w.id}>{w.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Clear all transactions */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 border-t border-zinc-800 pt-4 mt-4">
+            <div className="flex-1">
+              <div className="text-sm text-zinc-300">{t("settings.danger_clear_all")}</div>
+              <div className="text-xs text-zinc-500 mt-0.5">{t("settings.danger_clear_all_desc")}</div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openReset("all")}
+              className="shrink-0 border-rose-500/40 text-rose-400 hover:bg-rose-500/10"
+              data-testid="danger-clear-all-btn"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1.5" /> {t("settings.danger_btn_clear_all")}
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* PIN setup dialog */}
@@ -282,6 +404,49 @@ export default function Settings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Reset confirmation modal */}
+      {resetModal && (
+        <Dialog open={!!resetModal} onOpenChange={(v) => { if (!v) setResetModal(null); }}>
+          <DialogContent className="bg-zinc-950 border-zinc-800 max-w-md">
+            <DialogHeader>
+              <DialogTitle className="font-display font-light text-2xl text-rose-400">{t("settings.danger_confirm_title")}</DialogTitle>
+              <DialogDescription className="text-zinc-500 text-sm">
+                {t("settings.danger_confirm_desc")}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3">
+                <span className="font-mono text-2xl tracking-[0.3em] text-zinc-100">{resetModal.code}</span>
+                <button
+                  onClick={() => navigator.clipboard?.writeText(resetModal.code)}
+                  className="text-zinc-500 hover:text-zinc-200 transition-colors"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+              <Input
+                value={resetModal.input}
+                onChange={(e) => setResetModal((m) => ({ ...m, input: e.target.value }))}
+                placeholder={t("settings.danger_confirm_placeholder")}
+                className="bg-zinc-900/50 border-zinc-800 font-mono text-center tracking-[0.3em]"
+                data-testid="danger-confirm-input"
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setResetModal(null)} className="bg-zinc-900/50 border-zinc-800 text-zinc-300">{t("common.cancel")}</Button>
+              <Button
+                onClick={submitReset}
+                disabled={resetModal.loading || resetModal.input !== resetModal.code}
+                className="bg-rose-600 hover:bg-rose-500 text-white border-0"
+                data-testid="danger-confirm-submit"
+              >
+                {resetModal.loading ? t("common.saving") : (resetModal.type === "wallet" ? t("settings.danger_btn_clear_wallet") : t("settings.danger_btn_clear_all"))}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

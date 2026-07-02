@@ -51,7 +51,7 @@ async def search_stock(q: str):
             async with httpx.AsyncClient(timeout=10, headers={"User-Agent": "Mozilla/5.0"}) as ch:
                 r = await ch.get(
                     "https://query2.finance.yahoo.com/v1/finance/search",
-                    params={"q": term, "quotesCount": 10, "newsCount": 0},
+                    params={"q": term, "quotesCount": 15, "newsCount": 0},
                 )
                 if r.status_code != 200:
                     return []
@@ -61,7 +61,8 @@ async def search_stock(q: str):
                     if not sym:
                         continue
                     qtype = (qq.get("quoteType") or "").upper()
-                    if qtype not in ("EQUITY", "ETF", "MUTUALFUND", ""):
+                    # Accept equities, ETFs, funds, and unknown types
+                    if qtype in ("CRYPTOCURRENCY", "CURRENCY", "INDEX", "FUTURE", "OPTION"):
                         continue
                     out.append({
                         "symbol": sym,
@@ -76,26 +77,41 @@ async def search_stock(q: str):
 
     results = await _yahoo_search(query)
 
+    # Variant search (e.g. "3dVELO" -> "velo 3d", "velo3d", "velo", etc.)
     if not results:
         cleaned = re.sub(r"[^a-zA-Z0-9]", "", query).lower()
-        variants = set()
+        variants = []  # ordered list — most specific first
         if cleaned and cleaned != query.lower():
-            variants.add(cleaned)
-        m = re.match(r"^3d(.+)$", cleaned)
+            variants.append(cleaned)
+        # number-prefix patterns: "3dvelo" -> "velo", "velo3d", "velo 3d"
+        # treat "3d" as a unit (digit + optional trailing letter like d/k/m)
+        m = re.match(r"^(\d+[a-z]?)([a-z].+)$", cleaned)
         if m:
-            variants.add(f"{m.group(1)} 3d")
-            variants.add(f"{m.group(1)}3d")
-        m = re.match(r"^(.+)3d$", cleaned)
+            num, word = m.group(1), m.group(2)
+            variants += [word, f"{word}{num}", f"{word} {num}"]
+        # number-suffix patterns: "velo3d" -> "velo", "3dvelo", "3d velo"
+        m = re.match(r"^([a-z].+?)(\d+[a-z]?)$", cleaned)
         if m:
-            variants.add(f"3d{m.group(1)}")
-            variants.add(f"3d {m.group(1)}")
+            word, num = m.group(1), m.group(2)
+            variants += [word, f"{num}{word}", f"{num} {word}"]
+        # pure alphabetic portion as last resort
+        alpha = re.sub(r"[^a-z]", "", cleaned)
+        if alpha and alpha not in variants and len(alpha) >= 2:
+            variants.append(alpha)
+        seen = set()
         for v in variants:
+            if v in seen:
+                continue
+            seen.add(v)
             results = await _yahoo_search(v)
             if results:
                 break
 
+    # Direct ticker lookup — plain + European exchange suffixes
     if not results:
         sym = query.upper()
+        EU_SUFFIXES = ["", ".PA", ".MI", ".L", ".DE", ".AS", ".BR", ".MC", ".SW",
+                       ".VI", ".LS", ".OL", ".CO", ".ST", ".HE", ".WA", ".AT"]
 
         def _info(s):
             try:
@@ -104,21 +120,73 @@ async def search_stock(q: str):
                 price = fi.get("last_price") or fi.get("lastPrice")
                 if not price:
                     return None
-                return {"symbol": s, "name": s, "exchange": "", "type": "EQUITY", "price": float(price)}
+                try:
+                    name = (t.info or {}).get("longName") or (t.info or {}).get("shortName") or s
+                except Exception:
+                    name = s
+                return {
+                    "symbol": s,
+                    "name": name,
+                    "exchange": fi.get("exchange") or "",
+                    "type": "EQUITY",
+                    "price": float(price),
+                }
             except Exception:
                 return None
 
-        info = await asyncio.to_thread(_info, sym)
-        if info:
-            results = [info]
+        for sfx in EU_SUFFIXES:
+            r = await asyncio.to_thread(_info, sym + sfx)
+            if r:
+                results = [r]
+                break
 
     if results:
-        top_syms = [r["symbol"] for r in results[:5]]
-        prices = await asyncio.to_thread(_yf_fetch, top_syms)
-        for r in results:
-            p = prices.get(r["symbol"], {})
-            if p.get("usd"):
-                r["price"] = float(p["usd"])
+        _cache_set(cache_key, results)
+    return results[:10]
 
-    _cache_set(cache_key, results)
-    return results
+
+@router.get("/search")
+async def search_unified(q: str):
+    """Unified search — stocks + crypto in parallel, deduped by symbol."""
+    query = q.strip()
+    if len(query) < 1:
+        return []
+    cache_key = f"search_unified:{query.lower()}"
+    cached = _cache_get(cache_key, ttl=180)
+    if cached:
+        return cached
+
+    stocks_task = search_stock(query)
+    crypto_task = search_crypto(query)
+    stocks, crypto = await asyncio.gather(stocks_task, crypto_task, return_exceptions=True)
+
+    if isinstance(stocks, Exception):
+        stocks = []
+    if isinstance(crypto, Exception):
+        crypto = []
+
+    # Normalize crypto items to same shape as stocks
+    crypto_norm = [
+        {
+            "symbol": c["symbol"],
+            "name": c["name"],
+            "exchange": "Crypto",
+            "type": "CRYPTOCURRENCY",
+            "thumb": c.get("thumb"),
+            "crypto_id": c.get("id"),
+        }
+        for c in (crypto or [])
+    ]
+
+    # Merge: stocks first, then crypto — skip crypto symbols already in stocks
+    seen = {r["symbol"].upper() for r in (stocks or [])}
+    merged = list(stocks or [])
+    for c in crypto_norm:
+        if c["symbol"].upper() not in seen:
+            merged.append(c)
+            seen.add(c["symbol"].upper())
+
+    result = merged[:12]
+    if result:
+        _cache_set(cache_key, result)
+    return result

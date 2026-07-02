@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@/index.css";
 import App from "@/App";
+import { register as registerSW } from "./serviceWorkerRegistration";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,3 +22,6 @@ root.render(
     </QueryClientProvider>
   </React.StrictMode>,
 );
+
+// Register service worker for PWA (offline support + installability)
+registerSW();

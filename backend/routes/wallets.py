@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import yfinance as yf
 from fastapi import APIRouter, HTTPException, Depends
 
-from core import db, get_current_user, require_active_subscription, _cache_get, _cache_set
+from core import db, get_current_user, require_active_subscription, is_pro_user, _cache_get, _cache_set
 from models import WalletCreate, WalletUpdate
 from prices import compute_holdings_from_txns
 
@@ -14,8 +14,8 @@ router = APIRouter()
 
 
 @router.get("/wallets/sparklines")
-async def get_wallets_sparklines(user=Depends(require_active_subscription)):
-    """Returns {wallet_id: [last 7 daily portfolio totals]} from holdings × 7d closes."""
+async def get_wallets_sparklines(user=Depends(get_current_user)):
+    """Returns {wallet_id: [last 30 daily portfolio totals]} from holdings x 30d closes."""
     cache_key = f"wallet_sparks:{user['id']}"
     cached = _cache_get(cache_key, ttl=900)
     if cached:
@@ -33,24 +33,24 @@ async def get_wallets_sparklines(user=Depends(require_active_subscription)):
         key = (h["asset_type"], h["symbol"].upper(), h.get("coingecko_id"))
         asset_keys.setdefault(key, []).append((h["wallet_id"], h["quantity"]))
 
-    def _fetch_7d_closes(asset_type, symbol, cgid):
+    def _fetch_30d_closes(asset_type, symbol, cgid):
         yf_sym = f"{symbol}-USD" if asset_type == "crypto" else symbol
-        ck = f"sparkw7d:{asset_type}:{symbol}"
+        ck = f"sparkw30d:{asset_type}:{symbol}"
         c = _cache_get(ck, ttl=3600)
         if c is not None:
             return c
         closes = []
         try:
-            hist = yf.Ticker(yf_sym).history(period="8d", interval="1d")
+            hist = yf.Ticker(yf_sym).history(period="32d", interval="1d")
             if not hist.empty:
-                closes = [float(x) for x in hist["Close"].dropna().tolist()][-7:]
+                closes = [float(x) for x in hist["Close"].dropna().tolist()][-30:]
         except Exception:
             closes = []
         _cache_set(ck, closes)
         return closes
 
     futures = [
-        asyncio.to_thread(_fetch_7d_closes, k[0], k[1], k[2])
+        asyncio.to_thread(_fetch_30d_closes, k[0], k[1], k[2])
         for k in asset_keys.keys()
     ]
     closes_all = await asyncio.gather(*futures)
@@ -72,12 +72,16 @@ async def get_wallets_sparklines(user=Depends(require_active_subscription)):
 
 
 @router.get("/wallets")
-async def list_wallets(user=Depends(require_active_subscription)):
+async def list_wallets(user=Depends(get_current_user)):
     return await db.wallets.find({"user_id": user["id"]}, {"_id": 0}).to_list(500)
 
 
 @router.post("/wallets")
-async def create_wallet(payload: WalletCreate, user=Depends(require_active_subscription)):
+async def create_wallet(payload: WalletCreate, user=Depends(get_current_user)):
+    if not is_pro_user(user):
+        count = await db.wallets.count_documents({"user_id": user["id"]})
+        if count >= 1:
+            raise HTTPException(402, detail={"reason": "wallet_limit", "limit": 1})
     doc = {
         "id": str(uuid.uuid4()),
         "user_id": user["id"],
@@ -93,7 +97,7 @@ async def create_wallet(payload: WalletCreate, user=Depends(require_active_subsc
 
 
 @router.patch("/wallets/{wallet_id}")
-async def update_wallet(wallet_id: str, payload: WalletUpdate, user=Depends(require_active_subscription)):
+async def update_wallet(wallet_id: str, payload: WalletUpdate, user=Depends(get_current_user)):
     upd = {k: v for k, v in payload.model_dump().items() if v is not None}
     if not upd:
         raise HTTPException(400, "Nothing to update")
@@ -104,7 +108,7 @@ async def update_wallet(wallet_id: str, payload: WalletUpdate, user=Depends(requ
 
 
 @router.delete("/wallets/{wallet_id}")
-async def delete_wallet(wallet_id: str, user=Depends(require_active_subscription)):
+async def delete_wallet(wallet_id: str, user=Depends(get_current_user)):
     await db.assets.delete_many({"wallet_id": wallet_id, "user_id": user["id"]})
     await db.transactions.delete_many({"wallet_id": wallet_id, "user_id": user["id"]})
     res = await db.wallets.delete_one({"id": wallet_id, "user_id": user["id"]})

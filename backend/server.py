@@ -1,4 +1,5 @@
 """Wallet76 FastAPI entry point — thin router orchestration."""
+import asyncio
 import os
 
 from fastapi import FastAPI, APIRouter
@@ -6,6 +7,8 @@ from starlette.middleware.cors import CORSMiddleware
 from routes import billing as billing_routes
 
 from core import db, client, logger  # noqa: F401  (loads .env via core import)
+from alert_checker import run_alert_checker
+from routes.portfolio import run_snapshot_scheduler
 from routes import (
     auth as auth_routes,
     wallets as wallets_routes,
@@ -18,6 +21,12 @@ from routes import (
     news as news_routes,
     preferences as preferences_routes,
     security as security_routes,
+    share as share_routes,
+    brokers as broker_routes,
+    asset as asset_routes,
+    analytics as analytics_routes,
+    feedback as feedback_routes,
+    allocation as allocation_routes,
 )
 
 app = FastAPI(title="Wallet76 API")
@@ -46,6 +55,12 @@ for sub in (
     news_routes,
     preferences_routes,
     security_routes,
+    share_routes,
+    broker_routes,
+    asset_routes,
+    analytics_routes,
+    feedback_routes,
+    allocation_routes,
 ):
     api_router.include_router(sub.router)
 
@@ -70,32 +85,44 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-print("\n=== ROUTES ===")
-for r in app.routes:
-    print(r.path)
-print("==============\n")
 
 @app.on_event("startup")
 async def startup():
-    await db.users.create_index("email", unique=True)
-    await db.users.create_index("verify_token_hash", sparse=True)
-    await db.users.create_index("reset_token_hash", sparse=True)
-    await db.wallets.create_index([("user_id", 1)])
-    await db.transactions.create_index([("user_id", 1), ("wallet_id", 1)])
-    await db.transactions.create_index([("user_id", 1), ("date", -1)])
+    async def _idx(*args, **kwargs):
+        try:
+            await args[0].create_index(*args[1:], **kwargs)
+        except Exception as e:
+            logger.debug(f"Index already exists (skipping): {e}")
+
     try:
         await db.snapshots.drop_index("user_id_1_date_1")
     except Exception:
         pass
-    await db.snapshots.create_index([("user_id", 1), ("bucket_ts", 1)], unique=True, sparse=True)
-    await db.alerts.create_index([("user_id", 1), ("active", 1)])
-    await db.watchlists.create_index([("user_id", 1)])
-    await db.watchlists.create_index([("user_id", 1), ("group_id", 1)])
-    await db.watchlist_groups.create_index([("user_id", 1)])
-    await db.user_prefs.create_index([("user_id", 1)], unique=True)
-    await db.user_security.create_index([("user_id", 1)], unique=True)
+
+    await _idx(db.users, "email", unique=True)
+    await _idx(db.users, "verify_token_hash", sparse=True)
+    await _idx(db.users, "reset_token_hash", sparse=True)
+    await _idx(db.wallets, [("user_id", 1)])
+    await _idx(db.transactions, [("user_id", 1), ("wallet_id", 1)])
+    await _idx(db.transactions, [("user_id", 1), ("date", -1)])
+    await _idx(db.snapshots, [("user_id", 1), ("bucket_ts", 1)], unique=True, sparse=True)
+    await _idx(db.alerts, [("user_id", 1), ("active", 1)])
+    await _idx(db.watchlists, [("user_id", 1)])
+    await _idx(db.watchlists, [("user_id", 1), ("group_id", 1)])
+    await _idx(db.watchlist_groups, [("user_id", 1)])
+    await _idx(db.user_prefs, [("user_id", 1)], unique=True)
+    await _idx(db.allocation_prefs, [("user_id", 1)], unique=True)
+    await _idx(db.share_links, [("user_id", 1)])
+    await _idx(db.share_links, [("slug", 1)], unique=True, sparse=True)
+    logger.info("MongoDB indexes ensured.")
+
+    # Keeps portfolio snapshot history growing every 15 min for every user,
+    # independent of whether anyone has the app open (see run_snapshot_scheduler
+    # docstring in routes/portfolio.py).
+    asyncio.create_task(run_snapshot_scheduler())
+
+    # Was previously imported but never started — price alerts (and their
+    # email notifications) were not actually being checked periodically.
+    asyncio.create_task(run_alert_checker())
 
 
-@app.on_event("shutdown")
-async def shutdown():
-    client.close()

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth, formatApiErrorDetail } from "../context/AuthContext";
 import { useI18n } from "../context/I18nContext";
-import { api } from "../lib/api";
+import { api, isNetworkError } from "../lib/api";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -31,7 +31,7 @@ export default function Register() {
       await register(email, password, name);
       setDone(true);
     } catch (e2) {
-      setErr(formatApiErrorDetail(e2.response?.data?.detail) || e2.message);
+      setErr(isNetworkError(e2) ? t("errors.network") : (formatApiErrorDetail(e2.response?.data?.detail) || e2.message));
     } finally {
       setLoading(false);
     }

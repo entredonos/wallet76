@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends
 
-from core import db, get_current_user, require_active_subscription, _cache_get, _cache_set
+from core import db, get_current_user, require_active_subscription, is_pro_user, _cache_get, _cache_set, _cache_clear_prefix
 from models import TransactionCreate, TransactionUpdate
 from prices import compute_holdings_from_txns, migrate_legacy_assets, get_fx_rates
 
@@ -12,12 +12,19 @@ router = APIRouter()
 
 
 @router.get("/transactions")
-async def list_transactions(user=Depends(require_active_subscription)):
+async def list_transactions(user=Depends(get_current_user)):
     return await db.transactions.find({"user_id": user["id"]}, {"_id": 0}).sort("date", -1).to_list(5000)
 
 
 @router.post("/transactions")
-async def create_transaction(payload: TransactionCreate, user=Depends(require_active_subscription)):
+async def create_transaction(payload: TransactionCreate, user=Depends(get_current_user)):
+    if not is_pro_user(user):
+        txns = await db.transactions.find({"user_id": user["id"]}, {"_id": 0}).to_list(5000)
+        holdings = compute_holdings_from_txns(txns)
+        active_symbols = {h["symbol"] for h in holdings if h.get("quantity", 0) > 0}
+        new_sym = payload.symbol.upper().strip()
+        if new_sym not in active_symbols and len(active_symbols) >= 10:
+            raise HTTPException(402, detail={"reason": "asset_limit", "limit": 10})
     wallet = await db.wallets.find_one({"id": payload.wallet_id, "user_id": user["id"]})
     if not wallet:
         raise HTTPException(404, "Wallet not found")
@@ -44,30 +51,60 @@ async def create_transaction(payload: TransactionCreate, user=Depends(require_ac
     }
     await db.transactions.insert_one(doc)
     doc.pop("_id", None)
+    _cache_clear_prefix(f"history_all:{user['id']}:")
+    _cache_clear_prefix(f"history_intraday:{user['id']}:")
     return doc
 
 
 @router.patch("/transactions/{txn_id}")
-async def update_transaction(txn_id: str, payload: TransactionUpdate, user=Depends(require_active_subscription)):
+async def update_transaction(txn_id: str, payload: TransactionUpdate, user=Depends(get_current_user)):
     upd = {k: v for k, v in payload.model_dump().items() if v is not None}
     if not upd:
         raise HTTPException(400, "Nothing to update")
     res = await db.transactions.update_one({"id": txn_id, "user_id": user["id"]}, {"$set": upd})
     if res.matched_count == 0:
         raise HTTPException(404, "Transaction not found")
+    _cache_clear_prefix(f"history_all:{user['id']}:")
+    _cache_clear_prefix(f"history_intraday:{user['id']}:")
     return await db.transactions.find_one({"id": txn_id}, {"_id": 0})
 
 
 @router.delete("/transactions/{txn_id}")
-async def delete_transaction(txn_id: str, user=Depends(require_active_subscription)):
+async def delete_transaction(txn_id: str, user=Depends(get_current_user)):
     res = await db.transactions.delete_one({"id": txn_id, "user_id": user["id"]})
     if res.deleted_count == 0:
         raise HTTPException(404, "Transaction not found")
+    _cache_clear_prefix(f"history_all:{user['id']}:")
+    _cache_clear_prefix(f"history_intraday:{user['id']}:")
     return {"ok": True}
 
 
+@router.delete("/transactions/wallet/{wallet_id}")
+async def clear_wallet_transactions(wallet_id: str, user=Depends(get_current_user)):
+    """Delete all transactions for a specific wallet (keeps the wallet itself)."""
+    wallet = await db.wallets.find_one({"id": wallet_id, "user_id": user["id"]})
+    if not wallet:
+        raise HTTPException(404, "Wallet not found")
+    res = await db.transactions.delete_many({"wallet_id": wallet_id, "user_id": user["id"]})
+    # Also clear snapshots so they don't skew portfolio history
+    await db.snapshots.delete_many({"user_id": user["id"]})
+    _cache_clear_prefix(f"history_all:{user['id']}:")
+    _cache_clear_prefix(f"history_intraday:{user['id']}:")
+    return {"ok": True, "deleted": res.deleted_count}
+
+
+@router.delete("/transactions/all")
+async def clear_all_transactions(user=Depends(get_current_user)):
+    """Delete ALL transactions for the current user (keeps wallets)."""
+    res = await db.transactions.delete_many({"user_id": user["id"]})
+    await db.snapshots.delete_many({"user_id": user["id"]})
+    _cache_clear_prefix(f"history_all:{user['id']}:")
+    _cache_clear_prefix(f"history_intraday:{user['id']}:")
+    return {"ok": True, "deleted": res.deleted_count}
+
+
 @router.get("/holdings")
-async def get_holdings(user=Depends(require_active_subscription)):
+async def get_holdings(user=Depends(get_current_user)):
     await migrate_legacy_assets(user["id"])
     txns = await db.transactions.find({"user_id": user["id"]}, {"_id": 0}).to_list(5000)
     return compute_holdings_from_txns(txns)
@@ -94,12 +131,12 @@ async def import_transactions(payload: dict, user=Depends(get_current_user)):
             if ttype not in ("BUY", "SELL"):
                 raise ValueError(f"invalid type: {ttype}")
             currency = (r.get("currency") or wallet_currency).upper()
-            if currency not in ("USD", "EUR", "CHF"):
+            if currency not in ("USD", "EUR", "GBP", "CHF", "JPY", "BRL", "CAD", "AUD"):
                 currency = wallet_currency
             fx_to_usd = 1.0 / fx_rates.get(currency, 1.0)
             asset_type = (r.get("asset_type") or "crypto").lower()
-            if asset_type not in ("crypto", "stock"):
-                asset_type = "crypto"
+            if asset_type not in ("crypto", "stock", "etf", "fund", "bond", "cash", "reit"):
+                asset_type = "stock"  # default for unknown equity types
             qty = float(r.get("quantity") or 0)
             price = float(r.get("price") or 0)
             if qty <= 0 or price < 0:
@@ -119,12 +156,14 @@ async def import_transactions(payload: dict, user=Depends(get_current_user)):
                 "fee": float(r.get("fee") or 0),
                 "currency": currency,
                 "fx_to_usd": fx_to_usd,
-                "notes": r.get("notes") or "CSV import",
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "_imported": True,
             })
         except Exception as e:
-            errors.append({"row": i + 1, "error": str(e), "data": r})
+            errors.append({"row": i, "error": str(e)})
+            continue
+
     if docs:
         await db.transactions.insert_many(docs)
+        _cache_clear_prefix(f"history_all:{user['id']}:")
+        _cache_clear_prefix(f"history_intraday:{user['id']}:")
+
     return {"imported": len(docs), "errors": errors}

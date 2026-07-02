@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth, formatApiErrorDetail } from "../context/AuthContext";
 import { useI18n } from "../context/I18nContext";
-import { api } from "../lib/api";
+import { api, isNetworkError } from "../lib/api";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -30,12 +30,14 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      nav("/");
+      nav("/dashboard");
     } catch (e2) {
       const detail = e2.response?.data?.detail;
       if (detail && typeof detail === "object" && detail.code === "email_not_verified") {
         setNeedsVerify(true);
         setErr(detail.message || "Please verify your email before signing in.");
+      } else if (isNetworkError(e2)) {
+        setErr(t("errors.network"));
       } else {
         setErr(formatApiErrorDetail(detail) || e2.message);
       }
@@ -151,6 +153,10 @@ export default function Login() {
           <Link to="/register" className="text-zinc-200 hover:text-white underline underline-offset-4" data-testid="link-register">
             {t("auth.create_account")}
           </Link>
+        </div>
+        <div className="mt-4 flex gap-4 text-xs text-zinc-600">
+          <Link to="/privacy" className="hover:text-zinc-400 transition-colors">Privacy Policy</Link>
+          <Link to="/terms" className="hover:text-zinc-400 transition-colors">Terms of Service</Link>
         </div>
       </div>
     </div>

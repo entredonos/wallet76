@@ -19,6 +19,7 @@ async def get_preferences(user=Depends(get_current_user)):
         "privacy_hidden": bool(doc.get("privacy_hidden", False)),
         "dash_cols": doc.get("dash_cols") or [],
         "watch_cols": doc.get("watch_cols") or [],
+        "alert_emails": bool(doc.get("alert_emails", True)),
     }
 
 
@@ -30,7 +31,7 @@ async def put_preferences(payload: UserPrefsUpdate, user=Depends(get_current_use
     update["updated_at"] = datetime.now(timezone.utc).isoformat()
     await db.user_prefs.update_one(
         {"user_id": user["id"]},
-        {"$set": {**update, "user_id": user["id"]}},
+        {"$set": dict(**update, user_id=user["id"])},
         upsert=True,
     )
     return {"ok": True}

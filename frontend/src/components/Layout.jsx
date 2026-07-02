@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -6,10 +6,13 @@ import { useI18n, LANGUAGES } from "../context/I18nContext";
 import { api } from "../lib/api";
 import {
   TrendingUp, LogOut, Wallet as WalletIcon, LayoutDashboard, Receipt, Bell,
-  Briefcase, Coins, Plus, Menu, X, Sun, Moon, Eye, Newspaper, Languages, LineChart, Settings,
+  Briefcase, Coins, Plus, Menu, X, Sun, Moon, Eye, Newspaper, Languages, LineChart, Settings, Link2, Globe, Search, BarChart2, ShieldCheck,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import walletLogo from "../assets/wallet76-logo80x60.png";
+import GlobalSearch from "./GlobalSearch";
+import Sparkline from "./Sparkline";
+import FeedbackWidget from "./FeedbackWidget";
 
 const TYPE_ICON = { broker: Briefcase, exchange: Coins, wallet: WalletIcon };
 
@@ -24,34 +27,60 @@ export default function Layout({ children, currency, setCurrency }) {
   const [alertCount, setAlertCount] = useState(0);
   const [walletStats, setWalletStats] = useState({}); // { [wallet_id]: { value, cost, pnl, pnlPct } }
   const [walletSparks, setWalletSparks] = useState({}); // { [wallet_id]: [number...7] }
+  const [searchOpen, setSearchOpen] = useState(false);
   const [open, setOpen] = useState(false);
+  const [unreadFeedback, setUnreadFeedback] = useState(0);
+
+  // Poll unread feedback count (admin only)
+  useEffect(() => {
+    if (user?.email !== "entredonos@gmail.com") return;
+    const fetch = () => api.get("/feedback/unread-count").then(r => setUnreadFeedback(r.data?.count || 0)).catch(() => {});
+    fetch();
+    const tid = setInterval(fetch, 30000);
+    return () => clearInterval(tid);
+  }, [user?.email]);
+
+  // Cmd/Ctrl+K shortcut
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   useEffect(() => {
     let cancel = false;
     const load = async () => {
       try {
-        const [w, a, wl, p, sp] = await Promise.all([
+        const [w, a, wl, p] = await Promise.all([
           api.get("/wallets"),
           api.get("/alerts"),
           api.get("/watchlists"),
           api.get("/portfolio"),
-          api.get("/wallets/sparklines"),
         ]);
         if (cancel) return;
         setWallets(w.data || []);
         setAlertCount((a.data || []).filter((x) => x.active).length);
         setWatchlist(wl.data || []);
-        setWalletSparks(sp.data || {});
+        // Sparklines optional — subscription gated, don't block main load
+        api.get("/wallets/sparklines").then(r => setWalletSparks(r.data || {})).catch(() => {});
         // Per-wallet PnL aggregation
         const stats = {};
         (p.data?.assets || []).forEach((it) => {
           const id = it.wallet_id;
           if (!id) return;
           if (!stats[id]) stats[id] = { value: 0, cost: 0, pnl: 0 };
-          stats[id].value += it.value_usd || 0;
-          stats[id].cost += (it.avg_cost_usd || 0) * (it.quantity || 0);
-          stats[id].pnl += it.pnl_usd || 0;
-        });
+          const value = Number(it.value_usd ?? 0);
+          const cost = Number(it.cost_usd ?? ((it.avg_cost_usd || 0) * (it.quantity || 0)));
+          const pnl = Number(it.pnl_usd ?? (value - cost));
+
+          stats[id].value += value;
+          stats[id].cost += cost;
+          stats[id].pnl += pnl;        });
         Object.keys(stats).forEach((id) => {
           stats[id].pnlPct = stats[id].cost > 0 ? (stats[id].pnl / stats[id].cost) * 100 : 0;
         });
@@ -68,19 +97,38 @@ export default function Layout({ children, currency, setCurrency }) {
       isActive ? "bg-zinc-800/80 text-zinc-50" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
     }`;
 
+  const sidebarParams = new URLSearchParams(loc.search);
+  const selectedWalletId = sidebarParams.get("wallet");
   const Sidebar = (
+      
     <aside className="w-full md:w-64 lg:w-72 bg-zinc-950 md:border-r border-zinc-800/50 flex flex-col h-full">
-      <div className="px-5 py-5 flex items-center gap-3 border-b border-zinc-800/50">
+      <Link
+        to="/dashboard"
+        onClick={() => setOpen(false)}
+        className="px-5 py-5 flex items-center gap-3 border-b border-zinc-800/50 hover:bg-zinc-900/40 transition-colors"
+        data-testid="sidebar-logo-home"
+      >
         <img src={walletLogo} alt="Wallet76" className="w-12 h-12 object-contain" />
-        <div>
-          
+        <div className="flex-1 min-w-0">
           <div className="font-display text-base text-zinc-100">Wallet76</div>
           <div className="text-[10px] font-mono uppercase tracking-[0.25em] text-zinc-500">v1.0</div>
         </div>
+      </Link>
+
+      {/* Search bar */}
+      <div className="px-3 pt-3 pb-1">
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300 transition-colors text-sm font-mono"
+        >
+          <Search className="w-4 h-4 shrink-0" />
+          <span className="flex-1 text-left text-xs">{t("nav.asset_search") || "Info Ativos..."}</span>
+          <kbd className="hidden lg:block text-[9px] border border-zinc-700 rounded px-1 py-0.5">⌘K</kbd>
+        </button>
       </div>
 
-      <nav className="px-3 py-4 space-y-1">
-        <NavLink to="/" end className={linkCls} data-testid="nav-dashboard" onClick={() => setOpen(false)}>
+      <nav className="px-3 py-2 space-y-1">
+        <NavLink to="/dashboard" className={linkCls} data-testid="nav-dashboard" onClick={() => setOpen(false)}>
           <LayoutDashboard className="w-4 h-4" /> {t("nav.dashboard")}
         </NavLink>
         <NavLink to="/transactions" className={linkCls} data-testid="nav-transactions" onClick={() => setOpen(false)}>
@@ -94,7 +142,11 @@ export default function Layout({ children, currency, setCurrency }) {
           )}
         </NavLink>
         <NavLink to="/wallets" className={linkCls} data-testid="nav-wallets" onClick={() => setOpen(false)}>
-          <WalletIcon className="w-4 h-4" /> {t("nav.wallets")}
+          <WalletIcon className="w-4 h-4" />
+          <span>{t("nav.wallets")}</span>
+          {wallets.length > 0 && (
+            <span className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">{wallets.length}</span>
+          )}
         </NavLink>
         <NavLink to="/watchlist" className={linkCls} data-testid="nav-watchlist" onClick={() => setOpen(false)}>
           <Eye className="w-4 h-4" />
@@ -109,6 +161,12 @@ export default function Layout({ children, currency, setCurrency }) {
         <NavLink to="/market" className={linkCls} data-testid="nav-market" onClick={() => setOpen(false)}>
           <LineChart className="w-4 h-4" /> {t("nav.market")}
         </NavLink>
+        <NavLink to="/analytics" className={linkCls} data-testid="nav-analytics" onClick={() => setOpen(false)}>
+          <BarChart2 className="w-4 h-4" /> {t("nav.analytics")}
+        </NavLink>
+        <NavLink to="/connected-accounts" className={linkCls} data-testid="nav-brokers" onClick={() => setOpen(false)}>
+          <Link2 className="w-4 h-4" /> {t("nav.brokers")}
+        </NavLink>
         <NavLink to="/settings" className={linkCls} data-testid="nav-settings" onClick={() => setOpen(false)}>
           <Settings className="w-4 h-4" /> {t("nav.settings")}
         </NavLink>
@@ -121,6 +179,29 @@ export default function Layout({ children, currency, setCurrency }) {
         </Link>
       </div>
       <div className="px-3 space-y-1 overflow-y-auto flex-1">
+        {/* "All portfolios" global entry */}
+        {wallets.length > 0 && (() => {
+          const isGlobal = !selectedWalletId;
+          return (
+            <Link
+              to="/dashboard"
+              onClick={() => setOpen(false)}
+              className={`relative flex items-center gap-2 pl-4 pr-3 py-2 rounded-md text-sm transition-colors ${
+                isGlobal
+                  ? "bg-blue-500/20 text-white border border-blue-400/60 shadow-[0_0_0_1px_rgba(96,165,250,0.15)]"
+                  : "text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/40 border border-transparent"
+              }`}
+              data-testid="sidebar-wallet-global"
+            >
+              {isGlobal && <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-blue-300" />}
+              <Globe className={`w-4 h-4 shrink-0 ${isGlobal ? "text-blue-300" : "text-zinc-500"}`} />
+              <span className="truncate min-w-0 flex-1 text-xs font-mono uppercase tracking-wider">
+                {t("common.all_portfolios")}
+              </span>
+            </Link>
+          );
+        })()}
+
         {wallets.length === 0 && (
           <div className="px-3 py-2 text-xs text-zinc-600 font-mono">No wallets yet</div>
         )}
@@ -128,21 +209,37 @@ export default function Layout({ children, currency, setCurrency }) {
           const Icon = TYPE_ICON[w.type] || WalletIcon;
           const st = walletStats[w.id];
           const pnlPct = st?.pnlPct;
+          const sparkData = (walletSparks[w.id] || []).map(p => ({ p }));
+          // Color based on 7-day direction; fall back to overall PnL if no spark data
+          const sparkPos = sparkData.length >= 2
+            ? sparkData[sparkData.length - 1].p >= sparkData[0].p
+            : (pnlPct || 0) >= 0;
           const pos = (pnlPct || 0) >= 0;
-          const sparkData = walletSparks[w.id] || [];
+          const activeWallet = selectedWalletId === w.id;
           return (
             <Link
               key={w.id}
-              to={`/?wallet=${w.id}`}
+              to={`/dashboard?wallet=${w.id}`}
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/40 transition-colors"
+                className={`relative flex items-center gap-2 pl-4 pr-3 py-2 rounded-md text-sm transition-colors ${
+                  activeWallet
+                  ? "bg-blue-500/20 text-white border border-blue-400/60 shadow-[0_0_0_1px_rgba(96,165,250,0.15)]"
+                  : "text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/40 border border-transparent"
+              }`}
               data-testid={`sidebar-wallet-${w.id}`}
             >
-              <Icon className="w-4 h-4 text-zinc-500 shrink-0" />
-              <span className="truncate min-w-0 flex-1">{w.name}</span>
-              {sparkData.length >= 2 && (
-                <MiniSpark data={sparkData} positive={pos} testId={`wallet-spark-${w.id}`}/>
+              {activeWallet && (
+                <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-blue-300" />
               )}
+
+              <Icon className={`w-4 h-4 shrink-0 ${activeWallet ? "text-blue-300" : "text-zinc-500"}`} />
+
+              <span className="truncate min-w-0 flex-1">{w.name}</span>
+
+              {sparkData.length >= 2 && (
+                <Sparkline data={sparkData} positive={sparkPos} />
+              )}
+
               {pnlPct !== undefined && st.cost > 0 ? (
                 <span
                   className={`text-[10px] font-mono px-1.5 py-0.5 rounded border shrink-0 ${
@@ -153,10 +250,13 @@ export default function Layout({ children, currency, setCurrency }) {
                   data-testid={`sidebar-wallet-pnl-${w.id}`}
                   title={`${pos ? "+" : ""}${pnlPct.toFixed(2)}%`}
                 >
-                  {pos ? "+" : ""}{pnlPct.toFixed(1)}%
+                  {pos ? "+" : ""}
+                  {pnlPct.toFixed(1)}%
                 </span>
               ) : (
-                <span className="text-[10px] font-mono text-zinc-600 shrink-0">{w.currency || "USD"}</span>
+                <span className="text-[10px] font-mono text-zinc-600 shrink-0">
+                  {w.currency || "USD"}
+                </span>
               )}
             </Link>
           );
@@ -167,7 +267,7 @@ export default function Layout({ children, currency, setCurrency }) {
         <div className="flex items-center gap-2 mb-3">
           {setCurrency && (
             <div className="flex border border-zinc-800 rounded-md overflow-hidden" data-testid="currency-toggle">
-              {["USD", "EUR", "CHF"].map((c) => (
+              {["USD", "EUR", "CHF", "BRL"].map((c) => (
                 <button
                   key={c}
                   onClick={() => setCurrency(c)}
@@ -204,10 +304,33 @@ export default function Layout({ children, currency, setCurrency }) {
           </select>
         </div>
 
+        {user?.email === "entredonos@gmail.com" && (
+          <NavLink
+            to="/admin/feedback"
+            onClick={() => {
+              setOpen(false);
+              if (unreadFeedback > 0) {
+                api.patch("/feedback/mark-all-read").then(() => setUnreadFeedback(0)).catch(() => {});
+              }
+            }}
+            className="flex items-center justify-between gap-2 px-2 py-1.5 rounded text-xs font-mono text-amber-400 hover:bg-amber-400/10 border border-amber-400/30 hover:border-amber-400/60 transition-colors mb-2"
+          >
+            <span className="flex items-center gap-2">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              ADMIN · Feedback
+            </span>
+            {unreadFeedback > 0 && (
+              <span className="bg-amber-400 text-zinc-950 text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                {unreadFeedback > 99 ? "99+" : unreadFeedback}
+              </span>
+            )}
+          </NavLink>
+        )}
+
         <div className="flex items-center justify-between">
           <div className="min-w-0">
             <div className="text-xs text-zinc-300 truncate" data-testid="nav-user-email">{user?.email}</div>
-            <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">Logged in</div>
+            <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">{t("nav.logged_in") || "Logged in"}</div>
           </div>
           <Button
             variant="ghost"
@@ -220,12 +343,12 @@ export default function Layout({ children, currency, setCurrency }) {
             <LogOut className="w-4 h-4" />
           </Button>
         </div>
-        <div className="text-[10px] font-mono text-zinc-600 mt-3 text-center">Prices via Binance WS + CoinGecko + Yahoo</div>
       </div>
     </aside>
   );
 
   return (
+    <>
     <div className="min-h-screen flex">
       {/* Desktop sidebar */}
       <div className="hidden md:block sticky top-0 h-screen">{Sidebar}</div>
@@ -233,12 +356,7 @@ export default function Layout({ children, currency, setCurrency }) {
       {/* Mobile sidebar overlay */}
       {open && (
         <div className="md:hidden fixed inset-0 z-50 bg-black/70" onClick={() => setOpen(false)}>
-          <div className="absolute left-0 top-0 h-full w-72 bg-zinc-950 border-r border-zinc-800/50" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-end p-3">
-              <button onClick={() => setOpen(false)} className="text-zinc-400" data-testid="close-sidebar"><X className="w-5 h-5"/></button>
-            </div>
-            {Sidebar}
-          </div>
+          <div className="absolute left-0 top-0 h-full w-72 bg-zinc-950">{Sidebar}</div>
         </div>
       )}
 
@@ -249,27 +367,50 @@ export default function Layout({ children, currency, setCurrency }) {
           </button>
           <img src={walletLogo} alt="Wallet76" className="w-8 h-8 object-contain" />
           <div className="font-display text-base tracking-tight text-zinc-100">Wallet76</div>
-          <div className="w-5"/>
+          <button onClick={() => setSearchOpen(true)} className="text-zinc-400 hover:text-zinc-200 transition-colors">
+            <Search className="w-5 h-5"/>
+          </button>
         </header>
 
-        <main className="px-4 sm:px-6 lg:px-10 py-6 lg:py-8 max-w-[1600px] mx-auto">{children}</main>
+        {/* Main content */}
+        <main className="px-4 sm:px-6 lg:px-10 py-6 lg:py-8 pb-24 md:pb-8 max-w-[1600px] mx-auto">{children}</main>
       </div>
     </div>
-  );
-}
 
-function MiniSpark({ data, positive, testId }) {
-  if (!data || data.length < 2) return null;
-  const w = 60, h = 16;
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-  const step = w / (data.length - 1);
-  const points = data.map((v, i) => `${i * step},${h - ((v - min) / range) * h}`).join(" ");
-  const color = positive ? "#34d399" : "#fb7185"; // emerald-400 / rose-400
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="shrink-0 opacity-90" data-testid={testId}>
-      <polyline fill="none" stroke={color} strokeWidth="1.4" points={points} strokeLinejoin="round" strokeLinecap="round"/>
-    </svg>
+      {/* Global search modal */}
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+
+      {/* Feedback widget */}
+      <FeedbackWidget />
+
+      {/* ── Mobile bottom navigation ─────────────────────────────────── */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800/60"
+           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="flex items-center justify-around h-14">
+          {[
+            { to: "/dashboard",    icon: LayoutDashboard, labelKey: "nav.dashboard" },
+            { to: "/transactions", icon: Receipt,         labelKey: "nav.transactions" },
+            { to: "/wallets",      icon: WalletIcon,      labelKey: "nav.wallets" },
+            { to: "/alerts",       icon: Bell,            labelKey: "nav.alerts", badge: alertCount },
+            { to: "/settings",     icon: Settings,        labelKey: "nav.settings" },
+          ].map(({ to, icon: Icon, labelKey, badge }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) => `flex flex-col items-center gap-1 px-3 py-2 text-xs transition-colors ${isActive ? "text-zinc-50" : "text-zinc-500 hover:text-zinc-300"}`}
+            >
+              <div className="relative">
+                <Icon className="w-5 h-5" />
+                {badge > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-rose-500 text-zinc-950 text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+{badge > 99 ? "99+" : badge}</span>
+                )}
+              </div>
+              <span>{t(labelKey)}</span>
+            </NavLink>
+          ))}
+        </div>
+      </nav>
+    </>
   );
 }

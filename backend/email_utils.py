@@ -57,3 +57,53 @@ def email_layout(title: str, body_html: str, cta_label: str = "", cta_url: str =
       </table>
     </body></html>
     """
+
+
+def alert_email_html(
+    name: str,
+    symbol: str,
+    condition: str,
+    target_price: float,
+    triggered_price: float,
+    currency: str = "USD",
+    note: str = "",
+    app_url: str = "",
+) -> tuple[str, str]:
+    """Returns (subject, html) for a triggered price alert email."""
+    arrow = "▲" if condition == "above" else "▼"
+    direction = "above" if condition == "above" else "below"
+    fmt = lambda p: f"${p:,.2f}" if currency == "USD" else f"€{p:,.2f}"
+
+    subject = f"{arrow} {name} ({symbol}) hit {fmt(target_price)}"
+
+    note_block = (
+        f'<div style="margin-top:12px;padding:12px 16px;background:#1f1f23;border-left:3px solid #3b82f6;'
+        f'border-radius:4px;font-size:13px;color:#a1a1aa;">{note}</div>'
+        if note else ""
+    )
+
+    body_html = f"""
+    <p style="margin:0 0 16px;">Your price alert for <strong style="color:#fafafa;">{name} ({symbol})</strong> has been triggered.</p>
+    <table width="100%" style="border-collapse:collapse;margin-bottom:16px;">
+      <tr>
+        <td style="padding:10px 0;border-bottom:1px solid #27272a;color:#71717a;font-size:13px;">Condition</td>
+        <td style="padding:10px 0;border-bottom:1px solid #27272a;color:#fafafa;font-size:13px;text-align:right;">Price {direction} {fmt(target_price)}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 0;color:#71717a;font-size:13px;">Triggered at</td>
+        <td style="padding:10px 0;font-size:18px;font-weight:600;color:#86efac;text-align:right;">{fmt(triggered_price)}</td>
+      </tr>
+    </table>
+    {note_block}
+    <p style="margin:16px 0 0;font-size:13px;color:#71717a;">
+      To manage your alerts or disable email notifications, visit your Settings page.
+    </p>
+    """
+
+    html = email_layout(
+        title=f"{arrow} Alert triggered: {symbol}",
+        body_html=body_html,
+        cta_label="Open Wallet76",
+        cta_url=app_url or "https://wallet76.vercel.app/alerts",
+    )
+    return subject, html
