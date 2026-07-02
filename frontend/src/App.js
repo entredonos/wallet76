@@ -92,41 +92,60 @@ class ErrorBoundary extends React.Component {
   }
 }
 import "./App.css";
+import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { I18nProvider } from "./context/I18nContext";
 import { PrivacyProvider } from "./context/PrivacyContext";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import VerifyEmail from "./pages/VerifyEmail";
-import Dashboard from "./pages/Dashboard";
-import Wallets from "./pages/Wallets";
-import Transactions from "./pages/Transactions";
-import Alerts from "./pages/Alerts";
-import Watchlist from "./pages/Watchlist";
-import News from "./pages/News";
-import Market from "./pages/Market";
-import Settings from "./pages/Settings";
-import AssetChart from "./pages/AssetChart";
 import Layout from "./components/Layout";
 import LockScreen from "./components/LockScreen";
 import PreferencesSync from "./components/PreferencesSync";
 import { Toaster } from "./components/ui/sonner";
-import Pricing from "./pages/Pricing";
-import BillingSuccess from "./pages/BillingSuccess";
-import LandingPage from "./pages/LandingPage";
-import PublicPortfolio from "./pages/PublicPortfolio";
-import ConnectedAccounts from "./pages/ConnectedAccounts";
-import AssetDetail from "./pages/AssetDetail";
-import Analytics from "./pages/Analytics";
-import AdminFeedback from "./pages/AdminFeedback";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsOfService from "./pages/TermsOfService";
 import CookieBanner from "./components/CookieBanner";
 import BackendStatusBanner from "./components/BackendStatusBanner";
+
+// Every page is its own chunk instead of one big bundle — the previous
+// static imports below meant visiting /login pulled in the JS for
+// Dashboard, Analytics, AdminFeedback, every other page, etc. all at once,
+// even though only one route renders at a time. React.lazy + the single
+// <Suspense> in AppRoutes below means each route's code only downloads the
+// first time that route is actually visited.
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Wallets = lazy(() => import("./pages/Wallets"));
+const Transactions = lazy(() => import("./pages/Transactions"));
+const Alerts = lazy(() => import("./pages/Alerts"));
+const Watchlist = lazy(() => import("./pages/Watchlist"));
+const News = lazy(() => import("./pages/News"));
+const Market = lazy(() => import("./pages/Market"));
+const Settings = lazy(() => import("./pages/Settings"));
+const AssetChart = lazy(() => import("./pages/AssetChart"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const BillingSuccess = lazy(() => import("./pages/BillingSuccess"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const PublicPortfolio = lazy(() => import("./pages/PublicPortfolio"));
+const ConnectedAccounts = lazy(() => import("./pages/ConnectedAccounts"));
+const AssetDetail = lazy(() => import("./pages/AssetDetail"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const AdminFeedback = lazy(() => import("./pages/AdminFeedback"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+
+// Minimal, theme-matching fallback — only ever visible for the brief
+// window while a route's chunk downloads (typically instant on repeat
+// visits, since the browser caches it after the first load).
+function RouteFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+      <div className="w-6 h-6 border-2 border-zinc-700 border-t-zinc-300 rounded-full animate-spin" />
+    </div>
+  );
+}
 
 function Protected({ children, currency, setCurrency }) {
   const { user, loading } = useAuth();
@@ -165,33 +184,35 @@ function AppRoutes() {
   );
 
   return (
-    <Routes>
-      <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
-      <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password/:token" element={<ResetPassword />} />
-      <Route path="/verify-email/:token" element={<VerifyEmail />} />
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/dashboard" element={wrap(<Dashboard currency={currency} />)} />
-      <Route path="/transactions" element={wrap(<Transactions />)} />
-      <Route path="/alerts" element={wrap(<Alerts />)} />
-      <Route path="/wallets" element={wrap(<Wallets />)} />
-      <Route path="/watchlist" element={wrap(<Watchlist />)} />
-      <Route path="/news" element={wrap(<News />)} />
-      <Route path="/market" element={wrap(<Market />)} />
-      <Route path="/settings" element={wrap(<Settings />)} />
-      <Route path="/connected-accounts" element={wrap(<ConnectedAccounts />)} />
-      <Route path="/analytics" element={wrap(<Analytics currency={currency} />)} />
-      <Route path="/admin/feedback" element={wrap(<AdminFeedback />)} />
-      <Route path="/asset/:assetType/:symbol" element={wrap(<AssetChart currency={currency} />)} />
-      <Route path="/asset/:symbol" element={wrap(<AssetDetail currency={currency} />)} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/pricing" element={<Pricing />} />
-      <Route path="/billing-success" element={<BillingSuccess />} />
-      <Route path="/p/:slug" element={<PublicPortfolio />} />
-      <Route path="/privacy" element={<PrivacyPolicy />} />
-      <Route path="/terms" element={<TermsOfService />} />
-    </Routes>
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
+        <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/verify-email/:token" element={<VerifyEmail />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/dashboard" element={wrap(<Dashboard currency={currency} />)} />
+        <Route path="/transactions" element={wrap(<Transactions />)} />
+        <Route path="/alerts" element={wrap(<Alerts />)} />
+        <Route path="/wallets" element={wrap(<Wallets />)} />
+        <Route path="/watchlist" element={wrap(<Watchlist />)} />
+        <Route path="/news" element={wrap(<News />)} />
+        <Route path="/market" element={wrap(<Market />)} />
+        <Route path="/settings" element={wrap(<Settings />)} />
+        <Route path="/connected-accounts" element={wrap(<ConnectedAccounts />)} />
+        <Route path="/analytics" element={wrap(<Analytics currency={currency} />)} />
+        <Route path="/admin/feedback" element={wrap(<AdminFeedback />)} />
+        <Route path="/asset/:assetType/:symbol" element={wrap(<AssetChart currency={currency} />)} />
+        <Route path="/asset/:symbol" element={wrap(<AssetDetail currency={currency} />)} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/billing-success" element={<BillingSuccess />} />
+        <Route path="/p/:slug" element={<PublicPortfolio />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
+      </Routes>
+    </Suspense>
   );
 }
 

@@ -227,28 +227,39 @@ def _to_ts(v):
         return 0
 
 
+_NEWS_CRYPTO_SEEDS = ["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD", "XRP-USD"]
+_NEWS_STOCK_SEEDS = ["AAPL", "TSLA", "NVDA", "MSFT", "GOOGL", "AMZN"]
+LATEST_NEWS_TTL = 600
+
+
+def _dedupe_sort_limit(items, n):
+    by_title = {}
+    for it in items:
+        if it["title"] not in by_title:
+            by_title[it["title"]] = it
+    arr = list(by_title.values())
+    arr.sort(key=lambda x: _to_ts(x.get("ts")), reverse=True)
+    return arr[:n]
+
+
 @router.get("/market/latest-news")
 async def market_latest_news():
     cache_key = "market_latest_news"
-    cached = _cache_get(cache_key, ttl=600)
+    cached = _cache_get(cache_key, ttl=LATEST_NEWS_TTL)
     if cached:
         return cached
+    return await _fetch_latest_news()
 
-    crypto_seeds = ["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD", "XRP-USD"]
-    stock_seeds = ["AAPL", "TSLA", "NVDA", "MSFT", "GOOGL", "AMZN"]
 
-    def _dedupe_sort_limit(items, n):
-        by_title = {}
-        for it in items:
-            if it["title"] not in by_title:
-                by_title[it["title"]] = it
-        arr = list(by_title.values())
-        arr.sort(key=lambda x: _to_ts(x.get("ts")), reverse=True)
-        return arr[:n]
-
+async def _fetch_latest_news():
+    """Same reasoning as _fetch_movers_crypto/_fetch_movers_stocks above —
+    global (not per-user) data, so it's cheap to keep warm in the
+    background instead of making whoever's request lands after the 10-min
+    TTL expires pay for ~11 separate yfinance news lookups synchronously."""
+    cache_key = "market_latest_news"
     crypto_results, stock_results = await asyncio.gather(
-        asyncio.gather(*[asyncio.to_thread(_yf_news, s) for s in crypto_seeds]),
-        asyncio.gather(*[asyncio.to_thread(_yf_news, s) for s in stock_seeds]),
+        asyncio.gather(*[asyncio.to_thread(_yf_news, s) for s in _NEWS_CRYPTO_SEEDS]),
+        asyncio.gather(*[asyncio.to_thread(_yf_news, s) for s in _NEWS_STOCK_SEEDS]),
     )
     crypto_flat = [n for arr in crypto_results for n in arr]
     stock_flat = [n for arr in stock_results for n in arr]
@@ -316,6 +327,11 @@ async def run_market_movers_refresher() -> None:
     loop only starts warming once the process is up — but it eliminates the
     far more common "cache just expired" case."""
     logger.info(f"Market movers refresher started (interval={MARKET_REFRESH_INTERVAL_SECONDS}s)")
+    # News has a longer TTL (10 min) than the movers (2-4 min) — only warm
+    # it roughly every 5th tick instead of every tick, so it isn't refetched
+    # far more often than its own cache would ever actually expire.
+    NEWS_EVERY_N_TICKS = max(1, round(LATEST_NEWS_TTL / MARKET_REFRESH_INTERVAL_SECONDS))
+    tick = 0
     while True:
         try:
             await _fetch_movers_crypto()
@@ -325,4 +341,10 @@ async def run_market_movers_refresher() -> None:
             await _fetch_movers_stocks()
         except Exception as e:
             logger.warning(f"Market movers refresher (stocks) failed: {e}")
+        if tick % NEWS_EVERY_N_TICKS == 0:
+            try:
+                await _fetch_latest_news()
+            except Exception as e:
+                logger.warning(f"Market movers refresher (news) failed: {e}")
+        tick += 1
         await asyncio.sleep(MARKET_REFRESH_INTERVAL_SECONDS)
