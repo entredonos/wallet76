@@ -88,6 +88,16 @@ async def _fetch_movers_crypto():
     stale = _cache_get_stale(cache_key)
     if stale and (stale.get("gainers") or stale.get("losers")):
         logger.info("market crypto: serving stale cache after CoinGecko failure")
+        # IMPORTANT: re-set the cache (refreshes its timestamp) even though
+        # the data itself is unchanged. Without this, _cache_get(key, ttl)
+        # in the route handler keeps seeing this entry as "expired" forever
+        # once CoinGecko starts failing, so EVERY subsequent request (sidebar
+        # polling, other open tabs, the 120s background refresher) re-enters
+        # this function and re-hits CoinGecko instead of reusing the stale
+        # copy — turning an occasional 429 into a request storm. Bug
+        # introduced earlier tonight (3 jul 2026), fixed same night after it
+        # showed up as a CoinGecko flood + OOM restart loop in Render logs.
+        _cache_set(cache_key, stale)
         return stale
 
     # yfinance fallback — only reached if CoinGecko failed AND there's no
