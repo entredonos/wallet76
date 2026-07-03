@@ -2,12 +2,13 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import {
-  TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Activity,
+  TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Activity, Info,
 } from "lucide-react";
 import AssetIcon from "../components/AssetIcon";
 import { fmtCurrency, fmtPct, fmtCompact } from "../lib/format";
 import { useI18n } from "../context/I18nContext";
 import { SkeletonMoversList } from "../components/SkeletonRow";
+import { Popover, PopoverTrigger, PopoverContent } from "../components/ui/popover";
 
 export default function Market() {
   const { t } = useI18n();
@@ -52,8 +53,8 @@ export default function Market() {
             </>
           ) : (
             <>
-              <MoversList kind="crypto" type="gainers" items={crypto.gainers} t={t}/>
-              <MoversList kind="crypto" type="losers" items={crypto.losers} t={t}/>
+              <MoversList kind="crypto" type="gainers" items={crypto.gainers} t={t} universeNote={t("market.crypto_universe_note")}/>
+              <MoversList kind="crypto" type="losers" items={crypto.losers} t={t} universeNote={t("market.crypto_universe_note")}/>
             </>
           )}
         </div>
@@ -73,8 +74,8 @@ export default function Market() {
             </>
           ) : (
             <>
-              <MoversList kind="stock" type="gainers" items={stocks.gainers} t={t}/>
-              <MoversList kind="stock" type="losers" items={stocks.losers} t={t}/>
+              <MoversList kind="stock" type="gainers" items={stocks.gainers} t={t} universeNote={t("market.stocks_universe_note")}/>
+              <MoversList kind="stock" type="losers" items={stocks.losers} t={t} universeNote={t("market.stocks_universe_note")}/>
             </>
           )}
         </div>
@@ -84,7 +85,7 @@ export default function Market() {
   );
 }
 
-function MoversList({ kind, type, items, t }) {
+function MoversList({ kind, type, items, t, universeNote }) {
   const isGain = type === "gainers";
   return (
     <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl overflow-hidden" data-testid={`movers-${kind}-${type}`}>
@@ -92,6 +93,18 @@ function MoversList({ kind, type, items, t }) {
         <div className="flex items-center gap-2">
           {isGain ? <TrendingUp className="w-4 h-4 text-emerald-400"/> : <TrendingDown className="w-4 h-4 text-rose-400"/>}
           <div className="text-sm font-medium text-zinc-200">{isGain ? t("market.gainers") : t("market.losers")}</div>
+          <Popover>
+            <PopoverTrigger
+              className="text-zinc-600 hover:text-zinc-300 transition-colors"
+              data-testid={`movers-${kind}-${type}-info`}
+              aria-label={t("market.universe_info_label")}
+            >
+              <Info className="w-3.5 h-3.5"/>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 text-xs text-zinc-300 bg-zinc-900 border-zinc-800" sideOffset={6}>
+              {universeNote}
+            </PopoverContent>
+          </Popover>
         </div>
         <div className="text-[10px] font-mono text-zinc-500">{items.length}</div>
       </div>

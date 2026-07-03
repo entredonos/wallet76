@@ -155,3 +155,34 @@ não é uma autorização para agir — só dar a resposta é.
 Isto NÃO se aplica quando o utilizador já dá uma instrução direta ("faz
 X", "corrige Y", "manda um ficheiro com Z") — nesses casos a ordem já foi
 dada e o trabalho segue normalmente.
+
+---
+
+## REGRA #4 — CHECKLIST DE DEPLOY NO RENDER (variáveis de ambiente)
+
+**Incidente (3 jul 2026):** ao mudar o Instance Type do serviço `wallet76`
+de Free para Starter, a variável `BROKER_ENCRYPTION_KEY` desapareceu/não
+sincronizou no Render. O backend está propositadamente configurado para
+recusar arrancar sem ela (proteção contra correr sem cifra de credenciais
+de broker — ver REGRA de arranque em `backend/server.py`), pelo que a app
+esteve completamente em baixo (crash loop, "Exited with status 3") até a
+variável ser reposta manualmente em Settings → Environment.
+
+**Sempre que houver uma mudança de Instance Type, plano, ou qualquer
+operação no dashboard do Render que possa recriar/mover o serviço**,
+confirmar antes e depois em Settings → Environment que estas variáveis
+continuam todas presentes:
+
+- `BROKER_ENCRYPTION_KEY` (crítica — sem ela o backend nem arranca)
+- `MONGO_URL`
+- `JWT_SECRET`
+- `RESEND_API_KEY`
+- `STRIPE_SECRET_KEY`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY`,
+  `STRIPE_WEBHOOK_SECRET`
+- `FRONTEND_URL`
+
+Se `BROKER_ENCRYPTION_KEY` voltar a desaparecer, o valor de referência
+(para restaurar, não gerar um novo) está guardado no `backend/.env` local
+— gerar um novo valor só decifra credenciais de broker novas a partir daí;
+todas as ligações de broker já guardadas ficam permanentemente ilegíveis
+se a chave mudar.
