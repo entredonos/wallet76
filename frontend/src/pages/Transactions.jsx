@@ -131,7 +131,35 @@ export default function Transactions() {
       </div>
 
       <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile — stacked cards. The desktop table's 9 columns only ever
+            produced permanent horizontal scroll on a phone. */}
+        <div className="md:hidden divide-y divide-zinc-800/30">
+          {loading && [0, 1, 2].map((i) => (
+            <div key={i} className="p-4 space-y-3 animate-pulse">
+              <div className="flex items-center gap-3">
+                <div className="h-6 w-6 rounded-full bg-zinc-800 shrink-0" />
+                <div className="h-3 bg-zinc-800 rounded w-24" />
+              </div>
+              <div className="h-3 bg-zinc-800 rounded w-2/3" />
+            </div>
+          ))}
+          {!loading && filtered.length === 0 && (
+            <div className="px-6 py-12 text-center text-zinc-600 font-mono text-sm" data-testid="no-transactions-mobile">
+              {t("tx.no_tx")}. {t("tx.no_tx_hint")}
+            </div>
+          )}
+          {filtered.map((txn) => (
+            <TxCard
+              key={txn.id}
+              txn={txn}
+              walletName={walletName(txn.wallet_id)}
+              onEdit={() => setEditTxn(txn)}
+              onDelete={() => removeTxn(txn.id)}
+            />
+          ))}
+        </div>
+
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full" data-testid="transactions-table">
             <thead>
               <tr className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-500 border-b border-zinc-800/30">
@@ -204,6 +232,59 @@ export default function Transactions() {
   );
 }
 
+// One transaction, stacked as a card — the mobile (< md) counterpart to a
+// row in the desktop <table>. Same fields, just laid out vertically instead
+// of 9 columns that only ever produced horizontal scroll on a phone.
+function TxCard({ txn, walletName, onEdit, onDelete }) {
+  const { t } = useI18n();
+  const sym = CURRENCY_SYMBOLS[txn.currency] || "";
+  const total = txn.quantity * txn.price + (txn.type === "BUY" ? (txn.fee || 0) : -(txn.fee || 0));
+  const isBuy = txn.type === "BUY";
+  return (
+    <div className="p-4 space-y-3" data-testid={`tx-card-${txn.id}`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <AssetIcon asset={txn} size={24}/>
+          <div className="min-w-0">
+            <div className="font-mono text-zinc-100 truncate">{txn.symbol}</div>
+            <div className="text-xs text-zinc-500 truncate">{txn.date} · {walletName}</div>
+          </div>
+        </div>
+        <span className={`inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider px-2 py-1 rounded border shrink-0 ${
+          isBuy ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" : "text-rose-400 border-rose-500/30 bg-rose-500/10"
+        }`}>
+          {isBuy ? <ArrowDownLeft className="w-3 h-3"/> : <ArrowUpRight className="w-3 h-3"/>}
+          {isBuy ? t("tx.buy") : t("tx.sell")}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 font-mono text-sm">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">{t("tx.quantity")}</div>
+          <div className="text-zinc-200">{Number(txn.quantity).toLocaleString("en-US", { maximumFractionDigits: 8 })}</div>
+        </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">{t("common.price")}</div>
+          <div className="text-zinc-200">{sym}{Number(txn.price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">{t("tx.total")}</div>
+          <div className="text-zinc-100">{sym}{total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-3">
+        <button onClick={onEdit} className="text-zinc-600 hover:text-blue-400 transition-colors" data-testid={`tx-edit-card-${txn.id}`} aria-label={t("common.edit")}>
+          <Pencil className="w-4 h-4"/>
+        </button>
+        <button onClick={onDelete} className="text-zinc-600 hover:text-rose-400 transition-colors" data-testid={`tx-delete-card-${txn.id}`} aria-label={t("common.delete")}>
+          <Trash2 className="w-4 h-4"/>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function EditTransactionDialog({ txn, wallets, onClose, onSaved }) {
   const { t } = useI18n();
   const [date, setDate] = useState("");
@@ -241,7 +322,7 @@ function EditTransactionDialog({ txn, wallets, onClose, onSaved }) {
       onSaved();
       onClose();
     } catch (e) {
-      toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Failed to update");
+      toast.error(formatApiErrorDetail(e.response?.data?.detail) || t("common.error"));
     } finally {
       setSaving(false);
     }

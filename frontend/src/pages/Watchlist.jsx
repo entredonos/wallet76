@@ -221,7 +221,9 @@ export default function Watchlist() {
                   <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500 ml-1">{activeGroup.items?.length || 0}/{MAX_PER_GROUP}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="relative">
+                  {/* Column-visibility menu only applies to the desktop
+                      table — mobile cards use a fixed field set. */}
+                  <div className="relative hidden md:block">
                     <button
                       onClick={() => setColMenuOpen((v) => !v)}
                       className="p-1.5 border border-zinc-800 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 transition-colors"
@@ -256,7 +258,27 @@ export default function Watchlist() {
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
+              {/* Mobile — stacked cards. A fixed field set (icon/label,
+                  price, 24h%, sparkline) reads better on a phone than
+                  cramming the desktop's 7-9 columns into ~375px, which
+                  only ever produced permanent horizontal scroll. */}
+              <div className="md:hidden divide-y divide-zinc-800/30">
+                {(activeGroup.items || []).length === 0 && (
+                  <div className="px-6 py-10 text-center text-zinc-600 font-mono text-sm" data-testid="empty-group-mobile">
+                    {t("watch.empty_group")}
+                  </div>
+                )}
+                {(activeGroup.items || []).map((w) => (
+                  <WatchCard
+                    key={w.id}
+                    w={w}
+                    onAlert={() => setAlertTarget(w)}
+                    onDelete={() => setDeleteItemTarget(w)}
+                  />
+                ))}
+              </div>
+
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full" data-testid="watchlist-table">
                   <thead>
                     <tr className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-500 border-b border-zinc-800/30">
@@ -457,6 +479,56 @@ export default function Watchlist() {
         onOpenChange={(o) => !o && setAlertTarget(null)}
         onCreated={() => setAlertTarget(null)}
       />
+    </div>
+  );
+}
+
+// One watchlist item, stacked as a card — the mobile (< md) counterpart to
+// a row in the desktop <table>. Fixed field set (icon/label, price, 24h%,
+// sparkline) rather than the desktop's column-visibility config, which
+// doesn't translate to a card layout.
+function WatchCard({ w, onAlert, onDelete }) {
+  const { t } = useI18n();
+  const pos = (w.change_24h || 0) >= 0;
+  const spark = (w.sparkline_24h || []).map((p, i) => ({ t: i, p }));
+  return (
+    <div className="p-4 space-y-3" data-testid={`watch-card-${w.id}`}>
+      <div className="flex items-start justify-between gap-3">
+        <Link to={`/asset/${w.asset_type}/${w.symbol}`} className="flex items-center gap-3 min-w-0" data-testid={`watch-card-link-${w.id}`}>
+          <AssetIcon asset={w} size={28}/>
+          <div className="min-w-0">
+            <div className="font-mono text-zinc-100 truncate">{w.custom_label}</div>
+            <div className="text-xs text-zinc-500 truncate">
+              {w.name} <span className="uppercase">{w.asset_type}</span>
+            </div>
+          </div>
+        </Link>
+        <div className="text-right shrink-0">
+          <div className="font-mono text-zinc-100">{w.price_usd ? fmtCurrency(w.price_usd, "USD") : "—"}</div>
+          <div className={`text-xs font-mono inline-flex items-center gap-0.5 ${pos ? "text-emerald-400" : "text-rose-400"}`}>
+            {pos ? <ArrowUpRight className="w-3 h-3"/> : <ArrowDownRight className="w-3 h-3"/>}
+            {fmtPct(w.change_24h || 0)}
+          </div>
+        </div>
+      </div>
+
+      {spark.length > 0 && (
+        <div className="h-8" data-testid={`watch-card-spark-${w.id}`}>
+          <Sparkline data={spark} positive={pos}/>
+        </div>
+      )}
+
+      <div className="flex items-center justify-end gap-3">
+        <button onClick={onAlert} className="text-zinc-500 hover:text-blue-400 transition-colors" data-testid={`watch-card-alert-${w.id}`} title={t("common.alerts")}>
+          <Bell className="w-4 h-4"/>
+        </button>
+        <Link to={`/asset/${w.asset_type}/${w.symbol}`} className="text-zinc-500 hover:text-blue-400 transition-colors" data-testid={`watch-card-chart-${w.id}`} title={t("common.chart")}>
+          <Eye className="w-4 h-4"/>
+        </Link>
+        <button onClick={onDelete} className="text-zinc-500 hover:text-rose-400 transition-colors" data-testid={`watch-card-delete-${w.id}`} title={t("common.delete")}>
+          <Trash2 className="w-4 h-4"/>
+        </button>
+      </div>
     </div>
   );
 }

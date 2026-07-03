@@ -110,7 +110,40 @@ export default function Alerts() {
       </div>
 
       <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile — stacked cards. The desktop table's 7 columns only ever
+            produced permanent horizontal scroll on a phone. */}
+        <div className="md:hidden divide-y divide-zinc-800/30">
+          {loading && [0, 1, 2].map((i) => (
+            <div key={i} className="p-4 space-y-3 animate-pulse">
+              <div className="flex items-center gap-3">
+                <div className="h-6 w-6 rounded-full bg-zinc-800 shrink-0" />
+                <div className="h-3 bg-zinc-800 rounded w-24" />
+              </div>
+              <div className="h-3 bg-zinc-800 rounded w-1/2" />
+            </div>
+          ))}
+          {!loading && alerts.length === 0 && (
+            <div className="px-6 py-12 text-center text-zinc-600 font-mono text-sm" data-testid="no-alerts-mobile">
+              {t("alert.empty_state")} <span className="text-zinc-300">+ {t("alert.new")}</span>.
+            </div>
+          )}
+          {alerts.map((a) => {
+            const current = livePrices[`${a.asset_type}:${a.symbol.toUpperCase()}`] || 0;
+            const distance = current > 0 ? ((a.target_price_usd - current) / current) * 100 : 0;
+            return (
+              <AlertCard
+                key={a.id}
+                a={a}
+                current={current}
+                distance={distance}
+                onToggle={() => toggleAlert(a)}
+                onDelete={() => deleteAlert(a.id)}
+              />
+            );
+          })}
+        </div>
+
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full" data-testid="alerts-table">
             <thead>
               <tr className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-500 border-b border-zinc-800/30">
@@ -378,5 +411,64 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// One alert, stacked as a card — the mobile (< md) counterpart to a row in
+// the desktop <table>. Same fields, just laid out vertically instead of in
+// 7 columns that only ever produced horizontal scroll on a phone.
+function AlertCard({ a, current, distance, onToggle, onDelete }) {
+  const { t } = useI18n();
+  const isAbove = a.condition === "above";
+  return (
+    <div className="p-4 space-y-3" data-testid={`alert-card-${a.id}`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <AssetIcon asset={a} size={26}/>
+          <div className="min-w-0">
+            <div className="font-mono text-zinc-100 truncate">{a.symbol}</div>
+            <div className="text-xs text-zinc-500 truncate">{a.name}</div>
+          </div>
+        </div>
+        <span className={`inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider px-2 py-1 rounded border shrink-0 ${
+          isAbove ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" : "text-rose-400 border-rose-500/30 bg-rose-500/10"
+        }`}>
+          {isAbove ? <ArrowUp className="w-3 h-3"/> : <ArrowDown className="w-3 h-3"/>}
+          {isAbove ? t("alert.above") : t("alert.below")}
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between font-mono text-sm">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">{t("alert.target")}</div>
+          <div className="text-zinc-100">{fmtCurrency(a.target_price_usd, "USD")}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">{t("alert.current")}</div>
+          <div className="text-zinc-300">{current ? fmtCurrency(current, "USD") : "—"}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">{t("alert.distance")}</div>
+          <div className={distance >= 0 ? "text-emerald-400" : "text-rose-400"}>{current ? fmtPct(distance) : "—"}</div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <button onClick={onToggle} className="text-left" data-testid={`alert-toggle-card-${a.id}`}>
+          {a.active ? (
+            <span className="inline-flex items-center gap-1 text-xs font-mono text-blue-400 border border-blue-500/30 bg-blue-500/10 px-2 py-1 rounded">
+              <Bell className="w-3 h-3"/> {t("alert.active")}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-xs font-mono text-zinc-500 border border-zinc-800 bg-zinc-900 px-2 py-1 rounded" title={a.triggered_at ? t("alert.triggered_at", { date: a.triggered_at }) : t("alert.paused")}>
+              <Check className="w-3 h-3"/> {a.triggered_at ? t("alert.triggered") : t("alert.paused")}
+            </span>
+          )}
+        </button>
+        <button onClick={onDelete} className="text-zinc-600 hover:text-rose-400 transition-colors" data-testid={`alert-delete-card-${a.id}`}>
+          <Trash2 className="w-4 h-4"/>
+        </button>
+      </div>
+    </div>
   );
 }

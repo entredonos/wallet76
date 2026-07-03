@@ -9,6 +9,7 @@ import AssetIcon from "../AssetIcon";
 import FlashingPrice from "../FlashingPrice";
 import Sparkline from "../Sparkline";
 import SortableTH from "./SortableTH";
+import AssetCard from "./AssetCard";
 import { ALL_COLUMNS, TYPE_LABELS, isNYSEOpen } from "../../constants/dashboardConstants";
 import { ALLOCATION_CLASSES, ALLOCATION_CLASS_LABEL_KEY } from "../../lib/allocation";
 
@@ -17,6 +18,13 @@ import { ALLOCATION_CLASSES, ALLOCATION_CLASS_LABEL_KEY } from "../../lib/alloca
 // popover. Dashboard.jsx still owns visibleCols/sortKey/sortDir/etc as
 // state (persisted to localStorage there) and passes down the derived
 // `sorted` list plus the handlers that mutate that state.
+//
+// Below `md` this renders a stacked AssetCard per holding instead of the
+// <table> — a fixed 375px-wide table with 7-10 columns only ever produced
+// permanent horizontal scroll on a phone, so mobile gets its own simpler
+// view (fixed field set, not the column-visibility config, which is a
+// desktop-only concept here) rather than trying to make the table itself
+// reflow.
 export default function AssetsTable({
   sorted, visibleCols, colVisible, toggleCol, colMenuOpen, setColMenuOpen,
   sortKey, sortDir, handleSort, wallets, currency, fxRates, mask, hideValues,
@@ -29,13 +37,15 @@ export default function AssetsTable({
       <div className="px-5 py-4 border-b border-zinc-800/50 flex items-center justify-between">
         <div className="text-sm font-medium text-zinc-300">{t("dash.assets")}</div>
         <div className="flex items-center gap-3">
-          <div className="text-xs font-mono text-zinc-500" data-testid="assets-count">{sorted.length} {sorted.length === 1 ? "item" : "itens"}</div>
-          <div className="relative">
+          <div className="text-xs font-mono text-zinc-500" data-testid="assets-count">{t("dash.items", { count: sorted.length })}</div>
+          {/* Column-visibility menu only applies to the desktop table —
+              mobile cards use a fixed field set (see AssetCard). */}
+          <div className="relative hidden md:block">
             <button
               onClick={() => setColMenuOpen((v) => !v)}
               className="p-1.5 border border-zinc-800 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 transition-colors"
               data-testid="columns-gear-btn"
-              title="Configure columns"
+              title={t("watch.configure_columns")}
             >
               <Settings2 className="w-4 h-4"/>
             </button>
@@ -43,7 +53,7 @@ export default function AssetsTable({
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setColMenuOpen(false)}/>
                 <div className="absolute right-0 top-full mt-2 z-40 w-56 bg-zinc-950 border border-zinc-800 rounded-md shadow-2xl p-2" data-testid="columns-menu">
-                  <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500 px-2 py-1.5">Columns</div>
+                  <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500 px-2 py-1.5">{t("watch.columns")}</div>
                   {ALL_COLUMNS.map((c) => (
                     <label key={c.key} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-200 hover:bg-zinc-900 rounded cursor-pointer" data-testid={`col-toggle-${c.key}`}>
                       <input
@@ -61,7 +71,35 @@ export default function AssetsTable({
           </div>
         </div>
       </div>
-      <div className="overflow-x-auto">
+
+      {/* Mobile — stacked cards */}
+      <div className="md:hidden divide-y divide-zinc-800/30">
+        {sorted.length === 0 && (
+          <div className="text-center text-zinc-600 py-12 text-sm font-mono" data-testid="no-assets-mobile">
+            {t("dash.no_assets")}
+          </div>
+        )}
+        {sorted.map((a) => (
+          <AssetCard
+            key={`${a.symbol}-${a.wallet_id}-${a.asset_type}`}
+            a={a}
+            wallets={wallets}
+            currency={currency}
+            fxRates={fxRates}
+            mask={mask}
+            hideValues={hideValues}
+            allocOverrides={allocOverrides}
+            reclassifyOpenKey={reclassifyOpenKey}
+            setReclassifyOpenKey={setReclassifyOpenKey}
+            saveOverride={saveOverride}
+            nav={nav}
+            load={load}
+          />
+        ))}
+      </div>
+
+      {/* Desktop — full sortable table */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full" data-testid="assets-table">
           <thead>
             <tr className="text-xs font-mono uppercase tracking-[0.1em] text-zinc-500 border-b border-zinc-800/30">
@@ -226,24 +264,24 @@ export default function AssetsTable({
                         to={`/transactions?sell=${a.symbol}&type=${a.asset_type}&wallet=${a.wallet_id}`}
                         className="p-1.5 rounded-md text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                         data-testid={`action-sell-${a.symbol}`}
-                        title="Sell"
+                        title={t("common.sell")}
                       >
                         <ShoppingCart className="w-4 h-4"/>
                       </Link>
                       <button
                         onClick={async () => {
-                          if (!window.confirm(`Delete ALL transactions for ${a.symbol} in this wallet?`)) return;
+                          if (!window.confirm(t("dash.confirm_delete_tx", { symbol: a.symbol }))) return;
                           try {
                             const { data: txns } = await api.get("/transactions");
                             const toDelete = (txns || []).filter((tx) => tx.symbol.toUpperCase() === a.symbol.toUpperCase() && tx.wallet_id === a.wallet_id && tx.asset_type === a.asset_type);
                             await Promise.all(toDelete.map((tx) => api.delete(`/transactions/${tx.id}`)));
-                            toast.success(`Deleted ${toDelete.length} transactions`);
+                            toast.success(t("dash.deleted_tx", { count: toDelete.length }));
                             load(true);
-                          } catch { toast.error("Failed to delete"); }
+                          } catch { toast.error(t("common.error")); }
                         }}
                         className="p-1.5 rounded-md text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                         data-testid={`action-delete-${a.symbol}`}
-                        title="Delete all transactions for this asset"
+                        title={t("dash.delete_all_tx_tooltip")}
                       >
                         <Trash2 className="w-4 h-4"/>
                       </button>
@@ -251,7 +289,7 @@ export default function AssetsTable({
                         to={`/asset/${a.asset_type}/${a.symbol}`}
                         className="p-1.5 rounded-md text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
                         data-testid={`action-chart-${a.symbol}`}
-                        title="Open chart"
+                        title={t("common.chart")}
                       >
                         <Eye className="w-4 h-4"/>
                       </Link>
