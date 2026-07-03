@@ -396,40 +396,51 @@ export default function Dashboard({ currency }) {
 
   useEffect(() => { loadShareStatus(); }, []);
 
-  // Light view's 7-day evolution card — a dedicated fetch, decoupled from
+  // Light view's 5-day evolution card — a dedicated fetch, decoupled from
   // the advanced chart's `range` state (which could be on any timeframe,
-  // e.g. "1h"). "1d" here means daily CANDLES (see CHART_RANGE constants
-  // comment), so this returns up to the last 70 daily closes; we only need
-  // the last 7 of those. Only fetched while dashMode === "light" — advanced
-  // mode never needs it, so this never adds load when it isn't shown.
+  // e.g. "1h"). "4h" hits the same intraday reconstruction path the
+  // advanced chart's own "4h" button uses (_build_retro_history_intraday,
+  // REGRA #2) — not touching that logic, just consuming it the same way.
+  // Only fetched while dashMode === "light", so advanced mode never pays
+  // for it.
+  const LIGHT_BARS = 30; // 5 days x 6 four-hour candles/day
   const [lightHistory, setLightHistory] = useState([]);
   const [lightHistoryLoading, setLightHistoryLoading] = useState(true);
   useEffect(() => {
     if (dashMode !== "light") return;
     let cancelled = false;
     setLightHistoryLoading(true);
-    api.get(`/history?range=1d${filterWallet !== "all" ? `&wallet_id=${filterWallet}` : ""}${filterType !== "all" ? `&asset_type=${filterType}` : ""}`)
+    api.get(`/history?range=4h${filterWallet !== "all" ? `&wallet_id=${filterWallet}` : ""}${filterType !== "all" ? `&asset_type=${filterType}` : ""}`)
       .then((r) => { if (!cancelled) setLightHistory(r.data || []); })
       .catch(() => { if (!cancelled) setLightHistory([]); })
       .finally(() => { if (!cancelled) setLightHistoryLoading(false); });
     return () => { cancelled = true; };
   }, [dashMode, filterWallet, filterType]);
 
-  // % change is currency-independent (a ratio), so this stays in raw USD —
-  // no need to convert() just to compute a percentage.
-  const last7Days = useMemo(() => {
-    const points = (lightHistory || [])
-      .map((s) => ({ t: s.ts || s.date, v: Number(s.total_usd || 0) }))
-      .filter((p) => p.v > 0);
-    return points.slice(-7);
+  // Same bucketing pipeline the advanced chart uses (bucketOHLC), just
+  // sliced to the last 30 four-hour candles (5 days) instead of N_BARS=70.
+  const lightCandles = useMemo(() => {
+    const raw = (lightHistory || [])
+      .map((s) => ({ ts: s.ts || s.date, value: Number(s.total_usd || 0) }))
+      .filter((p) => Number(p.value) > 0);
+    const bucketed = bucketOHLC(raw, "ts", "value", CHART_RANGE_BUCKET_MS["4h"]);
+    return bucketed.slice(-LIGHT_BARS);
   }, [lightHistory]);
 
-  const sevenDayChangePct = useMemo(() => {
-    if (last7Days.length < 2) return null;
-    const first = last7Days[0].v;
-    const last = last7Days[last7Days.length - 1].v;
+  // Chart points (just t/close — no need for the full OHLC shape since this
+  // is a simple area, not candles). % change is currency-independent (a
+  // ratio), so both stay in raw USD — no need to convert() just for this.
+  const lightChartPoints = useMemo(
+    () => lightCandles.map((c) => ({ t: c.t, v: c.c })),
+    [lightCandles]
+  );
+
+  const lightChangePct = useMemo(() => {
+    if (lightCandles.length < 2) return null;
+    const first = lightCandles[0].c;
+    const last = lightCandles[lightCandles.length - 1].c;
     return first > 0 ? ((last - first) / first) * 100 : null;
-  }, [last7Days]);
+  }, [lightCandles]);
 
   const runBackfill = async () => {
     setBackfilling(true);
@@ -1049,8 +1060,8 @@ const worstPerformer = useMemo(() => {
       {dashMode === "light" && (
         <>
           <LightEvolutionCard
-            points={last7Days}
-            changePct={sevenDayChangePct}
+            points={lightChartPoints}
+            changePct={lightChangePct}
             loading={lightHistoryLoading}
           />
           <p className="text-xs text-zinc-500 font-mono">{t("dash.light_mode_hint")}</p>

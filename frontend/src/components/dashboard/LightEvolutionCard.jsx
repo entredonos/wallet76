@@ -4,13 +4,14 @@ import { ArrowUpRight, TrendingDown } from "lucide-react";
 import { useI18n } from "../../context/I18nContext";
 
 // Dashboard "light" view's evolution card — a static, simplified read of
-// the last 7 daily closes (no range picker, no candles, no weekend
-// bands/safety-net badge — those stay exclusive to the full EvolutionChart
-// in "advanced"). Deliberately shows a big "+X% (last 7 days)" badge
-// instead of a Y-axis: the shape of the line already carries the trend, and
-// a badge is faster to read at a glance than axis ticks (same pattern apps
-// like Robinhood use for their home-screen chart). X-axis keeps day labels
-// only, so there's still a sense of "when" without a second axis of numbers.
+// the last 5 days at 4h-candle resolution (~30 points; no range picker, no
+// OHLC candles, no weekend bands/safety-net badge — those stay exclusive to
+// the full EvolutionChart in "advanced"). Deliberately shows a big
+// "+X% (last 5 days)" badge instead of a Y-axis: the shape of the line
+// already carries the trend, and a badge is faster to read at a glance than
+// axis ticks (same pattern apps like Robinhood use for their home-screen
+// chart). X-axis keeps ~1 day label per tick (not one per 4h point, which
+// would just repeat the same weekday 6x and look cluttered).
 export default function LightEvolutionCard({ points, changePct, loading }) {
   const { t } = useI18n();
   const isPositive = (changePct ?? 0) >= 0;
@@ -25,7 +26,7 @@ export default function LightEvolutionCard({ points, changePct, loading }) {
             <span className={`text-sm font-mono font-bold ${isPositive ? "text-emerald-400" : "text-rose-400"}`}>
               {isPositive ? "+" : ""}{changePct.toFixed(1)}%
             </span>
-            <span className="text-xs font-mono text-zinc-500">{t("dash.last_7_days")}</span>
+            <span className="text-xs font-mono text-zinc-500">{t("dash.last_5_days")}</span>
           </div>
         )}
       </div>
@@ -50,7 +51,11 @@ export default function LightEvolutionCard({ points, changePct, loading }) {
                 fontSize={10}
                 tickLine={false}
                 axisLine={false}
-                interval="preserveStartEnd"
+                // ~1 label per calendar day: at 6 four-hour candles/day,
+                // skipping 5 between ticks shows roughly 5 labels for 5
+                // days instead of one per 4h point (which would just
+                // repeat "Seg Seg Seg Seg Seg Seg Ter Ter…").
+                interval={Math.max(0, Math.round(points.length / 5) - 1)}
                 tickFormatter={(v) => {
                   try { return new Date(v).toLocaleDateString([], { weekday: "short" }); }
                   catch { return v; }
