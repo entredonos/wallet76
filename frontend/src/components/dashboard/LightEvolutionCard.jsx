@@ -57,8 +57,13 @@ export default function LightEvolutionCard({ title, points, changePct, loading }
               data={points}
               margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
               onMouseMove={(state) => {
-                if (state?.isTooltipActive && typeof state.activeTooltipIndex === "number") {
-                  setHoverIndex(state.activeTooltipIndex);
+                // Recharts v3's activeTooltipIndex always comes back as a
+                // STRING (e.g. "3"), even for numeric-index charts — a
+                // `typeof === "number"` guard here never passes, so hover
+                // silently never updated the badge. Parse it instead.
+                if (state?.isTooltipActive && state.activeTooltipIndex != null) {
+                  const idx = Number(state.activeTooltipIndex);
+                  if (Number.isFinite(idx)) setHoverIndex(idx);
                 }
               }}
               onMouseLeave={() => setHoverIndex(null)}
