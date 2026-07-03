@@ -580,4 +580,13 @@ export default function AssetDetail({ currency = "USD" }) {
               href={detail.website}
               target="_blank"
               rel="noopener noreferrer"
-              className="fle
+              className="flex items-center gap-1.5 mt-3 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              <Globe className="w-3 h-3" /> {detail.website}
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
