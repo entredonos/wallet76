@@ -376,9 +376,54 @@ function FeedbackTab() {
   );
 }
 
+function TabBadge({ n }) {
+  if (!n) return null;
+  return (
+    <span className="bg-amber-400 text-zinc-950 text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+      {n > 99 ? "99+" : n}
+    </span>
+  );
+}
+
 export default function AdminFeedback() {
   const { user } = useAuth();
   const [tab, setTab] = useState("feedback");
+  const [feedbackUnread, setFeedbackUnread] = useState(0);
+  const [usersUnread, setUsersUnread] = useState(0);
+
+  // Load both "new since last visit" counts on mount, then immediately
+  // clear whichever tab is already showing (its content is on screen, so
+  // there's nothing left unseen there) -- the other tab keeps its badge
+  // until the admin actually clicks into it.
+  useEffect(() => {
+    (async () => {
+      try {
+        const [{ data: fb }, { data: us }] = await Promise.all([
+          api.get("/feedback/unread-count"),
+          api.get("/admin/users/unread-count"),
+        ]);
+        const fbCount = fb?.count || 0;
+        const usCount = us?.count || 0;
+        setFeedbackUnread(fbCount);
+        setUsersUnread(usCount);
+        if (tab === "feedback" && fbCount > 0) {
+          api.patch("/feedback/mark-all-read").then(() => setFeedbackUnread(0)).catch(() => {});
+        } else if (tab === "users" && usCount > 0) {
+          api.patch("/admin/users/mark-seen").then(() => setUsersUnread(0)).catch(() => {});
+        }
+      } catch { /* ignore */ }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const selectTab = (key) => {
+    setTab(key);
+    if (key === "feedback" && feedbackUnread > 0) {
+      api.patch("/feedback/mark-all-read").then(() => setFeedbackUnread(0)).catch(() => {});
+    } else if (key === "users" && usersUnread > 0) {
+      api.patch("/admin/users/mark-seen").then(() => setUsersUnread(0)).catch(() => {});
+    }
+  };
 
   if (user?.email !== "entredonos@gmail.com") {
     return (
@@ -397,18 +442,19 @@ export default function AdminFeedback() {
 
       <div className="flex gap-1 border-b border-zinc-800">
         {[
-          { key: "feedback", label: "Feedback",     icon: MessageSquare },
-          { key: "users",    label: "Utilizadores",  icon: Users },
-        ].map(({ key, label, icon: Icon }) => (
+          { key: "feedback", label: "Feedback",     icon: MessageSquare, badge: feedbackUnread },
+          { key: "users",    label: "Utilizadores",  icon: Users,         badge: usersUnread },
+        ].map(({ key, label, icon: Icon, badge }) => (
           <button
             key={key}
-            onClick={() => setTab(key)}
+            onClick={() => selectTab(key)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-mono border-b-2 transition-colors -mb-px ${
               tab === key ? "border-zinc-100 text-zinc-100" : "border-transparent text-zinc-500 hover:text-zinc-300"
             }`}
           >
             <Icon className="w-4 h-4" />
             {label}
+            <TabBadge n={badge} />
           </button>
         ))}
       </div>

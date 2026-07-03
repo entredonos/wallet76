@@ -158,6 +158,39 @@ async def admin_user_search(
     return [_safe_user(u) for u in results]
 
 
+@router.get("/admin/users/unread-count")
+async def admin_users_unread_count(user=Depends(require_admin)):
+    """Admin only -- count of users registered since the admin last viewed
+    the Utilizadores tab. Unlike feedback (which has a per-document `read`
+    flag), users aren't individually markable, so we track a single
+    "last seen" timestamp in admin_state instead and count new signups
+    after it. First call ever baselines to "now" so existing users don't
+    all show up as "new" at once."""
+    state = await db.admin_state.find_one({"_id": "singleton"})
+    last_seen = state.get("users_last_seen_at") if state else None
+    if not last_seen:
+        await db.admin_state.update_one(
+            {"_id": "singleton"},
+            {"$set": {"users_last_seen_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True,
+        )
+        return {"count": 0}
+    count = await db.users.count_documents({"created_at": {"$gt": last_seen}})
+    return {"count": count}
+
+
+@router.patch("/admin/users/mark-seen")
+async def admin_users_mark_seen(user=Depends(require_admin)):
+    """Admin only -- resets the new-users badge by bumping the last-seen
+    timestamp to now."""
+    await db.admin_state.update_one(
+        {"_id": "singleton"},
+        {"$set": {"users_last_seen_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True,
+    )
+    return {"ok": True}
+
+
 @router.delete("/admin/users/{user_id}")
 async def admin_delete_user(user_id: str, user=Depends(require_admin)):
     """Admin only -- permanently delete a user and all their data."""
