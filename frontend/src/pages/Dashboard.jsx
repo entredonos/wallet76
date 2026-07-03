@@ -1005,10 +1005,31 @@ const worstPerformer = useMemo(() => {
         />
       </div>
 
-      {/* Light view: just the summary cards above + this hint. Everything
-          below (pills, movers, charts, table) only renders in "advanced". */}
+      {/* Light view: summary cards above + a static, simplified evolution
+          chart (no range picker, no candles/weekend bands/safety-net badge
+          — those stay exclusive to the full EvolutionChart in "advanced").
+          Reuses the same summarySparkData/chartIsPositive already computed
+          for the summary cards' own sparklines, so this costs no extra
+          fetch or computation. Everything else (pills, movers, allocation,
+          table) only renders in "advanced". */}
       {dashMode === "light" && (
-        <p className="text-xs text-zinc-500 font-mono">{t("dash.light_mode_hint")}</p>
+        <>
+          <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-5">
+            <div className="text-sm font-medium text-zinc-300 mb-3">{t("dash.evolution")}</div>
+            {chartLoading ? (
+              <div className="h-[140px] flex items-center justify-center text-zinc-600 text-sm font-mono">
+                {t("dash.chart_loading")}
+              </div>
+            ) : summarySparkData.length > 1 ? (
+              <Sparkline data={summarySparkData} positive={chartIsPositive} width="100%" height={140} />
+            ) : (
+              <div className="h-[140px] flex items-center justify-center text-zinc-600 text-sm font-mono">
+                {t("dash.chart_empty")}
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-zinc-500 font-mono">{t("dash.light_mode_hint")}</p>
+        </>
       )}
 
       {dashMode === "advanced" && (
