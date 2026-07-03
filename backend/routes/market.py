@@ -14,12 +14,13 @@ router = APIRouter()
 MOVERS_CRYPTO_TTL = 150
 MOVERS_STOCKS_TTL = 240
 
-# Universe definitions surfaced to the user via the info popup next to the
+# Universe definition surfaced to the user via the info popup next to the
 # "Top Gainers"/"Top Losers" titles on the Mercado page (see market.crypto_
-# universe_note / market.stocks_universe_note in I18nContext.jsx) — keep
-# these two in sync with the actual filtering logic below, not just the copy.
+# universe_note in I18nContext.jsx) — keep in sync with the actual CoinGecko
+# call below, not just the copy. Gainers/losers themselves are a plain
+# top-10-by-rank (no >0%/<0% filter, no stock price floor) — reverted at the
+# user's request on 3 jul 2026, back to how it worked before that change.
 CRYPTO_UNIVERSE_SIZE = 250  # CoinGecko per_page above, top 250 by market cap
-STOCK_MIN_PRICE_USD = 5  # excludes penny stocks, whose % moves are noisy
 
 
 @router.get("/market/movers/crypto")
@@ -63,17 +64,9 @@ async def _fetch_movers_crypto():
                     "market_cap_usd": x.get("market_cap"),
                     "volume_24h_usd": x.get("total_volume"),
                 } for x in rows if x.get("price_change_percentage_24h") is not None]
-                # Only show genuine gainers/losers (>0% / <0%) — on a broadly
-                # green (or red) day among the top 250, taking a blind top-10
-                # by rank would pad "Top Losers" with coins that are still up,
-                # just less than the rest. Better to show fewer than 10 than
-                # to mislabel a gainer as a loser.
-                out["gainers"] = sorted(
-                    [d for d in cleaned if d["change_24h"] > 0], key=lambda d: d["change_24h"], reverse=True
-                )[:10]
-                out["losers"] = sorted(
-                    [d for d in cleaned if d["change_24h"] < 0], key=lambda d: d["change_24h"]
-                )[:10]
+                cleaned.sort(key=lambda d: d["change_24h"], reverse=True)
+                out["gainers"] = cleaned[:10]
+                out["losers"] = sorted(cleaned, key=lambda d: d["change_24h"])[:10]
                 _cache_set(cache_key, out)
                 return out
     except Exception as e:
@@ -147,12 +140,9 @@ async def _fetch_movers_crypto():
         return rows
 
     rows = await asyncio.to_thread(_fetch)
-    out["gainers"] = sorted(
-        [d for d in rows if d["change_24h"] > 0], key=lambda d: d["change_24h"], reverse=True
-    )[:10]
-    out["losers"] = sorted(
-        [d for d in rows if d["change_24h"] < 0], key=lambda d: d["change_24h"]
-    )[:10]
+    rows.sort(key=lambda d: d["change_24h"], reverse=True)
+    out["gainers"] = rows[:10]
+    out["losers"] = sorted(rows, key=lambda d: d["change_24h"])[:10]
     _cache_set(cache_key, out)
     return out
 
@@ -198,7 +188,7 @@ async def _fetch_movers_stocks():
                     if len(closes) < 2:
                         continue
                     prev, last = float(closes[-2]), float(closes[-1])
-                    if prev == 0 or last < STOCK_MIN_PRICE_USD:
+                    if prev == 0:
                         continue
                     pct = (last - prev) / prev * 100.0
                     rows.append({
@@ -214,15 +204,10 @@ async def _fetch_movers_stocks():
         return rows
 
     rows = await asyncio.to_thread(_fetch)
-    # Same reasoning as crypto above: only genuine gainers/losers, never pad
-    # "Top Losers" with stocks that are actually up on the day.
+    rows.sort(key=lambda d: d["change_24h"], reverse=True)
     out = {
-        "gainers": sorted(
-            [d for d in rows if d["change_24h"] > 0], key=lambda d: d["change_24h"], reverse=True
-        )[:10],
-        "losers": sorted(
-            [d for d in rows if d["change_24h"] < 0], key=lambda d: d["change_24h"]
-        )[:10],
+        "gainers": rows[:10],
+        "losers": sorted(rows, key=lambda d: d["change_24h"])[:10],
     }
     _cache_set(cache_key, out)
     return out
