@@ -11,8 +11,14 @@ from core import db, get_current_user, _cache_get, _cache_set, _cache_get_stale,
 router = APIRouter()
 
 
-MOVERS_CRYPTO_TTL = 150
-MOVERS_STOCKS_TTL = 240
+# Bumped from 150s/240s (crypto/stocks) to 1000s on 3 jul 2026, alongside
+# MARKET_REFRESH_INTERVAL_SECONDS below — tonight's incident (CoinGecko 429
+# storm + Render OOM) showed the previous 2-4 min cadence was too aggressive
+# for the free-tier APIs under real load. Slightly longer than the refresh
+# interval so a request landing right at the boundary still hits the cache
+# the background refresher just wrote, instead of triggering its own fetch.
+MOVERS_CRYPTO_TTL = 1000
+MOVERS_STOCKS_TTL = 1000
 
 # Universe definition surfaced to the user via the info popup next to the
 # "Top Gainers"/"Top Losers" titles on the Mercado page (see market.crypto_
@@ -344,7 +350,12 @@ async def market_portfolio_news(user=Depends(get_current_user)):
 # fetch cost itself (the stocks fetch alone routinely takes 10-20s — see
 # _fetch_movers_stocks() docstring). Same background-loop pattern as
 # alert_checker.run_alert_checker() and portfolio.run_snapshot_scheduler().
-MARKET_REFRESH_INTERVAL_SECONDS = 120
+# 15 min (bumped from 2 min on 3 jul 2026, same incident as the TTL bump
+# above) — this is also the number shown to the user next to "Crypto · 24h"
+# / "Stocks · Today" on the Mercado page ("Atualizado a cada 15 min" —
+# market.updated_every in I18nContext.jsx). If you change this value, update
+# that translated copy too, in all 6 languages.
+MARKET_REFRESH_INTERVAL_SECONDS = 900
 
 
 async def run_market_movers_refresher() -> None:

@@ -10,6 +10,13 @@ import { useI18n } from "../context/I18nContext";
 import { SkeletonMoversList } from "../components/SkeletonRow";
 import { Popover, PopoverTrigger, PopoverContent } from "../components/ui/popover";
 
+// Must match MARKET_REFRESH_INTERVAL_SECONDS in backend/routes/market.py
+// (900s = 15 min) — shown to the user next to the section titles so it's
+// clear the movers lists aren't live-live, just refreshed periodically
+// (kept deliberately conservative to stay well within the free CoinGecko/
+// yfinance rate limits after the 3 jul 2026 incident).
+const MARKET_REFRESH_MINUTES = 15;
+
 export default function Market() {
   const { t } = useI18n();
   const [crypto, setCrypto] = useState({ gainers: [], losers: [] });
@@ -44,6 +51,7 @@ export default function Market() {
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-amber-400"/>
           <div className="text-xs font-mono uppercase tracking-[0.2em] text-amber-400">{t("market.crypto_24h")}</div>
+          <div className="text-[10px] font-mono text-zinc-600">{t("market.updated_every", { minutes: MARKET_REFRESH_MINUTES })}</div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {loading ? (
@@ -65,6 +73,7 @@ export default function Market() {
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-blue-400"/>
           <div className="text-xs font-mono uppercase tracking-[0.2em] text-blue-400">{t("market.stocks_day")}</div>
+          <div className="text-[10px] font-mono text-zinc-600">{t("market.updated_every", { minutes: MARKET_REFRESH_MINUTES })}</div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {loading ? (
@@ -106,7 +115,6 @@ function MoversList({ kind, type, items, t, universeNote }) {
             </PopoverContent>
           </Popover>
         </div>
-        <div className="text-[10px] font-mono text-zinc-500">{items.length}</div>
       </div>
       {items.length === 0 ? (
         <div className="px-5 py-8 text-center text-zinc-600 text-sm" data-testid={`movers-${kind}-${type}-empty`}>
@@ -114,6 +122,15 @@ function MoversList({ kind, type, items, t, universeNote }) {
         </div>
       ) : (
         <div className="divide-y divide-zinc-800/30">
+          {/* Column headers — spacer widths (16px rank, 28px icon) mirror
+              the row layout below so the labels line up with their values. */}
+          <div className="flex items-center gap-3 px-5 py-1.5 text-[9px] font-mono uppercase tracking-wider text-zinc-600">
+            <span style={{ width: 16 }} className="shrink-0"/>
+            <span style={{ width: 28 }} className="shrink-0"/>
+            <span className="min-w-0 flex-1">{t("market.col_asset")}</span>
+            <span className="text-right">{t("market.col_price")}</span>
+            <span className="text-right min-w-[64px]">{t("market.col_change")}</span>
+          </div>
           {items.map((it, i) => {
             const pos = (it.change_24h || 0) >= 0;
             const assetTypeKey = kind === "crypto" ? "crypto" : "stock";
