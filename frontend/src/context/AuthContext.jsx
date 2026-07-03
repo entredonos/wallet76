@@ -22,7 +22,10 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const { data } = await api.post("/auth/login", { email, password });
-    if (data.token) localStorage.setItem("token", data.token);
+    // The backend also returns `token` in the response body, but we don't
+    // persist it anywhere JS-readable (no localStorage) — the httpOnly
+    // cookie it also sets is the only thing that authenticates subsequent
+    // requests. See lib/api.js for why.
     setUser(data);
     return data;
   };
@@ -35,7 +38,6 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try { await api.post("/auth/logout"); } catch {}
-    localStorage.removeItem("token");
     // Clear dashboard cache so the next user doesn't see stale data
     try {
       Object.keys(sessionStorage)

@@ -1,10 +1,14 @@
-import { useTheme } from "next-themes"
+import { useTheme } from "../../context/ThemeContext"
 import { Toaster as Sonner, toast } from "sonner"
 
 const Toaster = ({
   ...props
 }) => {
-  const { theme = "system" } = useTheme()
+  // Was reading next-themes' useTheme(), whose ThemeProvider is never
+  // mounted in this app (we use our own ThemeContext) — so toasts always
+  // rendered with theme="system" regardless of the user's actual dark/light
+  // choice. Use the app's real theme hook instead.
+  const { theme = "dark" } = useTheme()
 
   return (
     <Sonner

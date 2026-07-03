@@ -31,6 +31,10 @@ class ResendVerificationBody(BaseModel):
     email: EmailStr
 
 
+class DeleteAccountBody(BaseModel):
+    password: str
+
+
 class WalletCreate(BaseModel):
     name: str
     type: Literal["broker", "exchange", "wallet"] = "broker"

@@ -31,11 +31,18 @@ _KEY_ENV = "BROKER_ENCRYPTION_KEY"
 def _master_fernet() -> Fernet:
     key = os.environ.get(_KEY_ENV)
     if not key:
-        key = Fernet.generate_key().decode()
-        os.environ[_KEY_ENV] = key
-        logger.warning(
-            "BROKER_ENCRYPTION_KEY not set — generated ephemeral key. "
-            "Persist in .env: %s=%s", _KEY_ENV, key
+        # Do NOT fall back to a silently-generated ephemeral key: on Render's
+        # free tier the process restarts/redeploys often, and every restart
+        # would then generate a *different* throwaway key — permanently
+        # bricking every already-stored broker credential (undecryptable)
+        # the moment the process recycles. Fail loudly instead, at the
+        # earliest possible point, so a missing env var is caught during
+        # deploy/startup rather than silently corrupting user data later.
+        raise RuntimeError(
+            f"{_KEY_ENV} is not set. Broker credential encryption cannot "
+            "start without it — set it in the environment (Render dashboard "
+            "or .env) before running. Generate one with: "
+            "python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
         )
     return Fernet(key.encode() if isinstance(key, str) else key)
 

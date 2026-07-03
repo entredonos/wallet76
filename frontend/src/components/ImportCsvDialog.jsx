@@ -14,7 +14,11 @@
  *                     a default "Import CSV" button is rendered
  */
 import React, { useState } from "react";
-import * as XLSX from "xlsx";
+// xlsx (SheetJS) is a large parser (500KB+) only needed when a user picks an
+// actual .xlsx/.xls file — it's dynamically imported inside onFile() below
+// instead of statically here, so the majority of users (who add
+// transactions manually and never open this dialog's file picker with an
+// Excel file) don't pay for it in the /transactions route's bundle chunk.
 import { Upload, FileText } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -206,6 +210,7 @@ export default function ImportCsvDialog({ wallets = [], onSaved, defaultWalletId
       const name = file.name || "";
       const isXLSX = /\.xlsx?$/i.test(name);
       if (isXLSX) {
+        const XLSX = await import("xlsx");
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf, { type: "array", cellDates: true });
         const allRows = [];

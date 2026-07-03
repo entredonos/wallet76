@@ -30,33 +30,21 @@ from routes import (
     allocation as allocation_routes,
 )
 
-app = FastAPI(title="Wallet76 API")
+# Render sets RENDER=true automatically on every deployed instance — use it
+# to disable the interactive API docs (which would otherwise fully enumerate
+# every route, including admin ones) in production while keeping them
+# available for local development.
+_is_production = bool(os.environ.get("RENDER"))
+app = FastAPI(
+    title="Wallet76 API",
+    docs_url=None if _is_production else "/docs",
+    redoc_url=None if _is_production else "/redoc",
+    openapi_url=None if _is_production else "/openapi.json",
+)
 api_router = APIRouter(prefix="/api")
 @app.get("/ping")
 async def ping():
     return {"ok": True, "app": "wallet76"}
-
-
-@app.get("/debug/promote-admin")
-async def debug_promote_admin():
-    """TEMPORARY — remove after use. Atlas TLS outage forced a cluster
-    recreation (new empty database), so the account seed script can't be
-    run locally against production without reconfiguring a local .env.
-    This does the same thing admin_tools.py's promote_user() does, over
-    HTTP, once, for the site owner's own account only.
-    """
-    email = "entredonos@gmail.com"
-    res = await db.users.update_one(
-        {"email": email},
-        {"$set": {
-            "role": "admin",
-            "subscription_status": "active",
-            "subscription_plan": "admin",
-        }},
-    )
-    if res.matched_count == 0:
-        return {"ok": False, "error": f"user not found: {email}"}
-    return {"ok": True, "email": email, "modified": res.modified_count}
 
 
 @api_router.get("/")
@@ -157,6 +145,19 @@ async def _ensure_indexes():
 
 @app.on_event("startup")
 async def startup():
+    # BROKER_ENCRYPTION_KEY is a plain env-var read (no network round trip),
+    # so checking it here is instant and safe to do synchronously — unlike
+    # _ensure_indexes() below, this can't hang. Fail startup loudly if it's
+    # missing rather than letting broker_connectors/crypto.py silently
+    # generate a throwaway key later (see that module's docstring for why
+    # that used to be dangerous on a free-tier instance that restarts often).
+    if not os.environ.get("BROKER_ENCRYPTION_KEY"):
+        logger.critical(
+            "BROKER_ENCRYPTION_KEY is not set — refusing to start. "
+            "Set it in the environment before deploying."
+        )
+        raise RuntimeError("BROKER_ENCRYPTION_KEY is not set")
+
     # Fire-and-forget — see _ensure_indexes() docstring for why this must
     # NOT be awaited here.
     asyncio.create_task(_ensure_indexes())

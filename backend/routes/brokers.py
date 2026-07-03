@@ -14,7 +14,7 @@ from typing import Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from pydantic import BaseModel
 
-from core import db, get_current_user, require_active_subscription, logger
+from core import db, get_current_user, require_active_subscription, logger, _client_ip
 from broker_connectors.crypto import (
     encrypt_for_user, decrypt_for_user,
     get_or_create_user_key, decrypt_conn_field, migrate_conn_to_v2,
@@ -198,6 +198,7 @@ async def _write_audit(
     imported: int = 0,
     errors: list | None = None,
     error_msg: str = "",
+    ip: str = "",
 ) -> None:
     """Write a sync event to audit_logs and check for repeated failures."""
     now = datetime.now(timezone.utc).isoformat()
@@ -211,6 +212,7 @@ async def _write_audit(
         "imported": imported,
         "errors": (errors or [])[:10],
         "error_msg": error_msg,
+        "ip": ip,
         "timestamp": now,
     })
 
@@ -234,7 +236,7 @@ async def _write_audit(
                 user = await db.users.find_one({"id": user_id})
                 conn = await db.broker_connections.find_one({"id": conn_id})
                 if user and conn:
-                    from email_service import send_email
+                    from email_utils import send_email
                     await send_email(
                         to=user["email"],
                         subject="⚠️ Wallet76 — Broker connection failing",
@@ -252,7 +254,7 @@ async def _write_audit(
                 logger.error("Failed to send suspicious-key alert: %s", e)
 
 
-async def _do_sync(conn_id: str, user_id: str, wallet_id: str | None) -> dict:
+async def _do_sync(conn_id: str, user_id: str, wallet_id: str | None, ip: str = "") -> dict:
     conn = await db.broker_connections.find_one({"id": conn_id, "user_id": user_id})
     if not conn:
         return {"error": "Connection not found"}
@@ -309,7 +311,7 @@ async def _do_sync(conn_id: str, user_id: str, wallet_id: str | None) -> dict:
                 "_suspicious": False,
             }},
         )
-        await _write_audit(user_id, conn_id, broker, "success", imported, errors)
+        await _write_audit(user_id, conn_id, broker, "success", imported, errors, ip=ip)
         logger.info("Broker sync %s/%s: %d imported, %d errors", broker, conn_id, imported, len(errors))
         return {"imported": imported, "errors": errors}
 
@@ -319,7 +321,7 @@ async def _do_sync(conn_id: str, user_id: str, wallet_id: str | None) -> dict:
             {"id": conn_id},
             {"$set": {"last_error": err_msg, "last_synced_at": now}},
         )
-        await _write_audit(user_id, conn_id, broker, "error", error_msg=err_msg)
+        await _write_audit(user_id, conn_id, broker, "error", error_msg=err_msg, ip=ip)
         logger.error("Broker sync %s/%s failed: %s", broker, conn_id, e)
         return {"error": err_msg}
 
@@ -372,13 +374,19 @@ async def list_audit(user=Depends(get_current_user)):
 async def sync_connection(
     conn_id: str,
     background_tasks: BackgroundTasks,
+    request: Request,
     wallet_id: str | None = None,
     user=Depends(require_active_subscription),
 ):
     conn = await db.broker_connections.find_one({"id": conn_id, "user_id": user["id"]})
     if not conn:
         raise HTTPException(404, "Connection not found")
-    background_tasks.add_task(_do_sync, conn_id, user["id"], wallet_id)
+    if wallet_id:
+        wallet = await db.wallets.find_one({"id": wallet_id, "user_id": user["id"]})
+        if not wallet:
+            raise HTTPException(404, "Wallet not found")
+    ip = _client_ip(request)
+    background_tasks.add_task(_do_sync, conn_id, user["id"], wallet_id, ip)
     return {"ok": True, "message": "Sync started in background"}
 
 

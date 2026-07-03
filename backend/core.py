@@ -82,6 +82,18 @@ async def get_current_user(request: Request) -> dict:
     user.pop("_id", None)
     return user
 
+# Single source of truth for "who is an admin" — route files should import
+# `require_admin` (a dependency) rather than re-checking `ADMIN_EMAILS`
+# manually, so a newly-added admin route can't accidentally ship unguarded.
+ADMIN_EMAILS = {"entredonos@gmail.com"}
+
+
+async def require_admin(user: dict = Depends(get_current_user)) -> dict:
+    if user.get("email") not in ADMIN_EMAILS:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return user
+
+
 async def require_active_subscription(user: dict = Depends(get_current_user)) -> dict:
     if user.get("role") == "admin":
         return user
@@ -103,6 +115,31 @@ def is_pro_user(user: dict) -> bool:
     if user.get("role") == "admin":
         return True
     return user.get("subscription_status") in ("active", "trialing")
+
+
+# Every Mongo collection that stores per-user data, keyed by `user_id`.
+# Shared by both the admin delete-user route (feedback.py) and the
+# self-service account-deletion route (auth.py) so they can never drift
+# apart — a prior version of this list (only in the admin route, inline)
+# used wrong collection names for three of these and silently left orphaned
+# data behind on every deletion, since each collection was wrapped in its
+# own swallowed try/except.
+USER_DATA_COLLECTIONS = [
+    "transactions", "wallets", "snapshots", "alerts", "watchlists",
+    "watchlist_groups", "feedback", "user_prefs", "allocation_prefs",
+    "share_links", "broker_connections", "audit_logs", "user_security",
+    "user_keys",
+]
+
+
+async def delete_all_user_data(user_id: str) -> None:
+    """Deletes every per-user collection, then the user document itself."""
+    for col in USER_DATA_COLLECTIONS:
+        try:
+            await getattr(db, col).delete_many({"user_id": user_id})
+        except Exception as e:
+            logger.error(f"Failed to clear {col} for user {user_id}: {e}")
+    await db.users.delete_one({"id": user_id})
 
 # --- Simple in-memory cache ---
 _cache: dict = {}
@@ -140,6 +177,39 @@ def cache_clear_prefix(prefix: str) -> int:
 _cache_get = cache_get
 _cache_set = cache_set
 _cache_clear_prefix = cache_clear_prefix
+
+
+# --- Simple in-memory rate limiter (per-process) ---
+# Render's free tier runs a single instance, so an in-memory counter is
+# enough to stop casual brute-force/credential-stuffing/registration-spam
+# without adding a new dependency (Redis, slowapi, etc). It resets on
+# restart/redeploy — that just means limits reset too, not a security hole,
+# since a redeploy is a rare, deliberate event, not something an attacker
+# controls.
+_rate_limit_hits: dict = {}
+
+
+def _client_ip(request: Request) -> str:
+    fwd = request.headers.get("x-forwarded-for", "")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def check_rate_limit(request: Request, bucket: str, max_attempts: int, window_seconds: int) -> None:
+    """Raise 429 if this (bucket, client IP) pair has hit `max_attempts`
+    within the last `window_seconds`. Call at the top of any endpoint that
+    should be brute-force-resistant (login, register, forgot-password)."""
+    key = f"{bucket}:{_client_ip(request)}"
+    now = datetime.now(timezone.utc).timestamp()
+    hits = [t for t in _rate_limit_hits.get(key, []) if now - t < window_seconds]
+    if len(hits) >= max_attempts:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many attempts. Please wait a bit before trying again.",
+        )
+    hits.append(now)
+    _rate_limit_hits[key] = hits
 
 
 # --- WebAuthn helpers (used by security routes) ---

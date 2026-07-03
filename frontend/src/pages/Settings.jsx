@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api, formatApiErrorDetail } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -28,6 +30,8 @@ function bufToB64url(buf) {
 
 export default function Settings() {
   const { t } = useI18n();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [status, setStatus] = useState({ lock_mode: "none", has_pin: false, biometric_count: 0 });
   const [pinDialog, setPinDialog] = useState(false);
   const [pin, setPin] = useState("");
@@ -38,6 +42,27 @@ export default function Settings() {
   const [alertEmails, setAlertEmails] = useState(true);
   const [wallets, setWallets] = useState([]);
   const [resetModal, setResetModal] = useState(null); // { type:"wallet"|"all", walletId, walletName, code, input, loading }
+  const [deleteAccountDialog, setDeleteAccountDialog] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  const submitDeleteAccount = async () => {
+    setDeletingAccount(true);
+    try {
+      await api.delete("/account", { data: { password: deletePassword } });
+      setDeleteAccountDialog(false);
+      await logout();
+      navigate("/");
+    } catch (e) {
+      if (e.response?.status === 401) {
+        toast.error(t("settings.delete_account_wrong_password"));
+      } else {
+        toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Error");
+      }
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
 
   const genCode = () => String(Math.floor(1000 + Math.random() * 9000));
 
@@ -362,6 +387,23 @@ export default function Settings() {
               <Trash2 className="w-3.5 h-3.5 mr-1.5" /> {t("settings.danger_btn_clear_all")}
             </Button>
           </div>
+
+          {/* Delete account */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 border-t border-zinc-800 pt-4 mt-4">
+            <div className="flex-1">
+              <div className="text-sm text-zinc-300">{t("settings.danger_delete_account")}</div>
+              <div className="text-xs text-zinc-500 mt-0.5">{t("settings.danger_delete_account_desc")}</div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setDeletePassword(""); setDeleteAccountDialog(true); }}
+              className="shrink-0 border-rose-500/40 text-rose-400 hover:bg-rose-500/10"
+              data-testid="danger-delete-account-btn"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1.5" /> {t("settings.danger_btn_delete_account")}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -447,6 +489,41 @@ export default function Settings() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Delete account confirmation dialog */}
+      <Dialog open={deleteAccountDialog} onOpenChange={(v) => { if (!deletingAccount) setDeleteAccountDialog(v); }}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display font-light text-2xl text-rose-400">{t("settings.delete_account_dialog_title")}</DialogTitle>
+            <DialogDescription className="text-zinc-500 text-sm">
+              {t("settings.delete_account_dialog_desc")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("settings.delete_account_password_label")}</Label>
+            <Input
+              type="password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && deletePassword) submitDeleteAccount(); }}
+              className="bg-zinc-900/50 border-zinc-800"
+              data-testid="delete-account-password-input"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteAccountDialog(false)} disabled={deletingAccount} className="bg-zinc-900/50 border-zinc-800 text-zinc-300">{t("common.cancel")}</Button>
+            <Button
+              onClick={submitDeleteAccount}
+              disabled={deletingAccount || !deletePassword}
+              className="bg-rose-600 hover:bg-rose-500 text-white border-0"
+              data-testid="delete-account-confirm-submit"
+            >
+              {deletingAccount ? t("common.saving") : t("settings.danger_btn_delete_account")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -93,17 +93,21 @@ async def stripe_webhook(request: Request):
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
 
-    if WEBHOOK_SECRET:
-        try:
-            event = stripe.Webhook.construct_event(
-                payload,
-                sig_header,
-                WEBHOOK_SECRET
-            )
-        except Exception:
-            raise HTTPException(status_code=400, detail="Webhook inválido")
-    else:
-        event = await request.json()
+    if not WEBHOOK_SECRET:
+        # Fail closed, not open: without a configured secret there is no way
+        # to verify this request actually came from Stripe — trusting an
+        # unsigned payload here would let anyone POST a fake
+        # "subscription.updated" event and grant themselves Pro for free.
+        raise HTTPException(status_code=500, detail="Webhook não configurado")
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload,
+            sig_header,
+            WEBHOOK_SECRET
+        )
+    except Exception:
+        raise HTTPException(status_code=400, detail="Webhook inválido")
 
     if event["type"] in [
         "customer.subscription.created",

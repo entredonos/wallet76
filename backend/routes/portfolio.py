@@ -233,6 +233,25 @@ async def _save_snapshot(user_id: str, enriched: list, total_usd: float, total_p
 SNAPSHOT_INTERVAL_SECONDS = 15 * 60
 
 
+# Cap on simultaneous per-user snapshot jobs. Users' price lookups share the
+# same per-symbol cache (prices.py), so running several in parallel mostly
+# means only the first one per symbol actually hits CoinGecko/yfinance — but
+# an unbounded asyncio.gather() over every user at once could still open too
+# many concurrent outbound requests on Render's free tier, so it's capped
+# with a semaphore rather than fully unbounded.
+SNAPSHOT_CONCURRENCY = 8
+
+
+async def _snapshot_one_user(uid: str, sem: "asyncio.Semaphore") -> None:
+    async with sem:
+        try:
+            priced = await _price_holdings(uid)
+            if priced["enriched"]:
+                await _save_snapshot(uid, priced["enriched"], priced["total_usd"], priced["total_pnl"])
+        except Exception as e:
+            logger.warning(f"Snapshot scheduler: user {uid} failed: {e}")
+
+
 async def run_snapshot_scheduler() -> None:
     """Background loop — call once from FastAPI startup (server.py), same
     pattern as alert_checker.run_alert_checker(). Without this, a portfolio
@@ -241,21 +260,23 @@ async def run_snapshot_scheduler() -> None:
     the dashboard gets gaps — and the short intraday chart timeframes
     (15m/30m/1h/4h) end up with far fewer than N_BARS candles to show. This
     keeps snapshot history growing continuously for every user, regardless
-    of whether the app is open."""
-    logger.info(f"Snapshot scheduler started (interval={SNAPSHOT_INTERVAL_SECONDS}s)")
+    of whether the app is open.
+
+    Users are snapshotted with bounded concurrency (SNAPSHOT_CONCURRENCY)
+    rather than one at a time — with a sequential loop, total run time
+    scaled linearly with user count and risked not finishing within the
+    15-min bucket window as the user base grows; each user's work is
+    I/O-bound (DB + price-API awaits), so running several at once is safe
+    and each user's failure is still isolated (caught individually, doesn't
+    affect the others)."""
+    logger.info(f"Snapshot scheduler started (interval={SNAPSHOT_INTERVAL_SECONDS}s, concurrency={SNAPSHOT_CONCURRENCY})")
     while True:
         try:
             users = await db.users.find({}, {"_id": 0, "id": 1}).to_list(10000)
-            for u in users:
-                uid = u.get("id")
-                if not uid:
-                    continue
-                try:
-                    priced = await _price_holdings(uid)
-                    if priced["enriched"]:
-                        await _save_snapshot(uid, priced["enriched"], priced["total_usd"], priced["total_pnl"])
-                except Exception as e:
-                    logger.warning(f"Snapshot scheduler: user {uid} failed: {e}")
+            sem = asyncio.Semaphore(SNAPSHOT_CONCURRENCY)
+            await asyncio.gather(*(
+                _snapshot_one_user(u["id"], sem) for u in users if u.get("id")
+            ))
         except Exception as e:
             logger.error(f"Snapshot scheduler loop error: {e}", exc_info=True)
         await asyncio.sleep(SNAPSHOT_INTERVAL_SECONDS)

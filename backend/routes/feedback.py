@@ -3,14 +3,32 @@ import logging
 import re
 from datetime import datetime, timezone
 
-from core import db, get_current_user
+from core import db, get_current_user, require_admin, delete_all_user_data
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-ADMIN_EMAILS = {"entredonos@gmail.com"}
+# Safe projection for admin user listings — never pull password_hash or
+# reset/verify token hashes into Python just to discard them in _safe_user.
+_USER_LIST_PROJECTION = {
+    "_id": 0, "id": 1, "email": 1, "name": 1, "created_at": 1,
+    "email_verified": 1, "subscription_plan": 1, "subscription_status": 1,
+}
+
+
+def _tier_filter(tier: str) -> dict:
+    """Server-side Mongo filter matching the same tier logic as _safe_user's
+    `tier` field, so admin_user_list can filter in the DB instead of pulling
+    every user into Python first."""
+    if tier == "monthly":
+        return {"subscription_status": "active", "subscription_plan": "monthly"}
+    if tier == "yearly":
+        return {"subscription_status": "active", "subscription_plan": "yearly"}
+    if tier == "free":
+        return {"$nor": [{"subscription_status": "active", "subscription_plan": {"$in": ["monthly", "yearly"]}}]}
+    return {}
 
 
 class FeedbackIn(BaseModel):
@@ -36,28 +54,22 @@ async def submit_feedback(body: FeedbackIn, user=Depends(get_current_user)):
 
 
 @router.get("/feedback/unread-count")
-async def unread_count(user=Depends(get_current_user)):
+async def unread_count(user=Depends(require_admin)):
     """Admin only -- count of unread feedback messages."""
-    if user.get("email") not in ADMIN_EMAILS:
-        return {"count": 0}
     count = await db.feedback.count_documents({"read": {"$ne": True}})
     return {"count": count}
 
 
 @router.patch("/feedback/mark-all-read")
-async def mark_all_read(user=Depends(get_current_user)):
+async def mark_all_read(user=Depends(require_admin)):
     """Admin only -- mark all feedback as read."""
-    if user.get("email") not in ADMIN_EMAILS:
-        return {"ok": False}
     await db.feedback.update_many({"read": {"$ne": True}}, {"$set": {"read": True}})
     return {"ok": True}
 
 
 @router.get("/feedback")
-async def list_feedback(user=Depends(get_current_user)):
+async def list_feedback(user=Depends(require_admin)):
     """Admin only -- returns all feedback."""
-    if user.get("email") not in ADMIN_EMAILS:
-        return []
     docs = await db.feedback.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
     return docs
 
@@ -83,32 +95,34 @@ def _safe_user(u: dict) -> dict:
 
 
 @router.get("/admin/users/stats")
-async def admin_user_stats(user=Depends(get_current_user)):
-    """Admin only -- user counts + last 10 registrations."""
-    if user.get("email") not in ADMIN_EMAILS:
-        raise HTTPException(status_code=403, detail="Forbidden")
+async def admin_user_stats(user=Depends(require_admin)):
+    """Admin only -- user counts + last 10 registrations. Counts come from a
+    Mongo aggregation ($group) instead of loading every user document into
+    Python, so this stays fast as the user base grows."""
+    pipeline = [
+        {"$group": {
+            "_id": {
+                "$cond": [
+                    {"$and": [
+                        {"$eq": ["$subscription_status", "active"]},
+                        {"$in": ["$subscription_plan", ["monthly", "yearly"]]},
+                    ]},
+                    "$subscription_plan",
+                    "free",
+                ]
+            },
+            "count": {"$sum": 1},
+        }},
+    ]
+    rows = await db.users.aggregate(pipeline).to_list(10)
+    counts = {r["_id"]: r["count"] for r in rows}
+    free, monthly, yearly = counts.get("free", 0), counts.get("monthly", 0), counts.get("yearly", 0)
 
-    all_users = await db.users.find({}, {"_id": 0}).sort("created_at", -1).to_list(10000)
-
-    total   = len(all_users)
-    free    = 0
-    monthly = 0
-    yearly  = 0
-
-    for u in all_users:
-        sub_status = u.get("subscription_status", "none")
-        sub_plan   = u.get("subscription_plan")
-        if sub_status == "active" and sub_plan == "monthly":
-            monthly += 1
-        elif sub_status == "active" and sub_plan == "yearly":
-            yearly += 1
-        else:
-            free += 1
-
-    last10 = [_safe_user(u) for u in all_users[:10]]
+    last10_docs = await db.users.find({}, _USER_LIST_PROJECTION).sort("created_at", -1).to_list(10)
+    last10 = [_safe_user(u) for u in last10_docs]
 
     return {
-        "total":   total,
+        "total":   free + monthly + yearly,
         "free":    free,
         "monthly": monthly,
         "yearly":  yearly,
@@ -119,45 +133,37 @@ async def admin_user_stats(user=Depends(get_current_user)):
 @router.get("/admin/users/list")
 async def admin_user_list(
     tier: str | None = Query(None, description="free|monthly|yearly; omit for all users"),
-    user=Depends(get_current_user),
+    user=Depends(require_admin),
 ):
     """Admin only -- full user list, optionally filtered by tier. Backs the
     clickable stat cards (Total/Free/Pro Mensal/Pro Anual) on the admin
     Users tab, as opposed to /admin/users/stats' last10 which is always
-    unfiltered and capped at 10."""
-    if user.get("email") not in ADMIN_EMAILS:
-        raise HTTPException(status_code=403, detail="Forbidden")
-
-    all_users = await db.users.find({}, {"_id": 0}).sort("created_at", -1).to_list(10000)
-    safe = [_safe_user(u) for u in all_users]
-    if tier in ("free", "monthly", "yearly"):
-        safe = [u for u in safe if u["tier"] == tier]
-    return safe
+    unfiltered and capped at 10. The tier filter is applied in the Mongo
+    query itself (see _tier_filter) rather than after loading every user."""
+    query = _tier_filter(tier) if tier in ("free", "monthly", "yearly") else {}
+    docs = await db.users.find(query, _USER_LIST_PROJECTION).sort("created_at", -1).to_list(10000)
+    return [_safe_user(u) for u in docs]
 
 
 @router.get("/admin/users/search")
 async def admin_user_search(
     q: str = Query(..., min_length=1),
-    user=Depends(get_current_user),
+    user=Depends(require_admin),
 ):
     """Admin only -- search users by email or name (case-insensitive)."""
-    if user.get("email") not in ADMIN_EMAILS:
-        raise HTTPException(status_code=403, detail="Forbidden")
-
     pattern = re.compile(re.escape(q.strip()), re.IGNORECASE)
     results = await db.users.find(
         {"$or": [{"email": pattern}, {"name": pattern}]},
-        {"_id": 0},
+        _USER_LIST_PROJECTION,
     ).sort("created_at", -1).to_list(50)
 
     return [_safe_user(u) for u in results]
 
 
 @router.delete("/admin/users/{user_id}")
-async def admin_delete_user(user_id: str, user=Depends(get_current_user)):
+async def admin_delete_user(user_id: str, user=Depends(require_admin)):
     """Admin only -- permanently delete a user and all their data."""
-    if user.get("email") not in ADMIN_EMAILS:
-        raise HTTPException(status_code=403, detail="Forbidden")
+    from core import ADMIN_EMAILS
 
     target = await db.users.find_one({"id": user_id})
     if not target:
@@ -167,19 +173,7 @@ async def admin_delete_user(user_id: str, user=Depends(get_current_user)):
         raise HTTPException(status_code=400, detail="Cannot delete admin account")
 
     email = target.get("email", "")
-
-    await db.users.delete_one({"id": user_id})
-    await db.transactions.delete_many({"user_id": user_id})
-    await db.wallets.delete_many({"user_id": user_id})
-    await db.snapshots.delete_many({"user_id": user_id})
-    await db.alerts.delete_many({"user_id": user_id})
-    await db.watchlists.delete_many({"user_id": user_id})
-    await db.feedback.delete_many({"user_id": user_id})
-    for col in ["preferences", "share_links", "broker_credentials", "audit_log"]:
-        try:
-            await getattr(db, col).delete_many({"user_id": user_id})
-        except Exception:
-            pass
+    await delete_all_user_data(user_id)
 
     logger.warning(f"Admin deleted user {email} (id={user_id})")
     return {"ok": True, "deleted_email": email}

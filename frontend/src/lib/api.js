@@ -8,12 +8,13 @@ export const api = axios.create({
   withCredentials: true,
 });
 
-// Attach Bearer token if available (fallback for cookie issues)
-api.interceptors.request.use((config) => {
-  const t = localStorage.getItem("token");
-  if (t) config.headers.Authorization = `Bearer ${t}`;
-  return config;
-});
+// Auth relies solely on the httpOnly `access_token` cookie (sent
+// automatically via withCredentials above) — we deliberately do NOT also
+// keep a copy of the JWT in localStorage/Authorization headers. A token
+// readable by JS defeats the point of httpOnly: any future XSS anywhere in
+// the app would be able to read and exfiltrate it. The cookie-only path is
+// already correctly scoped by the backend's explicit CORS origin allowlist
+// (see backend/server.py), so there's no need for a header-based fallback.
 
 api.interceptors.response.use(
   (response) => response,

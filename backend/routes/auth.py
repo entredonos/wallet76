@@ -5,19 +5,25 @@ import secrets
 import uuid
 from datetime import datetime, timezone, timedelta
 
-from fastapi import APIRouter, HTTPException, Response, Depends
+import stripe
+from fastapi import APIRouter, HTTPException, Response, Request, Depends
 
-from core import db, hash_password, verify_password, create_access_token, get_current_user, APP_URL
+from core import (
+    db, hash_password, verify_password, create_access_token, get_current_user,
+    APP_URL, check_rate_limit, logger, delete_all_user_data,
+)
 from email_utils import send_email, email_layout, _log_email_task_result
 from models import (
-    UserRegister, UserLogin, ForgotPasswordBody, ResetPasswordBody, TokenBody, ResendVerificationBody,
+    UserRegister, UserLogin, ForgotPasswordBody, ResetPasswordBody, TokenBody,
+    ResendVerificationBody, DeleteAccountBody,
 )
 
 router = APIRouter()
 
 
 @router.post("/auth/register")
-async def register(payload: UserRegister, response: Response):
+async def register(payload: UserRegister, request: Request, response: Response):
+    check_rate_limit(request, "register", max_attempts=8, window_seconds=3600)
     email = payload.email.lower().strip()
     existing = await db.users.find_one({"email": email})
     if existing:
@@ -54,7 +60,8 @@ async def register(payload: UserRegister, response: Response):
 
 
 @router.post("/auth/login")
-async def login(payload: UserLogin, response: Response):
+async def login(payload: UserLogin, request: Request, response: Response):
+    check_rate_limit(request, "login", max_attempts=10, window_seconds=300)
     email = payload.email.lower().strip()
     user = await db.users.find_one({"email": email})
     if not user or not verify_password(payload.password, user["password_hash"]):
@@ -95,9 +102,38 @@ async def me(user=Depends(get_current_user)):
     return full
 
 
+@router.delete("/account")
+async def delete_account(payload: DeleteAccountBody, response: Response, user=Depends(get_current_user)):
+    """Self-service account deletion (GDPR right to erasure — the landing
+    page promises this; until this endpoint existed, the only way to delete
+    a user's data was an admin manually running the admin-only delete
+    route). Requires the current password as confirmation since this is
+    irreversible and can't be undone by support.
+
+    Cancels any active Stripe subscription first (best-effort — a Stripe
+    hiccup shouldn't block the user from deleting their own data), then
+    removes every collection of the user's data via the same shared helper
+    the admin delete-user route uses, so both stay in sync."""
+    full = await db.users.find_one({"id": user["id"]})
+    if not full or not verify_password(payload.password, full.get("password_hash", "")):
+        raise HTTPException(status_code=401, detail="Incorrect password")
+
+    sub_id = full.get("stripe_subscription_id")
+    if sub_id:
+        try:
+            stripe.Subscription.delete(sub_id)
+        except Exception as e:
+            logger.warning(f"Failed to cancel Stripe subscription {sub_id} during account deletion: {e}")
+
+    await delete_all_user_data(user["id"])
+    response.delete_cookie("access_token", path="/")
+    return {"ok": True}
+
+
 @router.post("/auth/forgot-password")
-async def forgot_password(payload: ForgotPasswordBody):
+async def forgot_password(payload: ForgotPasswordBody, request: Request):
     """Always returns 200 to avoid enumeration. If user exists, sends reset email."""
+    check_rate_limit(request, "forgot-password", max_attempts=6, window_seconds=3600)
     email = payload.email.lower().strip()
     user = await db.users.find_one({"email": email})
     if user:
