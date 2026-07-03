@@ -1,30 +1,45 @@
-import React from "react";
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import React, { useMemo, useState } from "react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { ArrowUpRight, TrendingDown } from "lucide-react";
 import { useI18n } from "../../context/I18nContext";
 
 // Dashboard "light" view's evolution card — a static, simplified read of
 // the last 5 days at 4h-candle resolution (~30 points; no range picker, no
 // OHLC candles, no weekend bands/safety-net badge — those stay exclusive to
-// the full EvolutionChart in "advanced"). Deliberately shows a big
-// "+X% (last 5 days)" badge instead of a Y-axis: the shape of the line
-// already carries the trend, and a badge is faster to read at a glance than
-// axis ticks (same pattern apps like Robinhood use for their home-screen
-// chart). X-axis keeps ~1 day label per tick (not one per 4h point, which
-// would just repeat the same weekday 6x and look cluttered).
-export default function LightEvolutionCard({ points, changePct, loading }) {
+// the full EvolutionChart in "advanced"). Shows a big "+X% (last 5 days)"
+// badge instead of a Y-axis: the shape of the line already carries the
+// trend, and a badge is faster to read at a glance than axis ticks (same
+// pattern apps like Robinhood use for their home-screen chart). Hovering
+// the chart swaps the badge to the change from period-start up to the
+// hovered point (a hidden Tooltip drives the hit-testing; nothing is drawn
+// for it — the badge itself is the "tooltip"). X-axis keeps ~1 day label
+// per tick, not one per 4h point.
+export default function LightEvolutionCard({ title, points, changePct, loading }) {
   const { t } = useI18n();
-  const isPositive = (changePct ?? 0) >= 0;
+  const [hoverIndex, setHoverIndex] = useState(null);
+
+  // While hovering, show the change from the first point up to the
+  // hovered one instead of the fixed full-period change. Falls back to the
+  // full-period value the moment the cursor leaves the chart.
+  const displayPct = useMemo(() => {
+    if (hoverIndex === null || !points.length) return changePct;
+    const first = points[0]?.v;
+    const current = points[hoverIndex]?.v;
+    if (!first) return changePct;
+    return ((current - first) / first) * 100;
+  }, [hoverIndex, points, changePct]);
+
+  const isPositive = (displayPct ?? 0) >= 0;
 
   return (
     <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-5">
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <div className="text-sm font-medium text-zinc-300">{t("dash.evolution")}</div>
-        {changePct !== null && changePct !== undefined && (
+        <div className="text-sm font-medium text-zinc-300">{title}</div>
+        {displayPct !== null && displayPct !== undefined && (
           <div className="flex items-center gap-1.5">
             {isPositive ? <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" /> : <TrendingDown className="w-3.5 h-3.5 text-rose-400" />}
             <span className={`text-sm font-mono font-bold ${isPositive ? "text-emerald-400" : "text-rose-400"}`}>
-              {isPositive ? "+" : ""}{changePct.toFixed(1)}%
+              {isPositive ? "+" : ""}{displayPct.toFixed(1)}%
             </span>
             <span className="text-xs font-mono text-zinc-500">{t("dash.last_5_days")}</span>
           </div>
@@ -38,7 +53,16 @@ export default function LightEvolutionCard({ points, changePct, loading }) {
           </div>
         ) : points.length > 1 ? (
           <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={100}>
-            <AreaChart data={points} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+            <AreaChart
+              data={points}
+              margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
+              onMouseMove={(state) => {
+                if (state?.isTooltipActive && typeof state.activeTooltipIndex === "number") {
+                  setHoverIndex(state.activeTooltipIndex);
+                }
+              }}
+              onMouseLeave={() => setHoverIndex(null)}
+            >
               <defs>
                 <linearGradient id="lightEvoFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity={0.35} />
@@ -62,6 +86,11 @@ export default function LightEvolutionCard({ points, changePct, loading }) {
                 }}
               />
               <YAxis hide domain={["dataMin", "dataMax"]} />
+              {/* No visible tooltip box — the badge above is the "tooltip".
+                  This just drives hit-testing (activeTooltipIndex) and draws
+                  a subtle vertical cursor line so hovering still feels
+                  responsive. */}
+              <Tooltip content={() => null} cursor={{ stroke: "#52525b", strokeDasharray: "3 3" }} />
               <Area
                 type="monotone"
                 dataKey="v"

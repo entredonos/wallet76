@@ -853,6 +853,18 @@ const worstPerformer = useMemo(() => {
     p: Number(p.value || 0),
   }));
 
+  // Light card's title mirrors what the main page title already does with
+  // `selectedWallet`: name a specific wallet when one's selected, otherwise
+  // it's the combined view across every wallet — "Portfolio", not "Wallet".
+  const evolutionTitle = selectedWallet ? t("dash.evolution") : t("dash.evolution_portfolio");
+
+  // "Atualizado há Xmin" — computed at render time (same as before), now
+  // shown inline in the subtitle instead of as a stray caption under the
+  // refresh button.
+  const lastSyncMinutesLabel = lastSync && !refreshing
+    ? (() => { const m = Math.round((Date.now() - lastSync.getTime()) / 60000); return m < 1 ? "< 1" : m; })()
+    : null;
+
   if (loading) {
     return <DashboardSkeleton data-testid="dashboard-loading" />;
   }
@@ -915,6 +927,9 @@ const worstPerformer = useMemo(() => {
                     count: totalCount,
                     wallets: walletCount,
                   })}
+              {lastSyncMinutesLabel !== null && (
+                <> · {t("common.updated")} {lastSyncMinutesLabel}min</>
+              )}
             </p>
           </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -922,7 +937,7 @@ const worstPerformer = useMemo(() => {
             variant="outline"
             size="sm"
             onClick={() => setDashMode((m) => (m === "light" ? "advanced" : "light"))}
-            className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+            className="bg-zinc-900/50 border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200"
             data-testid="dash-mode-toggle"
           >
             <Gauge className="w-4 h-4 mr-2" />
@@ -955,17 +970,10 @@ const worstPerformer = useMemo(() => {
               <Bell className="w-4 h-4 mr-2"/> {t("common.alerts")}
             </Button>
           </Link>
-          <div className="flex flex-col items-end gap-0.5">
-            <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing} className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100" data-testid="refresh-btn">
-              <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}/>
-              {refreshing ? t("common.updating") : t("common.refresh")}
-            </Button>
-            {lastSync && !refreshing && (
-              <span className="text-[10px] text-zinc-400 font-mono pr-0.5">
-                {t("common.updated")} {(() => { const m = Math.round((Date.now() - lastSync.getTime()) / 60000); return m < 1 ? "< 1" : m; })()}min
-              </span>
-            )}
-          </div>
+          <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing} className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100" data-testid="refresh-btn">
+            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}/>
+            {refreshing ? t("common.updating") : t("common.refresh")}
+          </Button>
           <Link to="/transactions">
             <Button size="sm" className="bg-blue-500 hover:bg-blue-400 text-zinc-950 font-medium" data-testid="goto-tx-btn">
               <Receipt className="w-4 h-4 mr-2"/> + {t("common.add")}
@@ -1060,11 +1068,32 @@ const worstPerformer = useMemo(() => {
       {dashMode === "light" && (
         <>
           <LightEvolutionCard
+            title={evolutionTitle}
             points={lightChartPoints}
             changePct={lightChangePct}
             loading={lightHistoryLoading}
           />
-          <p className="text-xs text-zinc-500 font-mono">{t("dash.light_mode_hint")}</p>
+          {(() => {
+            // Highlights the button label ("Painel avançado" / "Advanced
+            // panel" / etc.) wherever it appears inside the hint sentence,
+            // in the same amber as the button itself — works across all 6
+            // languages since dash.light_mode_hint always embeds the exact
+            // dash.view_advanced string verbatim (quoted or between
+            // guillemets, depending on the language).
+            const hint = t("dash.light_mode_hint");
+            const label = t("dash.view_advanced");
+            const idx = hint.indexOf(label);
+            if (idx === -1) {
+              return <p className="text-xs text-zinc-500 font-mono">{hint}</p>;
+            }
+            return (
+              <p className="text-xs text-zinc-500 font-mono">
+                {hint.slice(0, idx)}
+                <span className="text-amber-400 font-medium">{label}</span>
+                {hint.slice(idx + label.length)}
+              </p>
+            );
+          })()}
         </>
       )}
 
