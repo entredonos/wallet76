@@ -18,6 +18,7 @@ import UpgradeDialog from "../components/UpgradeDialog";
 import { usePlan } from "../hooks/usePlan";
 import { WALLET_COLOR_KEYS, WALLET_BORDER_CLASS, WALLET_TEXT_CLASS } from "../lib/walletColors";
 import { ALLOCATION_CLASSES, ALLOCATION_CLASS_LABEL_KEY, ALLOCATION_CLASS_COLOR, aggregateByClass } from "../lib/allocation";
+import { requestSidebarRefresh } from "../lib/sidebarRefresh";
 
 const TYPE_PRESETS = [
   { value: "broker", label: "Broker", Icon: Briefcase },
@@ -77,6 +78,7 @@ export default function Wallets() {
       toast.success(t("wallets.toast_created"));
       setOpen(false); setName(""); setType("broker"); setCurrency("USD");
       load();
+      requestSidebarRefresh();
     } catch (e) {
       const detail = e.response?.data?.detail;
       if (e.response?.status === 402 && detail?.reason === "wallet_limit") {
@@ -106,6 +108,7 @@ export default function Wallets() {
       toast.success(t("wallets.toast_renamed"));
       setEditTarget(null);
       load();
+      requestSidebarRefresh();
     } catch (e) {
       toast.error(formatApiErrorDetail(e.response?.data?.detail) || t("wallets.toast_rename_failed"));
     } finally {
@@ -119,6 +122,7 @@ export default function Wallets() {
       toast.success(t("wallets.toast_deleted"));
       setDeleteTarget(null);
       load();
+      requestSidebarRefresh();
     } catch (e) {
       toast.error(t("wallets.toast_delete_failed"));
     }

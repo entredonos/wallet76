@@ -13,6 +13,7 @@ import walletLogo from "../assets/wallet76-logo80x60.png";
 import GlobalSearch from "./GlobalSearch";
 import Sparkline from "./Sparkline";
 import FeedbackWidget from "./FeedbackWidget";
+import { onSidebarRefreshRequested } from "../lib/sidebarRefresh";
 
 const TYPE_ICON = { broker: Briefcase, exchange: Coins, wallet: WalletIcon };
 
@@ -31,13 +32,21 @@ export default function Layout({ children, currency, setCurrency }) {
   const [open, setOpen] = useState(false);
   const [unreadFeedback, setUnreadFeedback] = useState(0);
 
-  // Poll unread feedback count (admin only)
+  // Poll unread feedback count (admin only). Skips the request while the
+  // tab is backgrounded (no point polling a hidden tab every 30s), and
+  // catches up immediately when it regains focus instead of waiting out
+  // the rest of the interval.
   useEffect(() => {
     if (user?.email !== "entredonos@gmail.com") return;
-    const fetch = () => api.get("/feedback/unread-count").then(r => setUnreadFeedback(r.data?.count || 0)).catch(() => {});
+    const fetch = () => {
+      if (document.visibilityState === "hidden") return;
+      api.get("/feedback/unread-count").then(r => setUnreadFeedback(r.data?.count || 0)).catch(() => {});
+    };
     fetch();
     const tid = setInterval(fetch, 30000);
-    return () => clearInterval(tid);
+    const onVisible = () => { if (document.visibilityState === "visible") fetch(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { clearInterval(tid); document.removeEventListener("visibilitychange", onVisible); };
   }, [user?.email]);
 
   // Cmd/Ctrl+K shortcut
@@ -52,9 +61,19 @@ export default function Layout({ children, currency, setCurrency }) {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  // Sidebar summary data (wallet list, alert badge count, watchlist badge
+  // count, per-wallet PnL for the sparklines). Runs once on mount, not on
+  // every navigation: this used to be keyed off `loc.pathname`, so every
+  // single route change — even between pages that have nothing to do with
+  // wallets/alerts/watchlists, like Settings → Analytics — restarted the
+  // interval and immediately re-fired all 5 requests. A sidebar badge is
+  // fine being up to 30s stale; it doesn't need to be re-fetched just
+  // because the user clicked a nav link. Also skips the request round-trip
+  // while the tab is backgrounded, and catches up on refocus.
   useEffect(() => {
     let cancel = false;
     const load = async () => {
+      if (document.visibilityState === "hidden") return;
       try {
         const [w, a, wl, p] = await Promise.all([
           api.get("/wallets"),
@@ -89,8 +108,19 @@ export default function Layout({ children, currency, setCurrency }) {
     };
     load();
     const tid = setInterval(load, 30000);
-    return () => { cancel = true; clearInterval(tid); };
-  }, [loc.pathname]);
+    const onVisible = () => { if (document.visibilityState === "visible") load(); };
+    document.addEventListener("visibilitychange", onVisible);
+    // Pages that create/rename/delete a wallet, alert, or watchlist call
+    // requestSidebarRefresh() so the sidebar catches up immediately instead
+    // of waiting out the rest of the 30s interval.
+    const unsubscribe = onSidebarRefreshRequested(load);
+    return () => {
+      cancel = true;
+      clearInterval(tid);
+      document.removeEventListener("visibilitychange", onVisible);
+      unsubscribe();
+    };
+  }, []);
 
   const linkCls = ({ isActive }) =>
     `flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${
@@ -122,7 +152,7 @@ export default function Layout({ children, currency, setCurrency }) {
           className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300 transition-colors text-sm font-mono"
         >
           <Search className="w-4 h-4 shrink-0" />
-          <span className="flex-1 text-left text-xs">{t("nav.asset_search") || "Info Ativos..."}</span>
+          <span className="flex-1 text-left text-xs">{t("nav.asset_search")}</span>
           <kbd className="hidden lg:block text-[9px] border border-zinc-700 rounded px-1 py-0.5">⌘K</kbd>
         </button>
       </div>
@@ -203,7 +233,7 @@ export default function Layout({ children, currency, setCurrency }) {
         })()}
 
         {wallets.length === 0 && (
-          <div className="px-3 py-2 text-xs text-zinc-600 font-mono">No wallets yet</div>
+          <div className="px-3 py-2 text-xs text-zinc-600 font-mono">{t("nav.no_wallets")}</div>
         )}
         {wallets.map((w) => {
           const Icon = TYPE_ICON[w.type] || WalletIcon;
@@ -284,7 +314,7 @@ export default function Layout({ children, currency, setCurrency }) {
           <button
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}
             className="ml-auto p-1.5 border border-zinc-800 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 transition-colors"
-            title={theme === "light" ? "Switch to dark" : "Switch to light"}
+            title={theme === "light" ? t("theme.switch_dark") : t("theme.switch_light")}
             data-testid="theme-toggle"
           >
             {theme === "light" ? <Moon className="w-4 h-4"/> : <Sun className="w-4 h-4"/>}
@@ -317,7 +347,7 @@ export default function Layout({ children, currency, setCurrency }) {
           >
             <span className="flex items-center gap-2">
               <ShieldCheck className="w-3.5 h-3.5" />
-              ADMIN · Feedback
+              {t("nav.admin_feedback")}
             </span>
             {unreadFeedback > 0 && (
               <span className="bg-amber-400 text-zinc-950 text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
@@ -330,7 +360,7 @@ export default function Layout({ children, currency, setCurrency }) {
         <div className="flex items-center justify-between">
           <div className="min-w-0">
             <div className="text-xs text-zinc-300 truncate" data-testid="nav-user-email">{user?.email}</div>
-            <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">{t("nav.logged_in") || "Logged in"}</div>
+            <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">{t("nav.logged_in")}</div>
           </div>
           <Button
             variant="ghost"
@@ -338,7 +368,7 @@ export default function Layout({ children, currency, setCurrency }) {
             onClick={async () => { await logout(); nav("/login"); }}
             className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
             data-testid="nav-logout"
-            title="Logout"
+            title={t("common.logout")}
           >
             <LogOut className="w-4 h-4" />
           </Button>

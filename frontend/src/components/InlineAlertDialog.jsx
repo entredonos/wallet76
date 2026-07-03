@@ -10,6 +10,7 @@ import { ArrowUp, ArrowDown, BellRing } from "lucide-react";
 import { toast } from "sonner";
 import { fmtCurrency } from "../lib/format";
 import { useI18n } from "../context/I18nContext";
+import { requestSidebarRefresh } from "../lib/sidebarRefresh";
 
 /**
  * Reusable inline price-alert creator. Pops a focused dialog pre-filled with the asset.
@@ -48,8 +49,9 @@ export default function InlineAlertDialog({ asset, open, onOpenChange, onCreated
       toast.success(t("alert.created"));
       onOpenChange(false);
       onCreated?.();
+      requestSidebarRefresh();
     } catch (e) {
-      toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Failed");
+      toast.error(formatApiErrorDetail(e.response?.data?.detail) || t("common.error"));
     } finally {
       setSaving(false);
     }

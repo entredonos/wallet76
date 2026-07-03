@@ -1,0 +1,268 @@
+import React from "react";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import { Settings2, ShoppingCart, Trash2, Eye, ArrowUpRight, ArrowDownRight, Tag } from "lucide-react";
+import { api } from "../../lib/api";
+import { fmtCurrency, fmtPct, fmtNum, convert, curSymbol } from "../../lib/format";
+import { useI18n } from "../../context/I18nContext";
+import AssetIcon from "../AssetIcon";
+import FlashingPrice from "../FlashingPrice";
+import Sparkline from "../Sparkline";
+import SortableTH from "./SortableTH";
+import { ALL_COLUMNS, TYPE_LABELS, isNYSEOpen } from "../../constants/dashboardConstants";
+import { ALLOCATION_CLASSES, ALLOCATION_CLASS_LABEL_KEY } from "../../lib/allocation";
+
+// Holdings table — sortable columns, column-visibility menu, per-row
+// sell/delete/chart actions, and the "UPGRADE v1.0" manual reclassify
+// popover. Dashboard.jsx still owns visibleCols/sortKey/sortDir/etc as
+// state (persisted to localStorage there) and passes down the derived
+// `sorted` list plus the handlers that mutate that state.
+export default function AssetsTable({
+  sorted, visibleCols, colVisible, toggleCol, colMenuOpen, setColMenuOpen,
+  sortKey, sortDir, handleSort, wallets, currency, fxRates, mask, hideValues,
+  allocOverrides, reclassifyOpenKey, setReclassifyOpenKey, saveOverride,
+  sparklines, nav, load,
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-zinc-800/50 flex items-center justify-between">
+        <div className="text-sm font-medium text-zinc-300">{t("dash.assets")}</div>
+        <div className="flex items-center gap-3">
+          <div className="text-xs font-mono text-zinc-500" data-testid="assets-count">{sorted.length} {sorted.length === 1 ? "item" : "itens"}</div>
+          <div className="relative">
+            <button
+              onClick={() => setColMenuOpen((v) => !v)}
+              className="p-1.5 border border-zinc-800 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 transition-colors"
+              data-testid="columns-gear-btn"
+              title="Configure columns"
+            >
+              <Settings2 className="w-4 h-4"/>
+            </button>
+            {colMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setColMenuOpen(false)}/>
+                <div className="absolute right-0 top-full mt-2 z-40 w-56 bg-zinc-950 border border-zinc-800 rounded-md shadow-2xl p-2" data-testid="columns-menu">
+                  <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500 px-2 py-1.5">Columns</div>
+                  {ALL_COLUMNS.map((c) => (
+                    <label key={c.key} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-200 hover:bg-zinc-900 rounded cursor-pointer" data-testid={`col-toggle-${c.key}`}>
+                      <input
+                        type="checkbox"
+                        checked={colVisible(c.key)}
+                        onChange={() => toggleCol(c.key)}
+                        className="accent-blue-500"
+                      />
+                      <span>{t(c.labelKey)}{c.suffix || ""}</span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full" data-testid="assets-table">
+          <thead>
+            <tr className="text-xs font-mono uppercase tracking-[0.1em] text-zinc-500 border-b border-zinc-800/30">
+              <SortableTH label={t("dash.assets")} k="symbol" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} testId="sort-symbol" className="text-left px-5 py-3"/>
+              {colVisible("type") && <th className="text-center px-3 py-3 font-normal">{t("dash.col_type")}</th>}
+              {colVisible("price") && <SortableTH label={t("common.price")} k="price_usd" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} testId="sort-price" className="text-right px-4 py-3"/>}
+              {colVisible("qty") && <SortableTH label={t("common.quantity")} k="quantity" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} testId="sort-qty" className="text-right px-4 py-3"/>}
+              {colVisible("value") && <SortableTH label={t("common.value")} k="value_usd" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} testId="sort-value" className="text-right px-4 py-3"/>}
+              {colVisible("avg_cost") && <SortableTH label={t("common.avg_cost")} k="avg_cost_usd" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} testId="sort-avg" className="text-right px-4 py-3"/>}
+              {colVisible("pnl") && <SortableTH label="P&L" k="pnl_usd" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} testId="sort-pnl" className="text-right px-4 py-3"/>}
+              {colVisible("alloc") && <SortableTH label={t("common.allocation")} k="allocation" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} testId="sort-alloc" className="text-right px-4 py-3"/>}
+              {colVisible("change") && <SortableTH label={t("common.change_24h")} k="change_24h" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} testId="sort-24h" className="text-right px-4 py-3"/>}
+              {colVisible("spark") && <th className="text-right px-3 py-3 font-normal">{t("common.chart_24h")}</th>}
+              {colVisible("wallet") && <th className="text-left px-4 py-3 font-normal">{t("common.wallet")}</th>}
+              <th className="text-right px-4 py-3 font-normal">{t("common.actions")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.length === 0 && (
+              <tr><td colSpan={visibleCols.length + 2} className="text-center text-zinc-600 py-12 text-sm font-mono" data-testid="no-assets">
+                {t("dash.no_assets")}
+              </td></tr>
+            )}
+            {sorted.map((a) => {
+              const walletName = wallets.find((w) => w.id === a.wallet_id)?.name || "--";
+              const pos = a.pnl_usd >= 0;
+              const pos24 = (a.change_24h || 0) >= 0;
+              const sym = curSymbol(currency);
+              const formatPrice = (n) => `${sym}${convert(n, currency, fxRates).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2})}`;
+              const rowKey = `${a.symbol}-${a.wallet_id}-${a.asset_type}`;
+              // "UPGRADE v1.0" (task #77) — manual reclassification is
+              // keyed by SYMBOL alone (applies globally across every
+              // wallet), never by this specific row/holding.
+              const overrideCls = allocOverrides[(a.symbol || "").toUpperCase()];
+              return (
+                <tr key={rowKey} className="border-b border-zinc-800/30 hover:bg-zinc-900/40 transition-colors" data-testid={`asset-row-${a.symbol}-${a.wallet_id}`}>
+                  <td className="px-5 py-4">
+                    <button
+                      type="button"
+                      onClick={() => nav(`/asset/${a.symbol}`)}
+                      className="flex items-center gap-3 text-left hover:opacity-80 transition-opacity"
+                      data-testid={`asset-link-${a.symbol}`}
+                    >
+                      <AssetIcon asset={a}/>
+                      <div>
+                        <div className="font-mono font-medium text-zinc-100">{a.symbol}</div>
+                        <div className="text-xs text-zinc-500">
+                          {a.name}
+                        </div>
+                      </div>
+                    </button>
+                  </td>
+                  {colVisible("type") && (
+                    <td className="px-3 py-4 text-center">
+                      <div className="inline-flex items-center gap-1">
+                        <span className={`text-[10px] font-mono font-semibold tracking-wide px-2 py-0.5 rounded border ${
+                          a.asset_type === "crypto"  ? "border-amber-500/40 text-amber-400 bg-amber-500/10" :
+                          a.asset_type === "etf"     ? "border-blue-500/40 text-blue-400 bg-blue-500/10" :
+                          a.asset_type === "fund"    ? "border-purple-500/40 text-purple-400 bg-purple-500/10" :
+                          a.asset_type === "bond"    ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/10" :
+                          a.asset_type === "cash"    ? "border-zinc-500/40 text-zinc-300 bg-zinc-500/10" :
+                          a.asset_type === "reit"    ? "border-orange-500/40 text-orange-400 bg-orange-500/10" :
+                                                       "border-zinc-700/40 text-zinc-400 bg-zinc-800/30"
+                        }`}>
+                          {TYPE_LABELS[a.asset_type] ? t(TYPE_LABELS[a.asset_type]) : a.asset_type}
+                        </span>
+
+                        {/* "UPGRADE v1.0" (task #77) — manual per-symbol
+                            allocation-class override, independent of the
+                            badge above (which always shows the asset's
+                            real instrument type). */}
+                        <div className="relative inline-block">
+                          <button
+                            type="button"
+                            onClick={() => setReclassifyOpenKey(reclassifyOpenKey === rowKey ? null : rowKey)}
+                            className={`p-1 rounded transition-colors ${overrideCls ? "text-amber-400 hover:text-amber-300" : "text-zinc-600 hover:text-zinc-300"}`}
+                            title={overrideCls ? t("alloc.reclassified_badge_tooltip") : t("alloc.reclassify_tooltip")}
+                            data-testid={`reclassify-btn-${a.symbol}-${a.wallet_id}`}
+                          >
+                            <Tag className="w-3 h-3" />
+                          </button>
+                          {reclassifyOpenKey === rowKey && (
+                            <>
+                              <div className="fixed inset-0 z-30" onClick={() => setReclassifyOpenKey(null)} />
+                              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 z-40 w-36 bg-zinc-950 border border-zinc-800 rounded-md shadow-2xl p-1" data-testid={`reclassify-menu-${a.symbol}`}>
+                                <button
+                                  type="button"
+                                  onClick={() => saveOverride(a.symbol, null)}
+                                  className={`w-full text-left px-2 py-1.5 text-xs rounded hover:bg-zinc-900 transition-colors ${!overrideCls ? "text-zinc-100" : "text-zinc-400"}`}
+                                  data-testid={`reclassify-option-auto-${a.symbol}`}
+                                >
+                                  {t("alloc.reclassify_auto")}
+                                </button>
+                                <div className="my-1 border-t border-zinc-800" />
+                                {ALLOCATION_CLASSES.map((cls) => (
+                                  <button
+                                    key={cls}
+                                    type="button"
+                                    onClick={() => saveOverride(a.symbol, cls)}
+                                    className={`w-full text-left px-2 py-1.5 text-xs rounded hover:bg-zinc-900 transition-colors ${overrideCls === cls ? "text-emerald-400" : "text-zinc-300"}`}
+                                    data-testid={`reclassify-option-${cls}-${a.symbol}`}
+                                  >
+                                    {t(ALLOCATION_CLASS_LABEL_KEY[cls])}
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                  )}
+                  {colVisible("price") && (
+                    <td className="px-4 py-4 text-right">
+                      <FlashingPrice
+                        value={a.live_price_usd}
+                        formatted={formatPrice(a.live_price_usd)}
+                        live={a.live}
+                        marketOpen={a.asset_type === "crypto" ? true : isNYSEOpen()}
+                        testId={`price-${a.symbol}`}
+                      />
+                      {a.delayed && (
+                        <div className="text-[10px] text-zinc-600 mt-0.5 font-mono" title={t("dash.price_delayed_tooltip")}>
+                          {t("dash.price_delayed")}
+                        </div>
+                      )}
+                    </td>
+                  )}
+                  {colVisible("qty") && <td className="px-4 py-4 text-right font-mono text-zinc-300">{mask(fmtNum(a.quantity, 4))}</td>}
+                  {colVisible("value") && <td className="px-4 py-4 text-right font-mono text-zinc-100">{mask(fmtCurrency(convert(a.value_usd, currency, fxRates), currency))}</td>}
+                  {colVisible("avg_cost") && <td className="px-4 py-4 text-right font-mono text-zinc-500">{fmtCurrency(convert(a.avg_cost_usd, currency, fxRates), currency)}</td>}
+                  {colVisible("pnl") && (
+                    <td className={`px-4 py-4 text-right font-mono ${pos ? "text-emerald-400" : "text-rose-400"}`}>
+                      <div>{mask(fmtCurrency(convert(a.pnl_usd, currency, fxRates), currency))}</div>
+                      <div className="text-xs">{fmtPct(a.pnl_pct)}</div>
+                    </td>
+                  )}
+                  {colVisible("alloc") && <td className="px-4 py-4 text-right font-mono text-zinc-300">{a.allocation.toFixed(2)}%</td>}
+                  {colVisible("change") && (
+                    <td className={`px-4 py-4 text-right font-mono text-sm ${pos24 ? "text-emerald-400" : "text-rose-400"}`}>
+                      <div className="inline-flex items-center gap-1">
+                        {pos24 ? <ArrowUpRight className="w-3 h-3"/> : <ArrowDownRight className="w-3 h-3"/>}
+                        {fmtPct(a.change_24h || 0)}
+                      </div>
+                    </td>
+                  )}
+                  {colVisible("spark") && (
+                    <td className="px-3 py-4 text-right" data-testid={`sparkline-${a.symbol}`}>
+                      <div className="inline-block">
+                        <Sparkline data={sparklines[`${a.asset_type}:${a.symbol.toUpperCase()}`]} positive={(a.change_24h || 0) >= 0} />
+                      </div>
+                    </td>
+                  )}
+                  {colVisible("wallet") && (
+                    <td className="px-4 py-4">
+                      <span className="text-xs font-mono text-zinc-300 border border-zinc-800 rounded px-2 py-1">{walletName}</span>
+                    </td>
+                  )}
+                  <td className="px-4 py-4 text-right">
+                    <div className="inline-flex items-center gap-1.5">
+                      <Link
+                        to={`/transactions?sell=${a.symbol}&type=${a.asset_type}&wallet=${a.wallet_id}`}
+                        className="p-1.5 rounded-md text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                        data-testid={`action-sell-${a.symbol}`}
+                        title="Sell"
+                      >
+                        <ShoppingCart className="w-4 h-4"/>
+                      </Link>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm(`Delete ALL transactions for ${a.symbol} in this wallet?`)) return;
+                          try {
+                            const { data: txns } = await api.get("/transactions");
+                            const toDelete = (txns || []).filter((tx) => tx.symbol.toUpperCase() === a.symbol.toUpperCase() && tx.wallet_id === a.wallet_id && tx.asset_type === a.asset_type);
+                            await Promise.all(toDelete.map((tx) => api.delete(`/transactions/${tx.id}`)));
+                            toast.success(`Deleted ${toDelete.length} transactions`);
+                            load(true);
+                          } catch { toast.error("Failed to delete"); }
+                        }}
+                        className="p-1.5 rounded-md text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                        data-testid={`action-delete-${a.symbol}`}
+                        title="Delete all transactions for this asset"
+                      >
+                        <Trash2 className="w-4 h-4"/>
+                      </button>
+                      <Link
+                        to={`/asset/${a.asset_type}/${a.symbol}`}
+                        className="p-1.5 rounded-md text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                        data-testid={`action-chart-${a.symbol}`}
+                        title="Open chart"
+                      >
+                        <Eye className="w-4 h-4"/>
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

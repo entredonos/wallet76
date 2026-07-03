@@ -17,6 +17,7 @@ import { fmtCurrency, fmtPct } from "../lib/format";
 import { useI18n } from "../context/I18nContext";
 import { SkeletonTableRow } from "../components/SkeletonRow";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { requestSidebarRefresh } from "../lib/sidebarRefresh";
 
 export default function Alerts() {
   const { t } = useI18n();
@@ -46,7 +47,7 @@ export default function Alerts() {
         priceMap[`${e.asset_type}:${e.symbol.toUpperCase()}`] = e.price_usd;
       });
       setLivePrices(priceMap);
-    } catch (e) { toast.error("Failed to load alerts"); }
+    } catch (e) { toast.error(t("alert.load_failed")); }
     finally { setLoading(false); }
   };
 
@@ -56,23 +57,25 @@ export default function Alerts() {
     if (typeof Notification === "undefined") return;
     const p = await Notification.requestPermission();
     setNotifPerm(p);
-    if (p === "granted") toast.success("Browser notifications enabled");
+    if (p === "granted") toast.success(t("alert.notifs_enabled"));
   };
 
   const deleteAlert = async (id) => {
-    if (!window.confirm("Delete this alert?")) return;
+    if (!window.confirm(t("alert.confirm_delete"))) return;
     try {
       await api.delete(`/alerts/${id}`);
-      toast.success("Alert deleted");
+      toast.success(t("alert.deleted"));
       load();
-    } catch { toast.error("Failed"); }
+      requestSidebarRefresh();
+    } catch { toast.error(t("common.error")); }
   };
 
   const toggleAlert = async (alert) => {
     try {
       await api.patch(`/alerts/${alert.id}`, { active: !alert.active });
       load();
-    } catch { toast.error("Failed"); }
+      requestSidebarRefresh();
+    } catch { toast.error(t("common.error")); }
   };
 
   return (
@@ -124,7 +127,7 @@ export default function Alerts() {
               {loading && [0,1,2,3,4].map(i => <SkeletonTableRow key={i} cols={7} />)}
               {!loading && alerts.length === 0 && (
                 <tr><td colSpan={7} className="px-6 py-12 text-center text-zinc-600 font-mono text-sm" data-testid="no-alerts">
-                  No alerts yet. Click <span className="text-zinc-300">+ New Alert</span>.
+                  {t("alert.empty_state")} <span className="text-zinc-300">+ {t("alert.new")}</span>.
                 </td></tr>
               )}
               {alerts.map((a) => {
@@ -147,7 +150,7 @@ export default function Alerts() {
                         isAbove ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" : "text-rose-400 border-rose-500/30 bg-rose-500/10"
                       }`}>
                         {isAbove ? <ArrowUp className="w-3 h-3"/> : <ArrowDown className="w-3 h-3"/>}
-                        {a.condition}
+                        {isAbove ? t("alert.above") : t("alert.below")}
                       </span>
                     </td>
                     <td className="px-4 py-4 text-right font-mono text-zinc-100">{fmtCurrency(a.target_price_usd, "USD")}</td>
@@ -157,11 +160,11 @@ export default function Alerts() {
                       <button onClick={() => toggleAlert(a)} className="text-left" data-testid={`alert-toggle-${a.id}`}>
                         {a.active ? (
                           <span className="inline-flex items-center gap-1 text-xs font-mono text-blue-400 border border-blue-500/30 bg-blue-500/10 px-2 py-1 rounded">
-                            <Bell className="w-3 h-3"/> Active
+                            <Bell className="w-3 h-3"/> {t("alert.active")}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs font-mono text-zinc-500 border border-zinc-800 bg-zinc-900 px-2 py-1 rounded" title={a.triggered_at ? `Triggered at ${a.triggered_at}` : "Paused"}>
-                            <Check className="w-3 h-3"/> {a.triggered_at ? "Triggered" : "Paused"}
+                          <span className="inline-flex items-center gap-1 text-xs font-mono text-zinc-500 border border-zinc-800 bg-zinc-900 px-2 py-1 rounded" title={a.triggered_at ? t("alert.triggered_at", { date: a.triggered_at }) : t("alert.paused")}>
+                            <Check className="w-3 h-3"/> {a.triggered_at ? t("alert.triggered") : t("alert.paused")}
                           </span>
                         )}
                       </button>
@@ -240,8 +243,8 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
   const currentPrice = pickedAsset?.price_usd || pickedAsset?.price || 0;
 
   const save = async () => {
-    if (!pickedAsset) { toast.error("Pick an asset"); return; }
-    if (!target) { toast.error("Target required"); return; }
+    if (!pickedAsset) { toast.error(t("alert.pick_asset_error")); return; }
+    if (!target) { toast.error(t("alert.target_required")); return; }
     setSaving(true);
     try {
       await api.post("/alerts", {
@@ -253,9 +256,10 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
         target_price_usd: parseFloat(target),
         note,
       });
-      toast.success("Alert created");
+      toast.success(t("alert.created"));
       setOpen(false);
       onSaved?.();
+      requestSidebarRefresh();
     } catch (e) {
       const detail = e.response?.data?.detail;
       if (e.response?.status === 402 && detail?.reason === "alert_limit") {
@@ -263,7 +267,7 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
           action: { label: t("common.upgrade"), onClick: () => navigate("/pricing") },
         });
       } else {
-        toast.error(formatApiErrorDetail(detail) || "Failed");
+        toast.error(formatApiErrorDetail(detail) || t("common.error"));
       }
     }
     finally { setSaving(false); }
@@ -304,8 +308,8 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
 
           <Tabs value={searchType} onValueChange={setSearchType}>
             <TabsList className="w-full bg-zinc-900/50 border border-zinc-800">
-              <TabsTrigger value="crypto" className="flex-1 data-[state=active]:bg-zinc-100 data-[state=active]:text-zinc-950" data-testid="alert-search-crypto">Crypto</TabsTrigger>
-              <TabsTrigger value="stock" className="flex-1 data-[state=active]:bg-zinc-100 data-[state=active]:text-zinc-950" data-testid="alert-search-stock">Stock</TabsTrigger>
+              <TabsTrigger value="crypto" className="flex-1 data-[state=active]:bg-zinc-100 data-[state=active]:text-zinc-950" data-testid="alert-search-crypto">{t("common.crypto")}</TabsTrigger>
+              <TabsTrigger value="stock" className="flex-1 data-[state=active]:bg-zinc-100 data-[state=active]:text-zinc-950" data-testid="alert-search-stock">{t("common.stocks")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -316,7 +320,7 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
             className="bg-zinc-900/50 border-zinc-800"
             data-testid="alert-search-input"
           />
-          {searching && <div className="text-xs text-zinc-500 font-mono">Searching…</div>}
+          {searching && <div className="text-xs text-zinc-500 font-mono">{t("alert.searching")}</div>}
           {results.length > 0 && (
             <div className="max-h-40 overflow-y-auto border border-zinc-800 rounded-md bg-zinc-900/50">
               {results.map((r) => (

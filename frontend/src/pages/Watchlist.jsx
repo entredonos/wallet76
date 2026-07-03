@@ -18,6 +18,7 @@ import Sparkline from "../components/Sparkline";
 import InlineAlertDialog from "../components/InlineAlertDialog";
 import { fmtCurrency, fmtPct, fmtCompact } from "../lib/format";
 import { useI18n } from "../context/I18nContext";
+import { requestSidebarRefresh } from "../lib/sidebarRefresh";
 
 const MAX_PER_GROUP_PRO = 20;
 const MAX_GROUPS_PRO = 20;
@@ -72,7 +73,7 @@ export default function Watchlist() {
         setActiveGroupId(data[0].id);
       }
     } catch {
-      toast.error("Failed to load watchlists");
+      toast.error(t("watch.load_failed"));
     } finally {
       setLoading(false);
     }
@@ -92,6 +93,7 @@ export default function Watchlist() {
       setNewGroupName("");
       setNewGroupOpen(false);
       load();
+      requestSidebarRefresh();
     } catch (e) {
       const detail = e.response?.data?.detail;
       if (e.response?.status === 402 && detail?.reason === "watchlist_group_limit") {
@@ -99,7 +101,7 @@ export default function Watchlist() {
           action: { label: t("common.upgrade"), onClick: () => navigate("/pricing") },
         });
       } else {
-        toast.error(formatApiErrorDetail(detail) || "Failed");
+        toast.error(formatApiErrorDetail(detail) || t("common.error"));
       }
     } finally {
       setSavingGroup(false);
@@ -117,8 +119,9 @@ export default function Watchlist() {
       }
       setDeleteGroupTarget(null);
       load();
+      requestSidebarRefresh();
     } catch {
-      toast.error("Failed to delete");
+      toast.error(t("common.error"));
     }
   };
 
@@ -131,8 +134,9 @@ export default function Watchlist() {
       toast.success(t("watch.item_removed"));
       setDeleteItemTarget(null);
       load();
+      requestSidebarRefresh();
     } catch {
-      toast.error("Failed");
+      toast.error(t("common.error"));
     }
   };
 
@@ -222,7 +226,7 @@ export default function Watchlist() {
                       onClick={() => setColMenuOpen((v) => !v)}
                       className="p-1.5 border border-zinc-800 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 transition-colors"
                       data-testid="watch-columns-gear-btn"
-                      title="Configure columns"
+                      title={t("watch.configure_columns")}
                     >
                       <Settings2 className="w-4 h-4"/>
                     </button>
@@ -230,7 +234,7 @@ export default function Watchlist() {
                       <>
                         <div className="fixed inset-0 z-30" onClick={() => setColMenuOpen(false)}/>
                         <div className="absolute right-0 top-full mt-2 z-40 w-56 bg-zinc-950 border border-zinc-800 rounded-md shadow-2xl p-2" data-testid="watch-columns-menu">
-                          <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500 px-2 py-1.5">Columns</div>
+                          <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500 px-2 py-1.5">{t("watch.columns")}</div>
                           {WATCH_COLUMNS.map((c) => (
                             <label key={c.key} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-200 hover:bg-zinc-900 rounded cursor-pointer" data-testid={`watch-col-toggle-${c.key}`}>
                               <input type="checkbox" checked={colVisible(c.key)} onChange={() => toggleCol(c.key)} className="accent-blue-500"/>
@@ -245,7 +249,7 @@ export default function Watchlist() {
                     onClick={() => setDeleteGroupTarget(activeGroup)}
                     className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.15em] px-2.5 py-1 border border-rose-500/30 text-rose-300 hover:text-rose-200 hover:bg-rose-500/15 rounded-md transition-colors"
                     data-testid={`delete-group-${activeGroup.id}`}
-                    title="Delete this sub-watchlist"
+                    title={t("watch.delete_group_tooltip")}
                   >
                     <Trash2 className="w-3.5 h-3.5"/> {t("watch.delete_group")}
                   </button>
@@ -379,7 +383,7 @@ export default function Watchlist() {
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") submitNewGroup(); }}
-              placeholder="Crypto, AI Stocks, Energy..."
+              placeholder={t("watch.new_group_placeholder")}
               className="bg-zinc-900/50 border-zinc-800"
               data-testid="new-group-input"
             />
@@ -487,7 +491,7 @@ function NewWatchDialog({ open, setOpen, onSaved, currentGroupId, groupCount, ma
   }, [search, assetType]);
 
   const save = async () => {
-    if (!picked) { toast.error("Pick an asset"); return; }
+    if (!picked) { toast.error(t("alert.pick_asset_error")); return; }
     if (!currentGroupId) { toast.error(t("watch.pick_group_first")); return; }
     setSaving(true);
     try {
@@ -502,6 +506,7 @@ function NewWatchDialog({ open, setOpen, onSaved, currentGroupId, groupCount, ma
       toast.success(t("watch.added"));
       setOpen(false);
       onSaved?.();
+      requestSidebarRefresh();
     } catch (e) {
       const detail = e.response?.data?.detail;
       if (e.response?.status === 402 && detail?.reason === "watchlist_item_limit") {
@@ -509,7 +514,7 @@ function NewWatchDialog({ open, setOpen, onSaved, currentGroupId, groupCount, ma
           action: { label: t("common.upgrade"), onClick: () => navigate("/pricing") },
         });
       } else {
-        toast.error(formatApiErrorDetail(detail) || "Failed");
+        toast.error(formatApiErrorDetail(detail) || t("common.error"));
       }
     } finally {
       setSaving(false);
@@ -551,7 +556,7 @@ function NewWatchDialog({ open, setOpen, onSaved, currentGroupId, groupCount, ma
               className="mt-2 bg-zinc-900/50 border-zinc-800"
               data-testid="watch-search-input"
             />
-            {searching && <div className="text-xs text-zinc-500 mt-1 font-mono">Searching…</div>}
+            {searching && <div className="text-xs text-zinc-500 mt-1 font-mono">{t("common.searching")}</div>}
             {results.length > 0 && (
               <div className="mt-2 max-h-40 overflow-y-auto border border-zinc-800 rounded-md bg-zinc-900/50">
                 {results.map((r) => (
@@ -568,11 +573,11 @@ function NewWatchDialog({ open, setOpen, onSaved, currentGroupId, groupCount, ma
               </div>
             )}
             {picked && (
-              <div className="mt-2 text-xs font-mono text-emerald-400">Selected: {picked.symbol} · {picked.name}</div>
+              <div className="mt-2 text-xs font-mono text-emerald-400">{t("watch.selected", { symbol: picked.symbol, name: picked.name })}</div>
             )}
           </div>
           <div>
-            <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("common.label")} (optional)</Label>
+            <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("common.label")} ({t("common.optional")})</Label>
             <Input
               value={label}
               onChange={(e) => setLabel(e.target.value)}
