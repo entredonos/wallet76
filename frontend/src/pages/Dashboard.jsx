@@ -52,16 +52,14 @@ export default function Dashboard({ currency }) {
   // Light/advanced dashboard view — "light" shows only the summary cards
   // (fast first paint, friendlier on mobile); "advanced" is the full
   // dashboard exactly as it always was (filter pills, top movers, evolution
-  // chart, allocation, holdings table). Defaults to "light" for anyone who
-  // hasn't chosen yet; persisted per-browser like the other dashboard prefs
-  // below. Purely a rendering toggle — doesn't change what load() fetches,
-  // so it never touches the history/snapshot logic (REGRA #2).
-  const [dashMode, setDashMode] = useState(() => {
-    try { return localStorage.getItem("w76-dash-mode") || "light"; } catch { return "light"; }
-  });
-  useEffect(() => {
-    try { localStorage.setItem("w76-dash-mode", dashMode); } catch { /* noop */ }
-  }, [dashMode]);
+  // chart, allocation, holdings table). Always starts on "light" on every
+  // fresh entry into the app — intentionally NOT persisted across sessions
+  // (unlike the other dashboard prefs below): toggling to "advanced" only
+  // holds for the current visit, so leaving and coming back always lands
+  // back on the fast/simple view instead of remembering the last mode.
+  // Purely a rendering toggle — doesn't change what load() fetches, so it
+  // never touches the history/snapshot logic (REGRA #2).
+  const [dashMode, setDashMode] = useState("light");
   const [visibleCols, setVisibleCols] = useState(() => {
     try {
       const raw = localStorage.getItem("folio-dash-cols-v2");
