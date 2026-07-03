@@ -1,8 +1,10 @@
 """Broker connections — add, list, sync, delete.
 
 Encryption:
-  New connections use envelope encryption (v2): per-user Fernet key encrypted
-  with a master key. Legacy v1 connections are migrated to v2 on first sync.
+  New connections use envelope encryption (v3): per-user AES-256-GCM key
+  encrypted with a master key (see broker_connectors/crypto.py for the full
+  v1/v2/v3 scheme history). Legacy v1/v2 connections are migrated to v3 on
+  first sync after this change shipped.
 
 Supported brokers:
   degiro, ibkr, trading212, binance, coinbase, kraken
@@ -16,8 +18,8 @@ from pydantic import BaseModel
 
 from core import db, get_current_user, require_active_subscription, logger, _client_ip
 from broker_connectors.crypto import (
-    encrypt_for_user, decrypt_for_user,
-    get_or_create_user_key, decrypt_conn_field, migrate_conn_to_v2,
+    encrypt_for_user_v3, decrypt_for_user_v3,
+    get_or_create_user_aes_key, migrate_conn_to_v3,
 )
 from broker_connectors import degiro, ibkr, trading212, binance, coinbase, kraken
 from prices import get_fx_rates
@@ -264,22 +266,24 @@ async def _do_sync(conn_id: str, user_id: str, wallet_id: str | None, ip: str = 
     now = datetime.now(timezone.utc).isoformat()
 
     try:
-        # Auto-migrate v1 → v2 on first sync
-        if enc_v == 1:
-            new_creds = await migrate_conn_to_v2(conn, user_id)
+        # Auto-migrate v1/v2 → v3 (real AES-256-GCM) on first sync after
+        # this scheme shipped. Same lazy, opportunistic pattern the v1→v2
+        # migration already used — see migrate_conn_to_v3's docstring.
+        if enc_v != 3:
+            new_creds = await migrate_conn_to_v3(conn, user_id)
             await db.broker_connections.update_one(
                 {"id": conn_id},
-                {"$set": {"credentials_enc": new_creds, "_enc_v": 2}},
+                {"$set": {"credentials_enc": new_creds, "_enc_v": 3}},
             )
             conn["credentials_enc"] = new_creds
-            enc_v = 2
-            logger.info("Migrated connection %s to v2 encryption", conn_id)
+            enc_v = 3
+            logger.info("Migrated connection %s to v3 (AES-256-GCM) encryption", conn_id)
 
-        user_key = await get_or_create_user_key(user_id)
+        user_key = await get_or_create_user_aes_key(user_id)
         creds_enc = conn["credentials_enc"]
 
         def dec(field: str) -> str:
-            return decrypt_for_user(creds_enc[field], user_key)
+            return decrypt_for_user_v3(creds_enc[field], user_key)
 
         if broker == "degiro":
             txns = await degiro.fetch_transactions(
@@ -287,7 +291,10 @@ async def _do_sync(conn_id: str, user_id: str, wallet_id: str | None, ip: str = 
                 from_date=conn.get("last_synced_at", "2015-01-01")[:10],
             )
         elif broker == "ibkr":
-            txns = await ibkr.fetch_transactions(dec("token"), creds_enc["query_id"])
+            # query_id isn't secret — add_ibkr stores it plaintext as
+            # query_id_plain on the connection doc itself, not inside
+            # credentials_enc (nothing to decrypt here, unlike "token").
+            txns = await ibkr.fetch_transactions(dec("token"), conn.get("query_id_plain", ""))
         elif broker == "trading212":
             txns = await trading212.fetch_transactions(dec("api_key"), conn.get("is_paper", False))
         elif broker == "binance":
@@ -327,16 +334,16 @@ async def _do_sync(conn_id: str, user_id: str, wallet_id: str | None, ip: str = 
 
 
 async def _add_conn(user_id: str, broker: str, label: str, raw_creds: dict, extra: dict | None = None) -> dict:
-    """Create a new broker connection using v2 envelope encryption."""
-    user_key = await get_or_create_user_key(user_id)
-    creds_enc = {k: encrypt_for_user(v, user_key) for k, v in raw_creds.items() if v}
+    """Create a new broker connection using v3 (AES-256-GCM) envelope encryption."""
+    user_key = await get_or_create_user_aes_key(user_id)
+    creds_enc = {k: encrypt_for_user_v3(v, user_key) for k, v in raw_creds.items() if v}
     doc = {
         "id": str(uuid.uuid4()),
         "user_id": user_id,
         "broker": broker,
         "label": label or broker,
         "credentials_enc": creds_enc,
-        "_enc_v": 2,
+        "_enc_v": 3,
         "_suspicious": False,
         "last_synced_at": None,
         "last_imported": 0,
@@ -405,7 +412,7 @@ async def delete_connection(conn_id: str, user=Depends(get_current_user)):
 
 
 # ---------------------------------------------------------------------------
-# Routes — add brokers (all use v2 encryption via _add_conn)
+# Routes — add brokers (all use v3 encryption via _add_conn)
 # ---------------------------------------------------------------------------
 
 @router.post("/brokers/degiro")
