@@ -1,15 +1,13 @@
 """Analytics endpoint — portfolio performance, benchmark, metrics."""
 import asyncio
-import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import yfinance as yf
 
-from core import db, get_current_user, _cache_get, _cache_set
+from core import db, get_current_user, _cache_get, _cache_set, logger
 from fastapi import APIRouter, Depends, Query
 
-logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -476,6 +474,7 @@ async def get_dividends(
                 "years_paying":     years_paying,
             }
         except Exception as exc:
+            logger.warning(f"Dividend fetch failed for {sym}: {exc}")
             return None
 
     # Run fetches in thread pool (yfinance is synchronous)

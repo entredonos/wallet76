@@ -10,6 +10,7 @@ Strategy:
 
 Credentials stored: encrypted api_key + encrypted api_secret.
 """
+import asyncio
 import hashlib
 import hmac
 import time
@@ -102,6 +103,14 @@ def _map_trade(trade: dict, symbol: str, base: str, quote: str, btc_usdt: float)
     }
 
 
+# Cap on concurrent myTrades requests. Binance weighs this endpoint against
+# a shared per-key rate limit, so this isn't unbounded — just no longer
+# fully serial (one asset × quote pair at a time), which for accounts
+# holding many assets could previously take a long time (N_assets × 5
+# sequential round-trips).
+_TRADES_CONCURRENCY = 5
+
+
 async def fetch_transactions(api_key: str, api_secret: str) -> list[dict]:
     """Fetch all spot trades from Binance."""
     results = []
@@ -121,10 +130,12 @@ async def fetch_transactions(api_key: str, api_secret: str) -> list[dict]:
         r_btc = await client.get(f"{BASE}/api/v3/ticker/price", params={"symbol": "BTCUSDT"})
         btc_usdt = float(r_btc.json().get("price", 50000)) if r_btc.is_success else 50000.0
 
-        # 3. Fetch trades per asset × quote pair
-        for asset in sorted(assets):
-            for quote in QUOTE_ASSETS:
-                symbol = f"{asset}{quote}"
+        # 3. Fetch trades per asset × quote pair, with bounded concurrency
+        sem = asyncio.Semaphore(_TRADES_CONCURRENCY)
+
+        async def _fetch_pair(asset: str, quote: str) -> list[dict]:
+            symbol = f"{asset}{quote}"
+            async with sem:
                 try:
                     params = _signed_params({"symbol": symbol, "limit": 1000}, api_secret)
                     r = await client.get(
@@ -132,16 +143,22 @@ async def fetch_transactions(api_key: str, api_secret: str) -> list[dict]:
                         params=params,
                         headers={**HEADERS_BASE, "X-MBX-APIKEY": api_key},
                     )
-                    if r.status_code == 400:
-                        continue   # pair doesn't exist
-                    if not r.is_success:
-                        continue
-                    for trade in r.json():
-                        m = _map_trade(trade, symbol, asset, quote, btc_usdt)
-                        if m:
-                            results.append(m)
+                    if r.status_code == 400 or not r.is_success:
+                        return []   # pair doesn't exist / request failed
+                    return [
+                        m for trade in r.json()
+                        if (m := _map_trade(trade, symbol, asset, quote, btc_usdt))
+                    ]
                 except Exception:
-                    continue
+                    return []
+
+        pair_results = await asyncio.gather(*(
+            _fetch_pair(asset, quote)
+            for asset in sorted(assets)
+            for quote in QUOTE_ASSETS
+        ))
+        for r in pair_results:
+            results.extend(r)
 
     return results
 

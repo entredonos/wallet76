@@ -1,13 +1,11 @@
 """Feedback endpoint — ratings, questions, ideas, bugs + admin user management."""
-import logging
 import re
 from datetime import datetime, timezone
 
-from core import db, get_current_user, require_admin, delete_all_user_data
+from core import db, get_current_user, require_admin, delete_all_user_data, logger
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Safe projection for admin user listings — never pull password_hash or

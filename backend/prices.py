@@ -325,7 +325,6 @@ async def migrate_legacy_assets(user_id: str):
     legacy = await db.assets.find({"user_id": user_id}).to_list(2000)
     if not legacy:
         return
-    fx_rates = await get_fx_rates()  # noqa: F841 (kept for parity)
     for a in legacy:
         date = (a.get("created_at") or datetime.now(timezone.utc).isoformat())[:10]
         await db.transactions.insert_one({

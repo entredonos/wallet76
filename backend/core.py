@@ -173,6 +173,16 @@ def cache_clear_prefix(prefix: str) -> int:
     return len(keys)
 
 
+def invalidate_history_cache(user_id: str) -> None:
+    """Clears both /history cache namespaces (daily + intraday) for a user.
+    Every transaction mutation route (create/update/delete/import/clear)
+    needs to call both prefixes together — this was previously six copies
+    of the same two-line pair spread across transactions.py, which risked
+    drifting out of sync if a third cache namespace were ever added."""
+    cache_clear_prefix(f"history_all:{user_id}:")
+    cache_clear_prefix(f"history_intraday:{user_id}:")
+
+
 # Aliases kept for backwards compat with existing route code
 _cache_get = cache_get
 _cache_set = cache_set

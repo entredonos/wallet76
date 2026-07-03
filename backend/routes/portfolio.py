@@ -28,13 +28,6 @@ async def fx_endpoint():
     return await get_fx_rates()
 
 
-@router.post("/portfolio/fix-asset-types")
-async def fix_asset_types(user=Depends(get_current_user)):
-    """Detect ETF/Fund vs stock for existing transactions and update them in DB."""
-    result = await detect_and_fix_equity_types(user["id"])
-    return result
-
-
 EQUITY_TYPES = ("stock", "etf", "fund", "bond", "reit")
 
 
@@ -361,11 +354,6 @@ async def get_portfolio(user=Depends(get_current_user)):
         },
         "triggered_alerts": triggered,
     }
-
-
-@router.get("/snapshots")
-async def get_snapshots(user=Depends(get_current_user)):
-    return await db.snapshots.find({"user_id": user["id"]}, {"_id": 0}).sort("bucket_ts", 1).to_list(2000)
 
 
 @router.get("/prices/live")
@@ -1123,7 +1111,7 @@ async def _build_retro_history_intraday(user_id: str, range_key: str, wallet_id:
     # falha temporária de uma fonte externa de preços.
     if len(result) < 5:
         logger.info(f"intraday retro user={user_id} range={range_key}: só {len(result)} ponto(s), a juntar snapshots reais como rede de segurança")
-        N_BARS = 70
+        N_BARS = _RETRO_N_BARS  # single source of truth, see _RETRO_N_BARS above
         window_deltas = {
             "15m": timedelta(minutes=15 * N_BARS),
             "30m": timedelta(minutes=30 * N_BARS),
@@ -1213,35 +1201,5 @@ async def get_sparklines(user=Depends(get_current_user)):
     return out
 
 
-@router.get("/sparklines/debug")
-async def debug_sparklines(user=Depends(get_current_user)):
-    """Diagnostic endpoint to test CoinGecko and yfinance connectivity."""
-    results = {}
 
-    # Test CoinGecko with bitcoin
-    try:
-        async with httpx.AsyncClient(timeout=10) as ch:
-            r = await ch.get(
-                "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart",
-                params={"vs_currency": "usd", "days": "1"},
-            )
-            results["cg_status"] = r.status_code
-            if r.status_code == 200:
-                prices = r.json().get("prices", [])
-                results["cg_btc_points"] = len(prices)
-            else:
-                results["cg_body"] = r.text[:200]
-    except Exception as e:
-        results["cg_error"] = str(e)
 
-    # Test yfinance BTC-USD fallback
-    try:
-        import yfinance as yf
-        hist = yf.Ticker("BTC-USD").history(period="2d", interval="1h")
-        results["yf_btc_rows"] = len(hist)
-        if not hist.empty:
-            results["yf_btc_last_close"] = float(hist["Close"].iloc[-1])
-    except Exception as e:
-        results["yf_error"] = str(e)
-
-    return results
