@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth, formatApiErrorDetail } from "../context/AuthContext";
 import { useI18n } from "../context/I18nContext";
-import { api, isNetworkError } from "../lib/api";
+import { api, isNetworkError, withNetworkRetry } from "../lib/api";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -22,6 +22,7 @@ export default function Login() {
   const [resending, setResending] = useState(false);
   const [resendMsg, setResendMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -29,8 +30,11 @@ export default function Login() {
     setNeedsVerify(false);
     setResendMsg("");
     setLoading(true);
+    setReconnecting(false);
     try {
-      await login(email, password);
+      await withNetworkRetry(() => login(email, password), {
+        onRetry: () => setReconnecting(true),
+      });
       nav("/dashboard");
     } catch (e2) {
       const detail = e2.response?.data?.detail;
@@ -44,6 +48,7 @@ export default function Login() {
       }
     } finally {
       setLoading(false);
+      setReconnecting(false);
     }
   };
 
@@ -147,7 +152,7 @@ export default function Login() {
             disabled={loading}
             className="w-full h-12 bg-zinc-100 text-zinc-950 hover:bg-white font-medium"
           >
-            {loading ? t("auth.signing_in") : t("auth.signin_submit")}
+            {reconnecting ? t("auth.connecting_retry") : loading ? t("auth.signing_in") : t("auth.signin_submit")}
           </Button>
         </form>
 

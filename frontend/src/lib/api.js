@@ -6,6 +6,10 @@ export const API = `${BACKEND_URL}/api`;
 export const api = axios.create({
   baseURL: API,
   withCredentials: true,
+  // 18s: generous enough for a cold Render instance to wake up and answer a
+  // simple request, but still short enough that a genuinely unreachable
+  // backend doesn't leave the UI hanging forever with no feedback.
+  timeout: 18000,
 });
 
 // Auth relies solely on the httpOnly `access_token` cookie (sent
@@ -34,6 +38,28 @@ api.interceptors.response.use(
 // undefined in that case, as opposed to a normal 4xx/5xx which has a response.
 export function isNetworkError(error) {
   return !!error && !error.response && !!error.request;
+}
+
+// Retries a request-issuing function when it fails with a network error
+// (backend unreachable / timed out — see isNetworkError above), which is
+// exactly the failure mode of a cold Render instance waking up. Real 4xx/5xx
+// errors (wrong password, validation, server bug) are NOT retried — they
+// reject immediately on the first attempt, same as before. `onRetry(attempt)`
+// fires right before each retry so the caller can show a "reconnecting" hint
+// instead of a plain error.
+export async function withNetworkRetry(fn, { retries = 2, delayMs = 2500, onRetry } = {}) {
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (!isNetworkError(error) || attempt === retries) throw error;
+      if (onRetry) onRetry(attempt + 1);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw lastError;
 }
 
 export function formatApiErrorDetail(detail) {

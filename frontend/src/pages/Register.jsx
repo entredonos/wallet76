@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth, formatApiErrorDetail } from "../context/AuthContext";
 import { useI18n } from "../context/I18nContext";
-import { api, isNetworkError } from "../lib/api";
+import { api, isNetworkError, withNetworkRetry } from "../lib/api";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -23,18 +23,23 @@ export default function Register() {
   const [done, setDone] = useState(false);
   const [resending, setResending] = useState(false);
   const [resendMsg, setResendMsg] = useState("");
+  const [reconnecting, setReconnecting] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
     setErr("");
     setLoading(true);
+    setReconnecting(false);
     try {
-      await register(email, password, name);
+      await withNetworkRetry(() => register(email, password, name), {
+        onRetry: () => setReconnecting(true),
+      });
       setDone(true);
     } catch (e2) {
       setErr(isNetworkError(e2) ? t("errors.network") : (formatApiErrorDetail(e2.response?.data?.detail) || e2.message));
     } finally {
       setLoading(false);
+      setReconnecting(false);
     }
   };
 
@@ -190,7 +195,7 @@ export default function Register() {
             disabled={loading}
             className="w-full h-12 bg-zinc-100 text-zinc-950 hover:bg-white font-medium"
           >
-            {loading ? t("auth.creating") : t("auth.create_submit")}
+            {reconnecting ? t("auth.connecting_retry") : loading ? t("auth.creating") : t("auth.create_submit")}
           </Button>
         </form>
 
