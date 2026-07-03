@@ -67,3 +67,9 @@
 - P2: Dedup check on POST /api/watchlists (user_id, symbol, asset_type).
 - P2: FIFO/LIFO cost basis option.
 - P2: Public read-only share link.
+
+## Backlog — 2026-07 (a fazer mais tarde)
+- P1: Verificar visualmente em produção, depois do deploy das últimas alterações ao Dashboard/sidebar: painel abre sempre em modo "simples", hover no gráfico da Evolução (light mode) já atualiza a %, e "Análise" aparece dentro do grupo "Portefólio" na sidebar.
+- P2: Testar as 4 páginas mobile via DevTools (item antigo do handoff, nunca confirmado).
+- P2: Confirmar que o ciclo de OOM no Render parou (item antigo do handoff).
+- P2: "Pesquisa geral de ativos" — fases 1/2 (nunca arrancou).
