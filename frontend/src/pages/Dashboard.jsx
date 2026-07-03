@@ -8,7 +8,7 @@ import { CHART_RANGE_BUCKET_MS, CHART_RANGES_DAY_MARKERS, CHART_RANGES_WEEKEND_S
 import {
   RefreshCw, ArrowUpRight, Receipt, Bell,
   DollarSign, BarChart3, Activity, TrendingDown, Eye, EyeOff,
-  Share2, LayoutDashboard,
+  Share2, LayoutDashboard, Gauge,
 } from "lucide-react";
 import DashboardWidgetDrawer from "../components/DashboardWidgetDrawer";
 import DashboardSkeleton from "../components/DashboardSkeleton";
@@ -48,6 +48,19 @@ export default function Dashboard({ currency }) {
   const { hidden: hideValues, toggle: togglePrivacy } = usePrivacy();
   const { isPro } = usePlan();
   const mask = (formatted) => (hideValues ? "•••••" : formatted);
+  // Light/advanced dashboard view — "light" shows only the summary cards
+  // (fast first paint, friendlier on mobile); "advanced" is the full
+  // dashboard exactly as it always was (filter pills, top movers, evolution
+  // chart, allocation, holdings table). Defaults to "light" for anyone who
+  // hasn't chosen yet; persisted per-browser like the other dashboard prefs
+  // below. Purely a rendering toggle — doesn't change what load() fetches,
+  // so it never touches the history/snapshot logic (REGRA #2).
+  const [dashMode, setDashMode] = useState(() => {
+    try { return localStorage.getItem("w76-dash-mode") || "light"; } catch { return "light"; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("w76-dash-mode", dashMode); } catch { /* noop */ }
+  }, [dashMode]);
   const [visibleCols, setVisibleCols] = useState(() => {
     try {
       const raw = localStorage.getItem("folio-dash-cols-v2");
@@ -858,6 +871,16 @@ const worstPerformer = useMemo(() => {
             </p>
           </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setDashMode((m) => (m === "light" ? "advanced" : "light"))}
+            className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+            data-testid="dash-mode-toggle"
+          >
+            <Gauge className="w-4 h-4 mr-2" />
+            {dashMode === "light" ? t("dash.view_advanced") : t("dash.view_summary")}
+          </Button>
           <button
             onClick={() => setWidgetDrawer(true)}
             className="p-2 border border-zinc-800 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 transition-colors"
@@ -982,6 +1005,14 @@ const worstPerformer = useMemo(() => {
         />
       </div>
 
+      {/* Light view: just the summary cards above + this hint. Everything
+          below (pills, movers, charts, table) only renders in "advanced". */}
+      {dashMode === "light" && (
+        <p className="text-xs text-zinc-500 font-mono">{t("dash.light_mode_hint")}</p>
+      )}
+
+      {dashMode === "advanced" && (
+      <>
       {/* Filter pills — always visible, anchored just after summary. */}
       <div style={{ order: wOrder("summary") + 1 }} className="flex flex-wrap items-center gap-2">
         <FilterPillsRow
@@ -1100,6 +1131,8 @@ const worstPerformer = useMemo(() => {
           load={load}
         />
       </div>
+      </>
+      )}
     </div>
   );
 }
