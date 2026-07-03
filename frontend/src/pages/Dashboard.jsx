@@ -15,6 +15,7 @@ import DashboardSkeleton from "../components/DashboardSkeleton";
 import OnboardingFlow from "../components/OnboardingFlow";
 import Sparkline from "../components/Sparkline";
 import SummaryCard from "../components/dashboard/SummaryCard";
+import LightEvolutionCard from "../components/dashboard/LightEvolutionCard";
 import SharePanel from "../components/dashboard/SharePanel";
 import FilterPillsRow from "../components/dashboard/FilterPillsRow";
 import TopMoversWidget from "../components/dashboard/TopMoversWidget";
@@ -394,6 +395,41 @@ export default function Dashboard({ currency }) {
   };
 
   useEffect(() => { loadShareStatus(); }, []);
+
+  // Light view's 7-day evolution card — a dedicated fetch, decoupled from
+  // the advanced chart's `range` state (which could be on any timeframe,
+  // e.g. "1h"). "1d" here means daily CANDLES (see CHART_RANGE constants
+  // comment), so this returns up to the last 70 daily closes; we only need
+  // the last 7 of those. Only fetched while dashMode === "light" — advanced
+  // mode never needs it, so this never adds load when it isn't shown.
+  const [lightHistory, setLightHistory] = useState([]);
+  const [lightHistoryLoading, setLightHistoryLoading] = useState(true);
+  useEffect(() => {
+    if (dashMode !== "light") return;
+    let cancelled = false;
+    setLightHistoryLoading(true);
+    api.get(`/history?range=1d${filterWallet !== "all" ? `&wallet_id=${filterWallet}` : ""}${filterType !== "all" ? `&asset_type=${filterType}` : ""}`)
+      .then((r) => { if (!cancelled) setLightHistory(r.data || []); })
+      .catch(() => { if (!cancelled) setLightHistory([]); })
+      .finally(() => { if (!cancelled) setLightHistoryLoading(false); });
+    return () => { cancelled = true; };
+  }, [dashMode, filterWallet, filterType]);
+
+  // % change is currency-independent (a ratio), so this stays in raw USD —
+  // no need to convert() just to compute a percentage.
+  const last7Days = useMemo(() => {
+    const points = (lightHistory || [])
+      .map((s) => ({ t: s.ts || s.date, v: Number(s.total_usd || 0) }))
+      .filter((p) => p.v > 0);
+    return points.slice(-7);
+  }, [lightHistory]);
+
+  const sevenDayChangePct = useMemo(() => {
+    if (last7Days.length < 2) return null;
+    const first = last7Days[0].v;
+    const last = last7Days[last7Days.length - 1].v;
+    return first > 0 ? ((last - first) / first) * 100 : null;
+  }, [last7Days]);
 
   const runBackfill = async () => {
     setBackfilling(true);
@@ -1005,29 +1041,18 @@ const worstPerformer = useMemo(() => {
         />
       </div>
 
-      {/* Light view: summary cards above + a static, simplified evolution
-          chart (no range picker, no candles/weekend bands/safety-net badge
-          — those stay exclusive to the full EvolutionChart in "advanced").
-          Reuses the same summarySparkData/chartIsPositive already computed
-          for the summary cards' own sparklines, so this costs no extra
-          fetch or computation. Everything else (pills, movers, allocation,
-          table) only renders in "advanced". */}
+      {/* Light view: summary cards above + a static 7-day evolution card
+          (badge + day-axis only, no range picker, no candles/weekend
+          bands/safety-net badge — those stay exclusive to the full
+          EvolutionChart in "advanced"). Everything else (pills, movers,
+          allocation, table) only renders in "advanced". */}
       {dashMode === "light" && (
         <>
-          <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-5">
-            <div className="text-sm font-medium text-zinc-300 mb-3">{t("dash.evolution")}</div>
-            {chartLoading ? (
-              <div className="h-[140px] flex items-center justify-center text-zinc-600 text-sm font-mono">
-                {t("dash.chart_loading")}
-              </div>
-            ) : summarySparkData.length > 1 ? (
-              <Sparkline data={summarySparkData} positive={chartIsPositive} width="100%" height={140} />
-            ) : (
-              <div className="h-[140px] flex items-center justify-center text-zinc-600 text-sm font-mono">
-                {t("dash.chart_empty")}
-              </div>
-            )}
-          </div>
+          <LightEvolutionCard
+            points={last7Days}
+            changePct={sevenDayChangePct}
+            loading={lightHistoryLoading}
+          />
           <p className="text-xs text-zinc-500 font-mono">{t("dash.light_mode_hint")}</p>
         </>
       )}

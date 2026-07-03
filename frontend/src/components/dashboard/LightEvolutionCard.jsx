@@ -1,0 +1,79 @@
+import React from "react";
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { ArrowUpRight, TrendingDown } from "lucide-react";
+import { useI18n } from "../../context/I18nContext";
+
+// Dashboard "light" view's evolution card — a static, simplified read of
+// the last 7 daily closes (no range picker, no candles, no weekend
+// bands/safety-net badge — those stay exclusive to the full EvolutionChart
+// in "advanced"). Deliberately shows a big "+X% (last 7 days)" badge
+// instead of a Y-axis: the shape of the line already carries the trend, and
+// a badge is faster to read at a glance than axis ticks (same pattern apps
+// like Robinhood use for their home-screen chart). X-axis keeps day labels
+// only, so there's still a sense of "when" without a second axis of numbers.
+export default function LightEvolutionCard({ points, changePct, loading }) {
+  const { t } = useI18n();
+  const isPositive = (changePct ?? 0) >= 0;
+
+  return (
+    <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-5">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div className="text-sm font-medium text-zinc-300">{t("dash.evolution")}</div>
+        {changePct !== null && changePct !== undefined && (
+          <div className="flex items-center gap-1.5">
+            {isPositive ? <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" /> : <TrendingDown className="w-3.5 h-3.5 text-rose-400" />}
+            <span className={`text-sm font-mono font-bold ${isPositive ? "text-emerald-400" : "text-rose-400"}`}>
+              {isPositive ? "+" : ""}{changePct.toFixed(1)}%
+            </span>
+            <span className="text-xs font-mono text-zinc-500">{t("dash.last_7_days")}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="h-[140px]">
+        {loading ? (
+          <div className="h-full flex items-center justify-center text-zinc-600 text-sm font-mono">
+            {t("dash.chart_loading")}
+          </div>
+        ) : points.length > 1 ? (
+          <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={100}>
+            <AreaChart data={points} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+              <defs>
+                <linearGradient id="lightEvoFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity={0.35} />
+                  <stop offset="95%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis
+                dataKey="t"
+                stroke="#52525b"
+                fontSize={10}
+                tickLine={false}
+                axisLine={false}
+                interval="preserveStartEnd"
+                tickFormatter={(v) => {
+                  try { return new Date(v).toLocaleDateString([], { weekday: "short" }); }
+                  catch { return v; }
+                }}
+              />
+              <YAxis hide domain={["dataMin", "dataMax"]} />
+              <Area
+                type="monotone"
+                dataKey="v"
+                stroke={isPositive ? "#10b981" : "#ef4444"}
+                strokeWidth={1.75}
+                fill="url(#lightEvoFill)"
+                isAnimationActive={false}
+                dot={false}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-full flex items-center justify-center text-zinc-600 text-sm font-mono">
+            {t("dash.chart_empty")}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
