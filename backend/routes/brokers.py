@@ -363,9 +363,15 @@ async def list_connections(user=Depends(get_current_user)):
 
 @router.get("/brokers/audit")
 async def list_audit(user=Depends(get_current_user)):
-    """Last 50 sync events for the current user."""
+    """Last 50 sync events for the current user.
+
+    audit_logs now also holds auth events (login/password-reset, written by
+    write_auth_audit in core.py) sharing this same collection — filter to
+    event="sync" explicitly so this broker-connections view doesn't mix in
+    unrelated login rows (which lack conn_id/broker/status fields the
+    frontend expects here)."""
     logs = await db.audit_logs.find(
-        {"user_id": user["id"]}, {"_id": 0}
+        {"user_id": user["id"], "event": "sync"}, {"_id": 0}
     ).sort("timestamp", -1).to_list(50)
     return logs
 

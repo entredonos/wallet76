@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Response, Request, Depends
 
 from core import (
     db, hash_password, verify_password, create_access_token, get_current_user,
-    APP_URL, check_rate_limit, logger, delete_all_user_data,
+    APP_URL, check_rate_limit, logger, delete_all_user_data, write_auth_audit,
 )
 from email_utils import send_email, email_layout, _log_email_task_result
 from models import (
@@ -65,6 +65,7 @@ async def login(payload: UserLogin, request: Request, response: Response):
     email = payload.email.lower().strip()
     user = await db.users.find_one({"email": email})
     if not user or not verify_password(payload.password, user["password_hash"]):
+        asyncio.create_task(write_auth_audit("login_failed", request, email=email))
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if not user.get("email_verified"):
         raise HTTPException(
@@ -77,6 +78,7 @@ async def login(payload: UserLogin, request: Request, response: Response):
         )
     token = create_access_token(user["id"], email)
     response.set_cookie("access_token", token, httponly=True, secure=True, samesite="none", max_age=604800, path="/")
+    asyncio.create_task(write_auth_audit("login_success", request, email=email, user_id=user["id"]))
     return {"id": user["id"], "email": email, "name": user.get("name"), "token": token}
 
 
@@ -156,7 +158,7 @@ async def forgot_password(payload: ForgotPasswordBody, request: Request):
 
 
 @router.post("/auth/reset-password")
-async def reset_password(payload: ResetPasswordBody):
+async def reset_password(payload: ResetPasswordBody, request: Request):
     token_hash = hashlib.sha256(payload.token.encode()).hexdigest()
     user = await db.users.find_one({"reset_token_hash": token_hash})
     if not user:
@@ -174,6 +176,7 @@ async def reset_password(payload: ResetPasswordBody):
             "$unset": {"reset_token_hash": "", "reset_token_expires": ""},
         },
     )
+    asyncio.create_task(write_auth_audit("password_reset", request, email=user.get("email", ""), user_id=user["id"]))
     return {"ok": True}
 
 

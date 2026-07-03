@@ -7,6 +7,7 @@ load_dotenv(ROOT_DIR / ".env")
 
 import os
 import logging
+import uuid
 import bcrypt
 import certifi
 import jwt
@@ -130,6 +131,26 @@ USER_DATA_COLLECTIONS = [
     "share_links", "broker_connections", "audit_logs", "user_security",
     "user_keys",
 ]
+
+
+async def write_auth_audit(event: str, request: Request, email: str = "", user_id: str = "", detail: str = "") -> None:
+    """Log a security-relevant auth event (login success/failure, password
+    reset) to the same `audit_logs` collection used for broker-sync events —
+    the original audit only covered sync events, which meant a brute-forced
+    or reset account left no trail here. Best-effort: never raises, so a
+    logging hiccup can't break the auth flow it's recording."""
+    try:
+        await db.audit_logs.insert_one({
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "email": email,
+            "event": event,
+            "detail": detail,
+            "ip": _client_ip(request),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+    except Exception as e:
+        logger.warning(f"Failed to write auth audit log ({event}): {e}")
 
 
 async def delete_all_user_data(user_id: str) -> None:
