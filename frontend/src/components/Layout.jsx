@@ -6,7 +6,7 @@ import { useI18n, LANGUAGES } from "../context/I18nContext";
 import { api } from "../lib/api";
 import {
   TrendingUp, LogOut, Wallet as WalletIcon, LayoutDashboard, Receipt, Bell,
-  Briefcase, Coins, Plus, Menu, X, Sun, Moon, Eye, Newspaper, Languages, LineChart, Settings, Link2, Globe, Search, BarChart2, ShieldCheck,
+  Briefcase, Coins, Plus, Menu, X, Sun, Moon, Eye, Newspaper, Languages, LineChart, Settings, Link2, Globe, Search, BarChart2, ShieldCheck, ChevronDown,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import walletLogo from "../assets/wallet76-logo80x60.png";
@@ -16,6 +16,10 @@ import FeedbackWidget from "./FeedbackWidget";
 import { onSidebarRefreshRequested } from "../lib/sidebarRefresh";
 
 const TYPE_ICON = { broker: Briefcase, exchange: Coins, wallet: WalletIcon };
+// Routes collapsed under the "Portfólio" sidebar group (see REGRA de UX
+// discutida com o utilizador em jul/2026: agrupar as páginas de "gerir o
+// que tenho" para reduzir o nº de linhas visíveis na sidebar).
+const PORTFOLIO_GROUP_ROUTES = ["/wallets", "/transactions", "/watchlist", "/alerts"];
 
 export default function Layout({ children, currency, setCurrency }) {
   const { user, logout } = useAuth();
@@ -31,6 +35,15 @@ export default function Layout({ children, currency, setCurrency }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [unreadFeedback, setUnreadFeedback] = useState(0);
+  const isPortfolioRouteActive = PORTFOLIO_GROUP_ROUTES.includes(loc.pathname);
+  const [portfolioOpen, setPortfolioOpen] = useState(isPortfolioRouteActive);
+  // Auto-expand the group whenever navigation lands on one of its pages, so
+  // the active link is never hidden behind a collapsed toggle. Doesn't
+  // auto-collapse on navigating away — once opened, stays open until the
+  // user collapses it manually (same pattern most sidebar accordions use).
+  useEffect(() => {
+    if (isPortfolioRouteActive) setPortfolioOpen(true);
+  }, [loc.pathname, isPortfolioRouteActive]);
 
   // Poll unread feedback count (admin only). Skips the request while the
   // tab is backgrounded (no point polling a hidden tab every 30s), and
@@ -161,30 +174,50 @@ export default function Layout({ children, currency, setCurrency }) {
         <NavLink to="/dashboard" className={linkCls} data-testid="nav-dashboard" onClick={() => setOpen(false)}>
           <LayoutDashboard className="w-4 h-4" /> {t("nav.dashboard")}
         </NavLink>
-        <NavLink to="/transactions" className={linkCls} data-testid="nav-transactions" onClick={() => setOpen(false)}>
-          <Receipt className="w-4 h-4" /> {t("nav.transactions")}
-        </NavLink>
-        <NavLink to="/alerts" className={linkCls} data-testid="nav-alerts" onClick={() => setOpen(false)}>
-          <Bell className="w-4 h-4" />
-          <span>{t("nav.alerts")}</span>
-          {alertCount > 0 && (
-            <span className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40" data-testid="alerts-badge">{alertCount}</span>
-          )}
-        </NavLink>
-        <NavLink to="/wallets" className={linkCls} data-testid="nav-wallets" onClick={() => setOpen(false)}>
-          <WalletIcon className="w-4 h-4" />
-          <span>{t("nav.wallets")}</span>
-          {wallets.length > 0 && (
-            <span className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">{wallets.length}</span>
-          )}
-        </NavLink>
-        <NavLink to="/watchlist" className={linkCls} data-testid="nav-watchlist" onClick={() => setOpen(false)}>
-          <Eye className="w-4 h-4" />
-          <span>{t("nav.watchlist")}</span>
-          {watchlist.length > 0 && (
-            <span className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700" data-testid="watchlist-badge">{watchlist.length}</span>
-          )}
-        </NavLink>
+
+        {/* Portfólio group — Carteiras/Transações/Watchlist/Alertas, colapsável */}
+        <button
+          type="button"
+          onClick={() => setPortfolioOpen((v) => !v)}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${
+            isPortfolioRouteActive ? "text-zinc-50" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
+          }`}
+          data-testid="nav-group-portfolio-toggle"
+          aria-expanded={portfolioOpen}
+        >
+          <Briefcase className="w-4 h-4" />
+          <span className="flex-1 text-left">{t("nav.portfolio_group")}</span>
+          <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${portfolioOpen ? "rotate-180" : ""}`} />
+        </button>
+        {portfolioOpen && (
+          <div className="pl-3 ml-4 space-y-1 border-l border-zinc-800/60" data-testid="nav-group-portfolio-items">
+            <NavLink to="/wallets" className={linkCls} data-testid="nav-wallets" onClick={() => setOpen(false)}>
+              <WalletIcon className="w-4 h-4" />
+              <span>{t("nav.wallets")}</span>
+              {wallets.length > 0 && (
+                <span className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">{wallets.length}</span>
+              )}
+            </NavLink>
+            <NavLink to="/transactions" className={linkCls} data-testid="nav-transactions" onClick={() => setOpen(false)}>
+              <Receipt className="w-4 h-4" /> {t("nav.transactions")}
+            </NavLink>
+            <NavLink to="/watchlist" className={linkCls} data-testid="nav-watchlist" onClick={() => setOpen(false)}>
+              <Eye className="w-4 h-4" />
+              <span>{t("nav.watchlist")}</span>
+              {watchlist.length > 0 && (
+                <span className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700" data-testid="watchlist-badge">{watchlist.length}</span>
+              )}
+            </NavLink>
+            <NavLink to="/alerts" className={linkCls} data-testid="nav-alerts" onClick={() => setOpen(false)}>
+              <Bell className="w-4 h-4" />
+              <span>{t("nav.alerts")}</span>
+              {alertCount > 0 && (
+                <span className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40" data-testid="alerts-badge">{alertCount}</span>
+              )}
+            </NavLink>
+          </div>
+        )}
+
         <NavLink to="/news" className={linkCls} data-testid="nav-news" onClick={() => setOpen(false)}>
           <Newspaper className="w-4 h-4" /> {t("nav.news")}
         </NavLink>

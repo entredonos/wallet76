@@ -109,7 +109,9 @@ function MoversList({ kind, type, items, t, universeNote }) {
         <div className="text-[10px] font-mono text-zinc-500">{items.length}</div>
       </div>
       {items.length === 0 ? (
-        <div className="px-5 py-8 text-center text-zinc-600 text-sm font-mono">-</div>
+        <div className="px-5 py-8 text-center text-zinc-600 text-sm" data-testid={`movers-${kind}-${type}-empty`}>
+          {isGain ? t("market.no_gainers") : t("market.no_losers")}
+        </div>
       ) : (
         <div className="divide-y divide-zinc-800/30">
           {items.map((it, i) => {
