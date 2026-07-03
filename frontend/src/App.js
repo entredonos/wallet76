@@ -104,6 +104,7 @@ import PreferencesSync from "./components/PreferencesSync";
 import { Toaster } from "./components/ui/sonner";
 import CookieBanner from "./components/CookieBanner";
 import BackendStatusBanner from "./components/BackendStatusBanner";
+import UpdateAvailableToast from "./components/UpdateAvailableToast";
 
 // Every page is its own chunk instead of one big bundle — the previous
 // static imports below meant visiting /login pulled in the JS for
@@ -232,6 +233,7 @@ function App() {
               <PreferencesSync />
               <BrowserRouter>
                 <BackendStatusBanner />
+                <UpdateAvailableToast />
                 <Toaster position="top-right" richColors />
                 <AppRoutes />
                 <CookieBannerWrapper />

@@ -180,6 +180,17 @@ def cache_set(key: str, data) -> None:
     _cache[key] = (datetime.now(timezone.utc), data)
 
 
+def cache_get_stale(key: str):
+    """Returns the cached value for `key` regardless of age (ignores TTL),
+    or None if nothing was ever cached for it. Used as a last-resort fallback
+    when a live upstream fetch fails (e.g. CoinGecko rate limiting) — serving
+    a few-minutes-stale but complete dataset beats falling back to a much
+    smaller/lower-quality emergency source. See _fetch_movers_crypto in
+    routes/market.py."""
+    entry = _cache.get(key)
+    return entry[1] if entry else None
+
+
 def cache_clear_prefix(prefix: str) -> int:
     """Remove todas as entradas cuja chave começa por `prefix`. Usado quando
     transações mudam (criar/editar/apagar/importar/reset) para invalidar de
@@ -207,6 +218,7 @@ def invalidate_history_cache(user_id: str) -> None:
 # Aliases kept for backwards compat with existing route code
 _cache_get = cache_get
 _cache_set = cache_set
+_cache_get_stale = cache_get_stale
 _cache_clear_prefix = cache_clear_prefix
 
 

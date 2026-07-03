@@ -6,7 +6,7 @@ import httpx
 import yfinance as yf
 from fastapi import APIRouter, Depends
 
-from core import db, get_current_user, _cache_get, _cache_set, logger
+from core import db, get_current_user, _cache_get, _cache_set, _cache_get_stale, logger
 
 router = APIRouter()
 
@@ -79,7 +79,19 @@ async def _fetch_movers_crypto():
     except Exception as e:
         logger.warning(f"market crypto err: {e}")
 
-    # yfinance fallback
+    # CoinGecko failed or rate-limited (HTTP 429 on the free tier is common
+    # once several users/instances share it). Prefer serving the last known
+    # good snapshot — even a few minutes stale — over falling all the way
+    # down to the ~30-coin yfinance emergency list below: a stale top-250 is
+    # far more representative than a fresh top-30, and is what was causing
+    # "Top Losers" to occasionally show empty/wrong (see incident 3 jul 2026).
+    stale = _cache_get_stale(cache_key)
+    if stale and (stale.get("gainers") or stale.get("losers")):
+        logger.info("market crypto: serving stale cache after CoinGecko failure")
+        return stale
+
+    # yfinance fallback — only reached if CoinGecko failed AND there's no
+    # cache at all yet (e.g. right after a deploy/restart).
     crypto_universe = [
         ("BTC", "Bitcoin"), ("ETH", "Ethereum"), ("BNB", "BNB"), ("SOL", "Solana"), ("XRP", "XRP"),
         ("ADA", "Cardano"), ("DOGE", "Dogecoin"), ("TRX", "TRON"), ("AVAX", "Avalanche"), ("DOT", "Polkadot"),

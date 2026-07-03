@@ -7,7 +7,15 @@
  *  - Navigation (HTML)                      → Network-first with offline fallback
  */
 
-const CACHE_NAME = "wallet76-v1";
+// Bump this string whenever you want to force every open tab to drop its
+// cached assets on the next activate (see the "activate" handler below,
+// which deletes any cache key other than the current one). JS/CSS chunks
+// are content-hashed by the build so they naturally bust on their own, but
+// the precached "/" and "/dashboard" HTML entries aren't — without a bump
+// here, a returning tab can keep serving old HTML/behaviour indefinitely.
+// Paired with UpdateAvailableToast.jsx on the frontend, which prompts the
+// user to reload as soon as a new service worker like this one installs.
+const CACHE_NAME = "wallet76-v2";
 const OFFLINE_URL = "/";
 
 // Assets to pre-cache on install
