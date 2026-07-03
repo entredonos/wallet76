@@ -19,7 +19,7 @@ const TYPE_ICON = { broker: Briefcase, exchange: Coins, wallet: WalletIcon };
 // Routes collapsed under the "Portfólio" sidebar group (see REGRA de UX
 // discutida com o utilizador em jul/2026: agrupar as páginas de "gerir o
 // que tenho" para reduzir o nº de linhas visíveis na sidebar).
-const PORTFOLIO_GROUP_ROUTES = ["/wallets", "/transactions", "/watchlist", "/alerts"];
+const PORTFOLIO_GROUP_ROUTES = ["/wallets", "/transactions", "/watchlist", "/alerts", "/analytics"];
 
 export default function Layout({ children, currency, setCurrency }) {
   const { user, logout } = useAuth();
@@ -215,6 +215,9 @@ export default function Layout({ children, currency, setCurrency }) {
                 <span className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40" data-testid="alerts-badge">{alertCount}</span>
               )}
             </NavLink>
+            <NavLink to="/analytics" className={linkCls} data-testid="nav-analytics" onClick={() => setOpen(false)}>
+              <BarChart2 className="w-4 h-4" /> {t("nav.analytics")}
+            </NavLink>
           </div>
         )}
 
@@ -223,9 +226,6 @@ export default function Layout({ children, currency, setCurrency }) {
         </NavLink>
         <NavLink to="/market" className={linkCls} data-testid="nav-market" onClick={() => setOpen(false)}>
           <LineChart className="w-4 h-4" /> {t("nav.market")}
-        </NavLink>
-        <NavLink to="/analytics" className={linkCls} data-testid="nav-analytics" onClick={() => setOpen(false)}>
-          <BarChart2 className="w-4 h-4" /> {t("nav.analytics")}
         </NavLink>
         <NavLink to="/connected-accounts" className={linkCls} data-testid="nav-brokers" onClick={() => setOpen(false)}>
           <Link2 className="w-4 h-4" /> {t("nav.brokers")}
