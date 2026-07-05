@@ -1020,10 +1020,19 @@ const worstPerformer = useMemo(() => {
               </Button>
             </Link>
           )}
-          <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing} className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100" data-testid="refresh-btn">
-            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}/>
-            {refreshing ? t("common.updating") : t("common.refresh")}
-          </Button>
+          {/* "Atualizar preços" sai do cabeçalho em modo "advanced" (5 jul
+              2026): com Ver resumo + Partilhar + Esconder + Alertas já
+              nessa linha, não cabia tudo numa só linha no telemóvel. Os
+              preços já atualizam sozinhos (live overlay + snapshot a cada
+              15min — REGRA #2), por isso foi o escolhido para saltar ali;
+              continua a existir em modo "light" (LightBalanceCard não tem
+              refresh próprio). */}
+          {dashMode === "light" && (
+            <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing} className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100" data-testid="refresh-btn">
+              <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}/>
+              {refreshing ? t("common.updating") : t("common.refresh")}
+            </Button>
+          )}
           {dashMode === "advanced" && (
             <Link to="/transactions">
               <Button size="sm" className="bg-blue-500 hover:bg-blue-400 text-zinc-950 font-medium" data-testid="goto-tx-btn">
@@ -1055,7 +1064,10 @@ const worstPerformer = useMemo(() => {
           it (5 jul 2026). */}
       {dashMode === "advanced" && (
       <div style={{ order: wOrder("summary"), display: wVisible("summary") ? undefined : "none" }}
-           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+           // 2 por linha já a partir do mobile (não só a partir de sm) —
+           // 1 por linha ocupava demasiado espaço vertical no telemóvel
+           // (5 jul 2026, "temos que por 2 por linha").
+           className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <SummaryCard
           icon={<DollarSign className="w-4 h-4"/>}
           label={t("dash.balance")}

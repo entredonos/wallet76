@@ -46,7 +46,9 @@ export default function TopMoversWidget({ filtered, sorted, wallets, nav, curren
   return (
     <>
       {/* Row 1: 24h movers */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {/* 2 por linha já no mobile (não só a partir de md) — mesma correção
+          do grid de resumo em Dashboard.jsx (5 jul 2026). */}
+      <div className="grid grid-cols-2 gap-3">
         <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <ArrowUpRight className="w-4 h-4 text-emerald-400"/>
@@ -75,9 +77,11 @@ export default function TopMoversWidget({ filtered, sorted, wallets, nav, curren
         </div>
       </div>
 
-      {/* Row 2: Best / Worst performer (all-time) */}
+      {/* Row 2: Best / Worst performer (all-time) — 2 por linha já no
+          mobile, mesma correção do grid de resumo em Dashboard.jsx (5 jul
+          2026). */}
       {showPerformers && bestPerformer && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <SummaryCard
             icon={<AssetIcon asset={bestPerformer} size={22} />}
             label={t("dash.best_performer")}
