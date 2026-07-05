@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { X, GripVertical, RotateCcw, Eye, EyeOff } from "lucide-react";
 import { useI18n } from "../context/I18nContext";
 
-export default function DashboardWidgetDrawer({ open, onClose, widgetConfig, setWidgetConfig, widgetDefs, wallets = [] }) {
+export default function DashboardWidgetDrawer({ open, onClose, widgetConfig, setWidgetConfig, widgetDefs, wallets = [], dashMode }) {
   const { t } = useI18n();
   const dragId = useRef(null);
   const [dragOverId, setDragOverId] = useState(null);
@@ -113,9 +113,18 @@ export default function DashboardWidgetDrawer({ open, onClose, widgetConfig, set
           </button>
         </div>
 
-        {/* Widget list */}
+        {/* Widget list — em modo "light" só "summary" (LightBalanceCard) e
+            "evolution" (LightEvolutionCard) chegam a ser desenhados no
+            Painel (ver Dashboard.jsx); os outros 4 (top_movers/performers/
+            allocation/assets) só existem em "advanced". Mostrar os seus
+            toggles aqui também em "light" não tinha efeito nenhum — o
+            utilizador reparou nisto (5 jul 2026: "editor de widgets mas
+            tens que ver se esta atualizado aqui") — por isso filtramos a
+            lista consoante o modo. */}
         <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 space-y-2">
-          {widgetConfig.map((w) => {
+          {widgetConfig
+            .filter((w) => dashMode !== "light" || ["summary", "evolution"].includes(w.id))
+            .map((w) => {
             const def = widgetDefs.find((d) => d.id === w.id);
             if (!def) return null;
             const isOver = dragOverId === w.id;
@@ -153,7 +162,10 @@ export default function DashboardWidgetDrawer({ open, onClose, widgetConfig, set
           })}
         </div>
 
-        {/* Filter pills section */}
+        {/* Filter pills section — só existem no modo "advanced" (as pills
+            de tipo/carteira da tabela de ativos); escondidas em "light"
+            pela mesma razão da lista de widgets acima. */}
+        {dashMode !== "light" && (
         <div className="px-4 pb-2 border-t border-zinc-800 pt-4">
           <div className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-500 mb-3">{t("dash.widgets_filter_pills") || "Filter pills"}</div>
           <div className="space-y-1.5">
@@ -193,6 +205,7 @@ export default function DashboardWidgetDrawer({ open, onClose, widgetConfig, set
             ))}
           </div>
         </div>
+        )}
 
         {/* Footer */}
         <div className="px-4 py-3 border-t border-zinc-800">

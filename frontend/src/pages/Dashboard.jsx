@@ -901,6 +901,7 @@ const worstPerformer = useMemo(() => {
         setWidgetConfig={setWidgetConfig}
         widgetDefs={WIDGET_DEFS}
         wallets={wallets}
+        dashMode={dashMode}
       />
 
       {/* Free plan usage banner */}
@@ -955,16 +956,24 @@ const worstPerformer = useMemo(() => {
             </p>
           </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setDashMode((m) => (m === "light" ? "advanced" : "light"))}
-            className="bg-zinc-900/50 border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200"
-            data-testid="dash-mode-toggle"
-          >
-            <Gauge className="w-4 h-4 mr-2" />
-            {dashMode === "light" ? t("dash.view_advanced") : t("dash.view_summary")}
-          </Button>
+          {/* dash-mode-toggle, Alertas e "+Adicionar" saem do cabeçalho em
+              modo "light" (5 jul 2026): duplicavam o que o LightBalanceCard
+              já mostra ("Painel avançado" e "Adicionar ativo" têm botão
+              próprio ali) e o separador "Alertas" da barra de baixo no
+              mobile. Continuam tal como estavam em modo "advanced", que
+              não tem esse cartão. */}
+          {dashMode === "advanced" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDashMode((m) => (m === "light" ? "advanced" : "light"))}
+              className="bg-zinc-900/50 border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200"
+              data-testid="dash-mode-toggle"
+            >
+              <Gauge className="w-4 h-4 mr-2" />
+              {dashMode === "light" ? t("dash.view_advanced") : t("dash.view_summary")}
+            </Button>
+          )}
           <button
             onClick={() => setWidgetDrawer(true)}
             className="p-2 border border-zinc-800 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 transition-colors"
@@ -987,20 +996,24 @@ const worstPerformer = useMemo(() => {
           >
             <Share2 className="w-4 h-4" />
           </button>
-          <Link to="/alerts">
-            <Button variant="outline" size="sm" className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100" data-testid="alerts-btn">
-              <Bell className="w-4 h-4 mr-2"/> {t("common.alerts")}
-            </Button>
-          </Link>
+          {dashMode === "advanced" && (
+            <Link to="/alerts">
+              <Button variant="outline" size="sm" className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100" data-testid="alerts-btn">
+                <Bell className="w-4 h-4 mr-2"/> {t("common.alerts")}
+              </Button>
+            </Link>
+          )}
           <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing} className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100" data-testid="refresh-btn">
             <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}/>
             {refreshing ? t("common.updating") : t("common.refresh")}
           </Button>
-          <Link to="/transactions">
-            <Button size="sm" className="bg-blue-500 hover:bg-blue-400 text-zinc-950 font-medium" data-testid="goto-tx-btn">
-              <Receipt className="w-4 h-4 mr-2"/> + {t("common.add")}
-            </Button>
-          </Link>
+          {dashMode === "advanced" && (
+            <Link to="/transactions">
+              <Button size="sm" className="bg-blue-500 hover:bg-blue-400 text-zinc-950 font-medium" data-testid="goto-tx-btn">
+                <Receipt className="w-4 h-4 mr-2"/> + {t("common.add")}
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -1104,49 +1117,67 @@ const worstPerformer = useMemo(() => {
         // 5 jul 2026 from a live screenshot: "Evolução do Portfólio" was
         // the very first thing on the page, saldo cards below it).
         <div className="flex flex-col gap-6" style={{ order: wOrder("summary") + 1 }}>
-          <LightBalanceCard
-            totalLabel={mask(fmtCompact(convert(summary.total, currency, fxRates), currency))}
-            changeLabel={fmtPct(summary.cost > 0 ? ((summary.total - summary.cost) / summary.cost) * 100 : 0)}
-            positive={(summary.total - summary.cost) >= 0}
-            sparkline={<Sparkline data={summarySparkData} positive={chartIsPositive} width={70} height={22} />}
-            onAdd={() => nav("/transactions")}
-            onAdvanced={() => setDashMode("advanced")}
-            loading={loading}
-            wallets={walletBreakdown.map((w) => ({
-              id: w.id,
-              name: w.name,
-              valueLabel: mask(fmtCompact(convert(w.value, currency, fxRates), currency)),
-              changeLabel: w.value > 0 ? fmtPct(w.pnlPct) : null,
-              positive: w.pnlPct >= 0,
-            }))}
-          />
-          <LightEvolutionCard
-            title={evolutionTitle}
-            points={lightChartPoints}
-            changePct={lightChangePct}
-            loading={lightHistoryLoading}
-          />
-          {(() => {
-            // Highlights the button label ("Painel avançado" / "Advanced
-            // panel" / etc.) wherever it appears inside the hint sentence,
-            // in the same amber as the button itself — works across all 6
-            // languages since dash.light_mode_hint always embeds the exact
-            // dash.view_advanced string verbatim (quoted or between
-            // guillemets, depending on the language).
-            const hint = t("dash.light_mode_hint");
-            const label = t("dash.view_advanced");
-            const idx = hint.indexOf(label);
-            if (idx === -1) {
-              return <p className="text-xs text-zinc-500 font-mono">{hint}</p>;
-            }
-            return (
-              <p className="text-xs text-zinc-500 font-mono">
-                {hint.slice(0, idx)}
-                <span className="text-amber-400 font-medium">{label}</span>
-                {hint.slice(idx + label.length)}
-              </p>
-            );
-          })()}
+          {/* wVisible/wOrder wiring added 5 jul 2026: these two used to
+              render unconditionally in light mode regardless of what the
+              widget drawer said, so toggling "Saldo"/"Evolução" off there
+              had zero effect here — a real gap, not just cosmetic (user
+              flagged it: "editor de widgets... tens que ver se esta
+              atualizado aqui"). DashboardWidgetDrawer also now hides the
+              other 4 widgets (top_movers/performers/allocation/assets) and
+              the filter-pills section while in light mode, since none of
+              them render here — showing their toggles would just be
+              clutter with no effect. */}
+          {wVisible("summary") && (
+            <div style={{ order: wOrder("summary") }}>
+              <LightBalanceCard
+                totalLabel={mask(fmtCompact(convert(summary.total, currency, fxRates), currency))}
+                changeLabel={fmtPct(summary.cost > 0 ? ((summary.total - summary.cost) / summary.cost) * 100 : 0)}
+                positive={(summary.total - summary.cost) >= 0}
+                sparkline={<Sparkline data={summarySparkData} positive={chartIsPositive} width={70} height={22} />}
+                onAdd={() => nav("/transactions")}
+                onAdvanced={() => setDashMode("advanced")}
+                loading={loading}
+                wallets={walletBreakdown.map((w) => ({
+                  id: w.id,
+                  name: w.name,
+                  valueLabel: mask(fmtCompact(convert(w.value, currency, fxRates), currency)),
+                  changeLabel: w.value > 0 ? fmtPct(w.pnlPct) : null,
+                  positive: w.pnlPct >= 0,
+                }))}
+              />
+            </div>
+          )}
+          {wVisible("evolution") && (
+            <div style={{ order: wOrder("evolution") }} className="flex flex-col gap-3">
+              <LightEvolutionCard
+                title={evolutionTitle}
+                points={lightChartPoints}
+                changePct={lightChangePct}
+                loading={lightHistoryLoading}
+              />
+              {(() => {
+                // Highlights the button label ("Painel avançado" / "Advanced
+                // panel" / etc.) wherever it appears inside the hint sentence,
+                // in the same amber as the button itself — works across all 6
+                // languages since dash.light_mode_hint always embeds the exact
+                // dash.view_advanced string verbatim (quoted or between
+                // guillemets, depending on the language).
+                const hint = t("dash.light_mode_hint");
+                const label = t("dash.view_advanced");
+                const idx = hint.indexOf(label);
+                if (idx === -1) {
+                  return <p className="text-xs text-zinc-500 font-mono">{hint}</p>;
+                }
+                return (
+                  <p className="text-xs text-zinc-500 font-mono">
+                    {hint.slice(0, idx)}
+                    <span className="text-amber-400 font-medium">{label}</span>
+                    {hint.slice(idx + label.length)}
+                  </p>
+                );
+              })()}
+            </div>
+          )}
         </div>
       )}
 

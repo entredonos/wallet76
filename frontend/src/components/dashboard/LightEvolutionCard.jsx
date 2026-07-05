@@ -67,6 +67,24 @@ export default function LightEvolutionCard({ title, points, changePct, loading }
                 }
               }}
               onMouseLeave={() => setHoverIndex(null)}
+              // onMouseMove alone only fires for an actual mouse (or the one
+              // synthetic mousemove some mobile browsers dispatch on tap) —
+              // it does NOT fire while a finger drags across the chart.
+              // Recharts dispatches touchmove through a SEPARATE onTouchMove
+              // callback (see node_modules/recharts/lib/chart/
+              // RechartsWrapper.js), but both receive the identical
+              // computed state shape (isTooltipActive/activeTooltipIndex —
+              // see externalEventsMiddleware.js), so the same handler works
+              // for both. Without this, swiping only updated the % once, on
+              // the initial touch, and stayed frozen while sliding (5 jul
+              // 2026: "ele so atualiza quando do um toque... quero que
+              // mesmo ao deslizar ele atualize").
+              onTouchMove={(state) => {
+                if (state?.isTooltipActive && state.activeTooltipIndex != null) {
+                  const idx = Number(state.activeTooltipIndex);
+                  if (Number.isFinite(idx)) setHoverIndex(idx);
+                }
+              }}
             >
               <defs>
                 <linearGradient id="lightEvoFill" x1="0" y1="0" x2="0" y2="1">
