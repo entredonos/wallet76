@@ -43,7 +43,16 @@ export function register() {
 
 function _registerSW() {
   navigator.serviceWorker
-    .register(SW_URL)
+    // updateViaCache: "none" — never let the browser's HTTP cache answer the
+    // periodic "is sw.js still the same?" check the browser runs on every
+    // registration/navigation. Without this, a sw.js served with any
+    // cacheable header (or just the browser's default heuristics) can make
+    // updates invisible for hours, which is how "fiz deploy mas no telemóvel
+    // continua igual" (5 jul 2026) kept happening even with skipWaiting()
+    // already in place — the new worker was never even detected, let alone
+    // installed. Paired with the explicit no-cache header on /sw.js in
+    // frontend/vercel.json for the same reason, belt-and-suspenders.
+    .register(SW_URL, { updateViaCache: "none" })
     .then((reg) => {
       reg.onupdatefound = () => {
         const installing = reg.installing;

@@ -15,7 +15,16 @@
 // here, a returning tab can keep serving old HTML/behaviour indefinitely.
 // Paired with UpdateAvailableToast.jsx on the frontend, which prompts the
 // user to reload as soon as a new service worker like this one installs.
-const CACHE_NAME = "wallet76-v2";
+//
+// Bumped v2 -> v3 on 2026-07-05: "deploy fez mas no telemóvel continua
+// igual" kept recurring even with skipWaiting()/clients.claim() below,
+// because sw.js itself hadn't changed byte-for-byte between recent deploys
+// (only app JS/CSS did) — no diff means the browser never even detects an
+// update, so the old worker (and its stale index.html precache) just keeps
+// controlling the page indefinitely. Also added explicit no-cache headers
+// (frontend/vercel.json) and updateViaCache: "none" (serviceWorkerRegistration.js)
+// so this doesn't need a manual bump every time going forward.
+const CACHE_NAME = "wallet76-v3";
 const OFFLINE_URL = "/";
 
 // Assets to pre-cache on install
@@ -100,7 +109,7 @@ self.addEventListener("fetch", (event) => {
   // ── Navigation (HTML): network-first, fallback to cached root ──
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: "no-store" })
         .then((response) => {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
