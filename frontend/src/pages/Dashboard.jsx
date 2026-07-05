@@ -1064,7 +1064,15 @@ const worstPerformer = useMemo(() => {
           EvolutionChart in "advanced"). Everything else (pills, movers,
           allocation, table) only renders in "advanced". */}
       {dashMode === "light" && (
-        <>
+        // Explicit order — this div is a direct child of the outer
+        // "flex flex-col" dashboard container, same as the summary cards
+        // grid above it. Without an explicit order here, it defaults to 0
+        // (browser default), which is LESS than the summary grid's own
+        // order (wOrder("summary"), 20 by default) — so this card was
+        // rendering ABOVE the balance cards instead of below them (caught
+        // 5 jul 2026 from a live screenshot: "Evolução do Portfólio" was
+        // the very first thing on the page, saldo cards below it).
+        <div className="flex flex-col gap-6" style={{ order: wOrder("summary") + 1 }}>
           <LightEvolutionCard
             title={evolutionTitle}
             points={lightChartPoints}
@@ -1092,7 +1100,7 @@ const worstPerformer = useMemo(() => {
               </p>
             );
           })()}
-        </>
+        </div>
       )}
 
       {dashMode === "advanced" && (
