@@ -450,12 +450,17 @@ export default function Layout({ children, currency, setCurrency }) {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800/60"
            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="flex items-center justify-around h-14">
+          {/* 5 separadores acordados para a app mobile: Início/Carteiras/
+              Mercado/Alertas/Perfil — "Transações" deixou de ter separador
+              próprio aqui (fica acessível a partir de Carteiras); "Mercado"
+              entrou no lugar, já com watchlist + notícias dentro (ver
+              Market.jsx) em vez de terem separadores próprios. */}
           {[
-            { to: "/dashboard",    icon: LayoutDashboard, labelKey: "nav.dashboard" },
-            { to: "/transactions", icon: Receipt,         labelKey: "nav.transactions" },
-            { to: "/wallets",      icon: WalletIcon,      labelKey: "nav.wallets" },
-            { to: "/alerts",       icon: Bell,            labelKey: "nav.alerts", badge: alertCount },
-            { to: "/settings",     icon: Settings,        labelKey: "nav.settings" },
+            { to: "/dashboard", icon: LayoutDashboard, labelKey: "nav.dashboard" },
+            { to: "/wallets",   icon: WalletIcon,       labelKey: "nav.wallets" },
+            { to: "/market",    icon: LineChart,        labelKey: "nav.market" },
+            { to: "/alerts",    icon: Bell,             labelKey: "nav.alerts", badge: alertCount },
+            { to: "/settings",  icon: Settings,         labelKey: "nav.settings" },
           ].map(({ to, icon: Icon, labelKey, badge }) => (
             <NavLink
               key={to}

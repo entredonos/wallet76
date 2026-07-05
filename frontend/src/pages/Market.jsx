@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import {
   TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Activity, Info,
+  Star, Newspaper, ExternalLink, Plus,
 } from "lucide-react";
 import AssetIcon from "../components/AssetIcon";
 import { fmtCurrency, fmtPct, fmtCompact } from "../lib/format";
@@ -19,9 +20,25 @@ const MARKET_REFRESH_MINUTES = 15;
 
 export default function Market() {
   const { t } = useI18n();
+  const [tab, setTab] = useState("crypto"); // "crypto" | "stocks" | "watch"
   const [crypto, setCrypto] = useState({ gainers: [], losers: [] });
   const [stocks, setStocks] = useState({ gainers: [], losers: [] });
   const [loading, setLoading] = useState(true);
+
+  // Compact news preview per tab — reuses the same /market/latest-news feed
+  // already fetched whole on the News page, just sliced down to 3 items
+  // here. No search box in this preview (see chat: a 2-3 item list doesn't
+  // need one; the full News page still has full search).
+  const [cryptoNews, setCryptoNews] = useState([]);
+  const [stocksNews, setStocksNews] = useState([]);
+  const [newsLoading, setNewsLoading] = useState(true);
+
+  // Watchlist preview — flattens every group's items into one list (no
+  // group tabs here, unlike the full /watchlist page) since this is just a
+  // quick glance from Mercado. Managing groups/columns/alerts still happens
+  // on the full Watchlist page, linked below.
+  const [watchItems, setWatchItems] = useState([]);
+  const [watchLoading, setWatchLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -36,7 +53,29 @@ export default function Market() {
       } catch (e) { /* noop */ }
       setLoading(false);
     })();
+
+    (async () => {
+      setNewsLoading(true);
+      try {
+        const { data } = await api.get("/market/latest-news");
+        setCryptoNews((data?.crypto || []).slice(0, 3));
+        setStocksNews((data?.stocks || []).slice(0, 3));
+      } catch { /* noop */ }
+      setNewsLoading(false);
+    })();
+
+    (async () => {
+      setWatchLoading(true);
+      try {
+        const { data } = await api.get("/watchlist-groups");
+        const flat = (data || []).flatMap((g) => g.items || []);
+        setWatchItems(flat);
+      } catch { /* noop */ }
+      setWatchLoading(false);
+    })();
   }, []);
+
+  const news = tab === "stocks" ? stocksNews : cryptoNews;
 
   return (
     <div className="space-y-8 fade-in">
@@ -46,51 +85,178 @@ export default function Market() {
         <p className="text-zinc-500 mt-2">{t("market.subtitle")}</p>
       </div>
 
-      {/* Crypto movers */}
-      <section className="space-y-4" data-testid="market-crypto-section">
-        <div className="flex items-center gap-2">
-          <Activity className="w-4 h-4 text-amber-400"/>
-          <div className="text-xs font-mono uppercase tracking-[0.2em] text-amber-400">{t("market.crypto_24h")}</div>
-          <div className="text-[10px] font-mono text-zinc-600">{t("market.updated_every", { minutes: MARKET_REFRESH_MINUTES })}</div>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {loading ? (
-            <>
-              <SkeletonMoversList/>
-              <SkeletonMoversList/>
-            </>
-          ) : (
-            <>
-              <MoversList kind="crypto" type="gainers" items={crypto.gainers} t={t} universeNote={t("market.crypto_universe_note")}/>
-              <MoversList kind="crypto" type="losers" items={crypto.losers} t={t} universeNote={t("market.crypto_universe_note")}/>
-            </>
-          )}
-        </div>
-      </section>
+      {/* Segmented control — Crypto / Stocks / Watching. Replaces the old
+          "always show both stacked" layout: one tab at a time reads better
+          on mobile, and it's also where the watchlist preview + a compact
+          news feed now live (see chat: keep the bottom nav at 5 tabs by
+          folding watchlist + news into Mercado instead of giving them their
+          own tab). */}
+      <div className="flex gap-2" data-testid="market-tabs">
+        {[
+          { key: "crypto", label: t("common.crypto"), icon: Activity },
+          { key: "stocks", label: t("common.stocks"), icon: Activity },
+          { key: "watch", label: t("market.tab_watch"), icon: Star },
+        ].map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono transition-colors ${
+              tab === key ? "bg-zinc-100 text-zinc-950" : "bg-zinc-900/50 text-zinc-400 border border-zinc-800 hover:text-zinc-200"
+            }`}
+            data-testid={`market-tab-${key}`}
+          >
+            <Icon className="w-3.5 h-3.5"/> {label}
+          </button>
+        ))}
+      </div>
 
-      {/* Stocks movers */}
-      <section className="space-y-4" data-testid="market-stocks-section">
-        <div className="flex items-center gap-2">
-          <Activity className="w-4 h-4 text-blue-400"/>
-          <div className="text-xs font-mono uppercase tracking-[0.2em] text-blue-400">{t("market.stocks_day")}</div>
-          <div className="text-[10px] font-mono text-zinc-600">{t("market.updated_every", { minutes: MARKET_REFRESH_MINUTES })}</div>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {loading ? (
-            <>
-              <SkeletonMoversList/>
-              <SkeletonMoversList/>
-            </>
-          ) : (
-            <>
-              <MoversList kind="stock" type="gainers" items={stocks.gainers} t={t} universeNote={t("market.stocks_universe_note")}/>
-              <MoversList kind="stock" type="losers" items={stocks.losers} t={t} universeNote={t("market.stocks_universe_note")}/>
-            </>
-          )}
-        </div>
-      </section>
+      {tab === "crypto" && (
+        <>
+          <section className="space-y-4" data-testid="market-crypto-section">
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-amber-400"/>
+              <div className="text-xs font-mono uppercase tracking-[0.2em] text-amber-400">{t("market.crypto_24h")}</div>
+              <div className="text-[10px] font-mono text-zinc-600">{t("market.updated_every", { minutes: MARKET_REFRESH_MINUTES })}</div>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {loading ? (
+                <>
+                  <SkeletonMoversList/>
+                  <SkeletonMoversList/>
+                </>
+              ) : (
+                <>
+                  <MoversList kind="crypto" type="gainers" items={crypto.gainers} t={t} universeNote={t("market.crypto_universe_note")}/>
+                  <MoversList kind="crypto" type="losers" items={crypto.losers} t={t} universeNote={t("market.crypto_universe_note")}/>
+                </>
+              )}
+            </div>
+          </section>
+          <NewsPreview items={news} loading={newsLoading} title={t("news.crypto_news")}/>
+        </>
+      )}
+
+      {tab === "stocks" && (
+        <>
+          <section className="space-y-4" data-testid="market-stocks-section">
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-blue-400"/>
+              <div className="text-xs font-mono uppercase tracking-[0.2em] text-blue-400">{t("market.stocks_day")}</div>
+              <div className="text-[10px] font-mono text-zinc-600">{t("market.updated_every", { minutes: MARKET_REFRESH_MINUTES })}</div>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {loading ? (
+                <>
+                  <SkeletonMoversList/>
+                  <SkeletonMoversList/>
+                </>
+              ) : (
+                <>
+                  <MoversList kind="stock" type="gainers" items={stocks.gainers} t={t} universeNote={t("market.stocks_universe_note")}/>
+                  <MoversList kind="stock" type="losers" items={stocks.losers} t={t} universeNote={t("market.stocks_universe_note")}/>
+                </>
+              )}
+            </div>
+          </section>
+          <NewsPreview items={news} loading={newsLoading} title={t("news.stocks_news")}/>
+        </>
+      )}
+
+      {tab === "watch" && (
+        <WatchPreview items={watchItems} loading={watchLoading} t={t}/>
+      )}
 
     </div>
+  );
+}
+
+// Compact preview of the same feed the full News page shows — 3 headlines,
+// no search box (see chat: not worth it for a list this short), with a link
+// through to /news for the complete feeds + search.
+function NewsPreview({ items, loading, title }) {
+  const { t } = useI18n();
+  return (
+    <section className="space-y-3" data-testid="market-news-preview">
+      <div className="flex items-center gap-2">
+        <Newspaper className="w-4 h-4 text-zinc-400"/>
+        <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{title}</div>
+      </div>
+      {loading ? (
+        <SkeletonMoversList/>
+      ) : items.length === 0 ? (
+        <div className="text-zinc-600 text-sm font-mono px-1">{t("news.no_results")}</div>
+      ) : (
+        <div className="space-y-2">
+          {items.map((n, i) => (
+            <a
+              key={n.id || i}
+              href={n.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-zinc-900/40 border border-zinc-800/50 hover:border-zinc-700/60 transition-colors rounded-xl p-3 flex items-start gap-2"
+              data-testid={`market-news-item-${i}`}
+            >
+              <div className="min-w-0 flex-1">
+                <div className="text-zinc-100 text-sm line-clamp-2">{n.title}</div>
+                <div className="text-[10px] font-mono text-zinc-500 mt-1">{n.publisher}</div>
+              </div>
+              <ExternalLink className="w-3.5 h-3.5 text-zinc-600 shrink-0 mt-0.5"/>
+            </a>
+          ))}
+        </div>
+      )}
+      <Link to="/news" className="inline-flex items-center gap-1 text-xs font-mono text-zinc-500 hover:text-zinc-300 transition-colors">
+        {t("market.news_view_all")}
+      </Link>
+    </section>
+  );
+}
+
+// Flattened watchlist preview — full group/column/alert management stays on
+// the dedicated /watchlist page (linked at the bottom); this is just a
+// glance from Mercado, per the approved mobile mockup.
+function WatchPreview({ items, loading, t }) {
+  if (loading) return <SkeletonMoversList/>;
+  return (
+    <section className="space-y-3" data-testid="market-watch-preview">
+      {items.length === 0 ? (
+        <div className="text-zinc-600 text-sm font-mono px-1">{t("market.watch_empty")}</div>
+      ) : (
+        <div className="space-y-2">
+          {items.map((w) => {
+            const pos = (w.change_24h || 0) >= 0;
+            return (
+              <Link
+                key={w.id}
+                to={`/asset/${w.asset_type}/${w.symbol}`}
+                className="bg-zinc-900/40 border border-zinc-800/50 hover:border-zinc-700/60 transition-colors rounded-xl p-3 flex items-center gap-3"
+                data-testid={`market-watch-item-${w.id}`}
+              >
+                <AssetIcon asset={w} size={28}/>
+                <div className="min-w-0 flex-1">
+                  <div className="font-mono text-zinc-100 text-sm">{w.custom_label || w.symbol}</div>
+                  <div className="text-xs text-zinc-500 truncate">{w.name}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-mono text-zinc-100 text-sm">{w.price_usd ? fmtCurrency(w.price_usd, "USD") : "—"}</div>
+                  <div className={`text-xs font-mono ${pos ? "text-emerald-400" : "text-rose-400"}`}>{fmtPct(w.change_24h || 0)}</div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+      <Link
+        to="/watchlist"
+        className="flex items-center justify-center gap-1.5 border border-dashed border-zinc-700 rounded-xl p-3 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600 transition-colors text-sm font-mono"
+        data-testid="market-watch-add-cta"
+      >
+        <Plus className="w-3.5 h-3.5"/> {t("market.watch_add_cta")}
+      </Link>
+      <Link to="/watchlist" className="inline-flex items-center gap-1 text-xs font-mono text-zinc-500 hover:text-zinc-300 transition-colors">
+        {t("market.watch_view_all")}
+      </Link>
+    </section>
   );
 }
 
