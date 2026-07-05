@@ -45,6 +45,18 @@ import { ALLOCATION_CLASSES, ALLOCATION_CLASS_LABEL_KEY, effectiveClass, aggrega
 // computation below is unchanged from before the split, only where its
 // JSX renders moved.
 
+// Small "number over label" stat used in the title row subtitle (assets /
+// wallets / last-updated) — see comment above its usage for why this
+// replaced a single run-on translated sentence.
+function StatChip({ value, label }) {
+  return (
+    <div className="flex flex-col items-start leading-tight">
+      <span className="text-sm font-mono text-zinc-300">{value}</span>
+      <span className="text-[9px] font-mono uppercase tracking-[0.12em] text-zinc-500">{label}</span>
+    </div>
+  );
+}
+
 export default function Dashboard({ currency }) {
   const { t } = useI18n();
   const { hidden: hideValues, toggle: togglePrivacy } = usePrivacy();
@@ -941,19 +953,24 @@ const worstPerformer = useMemo(() => {
           <h1 className="font-display text-3xl sm:text-4xl font-light tracking-tight text-zinc-50">
             {selectedWallet ? selectedWallet.name : t("dash.title")}
           </h1>
-            <p className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-500 mt-1.5" data-testid="dashboard-subtitle">
-              {selectedWallet
-                ? t("dash.wallet_subtitle", {
-                    count: filtered.length,
-                  })
-                : t("dash.subtitle", {
-                    count: totalCount,
-                    wallets: walletCount,
-                  })}
-              {lastSyncMinutesLabel !== null && (
-                <> · {t("common.updated")} {lastSyncMinutesLabel}min</>
+            {/* Era uma única frase traduzida ("{count} ativos • {wallets}
+                carteiras • Atualizado Xmin") — em ecrãs estreitos isso
+                quebrava para 2 linhas, feio (5 jul 2026). Substituído por
+                "chips" pequenos com o número por cima do rótulo (letras
+                menores, sem quebra de linha). */}
+            <div className="flex items-center gap-4 mt-1.5" data-testid="dashboard-subtitle">
+              {selectedWallet ? (
+                <StatChip value={filtered.length} label={t("dash.assets_label")} />
+              ) : (
+                <>
+                  <StatChip value={totalCount} label={t("dash.assets_label")} />
+                  <StatChip value={walletCount} label={t("dash.wallets_label")} />
+                </>
               )}
-            </p>
+              {lastSyncMinutesLabel !== null && (
+                <StatChip value={`${lastSyncMinutesLabel}min`} label={t("common.updated")} />
+              )}
+            </div>
           </div>
         <div className="flex flex-wrap items-center gap-2">
           {/* dash-mode-toggle, Alertas e "+Adicionar" saem do cabeçalho em

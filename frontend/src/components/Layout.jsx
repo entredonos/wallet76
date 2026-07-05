@@ -424,12 +424,18 @@ export default function Layout({ children, currency, setCurrency }) {
       )}
 
       <div className="flex-1 min-w-0">
+        {/* justify-between com 4 filhos separados espalhava o logo+"Wallet76"
+            no meio do cabeçalho, com um vão grande entre eles e o hambúrguer
+            — feio (5 jul 2026). Agrupados agora num só bloco à esquerda,
+            encostados aos 3 traços; só a lupa fica isolada à direita. */}
         <header className="md:hidden sticky top-0 z-30 backdrop-blur-md bg-zinc-950/80 border-b border-zinc-800/50 h-14 flex items-center justify-between px-4">
-          <button onClick={() => setOpen(true)} className="text-zinc-300" data-testid="open-sidebar">
-            <Menu className="w-5 h-5"/>
-          </button>
-          <img src={walletLogo} alt="Wallet76" className="w-8 h-8 object-contain" />
-          <div className="font-display text-base tracking-tight text-zinc-100">Wallet76</div>
+          <div className="flex items-center gap-2.5">
+            <button onClick={() => setOpen(true)} className="text-zinc-300" data-testid="open-sidebar">
+              <Menu className="w-5 h-5"/>
+            </button>
+            <img src={walletLogo} alt="Wallet76" className="w-7 h-7 object-contain" />
+            <div className="font-display text-base tracking-tight text-zinc-100">Wallet76</div>
+          </div>
           <button onClick={() => setSearchOpen(true)} className="text-zinc-400 hover:text-zinc-200 transition-colors">
             <Search className="w-5 h-5"/>
           </button>

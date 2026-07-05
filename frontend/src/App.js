@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useI18n } from "./context/I18nContext";
+import routeFallbackLogo from "./assets/wallet76-logo.png";
 
 const IS_DEV = process.env.NODE_ENV === "development";
 
@@ -138,13 +139,18 @@ const AdminFeedback = lazy(() => import("./pages/AdminFeedback"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 
-// Minimal, theme-matching fallback — only ever visible for the brief
-// window while a route's chunk downloads (typically instant on repeat
-// visits, since the browser caches it after the first load).
+// Theme-matching fallback — visible while a route's chunk downloads
+// (typically instant on repeat visits, since the browser caches it after
+// the first load) or during initial app boot. Logo + a thin indeterminate
+// bar (loading-bar-sweep, App.css) instead of a plain spinner (5 jul 2026:
+// "cada vez que a app faz loading... uma barrita de loading com o logo").
 function RouteFallback() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-950">
-      <div className="w-6 h-6 border-2 border-zinc-700 border-t-zinc-300 rounded-full animate-spin" />
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-zinc-950">
+      <img src={routeFallbackLogo} alt="Wallet76" className="w-12 h-12 object-contain opacity-90" />
+      <div className="w-36 h-1 rounded-full bg-zinc-800 overflow-hidden">
+        <div className="h-full w-1/3 bg-blue-500 rounded-full loading-bar-sweep" />
+      </div>
     </div>
   );
 }
