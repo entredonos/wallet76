@@ -16,6 +16,7 @@ import OnboardingFlow from "../components/OnboardingFlow";
 import Sparkline from "../components/Sparkline";
 import SummaryCard from "../components/dashboard/SummaryCard";
 import LightEvolutionCard from "../components/dashboard/LightEvolutionCard";
+import LightBalanceCard from "../components/dashboard/LightBalanceCard";
 import SharePanel from "../components/dashboard/SharePanel";
 import FilterPillsRow from "../components/dashboard/FilterPillsRow";
 import TopMoversWidget from "../components/dashboard/TopMoversWidget";
@@ -619,6 +620,29 @@ export default function Dashboard({ currency }) {
     return { total, cost, pnl, pnlPct, daily, dailyPct, realized };
   }, [filtered]);
 
+  // Per-wallet breakdown for the light-mode "As tuas carteiras" list
+  // (LightBalanceCard). Built from allHoldings (unfiltered by wallet, live
+  // priced) grouped by wallet_id — same approach as the sidebar in
+  // Layout.jsx, just computed locally instead of a second /portfolio fetch.
+  // portfolio.wallets itself has no value/pnl, only the raw wallet docs.
+  const walletBreakdown = useMemo(() => {
+    const stats = {};
+    allHoldings.forEach((a) => {
+      const id = a.wallet_id;
+      if (!id) return;
+      if (!stats[id]) stats[id] = { value: 0, cost: 0 };
+      stats[id].value += Number(a.value_usd || 0);
+      stats[id].cost += Number(a.cost_usd || 0);
+    });
+    return wallets
+      .map((w) => {
+        const st = stats[w.id] || { value: 0, cost: 0 };
+        const pnlPct = st.cost > 0 ? ((st.value - st.cost) / st.cost) * 100 : 0;
+        return { id: w.id, name: w.name, value: st.value, pnlPct };
+      })
+      .sort((a, b) => b.value - a.value);
+  }, [allHoldings, wallets]);
+
   const performance = useMemo(() => {
     if (!history || history.length < 2) {
       return { selected: 0 };
@@ -994,7 +1018,12 @@ const worstPerformer = useMemo(() => {
         />
       )}
 
-      {/* Summary cards */}
+      {/* Summary cards — "advanced" only. "light" mode shows LightBalanceCard
+          instead (single consolidated Saldo Total + wallets list, below),
+          per the approved mockup (memory/mobile_app_proposal.md) — these 4
+          separate stacked cards were the "layout antigo" difference from
+          it (5 jul 2026). */}
+      {dashMode === "advanced" && (
       <div style={{ order: wOrder("summary"), display: wVisible("summary") ? undefined : "none" }}
            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <SummaryCard
@@ -1057,12 +1086,14 @@ const worstPerformer = useMemo(() => {
           }
         />
       </div>
+      )}
 
-      {/* Light view: summary cards above + a static 7-day evolution card
-          (badge + day-axis only, no range picker, no candles/weekend
-          bands/safety-net badge — those stay exclusive to the full
-          EvolutionChart in "advanced"). Everything else (pills, movers,
-          allocation, table) only renders in "advanced". */}
+      {/* Light view: LightBalanceCard (Saldo Total + carteiras) above a
+          static 7-day evolution card (badge + day-axis only, no range
+          picker, no candles/weekend bands/safety-net badge — those stay
+          exclusive to the full EvolutionChart in "advanced"). Everything
+          else (pills, movers, allocation, table) only renders in
+          "advanced". */}
       {dashMode === "light" && (
         // Explicit order — this div is a direct child of the outer
         // "flex flex-col" dashboard container, same as the summary cards
@@ -1073,6 +1104,22 @@ const worstPerformer = useMemo(() => {
         // 5 jul 2026 from a live screenshot: "Evolução do Portfólio" was
         // the very first thing on the page, saldo cards below it).
         <div className="flex flex-col gap-6" style={{ order: wOrder("summary") + 1 }}>
+          <LightBalanceCard
+            totalLabel={mask(fmtCompact(convert(summary.total, currency, fxRates), currency))}
+            changeLabel={fmtPct(summary.cost > 0 ? ((summary.total - summary.cost) / summary.cost) * 100 : 0)}
+            positive={(summary.total - summary.cost) >= 0}
+            sparkline={<Sparkline data={summarySparkData} positive={chartIsPositive} width={70} height={22} />}
+            onAdd={() => nav("/transactions")}
+            onAdvanced={() => setDashMode("advanced")}
+            loading={loading}
+            wallets={walletBreakdown.map((w) => ({
+              id: w.id,
+              name: w.name,
+              valueLabel: mask(fmtCompact(convert(w.value, currency, fxRates), currency)),
+              changeLabel: w.value > 0 ? fmtPct(w.pnlPct) : null,
+              positive: w.pnlPct >= 0,
+            }))}
+          />
           <LightEvolutionCard
             title={evolutionTitle}
             points={lightChartPoints}
