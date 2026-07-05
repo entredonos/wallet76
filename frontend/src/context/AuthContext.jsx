@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { api, formatApiErrorDetail } from "../lib/api";
+import { api, formatApiErrorDetail, setUnauthorizedHandler } from "../lib/api";
 
 const AuthContext = createContext(null);
 
@@ -18,6 +18,24 @@ export function AuthProvider({ children }) {
         setLoading(false);
       }
     })();
+  }, []);
+
+  // Any request anywhere in the app that comes back 401 (access_token
+  // cookie expired mid-session) flips `user` to false here, so App.js's
+  // Protected wrapper redirects to /login on its very next render — see
+  // the interceptor in lib/api.js for why this lives there instead of a
+  // per-page check (5 jul 2026 fix: dashboard used to just toast "sessão
+  // expirada" and keep rendering stale cached data underneath).
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      setUser(false);
+      try {
+        Object.keys(sessionStorage)
+          .filter((k) => k.startsWith("w76_dash_"))
+          .forEach((k) => sessionStorage.removeItem(k));
+      } catch { /* noop */ }
+    });
+    return () => setUnauthorizedHandler(null);
   }, []);
 
   const login = async (email, password) => {

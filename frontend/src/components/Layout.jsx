@@ -6,7 +6,7 @@ import { useI18n, LANGUAGES } from "../context/I18nContext";
 import { api } from "../lib/api";
 import {
   TrendingUp, LogOut, Wallet as WalletIcon, LayoutDashboard, Receipt, Bell,
-  Briefcase, Coins, Plus, Menu, X, Sun, Moon, Eye, Newspaper, Languages, LineChart, Settings, Link2, Globe, Search, BarChart2, ShieldCheck, ChevronDown,
+  Briefcase, Coins, Plus, Menu, X, Sun, Moon, Eye, Newspaper, Languages, LineChart, Settings, Link2, Globe, Search, BarChart2, ShieldCheck, ChevronDown, User,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import walletLogo from "../assets/wallet76-logo80x60.png";
@@ -454,13 +454,21 @@ export default function Layout({ children, currency, setCurrency }) {
               Mercado/Alertas/Perfil — "Transações" deixou de ter separador
               próprio aqui (fica acessível a partir de Carteiras); "Mercado"
               entrou no lugar, já com watchlist + notícias dentro (ver
-              Market.jsx) em vez de terem separadores próprios. */}
+              Market.jsx) em vez de terem separadores próprios.
+              5º separador aponta a /profile (não /settings): o mockup
+              aprovado tinha "Perfil" (avatar/email + Idioma + Moeda +
+              Segurança + Sair) — página nova em pages/Profile.jsx. A
+              página de Definições completa (PIN/biometria/subscrição/
+              danger zone) continua a existir em /settings, com um link a
+              partir do Perfil (5 jul 2026: reportado como "ta diferente,
+              neste momento eh defenicoes e nao tem nada a ver" ao
+              apontar /settings direto). */}
           {[
             { to: "/dashboard", icon: LayoutDashboard, labelKey: "nav.dashboard" },
             { to: "/wallets",   icon: WalletIcon,       labelKey: "nav.wallets" },
             { to: "/market",    icon: LineChart,        labelKey: "nav.market" },
             { to: "/alerts",    icon: Bell,             labelKey: "nav.alerts", badge: alertCount },
-            { to: "/settings",  icon: Settings,         labelKey: "nav.settings" },
+            { to: "/profile",   icon: User,             labelKey: "nav.profile" },
           ].map(({ to, icon: Icon, labelKey, badge }) => (
             <NavLink
               key={to}

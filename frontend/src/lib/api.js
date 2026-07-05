@@ -20,6 +20,15 @@ export const api = axios.create({
 // already correctly scoped by the backend's explicit CORS origin allowlist
 // (see backend/server.py), so there's no need for a header-based fallback.
 
+// AuthProvider registers itself here on mount (see AuthContext.jsx) so the
+// interceptor below can flip global auth state on a 401 without api.js
+// having to import AuthContext directly (that would be a circular import —
+// AuthContext already imports `api` from this file).
+let unauthorizedHandler = null;
+export function setUnauthorizedHandler(fn) {
+  unauthorizedHandler = fn;
+}
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -29,6 +38,19 @@ api.interceptors.response.use(
     // /pricing here: a free-tier user hitting a soft limit on one feature
     // (e.g. 2nd wallet) should stay right where they are, not get yanked
     // out of the whole app.
+    //
+    // 401 (session expired mid-use — access_token cookie expired while the
+    // user was already inside the app) used to only show a toast per-page
+    // (Dashboard.jsx etc.), leaving the Protected route's `user` truthy —
+    // so the app kept rendering stale cached data under the toast instead
+    // of sending the user back to /login (caught 5 jul 2026: dashboard
+    // showed "Sessão expirada" but stayed on a zeroed-out Painel). Any 401
+    // now also flips the global auth state, so Protected's own `if (!user)
+    // return <Navigate to="/login" />` (App.js) kicks in immediately —
+    // one fix here covers every page, not just Dashboard.
+    if (error?.response?.status === 401 && unauthorizedHandler) {
+      unauthorizedHandler();
+    }
     return Promise.reject(error);
   }
 );
