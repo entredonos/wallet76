@@ -544,14 +544,16 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
 
-      {/* NAV — on screens under ~640px the language select + "Entrar" link
-          used to sit inline with the logo/wordmark + "Começar grátis"
-          button with no wrapping, which overflowed/cramped on a real phone
-          (caught 5 jul 2026 from a live screenshot). Below sm: keep only
-          the logo + the one CTA that matters for a first-time visitor
-          (register); language + login are one tap away once inside the
-          app anyway, so hiding them here isn't a loss of function, just
-          decluttering a header that has to fit ~360px. */}
+      {/* NAV — em ecrãs < 640px o seletor de língua + "Entrar" + "Começar
+          grátis" ficavam todos em linha com o logo, sem wrap, e
+          transbordavam num telemóvel real (5 jul 2026). Primeira correção
+          escondia também o seletor de língua abaixo de sm — revertido
+          ainda no mesmo dia: o utilizador reportou que isso tira a troca
+          de idioma da landing page em Android, o que é perda de função
+          real (site é multi-língua, o seletor é a única forma de mudar
+          idioma antes de entrar). Mantém-se o seletor sempre visível; só
+          "Entrar" fica escondido abaixo de sm — isso já é suficiente para
+          caber em ~360px (logo + select + botão "Começar grátis"). */}
       <header className="sticky top-0 z-50 border-b border-zinc-800/60 bg-zinc-950/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 shrink-0">
@@ -563,8 +565,8 @@ export default function LandingPage() {
             <a href="#security" className="hover:text-white transition-colors">{c.nav_security}</a>
             <a href="#pricing" className="hover:text-white transition-colors">{c.nav_pricing}</a>
           </nav>
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <select value={lang} onChange={(e) => setLang(e.target.value)} className="hidden sm:block bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-zinc-300 focus:outline-none">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <select value={lang} onChange={(e) => setLang(e.target.value)} className="bg-zinc-900 border border-zinc-700 rounded-lg px-1.5 sm:px-2 py-1.5 text-xs text-zinc-300 focus:outline-none">
               <option value="en">EN</option>
               <option value="pt">PT</option>
               <option value="fr">FR</option>

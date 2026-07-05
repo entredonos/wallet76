@@ -12,6 +12,14 @@
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 
     <!-- ── Favicon ───────────────────────────────────────────────────── -->
+    <!-- Google's own favicon guidelines (developers.google.com/search/docs/appearance/favicon-in-search)
+         want a square icon that's a multiple of 48px, at least 48x48 —
+         we only had 32x32/16x16 declared, which Google can simply refuse
+         to use in search results no matter how long it re-crawls (found
+         5 jul 2026 after ruling out an indexing-lag explanation). Added a
+         96x96 (reusing the existing PWA icon) as the primary candidate;
+         kept 32/16 for browser tabs, which prefer the smallest exact fit. -->
+    <link rel="icon" type="image/png" sizes="96x96" href="%PUBLIC_URL%/icon-96x96.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16.png" />
 
