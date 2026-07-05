@@ -544,20 +544,27 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
 
-      {/* NAV */}
+      {/* NAV — on screens under ~640px the language select + "Entrar" link
+          used to sit inline with the logo/wordmark + "Começar grátis"
+          button with no wrapping, which overflowed/cramped on a real phone
+          (caught 5 jul 2026 from a live screenshot). Below sm: keep only
+          the logo + the one CTA that matters for a first-time visitor
+          (register); language + login are one tap away once inside the
+          app anyway, so hiding them here isn't a loss of function, just
+          decluttering a header that has to fit ~360px. */}
       <header className="sticky top-0 z-50 border-b border-zinc-800/60 bg-zinc-950/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <img src={logo} alt="Wallet76" className="h-8 w-auto" />
-            <span className="text-lg font-extrabold tracking-tight text-white">Wallet76</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 shrink-0">
+            <img src={logo} alt="Wallet76" className="h-7 sm:h-8 w-auto shrink-0" />
+            <span className="text-base sm:text-lg font-extrabold tracking-tight text-white truncate">Wallet76</span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-zinc-400">
             <a href="#features" className="hover:text-white transition-colors">{c.nav_features}</a>
             <a href="#security" className="hover:text-white transition-colors">{c.nav_security}</a>
             <a href="#pricing" className="hover:text-white transition-colors">{c.nav_pricing}</a>
           </nav>
-          <div className="flex items-center gap-3">
-            <select value={lang} onChange={(e) => setLang(e.target.value)} className="bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-zinc-300 focus:outline-none">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <select value={lang} onChange={(e) => setLang(e.target.value)} className="hidden sm:block bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-zinc-300 focus:outline-none">
               <option value="en">EN</option>
               <option value="pt">PT</option>
               <option value="fr">FR</option>
@@ -565,8 +572,8 @@ export default function LandingPage() {
               <option value="it">IT</option>
               <option value="es">ES</option>
             </select>
-            <Link to="/login" className="text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5">{c.nav_login}</Link>
-            <Link to="/register" className="text-sm bg-white text-zinc-950 font-semibold px-4 py-1.5 rounded-lg hover:bg-zinc-100 transition-colors">{c.nav_start}</Link>
+            <Link to="/login" className="hidden sm:inline-block text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5">{c.nav_login}</Link>
+            <Link to="/register" className="text-xs sm:text-sm bg-white text-zinc-950 font-semibold px-3 sm:px-4 py-1.5 rounded-lg hover:bg-zinc-100 transition-colors whitespace-nowrap">{c.nav_start}</Link>
           </div>
         </div>
       </header>
