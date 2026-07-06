@@ -1,9 +1,14 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useI18n, LANGUAGES } from "../context/I18nContext";
 import { Button } from "../components/ui/button";
 import { ShieldCheck, LogOut, Languages as LanguagesIcon, Coins, ChevronRight } from "lucide-react";
+import { api } from "../lib/api";
+
+// Único email de admin da app — mesma condição usada em Layout.jsx para a
+// entrada "ADMIN · Feedback" da sidebar desktop.
+const ADMIN_EMAIL = "entredonos@gmail.com";
 
 // "Perfil" — 5º separador da barra de baixo no mobile (ver Layout.jsx).
 // Página nova, deliberadamente simples: é o resumo/atalhos que a versão
@@ -21,6 +26,16 @@ export default function Profile({ currency, setCurrency }) {
   const { user, logout } = useAuth();
   const { lang, setLang, t } = useI18n();
   const navigate = useNavigate();
+  const isAdmin = user?.email === ADMIN_EMAIL;
+  const [unreadFeedback, setUnreadFeedback] = useState(0);
+
+  // A sidebar desktop já faz polling contínuo disto (Layout.jsx); aqui
+  // basta uma leitura ao entrar na página — o Perfil não fica aberto em
+  // fundo o tempo todo como a sidebar.
+  useEffect(() => {
+    if (!isAdmin) return;
+    api.get("/feedback/unread-count").then((r) => setUnreadFeedback(r.data?.count || 0)).catch(() => {});
+  }, [isAdmin]);
 
   const handleLogout = async () => {
     await logout();
@@ -104,6 +119,38 @@ export default function Profile({ currency, setCurrency }) {
         </div>
         <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
       </Link>
+
+      {/* ADMIN · Feedback — só visível para a conta admin (mesma condição
+          da sidebar desktop em Layout.jsx). No mobile, o menu hambúrguer
+          técnicamente já tem este link (reutiliza a mesma Sidebar), mas na
+          prática a navegação do telemóvel vive no Perfil/bottom-nav, onde
+          isto nunca aparecia (6 jul 2026: "nao me aparece o ADMIN
+          FEEDBACK... coloca, para o admin só"). */}
+      {isAdmin && (
+        <Link
+          to="/admin/feedback"
+          onClick={() => {
+            if (unreadFeedback > 0) {
+              api.patch("/feedback/mark-all-read").then(() => setUnreadFeedback(0)).catch(() => {});
+            }
+          }}
+          className="bg-zinc-900/40 border border-amber-500/30 rounded-xl p-6 flex items-center justify-between hover:border-amber-500/60 hover:bg-amber-500/5 transition-all"
+          data-testid="profile-admin-feedback-link"
+        >
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="w-4 h-4 text-amber-400" />
+            <div className="text-sm font-medium text-amber-300">{t("nav.admin_feedback")}</div>
+          </div>
+          <div className="flex items-center gap-2">
+            {unreadFeedback > 0 && (
+              <span className="bg-amber-400 text-zinc-950 text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                {unreadFeedback > 99 ? "99+" : unreadFeedback}
+              </span>
+            )}
+            <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
+          </div>
+        </Link>
+      )}
 
       {/* Sair */}
       <Button
