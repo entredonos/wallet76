@@ -46,7 +46,13 @@ export default function LightEvolutionCard({ title, points, changePct, loading }
         )}
       </div>
 
-      <div className="h-[140px]">
+      {/* 140px -> 190px (6 jul 2026, "da para andar... mas e muito
+          complicado, o da evolucao da carteira mexe muito melhor") — o
+          gráfico avançado (EvolutionChart) tem h-64/h-72 (256-288px), muito
+          mais alto; um alvo de toque tão baixo torna o arrastar mais
+          difícil de controlar com o dedo. Mais altura = mais espaço físico
+          para deslizar com precisão. */}
+      <div className="h-[190px]">
         {loading ? (
           <div className="h-full flex items-center justify-center text-zinc-600 text-sm font-mono">
             {t("dash.chart_loading")}
@@ -122,6 +128,12 @@ export default function LightEvolutionCard({ title, points, changePct, loading }
                 fill="url(#lightEvoFill)"
                 isAnimationActive={false}
                 dot={false}
+                // Ponto visível exatamente debaixo do dedo ao arrastar —
+                // mesma ideia do EvolutionChart (painel avançado), que já
+                // tinha isto e sentia-se mais "controlável"; sem isto não
+                // havia feedback visual nenhum de por onde se estava a
+                // deslizar, só a linha tracejada do cursor.
+                activeDot={{ r: 4, strokeWidth: 2, stroke: "#09090b", fill: isPositive ? "#10b981" : "#ef4444" }}
               />
             </AreaChart>
           </ResponsiveContainer>

@@ -939,15 +939,17 @@ const worstPerformer = useMemo(() => {
           }}
         />
       )}
-      {/* Title row — em modo "light" fica sempre numa única linha (nowrap):
-          só 3 ícones compactos (Widgets/Esconder/Partilhar) depois de tirar
-          o "Atualizar preços", por isso cabem sempre ao lado do título,
-          encostados à direita — se faltar espaço é o título que trunca, não
-          os ícones que quebram para baixo (6 jul 2026, "nao meteste os tais
-          3 icons... na mesma linha do titulo"). Em modo "advanced" continua
-          a poder quebrar (tem alertas + adicionar a mais, não cabe tudo
-          numa linha no telemóvel). */}
-      <div className={`flex items-center justify-between gap-3 ${dashMode === "light" ? "flex-nowrap" : "flex-wrap items-end gap-4"}`}>
+      {/* Title row — Widgets/Esconder/Partilhar ficam SEMPRE na mesma linha
+          do título, nowrap, encostados à direita, em qualquer modo (6 jul
+          2026: dentro de uma carteira, com o "+Adicionar" também na
+          mesma linha, a fila toda ia para a linha de baixo e o
+          "+Adicionar" ficava deslocado/estranho no telemóvel). Se faltar
+          espaço é o título que trunca, nunca os 3 ícones. Os botões só do
+          modo "advanced" (dash-mode-toggle/Alertas/+Adicionar) saíram
+          para a sua própria linha por baixo, livre para quebrar — assim
+          o "+Adicionar" tem sempre a linha só para si (e para os outros
+          2), sem competir por espaço com os 3 ícones. */}
+      <div className="flex items-center justify-between gap-3 flex-nowrap">
         <div className="min-w-0">
           <h1 className="font-display text-3xl sm:text-4xl font-light tracking-tight text-zinc-50 truncate">
             {selectedWallet ? selectedWallet.name : t("dash.title")}
@@ -971,25 +973,7 @@ const worstPerformer = useMemo(() => {
               )}
             </div>
           </div>
-        <div className={`flex items-center gap-2 shrink-0 ${dashMode === "light" ? "flex-nowrap" : "flex-wrap"}`}>
-          {/* dash-mode-toggle, Alertas e "+Adicionar" saem do cabeçalho em
-              modo "light" (5 jul 2026): duplicavam o que o LightBalanceCard
-              já mostra ("Painel avançado" e "Adicionar ativo" têm botão
-              próprio ali) e o separador "Alertas" da barra de baixo no
-              mobile. Continuam tal como estavam em modo "advanced", que
-              não tem esse cartão. */}
-          {dashMode === "advanced" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDashMode((m) => (m === "light" ? "advanced" : "light"))}
-              className="bg-zinc-900/50 border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200"
-              data-testid="dash-mode-toggle"
-            >
-              <Gauge className="w-4 h-4 mr-2" />
-              {dashMode === "light" ? t("dash.view_advanced") : t("dash.view_summary")}
-            </Button>
-          )}
+        <div className="flex items-center gap-2 shrink-0 flex-nowrap">
           <button
             onClick={() => setWidgetDrawer(true)}
             className="p-2 border border-zinc-800 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 transition-colors"
@@ -1012,28 +996,38 @@ const worstPerformer = useMemo(() => {
           >
             <Share2 className="w-4 h-4" />
           </button>
-          {dashMode === "advanced" && (
-            <Link to="/alerts">
-              <Button variant="outline" size="sm" className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100" data-testid="alerts-btn">
-                <Bell className="w-4 h-4 mr-2"/> {t("common.alerts")}
-              </Button>
-            </Link>
-          )}
-          {/* "Atualizar preços" saiu do cabeçalho em modo "light" também
-              (6 jul 2026) — com Widgets + Esconder + Partilhar já bastam
-              para caber ao lado do título "Painel", encostados à direita,
-              sem quebrar linha. Os preços já atualizam sozinhos (live
-              overlay + snapshot a cada 15min — REGRA #2). Continua fora do
-              modo "advanced" desde 5 jul 2026 pela mesma razão. */}
-          {dashMode === "advanced" && (
-            <Link to="/transactions">
-              <Button size="sm" className="bg-blue-500 hover:bg-blue-400 text-zinc-950 font-medium" data-testid="goto-tx-btn">
-                <Receipt className="w-4 h-4 mr-2"/> + {t("common.add")}
-              </Button>
-            </Link>
-          )}
         </div>
       </div>
+
+      {/* Segunda linha — só modo "advanced": dash-mode-toggle, Alertas e
+          "+Adicionar". Isolados dos 3 ícones acima, esta linha pode
+          quebrar livremente (flex-wrap) sem arrastar Widgets/Esconder/
+          Partilhar consigo nem empurrar o "+Adicionar" para um sítio
+          estranho. */}
+      {dashMode === "advanced" && (
+        <div className="flex flex-wrap items-center justify-end gap-2 -mt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setDashMode((m) => (m === "light" ? "advanced" : "light"))}
+            className="bg-zinc-900/50 border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200"
+            data-testid="dash-mode-toggle"
+          >
+            <Gauge className="w-4 h-4 mr-2" />
+            {dashMode === "light" ? t("dash.view_advanced") : t("dash.view_summary")}
+          </Button>
+          <Link to="/alerts">
+            <Button variant="outline" size="sm" className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100" data-testid="alerts-btn">
+              <Bell className="w-4 h-4 mr-2"/> {t("common.alerts")}
+            </Button>
+          </Link>
+          <Link to="/transactions">
+            <Button size="sm" className="bg-blue-500 hover:bg-blue-400 text-zinc-950 font-medium" data-testid="goto-tx-btn">
+              <Receipt className="w-4 h-4 mr-2"/> + {t("common.add")}
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* Share panel */}
       {sharePanel && (
