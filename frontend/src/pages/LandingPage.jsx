@@ -1,12 +1,22 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useI18n } from "../context/I18nContext";
 import logo from "../assets/wallet76-logo.png";
 import {
   Bell, Globe2, Wallet, ShieldCheck, MonitorSmartphone,
   Lock, Server, FileText, RefreshCw, Newspaper, PieChart, Zap,
   Users, Star, ChevronRight, BarChart2, Activity, Check, X, BarChart3,
+  Download, Share, SquarePlus,
 } from "lucide-react";
+import {
+  detectPlatform, isInstalled, canPromptInstall,
+  subscribeInstallState, triggerInstall,
+} from "../lib/pwaInstall";
+
+// Chave localStorage: só mostramos o modal de instalação uma vez por
+// browser (para não interromper o "Entrar"/"Começar" em toda visita) —
+// depois de fechado (instalado ou não), fica marcado como visto.
+const INSTALL_SEEN_KEY = "w76_install_prompt_seen";
 
 const LANGS_LIST = {
   en: ["English", "Português", "Français", "Deutsch", "Italiano", "Español"],
@@ -85,6 +95,14 @@ const COPY = {
     footer_privacy: "Privacy Policy", footer_terms: "Terms of Service",
     most_popular: "Most Popular",
     best_value: "Best Value",
+    install_title: "Install Wallet76",
+    install_body: "Install the app for faster access, full-screen and an icon on your home screen — no browser tab needed.",
+    install_btn: "Install app",
+    install_continue: "Continue in browser",
+    ios_title: "Install on iPhone/iPad",
+    ios_step1: "Tap the Share icon",
+    ios_step2: "Then choose \"Add to Home Screen\"",
+    ios_continue: "Got it, continue",
   },
   pt: {
     nav_features: "Funcionalidades", nav_security: "Segurança", nav_pricing: "Preços",
@@ -153,6 +171,14 @@ const COPY = {
     footer_privacy: "Política de Privacidade", footer_terms: "Termos de Serviço",
     most_popular: "Mais Popular",
     best_value: "Melhor Valor",
+    install_title: "Instalar o Wallet76",
+    install_body: "Instale a app para acesso mais rápido, ecrã inteiro e um ícone no ecrã principal — sem precisar do browser.",
+    install_btn: "Instalar app",
+    install_continue: "Continuar no browser",
+    ios_title: "Instalar no iPhone/iPad",
+    ios_step1: "Toque no ícone Partilhar",
+    ios_step2: "Depois escolha \"Adicionar ao ecrã principal\"",
+    ios_continue: "Entendi, continuar",
   },
   fr: {
     nav_features: "Fonctionnalités", nav_security: "Sécurité", nav_pricing: "Tarifs",
@@ -221,6 +247,14 @@ const COPY = {
     footer_privacy: "Politique de confidentialité", footer_terms: "Conditions d'utilisation",
     most_popular: "Le Plus Populaire",
     best_value: "Meilleur Rapport",
+    install_title: "Installer Wallet76",
+    install_body: "Installez l'application pour un accès plus rapide, le plein écran et une icône sur votre écran d'accueil — sans passer par le navigateur.",
+    install_btn: "Installer l'app",
+    install_continue: "Continuer dans le navigateur",
+    ios_title: "Installer sur iPhone/iPad",
+    ios_step1: "Appuyez sur l'icône Partager",
+    ios_step2: "Puis choisissez « Sur l'écran d'accueil »",
+    ios_continue: "Compris, continuer",
   },
   de: {
     nav_features: "Funktionen", nav_security: "Sicherheit", nav_pricing: "Preise",
@@ -289,6 +323,14 @@ const COPY = {
     footer_privacy: "Datenschutzerklärung", footer_terms: "Nutzungsbedingungen",
     most_popular: "Beliebteste",
     best_value: "Bestes Angebot",
+    install_title: "Wallet76 installieren",
+    install_body: "Installieren Sie die App für schnelleren Zugriff, Vollbild und ein Symbol auf Ihrem Startbildschirm — ganz ohne Browser.",
+    install_btn: "App installieren",
+    install_continue: "Im Browser fortfahren",
+    ios_title: "Auf iPhone/iPad installieren",
+    ios_step1: "Tippen Sie auf das Teilen-Symbol",
+    ios_step2: "Wählen Sie dann \"Zum Home-Bildschirm\"",
+    ios_continue: "Verstanden, weiter",
   },
   it: {
     nav_features: "Funzionalità", nav_security: "Sicurezza", nav_pricing: "Prezzi",
@@ -357,6 +399,14 @@ const COPY = {
     footer_privacy: "Informativa sulla Privacy", footer_terms: "Termini di Servizio",
     most_popular: "Più Popolare",
     best_value: "Miglior Valore",
+    install_title: "Installa Wallet76",
+    install_body: "Installa l'app per un accesso più rapido, schermo intero e un'icona nella schermata Home — senza bisogno del browser.",
+    install_btn: "Installa app",
+    install_continue: "Continua nel browser",
+    ios_title: "Installa su iPhone/iPad",
+    ios_step1: "Tocca l'icona Condividi",
+    ios_step2: "Poi scegli \"Aggiungi a Home\"",
+    ios_continue: "Capito, continua",
   },
   es: {
     nav_features: "Funcionalidades", nav_security: "Seguridad", nav_pricing: "Precios",
@@ -425,6 +475,14 @@ const COPY = {
     footer_privacy: "Política de Privacidad", footer_terms: "Términos de Servicio",
     most_popular: "Más Popular",
     best_value: "Mejor Valor",
+    install_title: "Instalar Wallet76",
+    install_body: "Instala la app para acceso más rápido, pantalla completa e icono en tu pantalla de inicio — sin necesidad del navegador.",
+    install_btn: "Instalar app",
+    install_continue: "Continuar en el navegador",
+    ios_title: "Instalar en iPhone/iPad",
+    ios_step1: "Toca el icono Compartir",
+    ios_step2: "Luego elige \"Añadir a pantalla de inicio\"",
+    ios_continue: "Entendido, continuar",
   },
 };
 
@@ -540,6 +598,46 @@ export default function LandingPage() {
   const { lang, setLang } = useI18n();
   const c = getCopy(lang);
   const langs = LANGS_LIST[lang] || LANGS_LIST.en;
+  const navigate = useNavigate();
+
+  const platform = useMemo(() => detectPlatform(), []);
+  const [canPrompt, setCanPrompt] = useState(canPromptInstall());
+  const [installTarget, setInstallTarget] = useState(null); // null | "/login" | "/register"
+
+  // beforeinstallprompt (Android/Desktop) pode chegar depois deste
+  // componente já ter montado — subscreve para saber assim que ficar
+  // disponível, sem precisar de recarregar a página.
+  useEffect(() => subscribeInstallState(() => setCanPrompt(canPromptInstall())), []);
+
+  // "Quando tentarem entrar" (6 jul 2026): em vez de um banner permanente,
+  // intercetamos o clique nos botões de Entrar/Começar — só nessa altura
+  // é que faz sentido perguntar se querem instalar a app antes de seguir
+  // para login/registo. Mostra-se no máximo uma vez por browser
+  // (INSTALL_SEEN_KEY), e só quando há algo de facto acionável: no iOS
+  // mostramos sempre as instruções manuais (Safari não tem prompt nativo);
+  // no Android/Desktop só interrompe se o browser já disparou o
+  // beforeinstallprompt (Chrome/Edge — Firefox/Safari desktop não o
+  // suportam, e nesse caso deixamos o clique seguir normalmente).
+  function handleEntryClick(e, path) {
+    if (isInstalled()) return;
+    if (localStorage.getItem(INSTALL_SEEN_KEY)) return;
+    const actionable = platform === "ios" || canPrompt;
+    if (!actionable) return;
+    e.preventDefault();
+    setInstallTarget(path);
+  }
+
+  function dismissInstallModal() {
+    localStorage.setItem(INSTALL_SEEN_KEY, "1");
+    const target = installTarget;
+    setInstallTarget(null);
+    if (target) navigate(target);
+  }
+
+  async function handleInstallClick() {
+    await triggerInstall();
+    dismissInstallModal();
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -574,8 +672,8 @@ export default function LandingPage() {
               <option value="it">IT</option>
               <option value="es">ES</option>
             </select>
-            <Link to="/login" className="hidden sm:inline-block text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5">{c.nav_login}</Link>
-            <Link to="/register" className="text-xs sm:text-sm bg-white text-zinc-950 font-semibold px-3 sm:px-4 py-1.5 rounded-lg hover:bg-zinc-100 transition-colors whitespace-nowrap">{c.nav_start}</Link>
+            <Link to="/login" onClick={(e) => handleEntryClick(e, "/login")} className="hidden sm:inline-block text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5">{c.nav_login}</Link>
+            <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="text-xs sm:text-sm bg-white text-zinc-950 font-semibold px-3 sm:px-4 py-1.5 rounded-lg hover:bg-zinc-100 transition-colors whitespace-nowrap">{c.nav_start}</Link>
           </div>
         </div>
       </header>
@@ -597,7 +695,7 @@ export default function LandingPage() {
           </h1>
           <p className="max-w-2xl mx-auto text-zinc-400 text-lg leading-relaxed mb-10">{c.hero_sub}</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-            <Link to="/register" className="inline-flex items-center gap-2 px-7 py-3.5 bg-white text-zinc-950 font-semibold rounded-xl hover:bg-zinc-100 transition-colors text-sm">
+            <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="inline-flex items-center gap-2 px-7 py-3.5 bg-white text-zinc-950 font-semibold rounded-xl hover:bg-zinc-100 transition-colors text-sm">
               {c.cta_primary} <ChevronRight className="w-4 h-4" />
             </Link>
             <a href="#features" className="inline-flex items-center gap-2 px-7 py-3.5 border border-zinc-700 rounded-xl text-zinc-300 hover:border-zinc-500 hover:text-white transition-colors text-sm">
@@ -732,7 +830,7 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <Link to="/register" className="block w-full text-center py-2.5 border border-zinc-700 rounded-xl text-zinc-300 font-medium hover:border-zinc-500 hover:text-white transition-colors text-sm">
+              <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="block w-full text-center py-2.5 border border-zinc-700 rounded-xl text-zinc-300 font-medium hover:border-zinc-500 hover:text-white transition-colors text-sm">
                 {c.btn_free}
               </Link>
             </div>
@@ -757,7 +855,7 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <Link to="/register" className="block w-full text-center py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white font-semibold transition-colors text-sm">
+              <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="block w-full text-center py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white font-semibold transition-colors text-sm">
                 {c.btn_monthly}
               </Link>
               <p className="text-center text-[11px] text-zinc-600 mt-2">{c.pro_trial}</p>
@@ -786,7 +884,7 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <Link to="/register" className="block w-full text-center py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white font-semibold transition-colors text-sm">
+              <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="block w-full text-center py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white font-semibold transition-colors text-sm">
                 {c.btn_annual}
               </Link>
               <p className="text-center text-[11px] text-zinc-600 mt-2">{c.pro_trial}</p>
@@ -806,7 +904,7 @@ export default function LandingPage() {
             {c.cta2_title}
           </h2>
           <p className="text-zinc-400 text-lg mb-10">{c.cta2_sub}</p>
-          <Link to="/register" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-zinc-950 font-bold rounded-xl hover:bg-zinc-100 transition-colors text-base">
+          <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="inline-flex items-center gap-2 px-8 py-4 bg-white text-zinc-950 font-bold rounded-xl hover:bg-zinc-100 transition-colors text-base">
             {c.cta2_btn} <ChevronRight className="w-5 h-5" />
           </Link>
         </div>
@@ -821,14 +919,100 @@ export default function LandingPage() {
             <span className="text-sm text-zinc-600">© {new Date().getFullYear()} · {c.footer_rights}</span>
           </div>
           <div className="flex flex-wrap gap-5 text-xs text-zinc-600">
-            <Link to="/login" className="hover:text-zinc-300 transition-colors">{c.footer_login}</Link>
-            <Link to="/register" className="hover:text-zinc-300 transition-colors">{c.footer_register}</Link>
+            <Link to="/login" onClick={(e) => handleEntryClick(e, "/login")} className="hover:text-zinc-300 transition-colors">{c.footer_login}</Link>
+            <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="hover:text-zinc-300 transition-colors">{c.footer_register}</Link>
             <Link to="/pricing" className="hover:text-zinc-300 transition-colors">{c.footer_pricing}</Link>
             <Link to="/privacy" className="hover:text-zinc-300 transition-colors">{c.footer_privacy}</Link>
             <Link to="/terms" className="hover:text-zinc-300 transition-colors">{c.footer_terms}</Link>
           </div>
         </div>
       </footer>
+
+      {/* INSTALL PROMPT MODAL — só aparece ao clicar Entrar/Começar (ver
+          handleEntryClick), no máximo uma vez por browser. Android/Desktop
+          usam o beforeinstallprompt nativo (mesmo fluxo em ambos: Chrome/
+          Edge desktop também instalam PWAs como app, dispensando o .exe);
+          iOS mostra sempre as instruções manuais, já que o Safari não tem
+          API de instalação programática. */}
+      {installTarget && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={platform === "ios" ? c.ios_title : c.install_title}
+          onClick={dismissInstallModal}
+        >
+          <div
+            className="relative w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={dismissInstallModal}
+              className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors"
+              aria-label={platform === "ios" ? c.ios_continue : c.install_continue}
+              data-testid="install-modal-close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="w-12 h-12 rounded-xl border border-blue-500/30 bg-blue-500/10 flex items-center justify-center mb-4">
+              <img src={logo} alt="Wallet76" className="w-7 h-7 object-contain" />
+            </div>
+
+            {platform === "ios" ? (
+              <>
+                <h3 className="text-lg font-semibold text-zinc-50 mb-2">{c.ios_title}</h3>
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-3 text-sm text-zinc-300">
+                    <span className="w-7 h-7 shrink-0 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+                      <Share className="w-3.5 h-3.5 text-blue-400" />
+                    </span>
+                    {c.ios_step1}
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-zinc-300">
+                    <span className="w-7 h-7 shrink-0 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+                      <SquarePlus className="w-3.5 h-3.5 text-blue-400" />
+                    </span>
+                    {c.ios_step2}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={dismissInstallModal}
+                  className="w-full py-2.5 bg-white text-zinc-950 font-semibold rounded-xl hover:bg-zinc-100 transition-colors text-sm"
+                  data-testid="install-modal-ios-continue"
+                >
+                  {c.ios_continue}
+                </button>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold text-zinc-50 mb-2">{c.install_title}</h3>
+                <p className="text-sm text-zinc-400 mb-6">{c.install_body}</p>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={handleInstallClick}
+                    className="w-full inline-flex items-center justify-center gap-2 py-2.5 bg-white text-zinc-950 font-semibold rounded-xl hover:bg-zinc-100 transition-colors text-sm"
+                    data-testid="install-modal-install-btn"
+                  >
+                    <Download className="w-4 h-4" /> {c.install_btn}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={dismissInstallModal}
+                    className="w-full py-2.5 border border-zinc-700 rounded-xl text-zinc-300 font-medium hover:border-zinc-500 hover:text-white transition-colors text-sm"
+                    data-testid="install-modal-continue-btn"
+                  >
+                    {c.install_continue}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );
