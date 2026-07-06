@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { bucketOHLC, getDayBoundaries, getWeekendBands } from "../lib/chartGaps";
 import { CHART_RANGE_BUCKET_MS, CHART_RANGES_DAY_MARKERS, CHART_RANGES_WEEKEND_SHADING, N_BARS } from "../constants/chartRanges";
 import {
-  RefreshCw, ArrowUpRight, Receipt, Bell,
+  ArrowUpRight, Receipt, Bell,
   DollarSign, BarChart3, Activity, TrendingDown, Eye, EyeOff,
   Share2, LayoutDashboard, Gauge,
 } from "lucide-react";
@@ -1012,19 +1012,12 @@ const worstPerformer = useMemo(() => {
               </Button>
             </Link>
           )}
-          {/* "Atualizar preços" sai do cabeçalho em modo "advanced" (5 jul
-              2026): com Ver resumo + Partilhar + Esconder + Alertas já
-              nessa linha, não cabia tudo numa só linha no telemóvel. Os
-              preços já atualizam sozinhos (live overlay + snapshot a cada
-              15min — REGRA #2), por isso foi o escolhido para saltar ali;
-              continua a existir em modo "light" (LightBalanceCard não tem
-              refresh próprio). */}
-          {dashMode === "light" && (
-            <Button variant="outline" size="sm" onClick={() => load(true)} disabled={refreshing} className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100" data-testid="refresh-btn">
-              <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}/>
-              {refreshing ? t("common.updating") : t("common.refresh")}
-            </Button>
-          )}
+          {/* "Atualizar preços" saiu do cabeçalho em modo "light" também
+              (6 jul 2026) — com Widgets + Esconder + Partilhar já bastam
+              para caber ao lado do título "Painel", encostados à direita,
+              sem quebrar linha. Os preços já atualizam sozinhos (live
+              overlay + snapshot a cada 15min — REGRA #2). Continua fora do
+              modo "advanced" desde 5 jul 2026 pela mesma razão. */}
           {dashMode === "advanced" && (
             <Link to="/transactions">
               <Button size="sm" className="bg-blue-500 hover:bg-blue-400 text-zinc-950 font-medium" data-testid="goto-tx-btn">
