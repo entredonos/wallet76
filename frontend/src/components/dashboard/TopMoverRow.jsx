@@ -27,7 +27,13 @@ export default function TopMoverRow({ a, positive, wallets, nav, currency, fxRat
           pela borda do ecrã em cards estreitos (grid de 2 colunas no
           painel avançado, 5 jul 2026). */}
       <div className="min-w-0 flex-1">
-        <div className="font-mono text-zinc-100 text-sm leading-none truncate">{a.symbol}</div>
+        {/* Nome do ativo a seguir ao símbolo (6 jul 2026: "temos que por o
+            nome do ativo") — junto na mesma linha e truncado como um só
+            bloco, para não empurrar o valor da 2ª linha nem roubar espaço
+            à % à direita nos cards estreitos do grid de 2 colunas. */}
+        <div className="font-mono text-zinc-100 text-sm leading-none truncate">
+          {a.symbol}{a.name && a.name !== a.symbol ? <span className="text-zinc-400 font-normal"> · {a.name}</span> : ""}
+        </div>
         <div className="text-[10px] font-mono text-zinc-400 leading-none mt-1 truncate">{mask(fmtCurrency(convert(a.value_usd, currency, fxRates), currency))}</div>
       </div>
       {/* Wallet badge — escondido em ecrãs estreitos (não há espaço para
