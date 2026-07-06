@@ -46,9 +46,12 @@ export default function TopMoversWidget({ filtered, sorted, wallets, nav, curren
   return (
     <>
       {/* Row 1: 24h movers */}
-      {/* 2 por linha já no mobile (não só a partir de md) — mesma correção
-          do grid de resumo em Dashboard.jsx (5 jul 2026). */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Empilhado a ocupar a largura toda (era grid-cols-2 lado a lado) —
+          6 jul 2026: ao mostrar o nome do ativo ao lado do símbolo
+          (TopMoverRow), 2 colunas ficavam demasiado estreitas para o nome
+          ser legível (truncava quase tudo); a largura total dá espaço a
+          "SÍMBOLO · Nome" sem cortar logo a seguir ao símbolo. */}
+      <div className="space-y-3">
         <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <ArrowUpRight className="w-4 h-4 text-emerald-400"/>

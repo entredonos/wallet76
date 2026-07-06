@@ -250,6 +250,94 @@ def compute_holdings_from_txns(txns: List[dict]) -> List[dict]:
     return list(holdings.values())
 
 
+# --- Asset name backfill (6 jul 2026: "temos que por o nome do ativo" nos
+# Top Movers do painel) -----------------------------------------------------
+# compute_holdings_from_txns() above falls back to `name = symbol` whenever
+# a transaction was stored without a real display name (older transactions
+# added before the search-and-pick UI captured `name`, or CSV imports) — so
+# a lot of existing holdings have no proper name to show. Rather than
+# fixing this only for new transactions, resolve it live for whatever's
+# still missing, but keep it cheap: cached 30 days per symbol/coingecko_id
+# (a company/coin's name never changes) via the same in-memory cache used
+# everywhere else, so this only ever costs a real network call the FIRST
+# time ANY user's portfolio contains that asset — every request after that
+# (this user or anyone else) is a cache hit.
+_NAME_CACHE_TTL = 30 * 24 * 3600
+
+
+async def _resolve_crypto_name(coingecko_id: str) -> str | None:
+    cache_key = f"crypto_name:{coingecko_id}"
+    cached = _cache_get(cache_key, ttl=_NAME_CACHE_TTL)
+    if cached is not None:
+        return cached
+    try:
+        async with httpx.AsyncClient(timeout=8) as ch:
+            r = await ch.get(
+                f"https://api.coingecko.com/api/v3/coins/{coingecko_id}",
+                params={
+                    "localization": "false", "tickers": "false", "market_data": "false",
+                    "community_data": "false", "developer_data": "false", "sparkline": "false",
+                },
+            )
+            r.raise_for_status()
+            name = r.json().get("name")
+            if name:
+                _cache_set(cache_key, name)
+            return name
+    except Exception as e:
+        logger.warning(f"CoinGecko name lookup '{coingecko_id}' error: {e}")
+        return None
+
+
+def _resolve_stock_name_sync(symbol: str) -> str | None:
+    try:
+        info = yf.Ticker(symbol).info or {}
+        return info.get("longName") or info.get("shortName") or None
+    except Exception:
+        return None
+
+
+async def _resolve_stock_name(symbol: str) -> str | None:
+    cache_key = f"stock_name:{symbol.upper()}"
+    cached = _cache_get(cache_key, ttl=_NAME_CACHE_TTL)
+    if cached is not None:
+        return cached
+    name = await asyncio.to_thread(_resolve_stock_name_sync, symbol)
+    if name:
+        _cache_set(cache_key, name)
+    return name
+
+
+async def backfill_holding_names(holdings: List[dict]) -> None:
+    """Mutates `holdings` in place: for every holding whose name is still
+    just its symbol, tries to resolve a real display name (see module note
+    above). Runs all lookups concurrently and is meant to be awaited
+    alongside the price/FX fetches (asyncio.gather in _price_holdings), not
+    before them, so it adds no serial latency beyond whatever's already the
+    slowest of the group."""
+    targets = [
+        h for h in holdings
+        if (h.get("name") or "").strip().upper() == (h.get("symbol") or "").strip().upper()
+    ]
+    if not targets:
+        return
+
+    async def _resolve(h):
+        try:
+            if h["asset_type"] == "crypto" and h.get("coingecko_id"):
+                name = await _resolve_crypto_name(h["coingecko_id"])
+            elif h["asset_type"] in ("stock", "etf", "fund", "bond", "reit"):
+                name = await _resolve_stock_name(h["symbol"])
+            else:
+                name = None
+            if name:
+                h["name"] = name
+        except Exception as e:
+            logger.warning(f"Name backfill for {h.get('symbol')} failed: {e}")
+
+    await asyncio.gather(*(_resolve(h) for h in targets), return_exceptions=True)
+
+
 def _yf_detect_types(symbols: List[str]) -> dict:
     """Sync: returns { symbol: 'etf' | 'fund' | 'stock' } for each symbol."""
     out = {}

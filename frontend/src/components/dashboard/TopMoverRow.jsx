@@ -22,10 +22,12 @@ export default function TopMoverRow({ a, positive, wallets, nav, currency, fxRat
       data-testid={`top-mover-${positive ? "up" : "down"}-${a.symbol}`}
     >
       <AssetIcon asset={a} size={24}/>
-      {/* min-w-0 + flex-1 (em vez de shrink-0) — este bloco agora encolhe
-          e trunca (símbolo/valor) para a % à direita nunca ficar cortada
-          pela borda do ecrã em cards estreitos (grid de 2 colunas no
-          painel avançado, 5 jul 2026). */}
+      {/* min-w-0 + flex-1 (em vez de shrink-0) — este bloco encolhe e
+          trunca (símbolo/nome/valor) para a % à direita nunca ficar
+          cortada (5 jul 2026). O widget passou a ocupar a largura toda em
+          vez de 2 colunas lado a lado (6 jul 2026) precisamente para dar
+          espaço a mostrar o nome do ativo aqui sem truncar logo a seguir
+          ao símbolo. */}
       <div className="min-w-0 flex-1">
         {/* Nome do ativo a seguir ao símbolo (6 jul 2026: "temos que por o
             nome do ativo") — junto na mesma linha e truncado como um só
@@ -53,9 +55,14 @@ export default function TopMoverRow({ a, positive, wallets, nav, currency, fxRat
           <span className="truncate">{walletName}</span>
         </button>
       )}
+      {/* Só a seta indica o sentido (subida/descida) — o sinal +/- do
+          fmtPct ficava redundante ao lado da seta (6 jul 2026: "prefiro que
+          deixes a seta e tires os sinais + e -"). Tirado só aqui, não em
+          fmtPct em si — outros sítios da app mostram a % sem seta ao lado,
+          onde o sinal continua a ser a única pista de direção. */}
       <div className={`font-mono text-sm shrink-0 whitespace-nowrap ${positive ? "text-emerald-400" : "text-rose-400"}`}>
         {positive ? <ArrowUpRight className="inline w-3 h-3"/> : <ArrowDownRight className="inline w-3 h-3"/>}
-        {fmtPct(a.change_24h || 0)}
+        {fmtPct(a.change_24h || 0).replace(/^[+-]/, "")}
       </div>
     </Link>
   );

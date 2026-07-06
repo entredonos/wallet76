@@ -11,7 +11,7 @@ from core import db, get_current_user, _cache_get, _cache_set, logger
 from prices import (
     compute_holdings_from_txns, migrate_legacy_assets,
     get_crypto_prices, get_stock_prices, get_fx_rates,
-    detect_and_fix_equity_types,
+    detect_and_fix_equity_types, backfill_holding_names,
 )
 from routes.news import _fetch_yf, _fetch_crypto_ohlc
 
@@ -51,10 +51,15 @@ async def _price_holdings(user_id: str) -> dict:
         if h["asset_type"] in EQUITY_TYPES and h["quantity"] > 0
     ]
 
-    crypto_prices, stock_prices, fx_rates = await asyncio.gather(
+    # backfill_holding_names mutates `holdings` in place (fills in a real
+    # name for whatever still falls back to name==symbol — see prices.py)
+    # and runs gathered alongside the price/FX fetches so it adds no extra
+    # serial latency beyond whichever of the four is already slowest.
+    crypto_prices, stock_prices, fx_rates, _ = await asyncio.gather(
         get_crypto_prices(crypto_ids),
         get_stock_prices(stock_syms),
         get_fx_rates(),
+        backfill_holding_names(holdings),
     )
     eur_rate = fx_rates["EUR"]
     chf_rate = fx_rates["CHF"]
