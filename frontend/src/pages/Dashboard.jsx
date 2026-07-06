@@ -1000,30 +1000,35 @@ const worstPerformer = useMemo(() => {
       </div>
 
       {/* Segunda linha — só modo "advanced": dash-mode-toggle, Alertas e
-          "+Adicionar". Isolados dos 3 ícones acima, esta linha pode
-          quebrar livremente (flex-wrap) sem arrastar Widgets/Esconder/
-          Partilhar consigo nem empurrar o "+Adicionar" para um sítio
-          estranho. */}
+          "+Adicionar". Isolados dos 3 ícones acima, esta linha já não os
+          arrasta consigo — mas os 3 botões, com texto completo, ainda não
+          cabiam sempre numa só linha no telemóvel (6 jul 2026: "ficou
+          resumo/alertas e na linha em baixo adicionar... tens de por os 3
+          na mesma linha"). Agora nowrap forçado + o rótulo de texto
+          escondido abaixo de sm (só ícone + title/tooltip nesse breakpoint),
+          igual ao tratamento já usado nos 3 ícones acima — cabem sempre
+          numa linha só, com o texto completo a voltar a partir de sm. */}
       {dashMode === "advanced" && (
-        <div className="flex flex-wrap items-center justify-end gap-2 -mt-2">
+        <div className="flex flex-nowrap items-center justify-end gap-2 -mt-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setDashMode((m) => (m === "light" ? "advanced" : "light"))}
-            className="bg-zinc-900/50 border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200"
+            className="bg-zinc-900/50 border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200 px-2.5 sm:px-3"
+            title={dashMode === "light" ? t("dash.view_advanced") : t("dash.view_summary")}
             data-testid="dash-mode-toggle"
           >
-            <Gauge className="w-4 h-4 mr-2" />
-            {dashMode === "light" ? t("dash.view_advanced") : t("dash.view_summary")}
+            <Gauge className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">{dashMode === "light" ? t("dash.view_advanced") : t("dash.view_summary")}</span>
           </Button>
           <Link to="/alerts">
-            <Button variant="outline" size="sm" className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100" data-testid="alerts-btn">
-              <Bell className="w-4 h-4 mr-2"/> {t("common.alerts")}
+            <Button variant="outline" size="sm" className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 px-2.5 sm:px-3" title={t("common.alerts")} data-testid="alerts-btn">
+              <Bell className="w-4 h-4 sm:mr-2"/> <span className="hidden sm:inline">{t("common.alerts")}</span>
             </Button>
           </Link>
           <Link to="/transactions">
-            <Button size="sm" className="bg-blue-500 hover:bg-blue-400 text-zinc-950 font-medium" data-testid="goto-tx-btn">
-              <Receipt className="w-4 h-4 mr-2"/> + {t("common.add")}
+            <Button size="sm" className="bg-blue-500 hover:bg-blue-400 text-zinc-950 font-medium px-2.5 sm:px-3" title={t("common.add")} data-testid="goto-tx-btn">
+              <Receipt className="w-4 h-4 sm:mr-2"/> <span className="hidden sm:inline">+ {t("common.add")}</span>
             </Button>
           </Link>
         </div>
