@@ -1,6 +1,6 @@
 """Feedback endpoint — ratings, questions, ideas, bugs + admin user management."""
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from core import db, get_current_user, require_admin, delete_all_user_data, logger
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -13,6 +13,7 @@ router = APIRouter()
 _USER_LIST_PROJECTION = {
     "_id": 0, "id": 1, "email": 1, "name": 1, "created_at": 1,
     "email_verified": 1, "subscription_plan": 1, "subscription_status": 1,
+    "last_active_at": 1,
 }
 
 
@@ -89,6 +90,7 @@ def _safe_user(u: dict) -> dict:
         "tier":           tier,
         "created_at":     u.get("created_at", ""),
         "email_verified": u.get("email_verified", False),
+        "last_active_at": u.get("last_active_at", ""),
     }
 
 
@@ -119,11 +121,19 @@ async def admin_user_stats(user=Depends(require_admin)):
     last10_docs = await db.users.find({}, _USER_LIST_PROJECTION).sort("created_at", -1).to_list(10)
     last10 = [_safe_user(u) for u in last10_docs]
 
+    # Ativos nas últimas 24h — last_active_at é uma string ISO 8601, que
+    # ordena/compara lexicograficamente igual a cronologicamente (mesmo
+    # truque já usado em admin_users_unread_count para created_at), por
+    # isso dá para comparar diretamente com $gte sem parsear datas no Mongo.
+    cutoff_24h = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    active_24h = await db.users.count_documents({"last_active_at": {"$gte": cutoff_24h}})
+
     return {
         "total":   free + monthly + yearly,
         "free":    free,
         "monthly": monthly,
         "yearly":  yearly,
+        "active_24h": active_24h,
         "last10":  last10,
     }
 

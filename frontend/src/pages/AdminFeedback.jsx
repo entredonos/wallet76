@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import {
   Star, MessageSquare, Lightbulb, Bug, HelpCircle,
   RefreshCw, ThumbsUp, Users, UserCheck, CalendarClock,
-  CalendarDays, Search, Trash2, AlertTriangle, X, ShieldCheck,
+  CalendarDays, Search, Trash2, AlertTriangle, X, ShieldCheck, Activity,
 } from "lucide-react";
 
 const CAT_META = {
@@ -71,10 +71,32 @@ function DeleteModal({ user, onConfirm, onCancel, loading }) {
   );
 }
 
+// last_active_at é atualizado (com throttle de 5 min, ver core.py
+// get_current_user) em TODO pedido autenticado — não é um heartbeat
+// dedicado, por isso "online agora" aqui significa "fez um pedido à app
+// nos últimos 5 min", não uma sessão em tempo real. Suficiente para "está
+// a usar agora?" / "ativo nas últimas 24h", que era o que fazia falta (6
+// jul 2026) sem o custo/bateria de heartbeats periódicos.
+function describeActivity(iso) {
+  if (!iso) return { label: "Nunca acedeu", dot: "bg-zinc-700" };
+  const then = new Date(iso);
+  const diffMs = Date.now() - then.getTime();
+  const mins = diffMs / 60000;
+  if (mins < 5) return { label: "Online agora", dot: "bg-emerald-400" };
+  if (mins < 24 * 60) {
+    const hours = Math.floor(mins / 60);
+    const label = hours < 1 ? `Ativo há ${Math.round(mins)} min` : `Ativo há ${hours}h`;
+    return { label, dot: "bg-emerald-500/60" };
+  }
+  const label = `Último acesso: ${then.toLocaleDateString("pt-PT", { day: "2-digit", month: "short" })}`;
+  return { label, dot: "bg-zinc-700" };
+}
+
 function UserRow({ u, onDelete }) {
   const date = u.created_at
     ? new Date(u.created_at).toLocaleDateString("pt-PT", { day: "2-digit", month: "short", year: "2-digit" })
     : "-";
+  const activity = describeActivity(u.last_active_at);
   return (
     <div className="flex items-center gap-3 px-4 py-3 bg-zinc-900/40 border border-zinc-800/50 rounded-xl">
       <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center shrink-0">
@@ -89,6 +111,10 @@ function UserRow({ u, onDelete }) {
         <div className="text-xs text-zinc-500 font-mono mt-0.5">
           {u.name && u.name !== u.email ? `${u.name} · ` : ""}{date}
         </div>
+      </div>
+      <div className="flex items-center gap-1.5 shrink-0 text-xs font-mono text-zinc-400" title={activity.label}>
+        <span className={`w-1.5 h-1.5 rounded-full ${activity.dot} shrink-0`} />
+        <span className="hidden sm:inline whitespace-nowrap">{activity.label}</span>
       </div>
       <button onClick={() => onDelete(u)} className="p-2 rounded-lg text-zinc-600 hover:text-rose-400 hover:bg-rose-500/10 transition-colors shrink-0" title="Eliminar">
         <Trash2 className="w-4 h-4" />
@@ -210,6 +236,17 @@ function UsersTab() {
             </div>
           </button>
         ))}
+      </div>
+
+      {/* Não clicável (ao contrário dos cartões acima) — não filtra a lista
+          por atividade, é só o número global; cada utilizador já mostra o
+          seu próprio "ativo há Xh"/"online agora" na linha (ver UserRow /
+          describeActivity). 6 jul 2026: "quanto tempo esta ligado... nas
+          ultimas 24Hrs" — decidido não fazer heartbeats/sessões, só
+          last_active_at throttled a 5 min (ver core.py). */}
+      <div className="flex items-center gap-2 text-xs font-mono text-zinc-500 -mt-2">
+        <Activity className="w-3.5 h-3.5 text-emerald-400" />
+        {loading ? "-" : (stats?.active_24h ?? 0)} ativo(s) nas últimas 24h
       </div>
 
       <form onSubmit={handleSearch} className="flex gap-2">

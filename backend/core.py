@@ -81,6 +81,26 @@ async def get_current_user(request: Request) -> dict:
         raise HTTPException(status_code=401, detail="User not found")
     user.pop("password_hash", None)
     user.pop("_id", None)
+
+    # last_active_at (6 jul 2026): "quanto tempo esta ligado por dia"
+    # precisaria de heartbeats + sessões — decidido não fazer isso agora
+    # (custo/bateria) e ficar só com "último acesso" / "ativo nas últimas
+    # 24h", que dá para tirar disto sozinho. Guardado como string ISO, como
+    # todos os outros timestamps do projeto (created_at, updated_at, etc.),
+    # não como datetime nativo do Mongo. Throttled a 5 min: get_current_user
+    # corre em TODOS os pedidos autenticados — escrever em cada um seria uma
+    # escrita na BD por pedido só para mover um timestamp uns segundos.
+    # Nome deliberadamente diferente de "last_seen"/"users_last_seen_at" já
+    # usados em admin_state (ver routes/feedback.py) para o "visto pelo
+    # admin" da tab Utilizadores — conceitos diferentes, sem relação.
+    now = datetime.now(timezone.utc)
+    last_active_raw = user.get("last_active_at")
+    last_active_dt = datetime.fromisoformat(last_active_raw) if last_active_raw else None
+    if not last_active_dt or (now - last_active_dt) > timedelta(minutes=5):
+        now_iso = now.isoformat()
+        await db.users.update_one({"id": user["id"]}, {"$set": {"last_active_at": now_iso}})
+        user["last_active_at"] = now_iso
+
     return user
 
 # Single source of truth for "who is an admin" — route files should import
