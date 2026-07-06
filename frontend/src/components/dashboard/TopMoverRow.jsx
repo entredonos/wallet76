@@ -18,33 +18,36 @@ export default function TopMoverRow({ a, positive, wallets, nav, currency, fxRat
   return (
     <Link
       to={`/asset/${a.asset_type}/${a.symbol}`}
-      className="flex items-center gap-3 px-3 py-2 rounded-md bg-zinc-900/60 border border-zinc-800/60 hover:border-zinc-700 transition-colors"
+      className="flex items-center gap-2 px-3 py-2 rounded-md bg-zinc-900/60 border border-zinc-800/60 hover:border-zinc-700 transition-colors overflow-hidden"
       data-testid={`top-mover-${positive ? "up" : "down"}-${a.symbol}`}
     >
       <AssetIcon asset={a} size={24}/>
-      <div className="min-w-0 shrink-0">
-        <div className="font-mono text-zinc-100 text-sm leading-none whitespace-nowrap">{a.symbol}</div>
-        <div className="text-[10px] font-mono text-zinc-400 leading-none mt-1 whitespace-nowrap">{mask(fmtCurrency(convert(a.value_usd, currency, fxRates), currency))}</div>
+      {/* min-w-0 + flex-1 (em vez de shrink-0) — este bloco agora encolhe
+          e trunca (símbolo/valor) para a % à direita nunca ficar cortada
+          pela borda do ecrã em cards estreitos (grid de 2 colunas no
+          painel avançado, 5 jul 2026). */}
+      <div className="min-w-0 flex-1">
+        <div className="font-mono text-zinc-100 text-sm leading-none truncate">{a.symbol}</div>
+        <div className="text-[10px] font-mono text-zinc-400 leading-none mt-1 truncate">{mask(fmtCurrency(convert(a.value_usd, currency, fxRates), currency))}</div>
       </div>
-      {/* Wallet badge — centered in the space between the asset info and the
-          % change, instead of being crammed right next to the percentage. */}
-      <div className="flex-1 flex justify-center min-w-0">
-        {walletName && (
-          // button (not Link) + stopPropagation: nesting a Link inside
-          // the row's own Link would be invalid HTML and would just
-          // trigger the outer navigation anyway.
-          <button
-            type="button"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); nav(`/dashboard?wallet=${a.wallet_id}`); }}
-            className="max-w-full truncate text-[10px] font-mono px-1.5 py-0.5 rounded border border-zinc-700 text-zinc-400 bg-zinc-800/60 hover:text-zinc-200 hover:border-zinc-500 transition-colors"
-            data-testid={`top-mover-wallet-${a.symbol}`}
-          >
-            <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${walletDot}`} />
-            {walletName}
-          </button>
-        )}
-      </div>
-      <div className={`font-mono text-sm shrink-0 ${positive ? "text-emerald-400" : "text-rose-400"}`}>
+      {/* Wallet badge — escondido em ecrãs estreitos (não há espaço para
+          icon + símbolo/valor + badge + % sem cortar a %); volta a
+          aparecer a partir de sm. */}
+      {walletName && (
+        // button (not Link) + stopPropagation: nesting a Link inside
+        // the row's own Link would be invalid HTML and would just
+        // trigger the outer navigation anyway.
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); nav(`/dashboard?wallet=${a.wallet_id}`); }}
+          className="hidden sm:inline-flex items-center max-w-[88px] shrink-0 truncate text-[10px] font-mono px-1.5 py-0.5 rounded border border-zinc-700 text-zinc-400 bg-zinc-800/60 hover:text-zinc-200 hover:border-zinc-500 transition-colors"
+          data-testid={`top-mover-wallet-${a.symbol}`}
+        >
+          <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 shrink-0 ${walletDot}`} />
+          <span className="truncate">{walletName}</span>
+        </button>
+      )}
+      <div className={`font-mono text-sm shrink-0 whitespace-nowrap ${positive ? "text-emerald-400" : "text-rose-400"}`}>
         {positive ? <ArrowUpRight className="inline w-3 h-3"/> : <ArrowDownRight className="inline w-3 h-3"/>}
         {fmtPct(a.change_24h || 0)}
       </div>

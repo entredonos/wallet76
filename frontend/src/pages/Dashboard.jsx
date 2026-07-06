@@ -32,7 +32,7 @@ import { fmtCurrency, fmtPct, fmtCompact, convert } from "../lib/format";
 import { useI18n } from "../context/I18nContext";
 import { usePrivacy } from "../context/PrivacyContext";
 import { usePlan } from "../hooks/usePlan";
-import { ALLOCATION_CLASSES, ALLOCATION_CLASS_LABEL_KEY, effectiveClass, aggregateByClass, redistributeAllocationTargets } from "../lib/allocation";
+import { ALLOCATION_CLASSES, ALLOCATION_CLASS_LABEL_KEY, effectiveClass, aggregateByClass } from "../lib/allocation";
 
 // Dashboard.jsx used to be a single ~2325-line file mixing all of its own
 // state/data-fetching with a lot of presentational JSX (share panel, filter
@@ -728,30 +728,13 @@ export default function Dashboard({ currency }) {
 
   const hasAllocationTarget = Object.keys(allocTargets).length > 0;
 
-  // "UPGRADE v1.0" — live drag state for the Dashboard widget's own inline
-  // sliders (auto-rebalancing across the other 4 classes, see
-  // redistributeAllocationTargets). null when nothing is being dragged;
-  // otherwise the in-progress redistributed targets, so the bars respond
-  // immediately while dragging, before the change is committed on release.
-  const [draftAllocTargets, setDraftAllocTargets] = useState(null);
-  const effectiveAllocTargets = draftAllocTargets || allocTargets;
-
-  const handleClassSliderDrag = (cls, rawVal) => {
-    const base = draftAllocTargets || allocTargets;
-    setDraftAllocTargets(redistributeAllocationTargets(base, cls, rawVal));
-  };
-  const commitClassSliderDrag = async () => {
-    if (!draftAllocTargets) return;
-    const targets = draftAllocTargets;
-    setDraftAllocTargets(null);
-    setAllocTargets(targets); // optimistic
-    try {
-      await api.put("/allocation/target", { targets });
-    } catch (e) {
-      toast.error(formatApiErrorDetail(e?.response?.data?.detail) || t("alloc.toast_target_failed"));
-      loadAllocationPrefs(); // revert to server truth on failure
-    }
-  };
+  // Os sliders inline de arrastar (handleClassSliderDrag /
+  // commitClassSliderDrag + o estado de drag draftAllocTargets) foram
+  // removidos — o widget "Distribuição da Carteira" passou a mostrar o
+  // alvo como uma barra estática (marca branca), só editável pelo
+  // AllocationTargetDialog (botão de definições), para evitar alterar o
+  // alvo com um toque acidental no telemóvel.
+  const effectiveAllocTargets = allocTargets;
 
   // "UPGRADE v1.0" — target vs. actual per class, merged into the pie
   // legend itself (class mode) instead of a separate block. Built from
@@ -1295,8 +1278,6 @@ const worstPerformer = useMemo(() => {
             fxRates={fxRates}
             hasAllocationTarget={hasAllocationTarget}
             classAllocationRows={classAllocationRows}
-            handleClassSliderDrag={handleClassSliderDrag}
-            commitClassSliderDrag={commitClassSliderDrag}
             allocOverrides={allocOverrides}
           />
         </div>

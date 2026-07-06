@@ -52,13 +52,19 @@ export default function Wallets() {
       // overrides as the Dashboard's target-allocation widget. This call is
       // best-effort: a failure shouldn't block wallets/holdings from
       // loading, the donut just falls back to raw asset_type.
-      const [w, h, alloc] = await Promise.allSettled([
-        api.get("/wallets"), api.get("/holdings"), api.get("/allocation"),
+      // 6 jul 2026: trocado de /holdings para /portfolio — /holdings devolve
+      // só custo/quantidade (sem preço ao vivo), o que deixava o mini-donut
+      // sempre vazio (aggregateByClass precisa de value_usd) e impossibilitava
+      // mostrar o P&L% por carteira pedido pelo utilizador. /portfolio já
+      // enriquece cada holding com value_usd/cost_usd/pnl_pct (mesma fonte
+      // usada no Dashboard e no AssetCard).
+      const [w, p, alloc] = await Promise.allSettled([
+        api.get("/wallets"), api.get("/portfolio"), api.get("/allocation"),
       ]);
       if (w.status === "fulfilled") setWallets(w.value.data || []);
-      if (h.status === "fulfilled") setHoldings(h.value.data || []);
+      if (p.status === "fulfilled") setHoldings(p.value.data?.assets || []);
       if (alloc.status === "fulfilled") setAllocOverrides(alloc.value.data?.overrides || {});
-      if (w.status === "rejected" || h.status === "rejected") {
+      if (w.status === "rejected" || p.status === "rejected") {
         toast.error(t("wallets.toast_load_failed"));
       }
     } catch (e) {
@@ -220,6 +226,12 @@ export default function Wallets() {
             const Icon = Preset.Icon;
             const cur = w.currency || "USD";
             const walletColor = WALLET_COLOR_KEYS[wi % WALLET_COLOR_KEYS.length];
+            // P&L% desta carteira — mesma lógica do walletBreakdown em
+            // Dashboard.jsx (soma de value_usd/cost_usd dos holdings).
+            const wValue = wAssets.reduce((s, a) => s + Number(a.value_usd || 0), 0);
+            const wCost = wAssets.reduce((s, a) => s + Number(a.cost_usd || 0), 0);
+            const wPnlPct = wCost > 0 ? ((wValue - wCost) / wCost) * 100 : 0;
+            const wHasPnl = wAssets.length > 0 && wCost > 0;
             return (
               <div key={w.id} className="bg-zinc-900/40 border border-zinc-800/50 hover:border-zinc-700/60 transition-colors rounded-lg p-6" data-testid={`wallet-card-${w.id}`}>
                 <div className="flex items-start justify-between mb-4">
@@ -254,9 +266,17 @@ export default function Wallets() {
                   </div>
                 </div>
                 <div className="font-display text-xl text-zinc-100">{w.name}</div>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <span className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{Preset.label}</span>
                   <span className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400 border border-zinc-800 rounded px-1.5 py-0.5">{CUR_SYMBOL[cur] || cur} {cur}</span>
+                  {wHasPnl && (
+                    <span
+                      className={`text-xs font-mono px-1.5 py-0.5 rounded border ${wPnlPct >= 0 ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" : "text-rose-400 border-rose-500/30 bg-rose-500/10"}`}
+                      data-testid={`wallet-pnl-${w.id}`}
+                    >
+                      {wPnlPct >= 0 ? "+" : ""}{wPnlPct.toFixed(2)}%
+                    </span>
+                  )}
                 </div>
                 <div className="mt-6 pt-4 border-t border-zinc-800/50 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">

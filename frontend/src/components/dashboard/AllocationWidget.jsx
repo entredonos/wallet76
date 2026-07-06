@@ -17,7 +17,7 @@ export default function AllocationWidget({
   allocationMode, setAllocationMode, setShowTargetDialog,
   pieData, activeAllocation, setActiveAllocation, totalForAlloc, filtered,
   hideValues, currency, fxRates, hasAllocationTarget, classAllocationRows,
-  handleClassSliderDrag, commitClassSliderDrag, allocOverrides,
+  allocOverrides,
 }) {
   const { t } = useI18n();
   return (
@@ -66,18 +66,6 @@ export default function AllocationWidget({
           </button>
         </div>
       </div>
-
-      {/* Shared with AllocationTargetDialog's sliders — kept here too
-          since this widget renders independently of whether the dialog
-          is mounted. Thumb taller than the track (protrudes above/below)
-          so it reads as a drag handle. */}
-      <style>{`
-        .alloc-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 9999px; outline: none; cursor: pointer; }
-        .alloc-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 6px; height: 18px; border-radius: 3px; background: #fafafa; border: 1px solid #09090b; cursor: grab; box-shadow: 0 0 0 1px rgba(0,0,0,0.5); }
-        .alloc-slider::-webkit-slider-thumb:active { cursor: grabbing; }
-        .alloc-slider::-moz-range-thumb { width: 6px; height: 18px; border-radius: 3px; background: #fafafa; border: 1px solid #09090b; cursor: grab; }
-        .alloc-slider::-moz-range-track { height: 6px; border-radius: 9999px; background: transparent; }
-      `}</style>
 
       <div className="min-h-72" data-testid="allocation-chart">
         {pieData.length > 0 ? (
@@ -191,26 +179,30 @@ export default function AllocationWidget({
                       </div>
 
                       {row.editable ? (
-                        // Colored fill = ACTUAL % (informational, not
-                        // driven by the input itself); the thumb's
-                        // position = TARGET %, which is what dragging
-                        // actually controls (native input value). The
-                        // two are deliberately decoupled so both numbers
-                        // are visible on the same bar at a glance.
-                        <input
-                          type="range"
-                          min={0}
-                          max={100}
-                          step={1}
-                          value={row.targetPct}
-                          onChange={(e) => handleClassSliderDrag(row.cls, e.target.value)}
-                          onMouseUp={commitClassSliderDrag}
-                          onTouchEnd={commitClassSliderDrag}
-                          onKeyUp={commitClassSliderDrag}
-                          className="alloc-slider"
-                          style={{ background: `linear-gradient(to right, ${color} 0%, ${color} ${Math.min(row.actualPct, 100)}%, #27272a ${Math.min(row.actualPct, 100)}%, #27272a 100%)` }}
-                          data-testid={`allocation-slider-${row.cls}`}
-                        />
+                        // Estático e não-clicável de propósito — um
+                        // <input type="range"> aqui era fácil demais de
+                        // tocar sem querer (scroll/toque no telemóvel) e
+                        // mudava o alvo na hora, sem confirmação. Agora é
+                        // só leitura: fill colorido = % ATUAL, marca
+                        // branca = % ALVO. Editar o alvo só é possível
+                        // pelo botão de definições (Settings2) ao lado do
+                        // toggle Classe/Ativos, que abre o
+                        // AllocationTargetDialog.
+                        <div
+                          className="relative h-1.5 rounded-full bg-zinc-800 overflow-visible"
+                          title={`${t("alloc.actual_pct")}: ${row.actualPct.toFixed(1)}% · ${t("alloc.target_pct")}: ${row.targetPct.toFixed(0)}%`}
+                          data-testid={`allocation-bar-${row.cls}`}
+                        >
+                          <div
+                            className="h-full rounded-full overflow-hidden"
+                            style={{ width: `${Math.min(Math.max(row.actualPct, 0), 100)}%`, backgroundColor: color }}
+                          />
+                          <div
+                            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-0.5 h-3 rounded-full bg-white"
+                            style={{ left: `${Math.min(Math.max(row.targetPct, 0), 100)}%` }}
+                            data-testid={`allocation-target-marker-${row.cls}`}
+                          />
+                        </div>
                       ) : (
                         <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
                           <div
