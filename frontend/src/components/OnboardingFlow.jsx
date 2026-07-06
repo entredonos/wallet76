@@ -38,7 +38,7 @@ function Steps({ current, total }) {
                 ? "bg-emerald-500 text-white"
                 : i === current
                 ? "bg-blue-500 text-white ring-4 ring-blue-500/20"
-                : "bg-zinc-800 text-zinc-500"
+                : "bg-zinc-800 text-zinc-400"
             }`}
           >
             {i < current ? <CheckCircle className="w-3.5 h-3.5" /> : i + 1}
@@ -89,12 +89,12 @@ function Step1({ onNext }) {
         </div>
         <div>
           <div className="text-lg font-semibold text-zinc-100">{t("onboarding.s1_title")}</div>
-          <div className="text-xs text-zinc-500">{t("onboarding.s1_sub")}</div>
+          <div className="text-xs text-zinc-400">{t("onboarding.s1_sub")}</div>
         </div>
       </div>
 
       <div className="space-y-3">
-        <Label className="text-xs font-mono uppercase tracking-widest text-zinc-500">
+        <Label className="text-xs font-mono uppercase tracking-widest text-zinc-400">
           {t("onboarding.wallet_name")}
         </Label>
         <Input
@@ -198,7 +198,7 @@ function Step2({ wallet, onNext, onSkip }) {
         </div>
         <div>
           <div className="text-lg font-semibold text-zinc-100">{t("onboarding.s2_title")}</div>
-          <div className="text-xs text-zinc-500">
+          <div className="text-xs text-zinc-400">
             {t("onboarding.s2_sub")} <span className="text-blue-400">{wallet.name}</span>
           </div>
         </div>
@@ -213,7 +213,7 @@ function Step2({ wallet, onNext, onSkip }) {
             className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${
               assetType === type
                 ? "bg-zinc-700 text-zinc-100"
-                : "text-zinc-500 hover:text-zinc-300"
+                : "text-zinc-400 hover:text-zinc-300"
             }`}
           >
             {type === "crypto" ? "Crypto" : "Stock / ETF"}
@@ -223,7 +223,7 @@ function Step2({ wallet, onNext, onSkip }) {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
         <Input
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPicked(null); }}
@@ -259,7 +259,7 @@ function Step2({ wallet, onNext, onSkip }) {
       {/* Qty + Price */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label className="text-xs font-mono uppercase tracking-widest text-zinc-500">{t("onboarding.quantity")}</Label>
+          <Label className="text-xs font-mono uppercase tracking-widest text-zinc-400">{t("onboarding.quantity")}</Label>
           <Input
             type="number"
             step="any"
@@ -271,7 +271,7 @@ function Step2({ wallet, onNext, onSkip }) {
           />
         </div>
         <div>
-          <Label className="text-xs font-mono uppercase tracking-widest text-zinc-500">{t("onboarding.price_paid")} (USD)</Label>
+          <Label className="text-xs font-mono uppercase tracking-widest text-zinc-400">{t("onboarding.price_paid")} (USD)</Label>
           <Input
             type="number"
             step="any"
@@ -296,7 +296,7 @@ function Step2({ wallet, onNext, onSkip }) {
         <Button
           variant="outline"
           onClick={onSkip}
-          className="border-zinc-800 text-zinc-500 hover:text-zinc-300 px-4"
+          className="border-zinc-800 text-zinc-400 hover:text-zinc-300 px-4"
         >
           {t("onboarding.skip")}
         </Button>
@@ -331,12 +331,12 @@ function Step3({ wallet, asset, onComplete }) {
       {/* Summary */}
       <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 text-left space-y-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-zinc-500">{t("onboarding.wallet_created")}</span>
+          <span className="text-zinc-400">{t("onboarding.wallet_created")}</span>
           <span className="text-zinc-200 font-medium">{wallet?.name || "—"}</span>
         </div>
         {asset && (
           <div className="flex items-center justify-between text-sm">
-            <span className="text-zinc-500">{t("onboarding.asset_added")}</span>
+            <span className="text-zinc-400">{t("onboarding.asset_added")}</span>
             <span className="text-emerald-400 font-mono font-medium">{asset.symbol}</span>
           </div>
         )}
@@ -379,7 +379,7 @@ export default function OnboardingFlow({ onComplete }) {
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-zinc-900 space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono uppercase tracking-widest text-zinc-500">
+            <span className="text-xs font-mono uppercase tracking-widest text-zinc-400">
               {t("onboarding.header")}
             </span>
             <span className="text-xs text-zinc-600">

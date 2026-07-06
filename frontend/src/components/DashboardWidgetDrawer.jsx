@@ -103,11 +103,11 @@ export default function DashboardWidgetDrawer({ open, onClose, widgetConfig, set
         <div className="flex items-start justify-between px-5 py-4 border-b border-zinc-800">
           <div>
             <div className="font-medium text-zinc-100 text-sm">{t("dash.widgets_title")}</div>
-            <div className="text-xs text-zinc-500 mt-1 leading-relaxed">{t("dash.widgets_subtitle")}</div>
+            <div className="text-xs text-zinc-400 mt-1 leading-relaxed">{t("dash.widgets_subtitle")}</div>
           </div>
           <button
             onClick={onClose}
-            className="mt-0.5 p-1 text-zinc-500 hover:text-zinc-300 transition-colors rounded"
+            className="mt-0.5 p-1 text-zinc-400 hover:text-zinc-300 transition-colors rounded"
           >
             <X className="w-4 h-4" />
           </button>
@@ -150,7 +150,7 @@ export default function DashboardWidgetDrawer({ open, onClose, widgetConfig, set
                 </div>
                 <button
                   onClick={() => toggleWidget(w.id)}
-                  className="shrink-0 p-1 rounded transition-colors text-zinc-500 hover:text-zinc-200"
+                  className="shrink-0 p-1 rounded transition-colors text-zinc-400 hover:text-zinc-200"
                 >
                   {w.enabled
                     ? <Eye className="w-4 h-4 text-emerald-400" />
@@ -167,7 +167,7 @@ export default function DashboardWidgetDrawer({ open, onClose, widgetConfig, set
             pela mesma razão da lista de widgets acima. */}
         {dashMode !== "light" && (
         <div className="px-4 pb-2 border-t border-zinc-800 pt-4">
-          <div className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-500 mb-3">{t("dash.widgets_filter_pills") || "Filter pills"}</div>
+          <div className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-400 mb-3">{t("dash.widgets_filter_pills") || "Filter pills"}</div>
           <div className="space-y-1.5">
             {TYPE_PILLS.map((pill) => (
               <button
@@ -211,7 +211,7 @@ export default function DashboardWidgetDrawer({ open, onClose, widgetConfig, set
         <div className="px-4 py-3 border-t border-zinc-800">
           <button
             onClick={resetDefault}
-            className="w-full flex items-center justify-center gap-2 text-xs font-mono text-zinc-500 hover:text-zinc-300 py-2 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-colors"
+            className="w-full flex items-center justify-center gap-2 text-xs font-mono text-zinc-400 hover:text-zinc-300 py-2 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             {t("dash.widgets_reset") || "Reset to default"}

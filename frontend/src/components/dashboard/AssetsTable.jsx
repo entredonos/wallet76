@@ -37,7 +37,7 @@ export default function AssetsTable({
       <div className="px-5 py-4 border-b border-zinc-800/50 flex items-center justify-between">
         <div className="text-sm font-medium text-zinc-300">{t("dash.assets")}</div>
         <div className="flex items-center gap-3">
-          <div className="text-xs font-mono text-zinc-500" data-testid="assets-count">{t("dash.items", { count: sorted.length })}</div>
+          <div className="text-xs font-mono text-zinc-400" data-testid="assets-count">{t("dash.items", { count: sorted.length })}</div>
           {/* Column-visibility menu only applies to the desktop table —
               mobile cards use a fixed field set (see AssetCard). */}
           <div className="relative hidden md:block">
@@ -53,7 +53,7 @@ export default function AssetsTable({
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setColMenuOpen(false)}/>
                 <div className="absolute right-0 top-full mt-2 z-40 w-56 bg-zinc-950 border border-zinc-800 rounded-md shadow-2xl p-2" data-testid="columns-menu">
-                  <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500 px-2 py-1.5">{t("watch.columns")}</div>
+                  <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-400 px-2 py-1.5">{t("watch.columns")}</div>
                   {ALL_COLUMNS.map((c) => (
                     <label key={c.key} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-200 hover:bg-zinc-900 rounded cursor-pointer" data-testid={`col-toggle-${c.key}`}>
                       <input
@@ -102,7 +102,7 @@ export default function AssetsTable({
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full" data-testid="assets-table">
           <thead>
-            <tr className="text-xs font-mono uppercase tracking-[0.1em] text-zinc-500 border-b border-zinc-800/30">
+            <tr className="text-xs font-mono uppercase tracking-[0.1em] text-zinc-400 border-b border-zinc-800/30">
               <SortableTH label={t("dash.assets")} k="symbol" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} testId="sort-symbol" className="text-left px-5 py-3"/>
               {colVisible("type") && <th className="text-center px-3 py-3 font-normal">{t("dash.col_type")}</th>}
               {colVisible("price") && <SortableTH label={t("common.price")} k="price_usd" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} testId="sort-price" className="text-right px-4 py-3"/>}
@@ -146,7 +146,7 @@ export default function AssetsTable({
                       <AssetIcon asset={a}/>
                       <div>
                         <div className="font-mono font-medium text-zinc-100">{a.symbol}</div>
-                        <div className="text-xs text-zinc-500">
+                        <div className="text-xs text-zinc-400">
                           {a.name}
                         </div>
                       </div>
@@ -230,7 +230,7 @@ export default function AssetsTable({
                   )}
                   {colVisible("qty") && <td className="px-4 py-4 text-right font-mono text-zinc-300">{mask(fmtNum(a.quantity, 4))}</td>}
                   {colVisible("value") && <td className="px-4 py-4 text-right font-mono text-zinc-100">{mask(fmtCurrency(convert(a.value_usd, currency, fxRates), currency))}</td>}
-                  {colVisible("avg_cost") && <td className="px-4 py-4 text-right font-mono text-zinc-500">{fmtCurrency(convert(a.avg_cost_usd, currency, fxRates), currency)}</td>}
+                  {colVisible("avg_cost") && <td className="px-4 py-4 text-right font-mono text-zinc-400">{fmtCurrency(convert(a.avg_cost_usd, currency, fxRates), currency)}</td>}
                   {colVisible("pnl") && (
                     <td className={`px-4 py-4 text-right font-mono ${pos ? "text-emerald-400" : "text-rose-400"}`}>
                       <div>{mask(fmtCurrency(convert(a.pnl_usd, currency, fxRates), currency))}</div>
@@ -262,7 +262,7 @@ export default function AssetsTable({
                     <div className="inline-flex items-center gap-1.5">
                       <Link
                         to={`/transactions?sell=${a.symbol}&type=${a.asset_type}&wallet=${a.wallet_id}`}
-                        className="p-1.5 rounded-md text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                        className="p-1.5 rounded-md text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                         data-testid={`action-sell-${a.symbol}`}
                         title={t("common.sell")}
                       >
@@ -279,7 +279,7 @@ export default function AssetsTable({
                             load(true);
                           } catch { toast.error(t("common.error")); }
                         }}
-                        className="p-1.5 rounded-md text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                        className="p-1.5 rounded-md text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                         data-testid={`action-delete-${a.symbol}`}
                         title={t("dash.delete_all_tx_tooltip")}
                       >
@@ -287,7 +287,7 @@ export default function AssetsTable({
                       </button>
                       <Link
                         to={`/asset/${a.asset_type}/${a.symbol}`}
-                        className="p-1.5 rounded-md text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                        className="p-1.5 rounded-md text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
                         data-testid={`action-chart-${a.symbol}`}
                         title={t("common.chart")}
                       >

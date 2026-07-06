@@ -62,7 +62,7 @@ export default function UpgradeDialog({ open, onOpenChange, reason = "wallet_lim
           </button>
           <button
             onClick={() => onOpenChange(false)}
-            className="w-full px-5 py-2.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+            className="w-full px-5 py-2.5 text-sm text-zinc-400 hover:text-zinc-300 transition-colors"
             data-testid="upgrade-dialog-dismiss"
           >
             {t("upgrade.dialog_maybe_later")}

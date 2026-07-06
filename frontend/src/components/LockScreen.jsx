@@ -108,7 +108,7 @@ export default function LockScreen({ onUnlock }) {
           {status.lock_mode === "pin" ? <KeyRound className="w-7 h-7 text-blue-300"/> : <Fingerprint className="w-7 h-7 text-blue-300"/>}
         </div>
         <div className="font-display text-2xl font-light text-zinc-100">Wallet76</div>
-        <div className="text-xs font-mono text-zinc-500 mt-1 mb-6">{user?.email}</div>
+        <div className="text-xs font-mono text-zinc-400 mt-1 mb-6">{user?.email}</div>
 
         {status.lock_mode === "pin" && (
           <div className="space-y-3">
@@ -152,7 +152,7 @@ export default function LockScreen({ onUnlock }) {
 
         <button
           onClick={() => { logout(); }}
-          className="mt-6 inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.2em] text-zinc-500 hover:text-zinc-300"
+          className="mt-6 inline-flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-[0.2em] text-zinc-400 hover:text-zinc-300"
           data-testid="lock-logout"
         >
           <LogOut className="w-3 h-3"/> {t("common.logout") || "Sign out"}

@@ -291,7 +291,7 @@ export default function ImportCsvDialog({ wallets = [], onSaved, defaultWalletId
       <DialogContent className="bg-zinc-950 border-zinc-800 max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display font-light text-2xl">{t("csvimport.title")}</DialogTitle>
-          <DialogDescription className="text-zinc-500 text-sm">
+          <DialogDescription className="text-zinc-400 text-sm">
             {t("csvimport.desc_prefix")}
             {" "}{t("csvimport.desc_columns")} <span className="font-mono">symbol</span> + <span className="font-mono">quantity</span>.
           </DialogDescription>
@@ -300,7 +300,7 @@ export default function ImportCsvDialog({ wallets = [], onSaved, defaultWalletId
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("csvimport.dest_wallet")}</Label>
+              <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("csvimport.dest_wallet")}</Label>
               <Select value={walletId} onValueChange={setWalletId}>
                 <SelectTrigger className="mt-2 bg-zinc-900/50 border-zinc-800">
                   <SelectValue placeholder={t("csvimport.pick_wallet")} />
@@ -308,14 +308,14 @@ export default function ImportCsvDialog({ wallets = [], onSaved, defaultWalletId
                 <SelectContent className="bg-zinc-900 border-zinc-800">
                   {wallets.map((w) => (
                     <SelectItem key={w.id} value={w.id}>
-                      {w.name} <span className="text-zinc-500 ml-1">({w.currency || "USD"})</span>
+                      {w.name} <span className="text-zinc-400 ml-1">({w.currency || "USD"})</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("csvimport.default_asset_type")}</Label>
+              <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("csvimport.default_asset_type")}</Label>
               <Tabs value={defaultAssetType} onValueChange={setDefaultAssetType}>
                 <TabsList className="mt-2 w-full bg-zinc-900/50 border border-zinc-800">
                   <TabsTrigger value="crypto" className="flex-1 data-[state=active]:bg-zinc-100 data-[state=active]:text-zinc-950">{t("common.crypto")}</TabsTrigger>
@@ -336,7 +336,7 @@ export default function ImportCsvDialog({ wallets = [], onSaved, defaultWalletId
                 className="hidden"
               />
               <span className="text-zinc-300 underline">{t("csvimport.choose_file")}</span>
-              <span className="text-zinc-500"> {t("csvimport.or_paste")}</span>
+              <span className="text-zinc-400"> {t("csvimport.or_paste")}</span>
             </label>
             <p className="text-xs text-zinc-600 mt-2">
               {t("csvimport.supported_prefix")} XTB · DEGIRO · Binance · eToro · Revolut · Interactive Brokers · Ledger Live
@@ -368,7 +368,7 @@ export default function ImportCsvDialog({ wallets = [], onSaved, defaultWalletId
               <div className="max-h-48 overflow-y-auto border border-zinc-800 rounded">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="text-zinc-500 font-mono">
+                    <tr className="text-zinc-400 font-mono">
                       <th className="text-left px-2 py-1">{t("tx.date")}</th>
                       <th className="text-left px-2 py-1">{t("tx.type")}</th>
                       <th className="text-left px-2 py-1">{t("csvimport.symbol")}</th>
@@ -391,7 +391,7 @@ export default function ImportCsvDialog({ wallets = [], onSaved, defaultWalletId
                   </tbody>
                 </table>
                 {parsed.items.length > 25 && (
-                  <div className="text-center text-xs text-zinc-500 py-2">{t("csvimport.more_rows", { n: parsed.items.length - 25 })}</div>
+                  <div className="text-center text-xs text-zinc-400 py-2">{t("csvimport.more_rows", { n: parsed.items.length - 25 })}</div>
                 )}
               </div>
             </div>

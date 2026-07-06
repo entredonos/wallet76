@@ -24,7 +24,7 @@ export default function TopMoverRow({ a, positive, wallets, nav, currency, fxRat
       <AssetIcon asset={a} size={24}/>
       <div className="min-w-0 shrink-0">
         <div className="font-mono text-zinc-100 text-sm leading-none whitespace-nowrap">{a.symbol}</div>
-        <div className="text-[10px] font-mono text-zinc-500 leading-none mt-1 whitespace-nowrap">{mask(fmtCurrency(convert(a.value_usd, currency, fxRates), currency))}</div>
+        <div className="text-[10px] font-mono text-zinc-400 leading-none mt-1 whitespace-nowrap">{mask(fmtCurrency(convert(a.value_usd, currency, fxRates), currency))}</div>
       </div>
       {/* Wallet badge — centered in the space between the asset info and the
           % change, instead of being crammed right next to the percentage. */}

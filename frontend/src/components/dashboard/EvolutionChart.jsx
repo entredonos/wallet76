@@ -160,7 +160,7 @@ export default function EvolutionChart({
           // fetch (que pode demorar vários segundos com retries do
           // CoinGecko) ainda estava em curso.
           <div className="h-full flex flex-col items-center justify-center gap-3 text-zinc-600 text-sm font-mono text-center px-6">
-            <RefreshCw className="w-5 h-5 animate-spin text-zinc-500" />
+            <RefreshCw className="w-5 h-5 animate-spin text-zinc-400" />
             <span>{t("dash.chart_loading")}</span>
           </div>
         ) : (

@@ -154,7 +154,7 @@ export default function Layout({ children, currency, setCurrency }) {
         <img src={walletLogo} alt="Wallet76" className="w-12 h-12 object-contain" />
         <div className="flex-1 min-w-0">
           <div className="font-display text-base text-zinc-100">Wallet76</div>
-          <div className="text-[10px] font-mono uppercase tracking-[0.25em] text-zinc-500">v1.0</div>
+          <div className="text-[10px] font-mono uppercase tracking-[0.25em] text-zinc-400">v1.0</div>
         </div>
       </Link>
 
@@ -162,7 +162,7 @@ export default function Layout({ children, currency, setCurrency }) {
       <div className="px-3 pt-3 pb-1">
         <button
           onClick={() => setSearchOpen(true)}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300 transition-colors text-sm font-mono"
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300 transition-colors text-sm font-mono"
         >
           <Search className="w-4 h-4 shrink-0" />
           <span className="flex-1 text-left text-xs">{t("nav.asset_search")}</span>
@@ -236,7 +236,7 @@ export default function Layout({ children, currency, setCurrency }) {
       </nav>
 
       <div className="px-5 mt-4 mb-2 flex items-center justify-between">
-        <div className="text-[10px] font-mono uppercase tracking-[0.25em] text-zinc-500">{t("common.wallets")}</div>
+        <div className="text-[10px] font-mono uppercase tracking-[0.25em] text-zinc-400">{t("common.wallets")}</div>
         <Link to="/wallets" className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-400 hover:text-zinc-200 border border-zinc-800 px-2 py-0.5 rounded" data-testid="sidebar-new-wallet">
           <Plus className="inline w-3 h-3 mr-1"/> {t("common.new")}
         </Link>
@@ -257,7 +257,7 @@ export default function Layout({ children, currency, setCurrency }) {
               data-testid="sidebar-wallet-global"
             >
               {isGlobal && <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-blue-300" />}
-              <Globe className={`w-4 h-4 shrink-0 ${isGlobal ? "text-blue-300" : "text-zinc-500"}`} />
+              <Globe className={`w-4 h-4 shrink-0 ${isGlobal ? "text-blue-300" : "text-zinc-400"}`} />
               <span className="truncate min-w-0 flex-1 text-xs font-mono uppercase tracking-wider">
                 {t("common.all_portfolios")}
               </span>
@@ -295,7 +295,7 @@ export default function Layout({ children, currency, setCurrency }) {
                 <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-blue-300" />
               )}
 
-              <Icon className={`w-4 h-4 shrink-0 ${activeWallet ? "text-blue-300" : "text-zinc-500"}`} />
+              <Icon className={`w-4 h-4 shrink-0 ${activeWallet ? "text-blue-300" : "text-zinc-400"}`} />
 
               <span className="truncate min-w-0 flex-1">{w.name}</span>
 
@@ -354,7 +354,7 @@ export default function Layout({ children, currency, setCurrency }) {
           </button>
         </div>
         <div className="flex items-center gap-2 mb-3">
-          <Languages className="w-4 h-4 text-zinc-500"/>
+          <Languages className="w-4 h-4 text-zinc-400"/>
           <select
             value={lang}
             onChange={(e) => setLang(e.target.value)}
@@ -393,7 +393,7 @@ export default function Layout({ children, currency, setCurrency }) {
         <div className="flex items-center justify-between">
           <div className="min-w-0">
             <div className="text-xs text-zinc-300 truncate" data-testid="nav-user-email">{user?.email}</div>
-            <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">{t("nav.logged_in")}</div>
+            <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">{t("nav.logged_in")}</div>
           </div>
           <Button
             variant="ghost"
@@ -479,7 +479,7 @@ export default function Layout({ children, currency, setCurrency }) {
             <NavLink
               key={to}
               to={to}
-              className={({ isActive }) => `flex flex-col items-center gap-1 px-3 py-2 text-xs transition-colors ${isActive ? "text-zinc-50" : "text-zinc-500 hover:text-zinc-300"}`}
+              className={({ isActive }) => `flex flex-col items-center gap-1 px-3 py-2 text-xs transition-colors ${isActive ? "text-zinc-50" : "text-zinc-400 hover:text-zinc-300"}`}
             >
               <div className="relative">
                 <Icon className="w-5 h-5" />

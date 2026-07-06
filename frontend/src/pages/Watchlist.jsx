@@ -147,9 +147,9 @@ export default function Watchlist() {
     <div className="space-y-8 fade-in">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("watch.title")}</div>
+          <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("watch.title")}</div>
           <h1 className="font-display text-4xl sm:text-5xl font-light tracking-tight mt-2">{t("watch.title")}</h1>
-          <p className="text-zinc-500 mt-2">{t("watch.subtitle")} · {totalItems} {totalItems === 1 ? t("common.asset") : t("common.assets")} {t("common.in")} {groups.length} {groups.length === 1 ? t("common.list") : t("common.lists")}</p>
+          <p className="text-zinc-400 mt-2">{t("watch.subtitle")} · {totalItems} {totalItems === 1 ? t("common.asset") : t("common.assets")} {t("common.in")} {groups.length} {groups.length === 1 ? t("common.list") : t("common.lists")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -173,13 +173,13 @@ export default function Watchlist() {
         </div>
       </div>
 
-      {loading && <div className="text-zinc-500 font-mono text-sm">{t("common.loading")}</div>}
+      {loading && <div className="text-zinc-400 font-mono text-sm">{t("common.loading")}</div>}
 
       {!loading && groups.length === 0 && (
         <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-12 text-center" data-testid="no-groups">
           <Folder className="w-10 h-10 text-zinc-700 mx-auto mb-3"/>
           <div className="text-zinc-300 font-display text-xl">{t("watch.no_groups")}</div>
-          <div className="text-zinc-500 mt-2 mb-4 text-sm">{t("watch.no_groups_hint")}</div>
+          <div className="text-zinc-400 mt-2 mb-4 text-sm">{t("watch.no_groups_hint")}</div>
           <Button onClick={() => { setNewGroupName(""); setNewGroupOpen(true); }} className="bg-zinc-100 text-zinc-950 hover:bg-white" data-testid="empty-create-group">
             <FolderPlus className="w-4 h-4 mr-1.5"/> {t("watch.new_group")}
           </Button>
@@ -216,9 +216,9 @@ export default function Watchlist() {
             <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl overflow-hidden" data-testid={`group-panel-${activeGroup.id}`}>
               <div className="px-5 py-4 border-b border-zinc-800/50 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <Folder className="w-4 h-4 text-zinc-500 shrink-0"/>
+                  <Folder className="w-4 h-4 text-zinc-400 shrink-0"/>
                   <div className="font-display text-lg text-zinc-100 truncate">{activeGroup.name}</div>
-                  <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500 ml-1">{activeGroup.items?.length || 0}/{MAX_PER_GROUP}</span>
+                  <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-400 ml-1">{activeGroup.items?.length || 0}/{MAX_PER_GROUP}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {/* Column-visibility menu only applies to the desktop
@@ -236,7 +236,7 @@ export default function Watchlist() {
                       <>
                         <div className="fixed inset-0 z-30" onClick={() => setColMenuOpen(false)}/>
                         <div className="absolute right-0 top-full mt-2 z-40 w-56 bg-zinc-950 border border-zinc-800 rounded-md shadow-2xl p-2" data-testid="watch-columns-menu">
-                          <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500 px-2 py-1.5">{t("watch.columns")}</div>
+                          <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-400 px-2 py-1.5">{t("watch.columns")}</div>
                           {WATCH_COLUMNS.map((c) => (
                             <label key={c.key} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-200 hover:bg-zinc-900 rounded cursor-pointer" data-testid={`watch-col-toggle-${c.key}`}>
                               <input type="checkbox" checked={colVisible(c.key)} onChange={() => toggleCol(c.key)} className="accent-blue-500"/>
@@ -281,7 +281,7 @@ export default function Watchlist() {
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full" data-testid="watchlist-table">
                   <thead>
-                    <tr className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-500 border-b border-zinc-800/30">
+                    <tr className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-400 border-b border-zinc-800/30">
                       <th className="text-left px-6 py-3 font-normal">{t("common.label")}</th>
                       <th className="text-left px-4 py-3 font-normal">{t("common.symbol")}</th>
                       {colVisible("price") && <th className="text-right px-4 py-3 font-normal">{t("common.price")}</th>}
@@ -313,13 +313,13 @@ export default function Watchlist() {
                               <AssetIcon asset={w} size={28}/>
                               <div>
                                 <div className="font-mono text-zinc-100">{w.custom_label}</div>
-                                <div className="text-xs text-zinc-500">{w.name}</div>
+                                <div className="text-xs text-zinc-400">{w.name}</div>
                               </div>
                             </div>
                           </td>
                           <td className="px-4 py-4 font-mono text-zinc-300">
                             {w.symbol}
-                            <span className="text-[10px] font-mono uppercase border border-zinc-800 rounded px-1 py-0.5 text-zinc-500 ml-1">{w.asset_type}</span>
+                            <span className="text-[10px] font-mono uppercase border border-zinc-800 rounded px-1 py-0.5 text-zinc-400 ml-1">{w.asset_type}</span>
                           </td>
                           {colVisible("price") && (
                             <td className="px-4 py-4 text-right font-mono text-zinc-100">
@@ -368,13 +368,13 @@ export default function Watchlist() {
                           )}
                           <td className="px-6 py-4 text-right">
                             <div className="inline-flex items-center gap-2">
-                              <button onClick={() => setAlertTarget(w)} className="text-zinc-500 hover:text-blue-400 transition-colors" data-testid={`watch-alert-${w.id}`} title={t("common.alerts")}>
+                              <button onClick={() => setAlertTarget(w)} className="text-zinc-400 hover:text-blue-400 transition-colors" data-testid={`watch-alert-${w.id}`} title={t("common.alerts")}>
                                 <Bell className="w-4 h-4"/>
                               </button>
-                              <Link to={`/asset/${w.asset_type}/${w.symbol}`} className="text-zinc-500 hover:text-blue-400 transition-colors" data-testid={`watch-chart-${w.id}`} title={t("common.chart")}>
+                              <Link to={`/asset/${w.asset_type}/${w.symbol}`} className="text-zinc-400 hover:text-blue-400 transition-colors" data-testid={`watch-chart-${w.id}`} title={t("common.chart")}>
                                 <Eye className="w-4 h-4"/>
                               </Link>
-                              <button onClick={() => setDeleteItemTarget(w)} className="text-zinc-500 hover:text-rose-400 transition-colors" data-testid={`watch-delete-${w.id}`} title={t("common.delete")}>
+                              <button onClick={() => setDeleteItemTarget(w)} className="text-zinc-400 hover:text-rose-400 transition-colors" data-testid={`watch-delete-${w.id}`} title={t("common.delete")}>
                                 <Trash2 className="w-4 h-4"/>
                               </button>
                             </div>
@@ -395,7 +395,7 @@ export default function Watchlist() {
         <DialogContent className="bg-zinc-950 border-zinc-800 max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display font-light text-2xl">{t("watch.new_group")}</DialogTitle>
-            <DialogDescription className="text-zinc-500 text-sm">
+            <DialogDescription className="text-zinc-400 text-sm">
               {t("watch.group_name_prompt")}
             </DialogDescription>
           </DialogHeader>
@@ -498,7 +498,7 @@ function WatchCard({ w, onAlert, onDelete }) {
           <AssetIcon asset={w} size={28}/>
           <div className="min-w-0">
             <div className="font-mono text-zinc-100 truncate">{w.custom_label}</div>
-            <div className="text-xs text-zinc-500 truncate">
+            <div className="text-xs text-zinc-400 truncate">
               {w.name} <span className="uppercase">{w.asset_type}</span>
             </div>
           </div>
@@ -519,13 +519,13 @@ function WatchCard({ w, onAlert, onDelete }) {
       )}
 
       <div className="flex items-center justify-end gap-3">
-        <button onClick={onAlert} className="text-zinc-500 hover:text-blue-400 transition-colors" data-testid={`watch-card-alert-${w.id}`} title={t("common.alerts")}>
+        <button onClick={onAlert} className="text-zinc-400 hover:text-blue-400 transition-colors" data-testid={`watch-card-alert-${w.id}`} title={t("common.alerts")}>
           <Bell className="w-4 h-4"/>
         </button>
-        <Link to={`/asset/${w.asset_type}/${w.symbol}`} className="text-zinc-500 hover:text-blue-400 transition-colors" data-testid={`watch-card-chart-${w.id}`} title={t("common.chart")}>
+        <Link to={`/asset/${w.asset_type}/${w.symbol}`} className="text-zinc-400 hover:text-blue-400 transition-colors" data-testid={`watch-card-chart-${w.id}`} title={t("common.chart")}>
           <Eye className="w-4 h-4"/>
         </Link>
-        <button onClick={onDelete} className="text-zinc-500 hover:text-rose-400 transition-colors" data-testid={`watch-card-delete-${w.id}`} title={t("common.delete")}>
+        <button onClick={onDelete} className="text-zinc-400 hover:text-rose-400 transition-colors" data-testid={`watch-card-delete-${w.id}`} title={t("common.delete")}>
           <Trash2 className="w-4 h-4"/>
         </button>
       </div>
@@ -608,7 +608,7 @@ function NewWatchDialog({ open, setOpen, onSaved, currentGroupId, groupCount, ma
       <DialogContent className="bg-zinc-950 border-zinc-800 max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display font-light text-2xl">{t("watch.add")}</DialogTitle>
-          <DialogDescription className="text-zinc-500 text-sm">
+          <DialogDescription className="text-zinc-400 text-sm">
             {t("watch.add_hint", { max: maxPerGroup })}
           </DialogDescription>
         </DialogHeader>
@@ -620,7 +620,7 @@ function NewWatchDialog({ open, setOpen, onSaved, currentGroupId, groupCount, ma
             </TabsList>
           </Tabs>
           <div>
-            <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("common.search")}</Label>
+            <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("common.search")}</Label>
             <Input
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPicked(null); }}
@@ -628,7 +628,7 @@ function NewWatchDialog({ open, setOpen, onSaved, currentGroupId, groupCount, ma
               className="mt-2 bg-zinc-900/50 border-zinc-800"
               data-testid="watch-search-input"
             />
-            {searching && <div className="text-xs text-zinc-500 mt-1 font-mono">{t("common.searching")}</div>}
+            {searching && <div className="text-xs text-zinc-400 mt-1 font-mono">{t("common.searching")}</div>}
             {results.length > 0 && (
               <div className="mt-2 max-h-40 overflow-y-auto border border-zinc-800 rounded-md bg-zinc-900/50">
                 {results.map((r) => (
@@ -639,7 +639,7 @@ function NewWatchDialog({ open, setOpen, onSaved, currentGroupId, groupCount, ma
                     data-testid={`watch-result-${(r.id || r.symbol).toLowerCase()}`}
                   >
                     <span className="font-mono text-zinc-100">{r.symbol}</span>
-                    <span className="text-zinc-500 ml-2">{r.name}</span>
+                    <span className="text-zinc-400 ml-2">{r.name}</span>
                   </button>
                 ))}
               </div>
@@ -649,7 +649,7 @@ function NewWatchDialog({ open, setOpen, onSaved, currentGroupId, groupCount, ma
             )}
           </div>
           <div>
-            <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("common.label")} ({t("common.optional")})</Label>
+            <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("common.label")} ({t("common.optional")})</Label>
             <Input
               value={label}
               onChange={(e) => setLabel(e.target.value)}

@@ -58,7 +58,7 @@ export default function TopMoversWidget({ filtered, sorted, wallets, nav, curren
             {topUpDisplay.length ? (
               topUpDisplay.map((a) => <TopMoverRow key={a.symbol + a.wallet_id} a={a} positive wallets={wallets} nav={nav} currency={currency} fxRates={fxRates} mask={mask} />)
             ) : (
-              <div className="text-xs text-zinc-500 font-mono px-3 py-2">{t("dash.no_positive_movers")}</div>
+              <div className="text-xs text-zinc-400 font-mono px-3 py-2">{t("dash.no_positive_movers")}</div>
             )}
           </div>
         </div>
@@ -71,7 +71,7 @@ export default function TopMoversWidget({ filtered, sorted, wallets, nav, curren
             {topDownDisplay.length ? (
               topDownDisplay.map((a) => <TopMoverRow key={a.symbol + a.wallet_id} a={a} positive={false} wallets={wallets} nav={nav} currency={currency} fxRates={fxRates} mask={mask} />)
             ) : (
-              <div className="text-xs text-zinc-500 font-mono px-3 py-2">{t("dash.no_negative_movers")}</div>
+              <div className="text-xs text-zinc-400 font-mono px-3 py-2">{t("dash.no_negative_movers")}</div>
             )}
           </div>
         </div>

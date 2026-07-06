@@ -208,9 +208,9 @@ export default function Settings() {
   return (
     <div className="space-y-8 fade-in max-w-3xl">
       <div>
-        <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("settings.kicker")}</div>
+        <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("settings.kicker")}</div>
         <h1 className="font-display text-4xl sm:text-5xl font-light tracking-tight mt-2">{t("settings.title")}</h1>
-        <p className="text-zinc-500 mt-2">{t("settings.subtitle")}</p>
+        <p className="text-zinc-400 mt-2">{t("settings.subtitle")}</p>
       </div>
 
       <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-6">
@@ -250,7 +250,7 @@ export default function Settings() {
         </div>
 
         {status.lock_mode !== "none" && (
-          <div className="mt-5 text-xs font-mono text-zinc-500 flex items-center gap-2">
+          <div className="mt-5 text-xs font-mono text-zinc-400 flex items-center gap-2">
             <span className="px-2 py-0.5 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30">{t("settings.active")}</span>
             {status.lock_mode === "pin" && t("settings.pin_active")}
             {status.lock_mode === "biometric" && t("settings.biometric_active")}
@@ -273,7 +273,7 @@ export default function Settings() {
 
       <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-6">
         <div className="text-sm font-medium text-zinc-200 mb-2">{t("settings.sync_title")}</div>
-        <p className="text-xs text-zinc-500 leading-relaxed">{t("settings.sync_desc")}</p>
+        <p className="text-xs text-zinc-400 leading-relaxed">{t("settings.sync_desc")}</p>
       </div>
 
       {/* Alert email notifications */}
@@ -281,7 +281,7 @@ export default function Settings() {
         <div className="flex items-center justify-between">
           <div>
             <div className="text-sm font-medium text-zinc-200 mb-1">{t("settings.alert_emails_title")}</div>
-            <p className="text-xs text-zinc-500">{t("settings.alert_emails_desc")}</p>
+            <p className="text-xs text-zinc-400">{t("settings.alert_emails_desc")}</p>
           </div>
           <button
             onClick={toggleAlertEmails}
@@ -292,7 +292,7 @@ export default function Settings() {
             <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${alertEmails ? "translate-x-6" : "translate-x-1"}`} />
           </button>
         </div>
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-zinc-500">
+        <div className="mt-3 flex items-center gap-1.5 text-xs text-zinc-400">
           {alertEmails
             ? <><Bell className="w-3.5 h-3.5 text-emerald-400" /> {t("settings.alert_emails_active")}</>
             : <><BellOff className="w-3.5 h-3.5" /> {t("settings.alert_emails_inactive")}</>
@@ -334,7 +334,7 @@ export default function Settings() {
             </Button>
           </div>
         ) : (
-          <div className="text-zinc-500 text-sm">
+          <div className="text-zinc-400 text-sm">
             {t("settings.subscription_loading")}
           </div>
         )}
@@ -346,14 +346,14 @@ export default function Settings() {
           <AlertTriangle className="w-4 h-4 text-rose-400" />
           <div className="text-sm font-medium text-rose-400">{t("settings.danger_title")}</div>
         </div>
-        <p className="text-xs text-zinc-500 mb-5">{t("settings.danger_subtitle")}</p>
+        <p className="text-xs text-zinc-400 mb-5">{t("settings.danger_subtitle")}</p>
 
         <div className="space-y-0">
           {/* Clear a single wallet */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 border-t border-zinc-800 pt-4">
             <div className="flex-1">
               <div className="text-sm text-zinc-300">{t("settings.danger_clear_wallet")}</div>
-              <div className="text-xs text-zinc-500 mt-0.5">{t("settings.danger_clear_wallet_desc")}</div>
+              <div className="text-xs text-zinc-400 mt-0.5">{t("settings.danger_clear_wallet_desc")}</div>
             </div>
             <select
               className="bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs rounded-md px-2 py-1.5 shrink-0"
@@ -375,7 +375,7 @@ export default function Settings() {
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 border-t border-zinc-800 pt-4 mt-4">
             <div className="flex-1">
               <div className="text-sm text-zinc-300">{t("settings.danger_clear_all")}</div>
-              <div className="text-xs text-zinc-500 mt-0.5">{t("settings.danger_clear_all_desc")}</div>
+              <div className="text-xs text-zinc-400 mt-0.5">{t("settings.danger_clear_all_desc")}</div>
             </div>
             <Button
               variant="outline"
@@ -392,7 +392,7 @@ export default function Settings() {
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 border-t border-zinc-800 pt-4 mt-4">
             <div className="flex-1">
               <div className="text-sm text-zinc-300">{t("settings.danger_delete_account")}</div>
-              <div className="text-xs text-zinc-500 mt-0.5">{t("settings.danger_delete_account_desc")}</div>
+              <div className="text-xs text-zinc-400 mt-0.5">{t("settings.danger_delete_account_desc")}</div>
             </div>
             <Button
               variant="outline"
@@ -412,11 +412,11 @@ export default function Settings() {
         <DialogContent className="bg-zinc-950 border-zinc-800 max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display font-light text-2xl">{status.has_pin ? t("settings.change_pin") : t("settings.set_pin")}</DialogTitle>
-            <DialogDescription className="text-zinc-500 text-sm">{t("settings.pin_dialog_desc")}</DialogDescription>
+            <DialogDescription className="text-zinc-400 text-sm">{t("settings.pin_dialog_desc")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("settings.new_pin")}</Label>
+              <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("settings.new_pin")}</Label>
               <Input
                 type="password" inputMode="numeric" pattern="\d*"
                 maxLength={6} value={pin}
@@ -427,7 +427,7 @@ export default function Settings() {
               />
             </div>
             <div>
-              <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("settings.confirm_pin")}</Label>
+              <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("settings.confirm_pin")}</Label>
               <Input
                 type="password" inputMode="numeric" pattern="\d*"
                 maxLength={6} value={pinConfirm}
@@ -453,7 +453,7 @@ export default function Settings() {
           <DialogContent className="bg-zinc-950 border-zinc-800 max-w-md">
             <DialogHeader>
               <DialogTitle className="font-display font-light text-2xl text-rose-400">{t("settings.danger_confirm_title")}</DialogTitle>
-              <DialogDescription className="text-zinc-500 text-sm">
+              <DialogDescription className="text-zinc-400 text-sm">
                 {t("settings.danger_confirm_desc")}
               </DialogDescription>
             </DialogHeader>
@@ -462,7 +462,7 @@ export default function Settings() {
                 <span className="font-mono text-2xl tracking-[0.3em] text-zinc-100">{resetModal.code}</span>
                 <button
                   onClick={() => navigator.clipboard?.writeText(resetModal.code)}
-                  className="text-zinc-500 hover:text-zinc-200 transition-colors"
+                  className="text-zinc-400 hover:text-zinc-200 transition-colors"
                 >
                   <Copy className="w-4 h-4" />
                 </button>
@@ -495,12 +495,12 @@ export default function Settings() {
         <DialogContent className="bg-zinc-950 border-zinc-800 max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display font-light text-2xl text-rose-400">{t("settings.delete_account_dialog_title")}</DialogTitle>
-            <DialogDescription className="text-zinc-500 text-sm">
+            <DialogDescription className="text-zinc-400 text-sm">
               {t("settings.delete_account_dialog_desc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("settings.delete_account_password_label")}</Label>
+            <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("settings.delete_account_password_label")}</Label>
             <Input
               type="password"
               value={deletePassword}
@@ -548,7 +548,7 @@ function ModeCard({ icon, title, desc, selected, onClick, badge, testId, loading
         {selected && <Check className="w-4 h-4 text-blue-400"/>}
       </div>
       <div className="font-medium text-zinc-100 mb-1">{title}</div>
-      <div className="text-[11px] text-zinc-500 leading-relaxed">{desc}</div>
+      <div className="text-[11px] text-zinc-400 leading-relaxed">{desc}</div>
     </button>
   );
 }

@@ -47,7 +47,7 @@ function fmtCompactX(v, currency = "USD", fxRates = {}) {
 function Stat({ label, value, sub }) {
   return (
     <div className="bg-zinc-900/60 border border-zinc-800/50 rounded-xl px-4 py-3">
-      <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 mb-1">{label}</div>
+      <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 mb-1">{label}</div>
       <div className="text-sm font-mono font-bold text-zinc-100">{value ?? "—"}</div>
       {sub && <div className="text-[10px] text-zinc-600 mt-0.5">{sub}</div>}
     </div>
@@ -222,7 +222,7 @@ export default function AssetDetail({ currency = "USD" }) {
 
   if (error) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-      <div className="text-zinc-500 font-mono text-sm">{error}</div>
+      <div className="text-zinc-400 font-mono text-sm">{error}</div>
       <button onClick={() => nav(-1)} className="text-blue-400 text-sm hover:underline flex items-center gap-1">
         <ArrowLeft className="w-4 h-4" /> {t("common.back")}
       </button>
@@ -238,7 +238,7 @@ export default function AssetDetail({ currency = "USD" }) {
     <div className="max-w-4xl mx-auto space-y-6">
 
       {/* ── Back + breadcrumb ─────────────────────────────────────── */}
-      <button onClick={() => nav(-1)} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 text-sm transition-colors">
+      <button onClick={() => nav(-1)} className="flex items-center gap-2 text-zinc-400 hover:text-zinc-300 text-sm transition-colors">
         <ArrowLeft className="w-4 h-4" />
         {t("common.back")}
       </button>
@@ -256,13 +256,13 @@ export default function AssetDetail({ currency = "USD" }) {
             <div>
             <div className="flex items-center gap-3 mb-1">
               <typeInfo.Icon className={`w-4 h-4 ${typeInfo.cls}`} />
-              <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">{t(typeInfo.labelKey)}</span>
+              <span className="text-xs font-mono text-zinc-400 uppercase tracking-widest">{t(typeInfo.labelKey)}</span>
               {detail?.exchange && (
                 <span className="text-xs font-mono text-zinc-700">· {detail.exchange}</span>
               )}
             </div>
             <h1 className="text-2xl font-bold text-zinc-100">{detail?.name || portfolioInfo?.name || symbol}</h1>
-            <div className="text-sm font-mono text-zinc-500 mt-0.5">{symbol}</div>
+            <div className="text-sm font-mono text-zinc-400 mt-0.5">{symbol}</div>
             {detail?.sector && (
               <div className="text-xs text-zinc-600 mt-1">{detail.sector}{detail.industry ? ` · ${detail.industry}` : ""}</div>
             )}
@@ -404,7 +404,7 @@ export default function AssetDetail({ currency = "USD" }) {
 
       {/* ── Key Metrics ───────────────────────────────────────────── */}
       <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-2xl p-5">
-        <div className="text-xs font-mono uppercase tracking-widest text-zinc-500 mb-4">
+        <div className="text-xs font-mono uppercase tracking-widest text-zinc-400 mb-4">
           {t("asset.key_metrics")}
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -438,7 +438,7 @@ export default function AssetDetail({ currency = "USD" }) {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {/* Yield */}
             <div className="bg-zinc-900/60 border border-zinc-800/50 rounded-xl px-4 py-3">
-              <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 mb-1">
+              <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 mb-1">
                 {t("asset.dividend")}
               </div>
               <div className="text-lg font-mono font-bold text-emerald-400">
@@ -458,7 +458,7 @@ export default function AssetDetail({ currency = "USD" }) {
               const fc = FREQ_CFG[detail.div_frequency] || { label: detail.div_frequency, cls: "bg-zinc-700/40 text-zinc-400 border-zinc-600/40" };
               return (
                 <div className="bg-zinc-900/60 border border-zinc-800/50 rounded-xl px-4 py-3">
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 mb-1">
+                  <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 mb-1">
                     {t("asset.div_frequency")}
                   </div>
                   <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-mono font-medium border ${fc.cls}`}>
@@ -476,7 +476,7 @@ export default function AssetDetail({ currency = "USD" }) {
             {/* Payment months */}
             {detail.div_pay_months?.length > 0 && (
               <div className="bg-zinc-900/60 border border-zinc-800/50 rounded-xl px-4 py-3 col-span-2 sm:col-span-1">
-                <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 mb-2">
+                <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 mb-2">
                   {t("asset.div_pay_months")}
                 </div>
                 <div className="flex flex-wrap gap-1">
@@ -504,7 +504,7 @@ export default function AssetDetail({ currency = "USD" }) {
       {/* -- Analyst Recommendations ---------------------------------------- */}
       {detail?.analyst?.n_analysts > 0 && (
         <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-2xl p-5">
-          <div className="text-xs font-mono uppercase tracking-widest text-zinc-500 mb-4">
+          <div className="text-xs font-mono uppercase tracking-widest text-zinc-400 mb-4">
             {t("asset.analyst_rec")}
           </div>
 
@@ -571,7 +571,7 @@ export default function AssetDetail({ currency = "USD" }) {
       {/* -- About ------------------------------------------------------------- */}
       {detail?.description && (
         <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-2xl p-5">
-          <div className="text-xs font-mono uppercase tracking-widest text-zinc-500 mb-3">
+          <div className="text-xs font-mono uppercase tracking-widest text-zinc-400 mb-3">
             {t("asset.about")}
           </div>
           <p className="text-sm text-zinc-400 leading-relaxed">{detail.description}</p>

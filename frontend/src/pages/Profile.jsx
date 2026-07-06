@@ -30,7 +30,7 @@ export default function Profile({ currency, setCurrency }) {
   return (
     <div className="space-y-6 fade-in max-w-2xl">
       <div>
-        <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("profile.kicker")}</div>
+        <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("profile.kicker")}</div>
         <h1 className="font-display text-4xl sm:text-5xl font-light tracking-tight mt-2">{t("profile.title")}</h1>
       </div>
 
@@ -41,7 +41,7 @@ export default function Profile({ currency, setCurrency }) {
         </div>
         <div className="min-w-0">
           <div className="text-sm text-zinc-100 truncate" data-testid="profile-email">{user?.email}</div>
-          <div className="text-xs text-zinc-500">{user?.name || t("profile.no_name")}</div>
+          <div className="text-xs text-zinc-400">{user?.name || t("profile.no_name")}</div>
         </div>
       </div>
 
@@ -99,10 +99,10 @@ export default function Profile({ currency, setCurrency }) {
           <ShieldCheck className="w-4 h-4 text-emerald-400" />
           <div>
             <div className="text-sm font-medium text-zinc-200">{t("profile.security")}</div>
-            <div className="text-xs text-zinc-500 mt-0.5">{t("profile.security_desc")}</div>
+            <div className="text-xs text-zinc-400 mt-0.5">{t("profile.security_desc")}</div>
           </div>
         </div>
-        <ChevronRight className="w-4 h-4 text-zinc-500 shrink-0" />
+        <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
       </Link>
 
       {/* Sair */}

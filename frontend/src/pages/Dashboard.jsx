@@ -52,7 +52,7 @@ function StatChip({ value, label }) {
   return (
     <div className="flex flex-col items-start leading-tight">
       <span className="text-sm font-mono text-zinc-300">{value}</span>
-      <span className="text-[9px] font-mono uppercase tracking-[0.12em] text-zinc-500">{label}</span>
+      <span className="text-[9px] font-mono uppercase tracking-[0.12em] text-zinc-400">{label}</span>
     </div>
   );
 }
@@ -141,6 +141,10 @@ export default function Dashboard({ currency }) {
   const [history, setHistory] = useState([]);
   const [wallets, setWallets] = useState([]);
   const [sparklines, setSparklines] = useState({});
+  // Per-wallet 24h sparkline (LightBalanceCard's "As tuas carteiras" rows —
+  // same /wallets/sparklines endpoint the sidebar in Layout.jsx already
+  // uses; fetched here too since Dashboard doesn't share state with Layout.
+  const [walletSparks, setWalletSparks] = useState({});
   const [loading, setLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -355,6 +359,11 @@ export default function Dashboard({ currency }) {
         console.warn("[sparklines] fetch failed:", e?.message || e);
       }
     })();
+
+    // Optional, best-effort — same as sparklinesPromise above, not part of
+    // the settled-before-clearing-loading trio (portfolio is the only one
+    // that gates the skeleton).
+    api.get("/wallets/sparklines").then((r) => setWalletSparks(r.data || {})).catch(() => {});
 
     await Promise.allSettled([portfolioPromise, historyPromise, sparklinesPromise]);
     setLastSync(new Date());
@@ -1169,9 +1178,9 @@ const worstPerformer = useMemo(() => {
                 wallets={walletBreakdown.map((w) => ({
                   id: w.id,
                   name: w.name,
-                  valueLabel: mask(fmtCompact(convert(w.value, currency, fxRates), currency)),
                   changeLabel: w.value > 0 ? fmtPct(w.pnlPct) : null,
                   positive: w.pnlPct >= 0,
+                  sparkData: (walletSparks[w.id] || []).map((p) => ({ p })),
                 }))}
               />
             </div>
@@ -1195,10 +1204,10 @@ const worstPerformer = useMemo(() => {
                 const label = t("dash.view_advanced");
                 const idx = hint.indexOf(label);
                 if (idx === -1) {
-                  return <p className="text-xs text-zinc-500 font-mono">{hint}</p>;
+                  return <p className="text-xs text-zinc-400 font-mono">{hint}</p>;
                 }
                 return (
-                  <p className="text-xs text-zinc-500 font-mono">
+                  <p className="text-xs text-zinc-400 font-mono">
                     {hint.slice(0, idx)}
                     <span className="text-amber-400 font-medium">{label}</span>
                     {hint.slice(idx + label.length)}

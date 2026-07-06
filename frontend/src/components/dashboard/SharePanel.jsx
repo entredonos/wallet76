@@ -14,7 +14,7 @@ export default function SharePanel({ shareData, shareLoading, copied, onClose, o
         <div className="flex items-center gap-2 text-sm font-medium text-zinc-200">
           <Share2 className="w-4 h-4 text-blue-400" /> {t("dash.share_portfolio_title")}
         </div>
-        <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300">
+        <button onClick={onClose} className="text-zinc-400 hover:text-zinc-300">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -56,7 +56,7 @@ export default function SharePanel({ shareData, shareLoading, copied, onClose, o
         </div>
       ) : (
         <div className="space-y-3">
-          <p className="text-xs text-zinc-500 leading-relaxed">
+          <p className="text-xs text-zinc-400 leading-relaxed">
             {t("dash.share_desc")}
           </p>
           <button

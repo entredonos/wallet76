@@ -57,11 +57,11 @@ export default function AnalyticsWidgetDrawer({ open, onClose, widgetConfig, set
             <div className="text-sm font-medium text-zinc-100">
               {t("analytics.widgets_title") || "Personalizar"}
             </div>
-            <div className="text-xs text-zinc-500 mt-0.5">
+            <div className="text-xs text-zinc-400 mt-0.5">
               {t("analytics.widgets_sub") || "Ativa, desativa e reordena secções"}
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -108,7 +108,7 @@ export default function AnalyticsWidgetDrawer({ open, onClose, widgetConfig, set
         <div className="px-4 py-3 border-t border-zinc-800">
           <button
             onClick={resetDefault}
-            className="w-full flex items-center justify-center gap-2 text-xs font-mono text-zinc-500 hover:text-zinc-300 py-2 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-colors"
+            className="w-full flex items-center justify-center gap-2 text-xs font-mono text-zinc-400 hover:text-zinc-300 py-2 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             {t("dash.widgets_reset") || "Repor predefinição"}

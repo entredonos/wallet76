@@ -43,7 +43,7 @@ export default function AssetCard({
           <AssetIcon asset={a} />
           <div className="min-w-0">
             <div className="font-mono font-medium text-zinc-100 truncate">{a.symbol}</div>
-            <div className="text-xs text-zinc-500 truncate">{a.name}</div>
+            <div className="text-xs text-zinc-400 truncate">{a.name}</div>
           </div>
         </button>
         <div className="text-right shrink-0">
@@ -62,17 +62,17 @@ export default function AssetCard({
 
       <div className="flex items-center justify-between gap-3 font-mono text-sm">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">{t("common.value")}</div>
+          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-400">{t("common.value")}</div>
           <div className="text-zinc-100">{mask(fmtCurrency(convert(a.value_usd, currency, fxRates), currency))}</div>
         </div>
         <div className="text-right">
-          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">{t("dash.pnl")}</div>
+          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-400">{t("dash.pnl")}</div>
           <div className={pos ? "text-emerald-400" : "text-rose-400"}>
             {mask(fmtCurrency(convert(a.pnl_usd, currency, fxRates), currency))} <span className="text-xs">({fmtPct(a.pnl_pct)})</span>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">{t("common.change_24h")}</div>
+          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-400">{t("common.change_24h")}</div>
           <div className={`inline-flex items-center gap-0.5 ${pos24 ? "text-emerald-400" : "text-rose-400"}`}>
             {pos24 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
             {fmtPct(a.change_24h || 0)}
@@ -135,7 +135,7 @@ export default function AssetCard({
         <div className="flex items-center gap-1 shrink-0">
           <Link
             to={`/transactions?sell=${a.symbol}&type=${a.asset_type}&wallet=${a.wallet_id}`}
-            className="p-1.5 rounded-md text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+            className="p-1.5 rounded-md text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
             data-testid={`action-sell-${a.symbol}`}
             title={t("common.sell")}
           >
@@ -152,7 +152,7 @@ export default function AssetCard({
                 load(true);
               } catch { toast.error(t("common.error")); }
             }}
-            className="p-1.5 rounded-md text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+            className="p-1.5 rounded-md text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
             data-testid={`action-delete-${a.symbol}`}
             title={t("dash.delete_all_tx_tooltip")}
           >
@@ -160,7 +160,7 @@ export default function AssetCard({
           </button>
           <Link
             to={`/asset/${a.asset_type}/${a.symbol}`}
-            className="p-1.5 rounded-md text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+            className="p-1.5 rounded-md text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
             data-testid={`action-chart-${a.symbol}`}
             title={t("common.chart")}
           >

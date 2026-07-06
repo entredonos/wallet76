@@ -82,9 +82,9 @@ export default function Alerts() {
     <div className="space-y-8 fade-in">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("alert.kicker")}</div>
+          <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("alert.kicker")}</div>
           <h1 className="font-display text-4xl sm:text-5xl font-light tracking-tight mt-2">{t("alerts.title")}</h1>
-          <p className="text-zinc-500 mt-2">{t("alerts.subtitle")}</p>
+          <p className="text-zinc-400 mt-2">{t("alerts.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
           {notifPerm !== "granted" && (
@@ -146,7 +146,7 @@ export default function Alerts() {
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full" data-testid="alerts-table">
             <thead>
-              <tr className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-500 border-b border-zinc-800/30">
+              <tr className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-400 border-b border-zinc-800/30">
                 <th className="text-left px-6 py-3 font-normal">{t("dash.assets")}</th>
                 <th className="text-left px-4 py-3 font-normal">{t("alert.condition")}</th>
                 <th className="text-right px-4 py-3 font-normal">{t("alert.target")}</th>
@@ -174,7 +174,7 @@ export default function Alerts() {
                         <AssetIcon asset={a} size={26}/>
                         <div>
                           <div className="font-mono text-zinc-100">{a.symbol}</div>
-                          <div className="text-xs text-zinc-500">{a.name}</div>
+                          <div className="text-xs text-zinc-400">{a.name}</div>
                         </div>
                       </div>
                     </td>
@@ -196,7 +196,7 @@ export default function Alerts() {
                             <Bell className="w-3 h-3"/> {t("alert.active")}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs font-mono text-zinc-500 border border-zinc-800 bg-zinc-900 px-2 py-1 rounded" title={a.triggered_at ? t("alert.triggered_at", { date: a.triggered_at }) : t("alert.paused")}>
+                          <span className="inline-flex items-center gap-1 text-xs font-mono text-zinc-400 border border-zinc-800 bg-zinc-900 px-2 py-1 rounded" title={a.triggered_at ? t("alert.triggered_at", { date: a.triggered_at }) : t("alert.paused")}>
                             <Check className="w-3 h-3"/> {a.triggered_at ? t("alert.triggered") : t("alert.paused")}
                           </span>
                         )}
@@ -316,12 +316,12 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
       <DialogContent className="bg-zinc-950 border-zinc-800 max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display font-light text-2xl">{t("alert.new")}</DialogTitle>
-          <DialogDescription className="text-zinc-500 text-sm">{t("alert.subtitle")}</DialogDescription>
+          <DialogDescription className="text-zinc-400 text-sm">{t("alert.subtitle")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           {holdings.length > 0 && (
             <div>
-              <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("alert.from_holdings")}</Label>
+              <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("alert.from_holdings")}</Label>
               <Select value={pickedKey} onValueChange={(v) => { setPickedKey(v); setSearchPicked(null); }}>
                 <SelectTrigger className="mt-2 bg-zinc-900/50 border-zinc-800" data-testid="alert-holding-select">
                   <SelectValue placeholder={t("alert.pick_held")}/>
@@ -337,7 +337,7 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
             </div>
           )}
 
-          <div className="text-xs text-zinc-500 font-mono uppercase tracking-[0.2em] text-center">{t("alert.or_search")}</div>
+          <div className="text-xs text-zinc-400 font-mono uppercase tracking-[0.2em] text-center">{t("alert.or_search")}</div>
 
           <Tabs value={searchType} onValueChange={setSearchType}>
             <TabsList className="w-full bg-zinc-900/50 border border-zinc-800">
@@ -353,12 +353,12 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
             className="bg-zinc-900/50 border-zinc-800"
             data-testid="alert-search-input"
           />
-          {searching && <div className="text-xs text-zinc-500 font-mono">{t("alert.searching")}</div>}
+          {searching && <div className="text-xs text-zinc-400 font-mono">{t("alert.searching")}</div>}
           {results.length > 0 && (
             <div className="max-h-40 overflow-y-auto border border-zinc-800 rounded-md bg-zinc-900/50">
               {results.map((r) => (
                 <button key={r.id || r.symbol} onClick={() => { setSearchPicked({ ...r, asset_type: searchType, price_usd: r.price }); setResults([]); setSearchTerm(`${r.symbol} — ${r.name || ""}`); }} className="w-full text-left px-3 py-2 hover:bg-zinc-800/60 text-sm flex justify-between" data-testid={`alert-search-result-${(r.id || r.symbol).toLowerCase()}`}>
-                  <div><span className="font-mono text-zinc-100">{r.symbol}</span> <span className="text-zinc-500 ml-2">{r.name}</span></div>
+                  <div><span className="font-mono text-zinc-100">{r.symbol}</span> <span className="text-zinc-400 ml-2">{r.name}</span></div>
                   {r.price && <span className="font-mono text-zinc-400 text-xs">${Number(r.price).toFixed(2)}</span>}
                 </button>
               ))}
@@ -368,11 +368,11 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
           {pickedAsset && (
             <div className="border border-zinc-800 rounded-md p-3 bg-zinc-900/30 flex items-center justify-between">
               <div>
-                <div className="text-xs font-mono uppercase tracking-wider text-zinc-500">{t("alert.selected")}</div>
+                <div className="text-xs font-mono uppercase tracking-wider text-zinc-400">{t("alert.selected")}</div>
                 <div className="font-mono text-zinc-100">{pickedAsset.symbol} · {pickedAsset.name}</div>
               </div>
               <div className="text-right">
-                <div className="text-xs font-mono text-zinc-500">{t("alert.current_price")}</div>
+                <div className="text-xs font-mono text-zinc-400">{t("alert.current_price")}</div>
                 <div className="font-mono text-zinc-200">{currentPrice ? fmtCurrency(currentPrice, "USD") : "—"}</div>
               </div>
           </div>
@@ -381,7 +381,7 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
           {pickedAsset && (
             <div className="space-y-3">
               <div>
-                <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("alert.condition")}</Label>
+                <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("alert.condition")}</Label>
                 <Tabs value={condition} onValueChange={setCondition}>
                   <TabsList className="mt-2 w-full bg-zinc-900/50 border border-zinc-800">
                     <TabsTrigger value="above" className="flex-1 data-[state=active]:bg-emerald-500/90 data-[state=active]:text-zinc-950" data-testid="alert-condition-above">
@@ -394,12 +394,12 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
                 </Tabs>
               </div>
               <div>
-                <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("alert.target")} (USD)</Label>
+                <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("alert.target")} (USD)</Label>
                 <Input type="number" step="any" value={target} onChange={(e) => setTarget(e.target.value)}
                   placeholder="50000" className="mt-2 bg-zinc-900/50 border-zinc-800" data-testid="alert-target-input"/>
               </div>
               <div>
-                <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("alert.note")}</Label>
+                <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("alert.note")}</Label>
                 <Input value={note} onChange={(e) => setNote(e.target.value)}
                   placeholder={t("alert.note_placeholder")} className="mt-2 bg-zinc-900/50 border-zinc-800" data-testid="alert-note-input"/>
               </div>
@@ -427,7 +427,7 @@ function AlertCard({ a, current, distance, onToggle, onDelete }) {
           <AssetIcon asset={a} size={26}/>
           <div className="min-w-0">
             <div className="font-mono text-zinc-100 truncate">{a.symbol}</div>
-            <div className="text-xs text-zinc-500 truncate">{a.name}</div>
+            <div className="text-xs text-zinc-400 truncate">{a.name}</div>
           </div>
         </div>
         <span className={`inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider px-2 py-1 rounded border shrink-0 ${
@@ -440,15 +440,15 @@ function AlertCard({ a, current, distance, onToggle, onDelete }) {
 
       <div className="flex items-center justify-between font-mono text-sm">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">{t("alert.target")}</div>
+          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-400">{t("alert.target")}</div>
           <div className="text-zinc-100">{fmtCurrency(a.target_price_usd, "USD")}</div>
         </div>
         <div className="text-right">
-          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">{t("alert.current")}</div>
+          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-400">{t("alert.current")}</div>
           <div className="text-zinc-300">{current ? fmtCurrency(current, "USD") : "—"}</div>
         </div>
         <div className="text-right">
-          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500">{t("alert.distance")}</div>
+          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-400">{t("alert.distance")}</div>
           <div className={distance >= 0 ? "text-emerald-400" : "text-rose-400"}>{current ? fmtPct(distance) : "—"}</div>
         </div>
       </div>
@@ -460,7 +460,7 @@ function AlertCard({ a, current, distance, onToggle, onDelete }) {
               <Bell className="w-3 h-3"/> {t("alert.active")}
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-xs font-mono text-zinc-500 border border-zinc-800 bg-zinc-900 px-2 py-1 rounded" title={a.triggered_at ? t("alert.triggered_at", { date: a.triggered_at }) : t("alert.paused")}>
+            <span className="inline-flex items-center gap-1 text-xs font-mono text-zinc-400 border border-zinc-800 bg-zinc-900 px-2 py-1 rounded" title={a.triggered_at ? t("alert.triggered_at", { date: a.triggered_at }) : t("alert.paused")}>
               <Check className="w-3 h-3"/> {a.triggered_at ? t("alert.triggered") : t("alert.paused")}
             </span>
           )}

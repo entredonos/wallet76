@@ -67,24 +67,24 @@ export default function InlineAlertDialog({ asset, open, onOpenChange, onCreated
             <BellRing className="w-5 h-5 text-blue-400"/>
             {t("alert.new")} · <span className="font-mono">{asset.symbol}</span>
           </DialogTitle>
-          <DialogDescription className="text-zinc-500 text-sm">
+          <DialogDescription className="text-zinc-400 text-sm">
             {t("alert.subtitle")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-md px-3 py-2 flex items-center justify-between">
             <div>
-              <div className="text-xs font-mono text-zinc-500">{t("alert.current_price")}</div>
+              <div className="text-xs font-mono text-zinc-400">{t("alert.current_price")}</div>
               <div className="font-mono text-zinc-100">{current ? fmtCurrency(current, "USD") : "—"}</div>
             </div>
             <div className="text-right">
-              <div className="text-xs font-mono text-zinc-500">{asset.name}</div>
-              <div className="text-[10px] font-mono uppercase border border-zinc-800 rounded px-1 py-0.5 text-zinc-500">{asset.asset_type}</div>
+              <div className="text-xs font-mono text-zinc-400">{asset.name}</div>
+              <div className="text-[10px] font-mono uppercase border border-zinc-800 rounded px-1 py-0.5 text-zinc-400">{asset.asset_type}</div>
             </div>
           </div>
 
           <div>
-            <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("alert.condition")}</Label>
+            <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("alert.condition")}</Label>
             <div className="grid grid-cols-2 gap-2 mt-2">
               <button
                 onClick={() => setCondition("above")}
@@ -112,7 +112,7 @@ export default function InlineAlertDialog({ asset, open, onOpenChange, onCreated
           </div>
 
           <div>
-            <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("alert.target_price")} (USD)</Label>
+            <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("alert.target_price")} (USD)</Label>
             <Input
               type="number"
               step="any"
@@ -124,7 +124,7 @@ export default function InlineAlertDialog({ asset, open, onOpenChange, onCreated
               autoFocus
             />
             {current > 0 && target && (
-              <div className="text-[10px] font-mono text-zinc-500 mt-1">
+              <div className="text-[10px] font-mono text-zinc-400 mt-1">
                 {(((parseFloat(target) - current) / current) * 100).toFixed(2)}% {t("alert.from_current")}
               </div>
             )}

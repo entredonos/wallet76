@@ -104,7 +104,7 @@ export default function AllocationTargetDialog({ open, onOpenChange, initialTarg
 
         <DialogHeader>
           <DialogTitle className="font-display font-light text-2xl">{t("alloc.dialog_title")}</DialogTitle>
-          <DialogDescription className="text-zinc-500 text-sm">{t("alloc.dialog_desc")}</DialogDescription>
+          <DialogDescription className="text-zinc-400 text-sm">{t("alloc.dialog_desc")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -119,7 +119,7 @@ export default function AllocationTargetDialog({ open, onOpenChange, initialTarg
                     {t(ALLOCATION_CLASS_LABEL_KEY[cls])}
                   </Label>
                   <div className="flex items-center gap-2 font-mono text-xs">
-                    <span className="text-zinc-500" title={t("alloc.actual_pct")}>{actual.toFixed(1)}%</span>
+                    <span className="text-zinc-400" title={t("alloc.actual_pct")}>{actual.toFixed(1)}%</span>
                     <span className="text-zinc-100 font-semibold w-11 text-right" data-testid={`alloc-target-value-${cls}`}>
                       {val.toFixed(0)}%
                     </span>

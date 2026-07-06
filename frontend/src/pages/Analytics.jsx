@@ -95,13 +95,13 @@ function MetricCard({ label, value, sub, positive, icon: Icon, tint = "zinc", to
     blue:    "text-blue-400 bg-blue-500/10 border-blue-500/30",
     amber:   "text-amber-400 bg-amber-500/10 border-amber-500/30",
     zinc:    "text-zinc-300 bg-zinc-800/40 border-zinc-700",
-    gray:    "text-zinc-500 bg-zinc-800/20 border-zinc-800",
+    gray:    "text-zinc-400 bg-zinc-800/20 border-zinc-800",
   };
   return (
     <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-5">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-1.5">
-          <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{label}</div>
+          <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{label}</div>
           {tooltip && (
             <Tip text={tooltip}>
               <Info className="w-3 h-3 text-zinc-600 cursor-help" />
@@ -115,11 +115,11 @@ function MetricCard({ label, value, sub, positive, icon: Icon, tint = "zinc", to
         )}
       </div>
       <div className={`mt-3 font-mono text-2xl font-light tracking-tight ${
-        positive === true ? "text-emerald-400" : positive === false ? "text-rose-400" : positive === null ? "text-zinc-500" : "text-zinc-100"
+        positive === true ? "text-emerald-400" : positive === false ? "text-rose-400" : positive === null ? "text-zinc-400" : "text-zinc-100"
       }`}>
         {value}
       </div>
-      {sub && <div className="mt-1 text-xs font-mono text-zinc-500">{sub}</div>}
+      {sub && <div className="mt-1 text-xs font-mono text-zinc-400">{sub}</div>}
     </div>
   );
 }
@@ -240,9 +240,9 @@ export default function Analytics({ currency }) {
   const header = (
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("analytics.kicker") || "Performance"}</div>
+        <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("analytics.kicker") || "Performance"}</div>
         <h1 className="font-display text-4xl sm:text-5xl font-light tracking-tight mt-2">{t("analytics.title") || "Analytics"}</h1>
-        <p className="text-zinc-500 mt-2">{t("analytics.subtitle") || "Portfolio performance vs cost basis and S&P 500."}</p>
+        <p className="text-zinc-400 mt-2">{t("analytics.subtitle") || "Portfolio performance vs cost basis and S&P 500."}</p>
       </div>
       <div className="flex items-center gap-3 flex-wrap">
         <button
@@ -252,7 +252,7 @@ export default function Analytics({ currency }) {
           <SlidersHorizontal className="w-3.5 h-3.5" />
           {t("analytics.widgets_btn") || "Personalizar"}
         </button>
-        <WalletIcon className="w-4 h-4 text-zinc-500" />
+        <WalletIcon className="w-4 h-4 text-zinc-400" />
         <select
           value={walletId}
           onChange={(e) => setWalletId(e.target.value)}
@@ -270,7 +270,7 @@ export default function Analytics({ currency }) {
   if (loading) return (
     <div className="space-y-8 fade-in">
       {header}
-      <div className="flex items-center gap-3 text-zinc-500 font-mono text-sm">
+      <div className="flex items-center gap-3 text-zinc-400 font-mono text-sm">
         <Activity className="w-4 h-4 animate-pulse text-blue-400" />
         {t("analytics.loading") || "Calculating performance history..."}
       </div>
@@ -377,7 +377,7 @@ export default function Analytics({ currency }) {
             <button
               onClick={() => setShowBenchmark((v) => !v)}
               className={`text-xs font-mono px-2.5 py-1 rounded-md border transition-colors ${
-                showBenchmark ? "bg-blue-500/20 border-blue-500/40 text-blue-300" : "bg-zinc-900 border-zinc-700 text-zinc-500"
+                showBenchmark ? "bg-blue-500/20 border-blue-500/40 text-blue-300" : "bg-zinc-900 border-zinc-700 text-zinc-400"
               }`}
             >
               {t("analytics.spy_toggle") || "SPY benchmark"}
@@ -388,7 +388,7 @@ export default function Analytics({ currency }) {
                   key={r.label}
                   onClick={() => setRange(r.label)}
                   className={`text-xs font-mono px-2.5 py-1 rounded-md transition-colors ${
-                    range === r.label ? "bg-zinc-100 text-zinc-950 font-medium" : "text-zinc-500 hover:text-zinc-300"
+                    range === r.label ? "bg-zinc-100 text-zinc-950 font-medium" : "text-zinc-400 hover:text-zinc-300"
                   }`}
                 >
                   {r.label}
@@ -620,7 +620,7 @@ function ReturnsBarchart({ m, t, currency, benchmarkMetrics }) {
       <div className="px-5 pb-4 flex items-center gap-4 flex-wrap">
         {best && (
           <div className="text-xs font-mono">
-            <span className="text-zinc-500">{t("analytics.best_month") || "Best"}: </span>
+            <span className="text-zinc-400">{t("analytics.best_month") || "Best"}: </span>
             <span className="text-emerald-400">
               {best[labelKey]} +{best.pct.toFixed(1)}%
               {best.abs != null ? ` (${cs}${best.abs >= 0 ? "+" : ""}${best.abs.toLocaleString(undefined, { maximumFractionDigits: 0 })})` : ""}
@@ -629,7 +629,7 @@ function ReturnsBarchart({ m, t, currency, benchmarkMetrics }) {
         )}
         {worst && (
           <div className="text-xs font-mono">
-            <span className="text-zinc-500">{t("analytics.worst_month") || "Worst"}: </span>
+            <span className="text-zinc-400">{t("analytics.worst_month") || "Worst"}: </span>
             <span className="text-red-400">
               {worst[labelKey]} {worst.pct.toFixed(1)}%
               {worst.abs != null ? ` (${cs}${worst.abs >= 0 ? "+" : ""}${worst.abs.toLocaleString(undefined, { maximumFractionDigits: 0 })})` : ""}
@@ -849,11 +849,11 @@ function DividendsSection({ walletId, currency, t }) {
         </div>
         <div className="flex items-center gap-4 text-xs font-mono">
           <div>
-            <span className="text-zinc-500">{t("analytics.dividends_annual") || "Est. Anual"}: </span>
+            <span className="text-zinc-400">{t("analytics.dividends_annual") || "Est. Anual"}: </span>
             <span className="text-emerald-400">{fmt(total_annual_income)}</span>
           </div>
           <div>
-            <span className="text-zinc-500">{t("analytics.dividends_received") || "Total Recebido"}: </span>
+            <span className="text-zinc-400">{t("analytics.dividends_received") || "Total Recebido"}: </span>
             <span className="text-zinc-300">{fmt(total_received)}</span>
           </div>
         </div>
@@ -863,7 +863,7 @@ function DividendsSection({ walletId, currency, t }) {
       <div className="overflow-x-auto">
         <table className="w-full text-xs font-mono">
           <thead>
-            <tr className="border-b border-zinc-800/50 text-zinc-500 uppercase tracking-[0.1em]">
+            <tr className="border-b border-zinc-800/50 text-zinc-400 uppercase tracking-[0.1em]">
               <th className="text-left px-5 py-3 font-normal">{t("common.asset") || "Ativo"}</th>
               <th className="text-left px-4 py-3 font-normal">{t("analytics.dividends_freq") || "Frequência"}</th>
               <th className="text-left px-4 py-3 font-normal">{t("analytics.dividends_months") || "Meses"}</th>
@@ -931,7 +931,7 @@ function DividendsSection({ walletId, currency, t }) {
           <Banknote className="w-3 h-3 flex-shrink-0" />
           {t("analytics.dividends_disclaimer") || "Dividend data sourced from Yahoo Finance. For informational purposes only."}
         </div>
-        <div className="flex items-center gap-3 text-[10px] font-mono text-zinc-500">
+        <div className="flex items-center gap-3 text-[10px] font-mono text-zinc-400">
           <span className="flex items-center gap-1">
             <Crown className="w-3 h-3" style={{ color: "#f59e0b" }} />
             {t("analytics.dividends_crown_gold") || "25+ anos"}

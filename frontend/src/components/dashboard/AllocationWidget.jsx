@@ -91,14 +91,14 @@ export default function AllocationWidget({
                   <div className="text-lg font-bold text-zinc-100">
                     {activeAllocation.pct.toFixed(1)}%
                   </div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-400">
                     {activeAllocation.name}
                   </div>
                 </div>
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
                   <div className="text-lg font-bold text-zinc-100">{filtered.length}</div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">{t("dash.assets")}</div>
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-400">{t("dash.assets")}</div>
                 </div>
               )}
 
@@ -141,7 +141,7 @@ export default function AllocationWidget({
                           <div className="text-[10px] font-mono text-zinc-400 truncate">{item.name}</div>
                           <div className="text-xs font-mono font-semibold text-zinc-100 mt-0.5 whitespace-nowrap">
                             {hideValues ? "•••••" : fmtCurrency(convert(item.value, currency, fxRates), currency)}
-                            <span className="text-zinc-500 font-normal ml-1.5">{pct.toFixed(1)}%</span>
+                            <span className="text-zinc-400 font-normal ml-1.5">{pct.toFixed(1)}%</span>
                           </div>
                         </div>
                       );
@@ -269,7 +269,7 @@ export default function AllocationWidget({
                           </span>
                         )}
 
-                        <div className="text-zinc-500 shrink-0">
+                        <div className="text-zinc-400 shrink-0">
                           {pct}%
                         </div>
                       </div>
@@ -298,7 +298,7 @@ export default function AllocationWidget({
 
       {allocationMode === "class" && pieData.length > 0 && !hasAllocationTarget && (
         <div className="mt-4 pt-4 border-t border-zinc-800/60 flex items-center justify-between gap-3 flex-wrap">
-          <div className="text-[11px] font-mono text-zinc-500">{t("alloc.no_target_hint")}</div>
+          <div className="text-[11px] font-mono text-zinc-400">{t("alloc.no_target_hint")}</div>
           <button
             type="button"
             onClick={() => setShowTargetDialog(true)}

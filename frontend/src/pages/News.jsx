@@ -62,9 +62,9 @@ export default function News() {
     <div className="space-y-8 fade-in">
       {/* Header */}
       <div>
-        <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("news.kicker")}</div>
+        <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("news.kicker")}</div>
         <h1 className="font-display text-4xl sm:text-5xl font-light tracking-tight mt-2">{t("news.title")}</h1>
-        <p className="text-zinc-500 mt-2">{t("news.subtitle")}</p>
+        <p className="text-zinc-400 mt-2">{t("news.subtitle")}</p>
       </div>
 
       {/* Search bar */}
@@ -90,7 +90,7 @@ export default function News() {
             <Button
               variant="ghost"
               onClick={() => { setResults(null); setQuery(""); }}
-              className="text-zinc-500 hover:text-zinc-300 shrink-0"
+              className="text-zinc-400 hover:text-zinc-300 shrink-0"
             >
               {t("common.back") || "Back"}
             </Button>
@@ -212,15 +212,15 @@ function NewsCard({ n, formatDate, compact, showSymbol }) {
         {!compact && n.summary && (
           <div className="text-sm text-zinc-400 mt-1.5 line-clamp-2">{n.summary}</div>
         )}
-        <div className="flex items-center gap-2 mt-1.5 text-[10px] font-mono text-zinc-500">
+        <div className="flex items-center gap-2 mt-1.5 text-[10px] font-mono text-zinc-400">
           {showSymbol && n.symbol && (
             <span className="text-zinc-300 border border-zinc-800 rounded px-1.5 py-0.5">{n.symbol}</span>
           )}
-          <span className="text-zinc-500">{n.publisher}</span>
+          <span className="text-zinc-400">{n.publisher}</span>
           {n.ts && <span>· {formatDate(n.ts)}</span>}
         </div>
       </div>
-      <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-zinc-500 shrink-0 mt-0.5 transition-colors" />
+      <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-zinc-400 shrink-0 mt-0.5 transition-colors" />
     </a>
   );
 }
@@ -246,7 +246,7 @@ function EmptyState({ label }) {
   return (
     <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-8 text-center">
       <Newspaper className="w-8 h-8 text-zinc-700 mx-auto mb-2" />
-      <div className="text-zinc-500 text-sm">{label || "No news available"}</div>
+      <div className="text-zinc-400 text-sm">{label || "No news available"}</div>
     </div>
   );
 }

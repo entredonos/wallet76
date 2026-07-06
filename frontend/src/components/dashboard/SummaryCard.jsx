@@ -20,7 +20,7 @@ export default function SummaryCard({ icon, label, value, delta, positive, testI
         )}
       </div>
       <div>
-        <div className="text-xs font-mono uppercase tracking-[0.12em] text-zinc-500 mb-1">{label}</div>
+        <div className="text-xs font-mono uppercase tracking-[0.12em] text-zinc-400 mb-1">{label}</div>
         <div className="text-xl font-semibold text-zinc-100 font-mono truncate">{value}</div>
         {delta != null && (
           // No extra "+" prepended here — every caller already formats delta

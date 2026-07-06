@@ -77,7 +77,7 @@ export default function GlobalSearch({ open, onClose }) {
 
         {/* Search input row */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800">
-          <Search className={`w-5 h-5 shrink-0 ${loading ? "text-blue-400 animate-pulse" : "text-zinc-500"}`} />
+          <Search className={`w-5 h-5 shrink-0 ${loading ? "text-blue-400 animate-pulse" : "text-zinc-400"}`} />
           <input
             ref={inputRef}
             value={query}
@@ -127,7 +127,7 @@ export default function GlobalSearch({ open, onClose }) {
                           {badge.label}
                         </span>
                       </div>
-                      <div className="text-xs text-zinc-500 truncate">{item.name}</div>
+                      <div className="text-xs text-zinc-400 truncate">{item.name}</div>
                     </div>
                     <div className="text-xs text-zinc-600 shrink-0">{item.exchange}</div>
                   </button>

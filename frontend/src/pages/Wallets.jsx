@@ -132,9 +132,9 @@ export default function Wallets() {
     <div className="space-y-8 fade-in">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("wallets.kicker")}</div>
+          <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("wallets.kicker")}</div>
           <h1 className="font-display text-4xl sm:text-5xl font-light tracking-tight mt-2">{t("wallets.title")}</h1>
-          <p className="text-zinc-500 mt-2">{t("wallets.subtitle")}</p>
+          <p className="text-zinc-400 mt-2">{t("wallets.subtitle")}</p>
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
@@ -146,19 +146,19 @@ export default function Wallets() {
             >
               {!isPro && wallets.length >= 1 ? <Lock className="w-4 h-4 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
               {t("wallets.new")}
-              {!isPro && <span className="ml-1.5 text-xs font-mono text-zinc-500">(1/1)</span>}
+              {!isPro && <span className="ml-1.5 text-xs font-mono text-zinc-400">(1/1)</span>}
             </Button>
           </DialogTrigger>
           <DialogContent className="bg-zinc-950 border-zinc-800 max-w-md">
             <DialogHeader>
               <DialogTitle className="font-display font-light text-2xl">{t("wallets.new")}</DialogTitle>
-              <DialogDescription className="text-zinc-500 text-sm">
+              <DialogDescription className="text-zinc-400 text-sm">
                 {t("wallets.dialog_desc")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("common.name")}</Label>
+                <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("common.name")}</Label>
                 <Input
                   value={name} onChange={(e) => setName(e.target.value)}
                   placeholder={t("wallets.name_placeholder")}
@@ -168,7 +168,7 @@ export default function Wallets() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("wallets.type")}</Label>
+                  <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("wallets.type")}</Label>
                   <Select value={type} onValueChange={setType}>
                     <SelectTrigger className="mt-2 bg-zinc-900/50 border-zinc-800" data-testid="wallet-type-select">
                       <SelectValue />
@@ -181,7 +181,7 @@ export default function Wallets() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("wallets.currency")}</Label>
+                  <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("wallets.currency")}</Label>
                   <Select value={currency} onValueChange={setCurrency}>
                     <SelectTrigger className="mt-2 bg-zinc-900/50 border-zinc-800" data-testid="wallet-currency-select">
                       <SelectValue />
@@ -208,7 +208,7 @@ export default function Wallets() {
         <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-lg p-12 text-center" data-testid="no-wallets">
           <WalletIcon className="w-10 h-10 text-zinc-700 mx-auto mb-4" />
           <div className="text-zinc-300 font-display text-xl">{t("wallets.no_wallets")}</div>
-          <div className="text-zinc-500 mt-2 mb-6 text-sm">
+          <div className="text-zinc-400 mt-2 mb-6 text-sm">
             {t("wallets.no_wallets_hint")}
           </div>
         </div>
@@ -255,7 +255,7 @@ export default function Wallets() {
                 </div>
                 <div className="font-display text-xl text-zinc-100">{w.name}</div>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{Preset.label}</span>
+                  <span className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{Preset.label}</span>
                   <span className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400 border border-zinc-800 rounded px-1.5 py-0.5">{CUR_SYMBOL[cur] || cur} {cur}</span>
                 </div>
                 <div className="mt-6 pt-4 border-t border-zinc-800/50 flex items-center justify-between gap-3">
@@ -264,7 +264,7 @@ export default function Wallets() {
                         target comparison here (target is always global, see
                         Dashboard's Asset Allocation widget). */}
                     <MiniAllocationDonut holdings={wAssets} overrides={allocOverrides} t={t} />
-                    <span className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-500 truncate">{t("wallets.assets_count")}</span>
+                    <span className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-400 truncate">{t("wallets.assets_count")}</span>
                   </div>
                   <span className="font-mono text-zinc-200 shrink-0">{wAssets.length}</span>
                 </div>

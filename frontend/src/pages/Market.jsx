@@ -80,9 +80,9 @@ export default function Market() {
   return (
     <div className="space-y-8 fade-in">
       <div>
-        <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("market.kicker")}</div>
+        <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("market.kicker")}</div>
         <h1 className="font-display text-4xl sm:text-5xl font-light tracking-tight mt-2">{t("market.title")}</h1>
-        <p className="text-zinc-500 mt-2">{t("market.subtitle")}</p>
+        <p className="text-zinc-400 mt-2">{t("market.subtitle")}</p>
       </div>
 
       {/* Segmented control — Crypto / Stocks / Watching. Replaces the old
@@ -198,14 +198,14 @@ function NewsPreview({ items, loading, title }) {
             >
               <div className="min-w-0 flex-1">
                 <div className="text-zinc-100 text-sm line-clamp-2">{n.title}</div>
-                <div className="text-[10px] font-mono text-zinc-500 mt-1">{n.publisher}</div>
+                <div className="text-[10px] font-mono text-zinc-400 mt-1">{n.publisher}</div>
               </div>
               <ExternalLink className="w-3.5 h-3.5 text-zinc-600 shrink-0 mt-0.5"/>
             </a>
           ))}
         </div>
       )}
-      <Link to="/news" className="inline-flex items-center gap-1 text-xs font-mono text-zinc-500 hover:text-zinc-300 transition-colors">
+      <Link to="/news" className="inline-flex items-center gap-1 text-xs font-mono text-zinc-400 hover:text-zinc-300 transition-colors">
         {t("market.news_view_all")}
       </Link>
     </section>
@@ -235,7 +235,7 @@ function WatchPreview({ items, loading, t }) {
                 <AssetIcon asset={w} size={28}/>
                 <div className="min-w-0 flex-1">
                   <div className="font-mono text-zinc-100 text-sm">{w.custom_label || w.symbol}</div>
-                  <div className="text-xs text-zinc-500 truncate">{w.name}</div>
+                  <div className="text-xs text-zinc-400 truncate">{w.name}</div>
                 </div>
                 <div className="text-right">
                   <div className="font-mono text-zinc-100 text-sm">{w.price_usd ? fmtCurrency(w.price_usd, "USD") : "—"}</div>
@@ -248,12 +248,12 @@ function WatchPreview({ items, loading, t }) {
       )}
       <Link
         to="/watchlist"
-        className="flex items-center justify-center gap-1.5 border border-dashed border-zinc-700 rounded-xl p-3 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600 transition-colors text-sm font-mono"
+        className="flex items-center justify-center gap-1.5 border border-dashed border-zinc-700 rounded-xl p-3 text-zinc-400 hover:text-zinc-300 hover:border-zinc-600 transition-colors text-sm font-mono"
         data-testid="market-watch-add-cta"
       >
         <Plus className="w-3.5 h-3.5"/> {t("market.watch_add_cta")}
       </Link>
-      <Link to="/watchlist" className="inline-flex items-center gap-1 text-xs font-mono text-zinc-500 hover:text-zinc-300 transition-colors">
+      <Link to="/watchlist" className="inline-flex items-center gap-1 text-xs font-mono text-zinc-400 hover:text-zinc-300 transition-colors">
         {t("market.watch_view_all")}
       </Link>
     </section>
@@ -318,12 +318,12 @@ function MoversList({ kind, type, items, t, universeNote }) {
                 <AssetIcon asset={asset} size={28}/>
                 <div className="min-w-0 flex-1">
                   <div className="font-mono text-zinc-100 text-sm">{it.symbol}</div>
-                  <div className="text-xs text-zinc-500 truncate">{it.name}</div>
+                  <div className="text-xs text-zinc-400 truncate">{it.name}</div>
                 </div>
                 <div className="text-right">
                   <div className="font-mono text-zinc-100 text-sm">{it.price_usd ? fmtCurrency(it.price_usd, "USD") : "-"}</div>
                   {it.market_cap_usd && (
-                    <div className="text-[10px] font-mono text-zinc-500">MC {fmtCompact(it.market_cap_usd, "USD")}</div>
+                    <div className="text-[10px] font-mono text-zinc-400">MC {fmtCompact(it.market_cap_usd, "USD")}</div>
                   )}
                 </div>
                 <div className={`text-right min-w-[64px] ${pos ? "text-emerald-400" : "text-rose-400"} font-mono text-sm`}>

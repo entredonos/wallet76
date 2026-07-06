@@ -41,7 +41,7 @@ export default function LightEvolutionCard({ title, points, changePct, loading }
             <span className={`text-sm font-mono font-bold ${isPositive ? "text-emerald-400" : "text-rose-400"}`}>
               {isPositive ? "+" : ""}{displayPct.toFixed(1)}%
             </span>
-            <span className="text-xs font-mono text-zinc-500">{t("dash.last_5_days")}</span>
+            <span className="text-xs font-mono text-zinc-400">{t("dash.last_5_days")}</span>
           </div>
         )}
       </div>
