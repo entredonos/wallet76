@@ -939,10 +939,17 @@ const worstPerformer = useMemo(() => {
           }}
         />
       )}
-      {/* Title row */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl sm:text-4xl font-light tracking-tight text-zinc-50">
+      {/* Title row — em modo "light" fica sempre numa única linha (nowrap):
+          só 3 ícones compactos (Widgets/Esconder/Partilhar) depois de tirar
+          o "Atualizar preços", por isso cabem sempre ao lado do título,
+          encostados à direita — se faltar espaço é o título que trunca, não
+          os ícones que quebram para baixo (6 jul 2026, "nao meteste os tais
+          3 icons... na mesma linha do titulo"). Em modo "advanced" continua
+          a poder quebrar (tem alertas + adicionar a mais, não cabe tudo
+          numa linha no telemóvel). */}
+      <div className={`flex items-center justify-between gap-3 ${dashMode === "light" ? "flex-nowrap" : "flex-wrap items-end gap-4"}`}>
+        <div className="min-w-0">
+          <h1 className="font-display text-3xl sm:text-4xl font-light tracking-tight text-zinc-50 truncate">
             {selectedWallet ? selectedWallet.name : t("dash.title")}
           </h1>
             {/* Era uma única frase traduzida ("{count} ativos • {wallets}
@@ -964,7 +971,7 @@ const worstPerformer = useMemo(() => {
               )}
             </div>
           </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className={`flex items-center gap-2 shrink-0 ${dashMode === "light" ? "flex-nowrap" : "flex-wrap"}`}>
           {/* dash-mode-toggle, Alertas e "+Adicionar" saem do cabeçalho em
               modo "light" (5 jul 2026): duplicavam o que o LightBalanceCard
               já mostra ("Painel avançado" e "Adicionar ativo" têm botão
