@@ -86,15 +86,30 @@ export default function Alerts() {
           <h1 className="font-display text-4xl sm:text-5xl font-light tracking-tight mt-2">{t("alerts.title")}</h1>
           <p className="text-zinc-400 mt-2">{t("alerts.subtitle")}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* "Ativar notificações do navegador" sozinho já quase enchia o
+              ecrã de um telemóvel (6 jul 2026: "so este botao e quase o
+              tamanho da minha tela do tlm"), o que empurrava a página para
+              scroll horizontal — e isso, por sua vez, "arrastava" a barra
+              de navegação fixa em baixo (5 icons: Início/Carteiras/Mercado/
+              Alertas/Perfil), deixando só os 2 primeiros visíveis no ecrã
+              ("fico so com os icons Painel e carteiras"). Ícone + texto só
+              a partir de sm; abaixo disso é só o ícone + title (tooltip),
+              mesmo padrão já usado no cabeçalho do Painel. */}
           {notifPerm !== "granted" && (
-            <Button variant="outline" onClick={askNotificationPermission} className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800" data-testid="enable-notifs-btn">
-              <BellRing className="w-4 h-4 mr-2"/> {t("alert.enable_notifs")}
+            <Button
+              variant="outline"
+              onClick={askNotificationPermission}
+              className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 px-2.5 sm:px-3 shrink-0"
+              title={t("alert.enable_notifs")}
+              data-testid="enable-notifs-btn"
+            >
+              <BellRing className="w-4 h-4 sm:mr-2"/> <span className="hidden sm:inline">{t("alert.enable_notifs")}</span>
             </Button>
           )}
           {notifPerm === "granted" && (
-            <div className="text-xs font-mono text-emerald-400 flex items-center gap-1 px-3 py-1.5 border border-emerald-500/30 rounded-md bg-emerald-500/10">
-              <Check className="w-3 h-3"/> {t("alert.notifs_enabled")}
+            <div className="text-xs font-mono text-emerald-400 flex items-center gap-1 px-3 py-1.5 border border-emerald-500/30 rounded-md bg-emerald-500/10 shrink-0" title={t("alert.notifs_enabled")}>
+              <Check className="w-3 h-3 shrink-0"/> <span className="hidden sm:inline whitespace-nowrap">{t("alert.notifs_enabled")}</span>
             </div>
           )}
           <NewAlertDialog

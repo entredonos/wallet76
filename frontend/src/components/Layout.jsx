@@ -416,7 +416,17 @@ export default function Layout({ children, currency, setCurrency }) {
 
   return (
     <>
-    <div className="min-h-screen flex">
+    {/* overflow-x-hidden: rede de segurança contra qualquer botão/linha de
+        uma página filha que não encolha em ecrãs estreitos. Sem isto, uma
+        página a "empurrar" a largura (ex.: Alerts.jsx, 6 jul 2026 — botão
+        "Ativar notificações" quase do tamanho do ecrã) alarga a viewport de
+        LAYOUT do telemóvel para além da viewport VISUAL; como a barra de
+        navegação fixa em baixo também é dimensionada contra essa viewport
+        de layout alargada, só os primeiros ícones (Início/Carteiras) ficam
+        dentro da área visível — os restantes (Mercado/Alertas/Perfil) saem
+        do ecrã. overflow-x-hidden aqui trava esse efeito em cascata mesmo
+        que uma página específica volte a ter este problema no futuro. */}
+    <div className="min-h-screen flex overflow-x-hidden">
       {/* Desktop sidebar */}
       <div className="hidden md:block sticky top-0 h-screen">{Sidebar}</div>
 
