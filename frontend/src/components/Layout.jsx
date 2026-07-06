@@ -10,6 +10,10 @@ import {
 } from "lucide-react";
 import { Button } from "./ui/button";
 import walletLogo from "../assets/wallet76-logo80x60.png";
+// Marca reduzida (só o "W", sem o "76") — a 28px do header mobile o "76"
+// completo fica ilegível/borrão; o "W" sozinho lê-se bem mesmo pequeno
+// (6 jul 2026, testado a 16/28/32/48px).
+import walletMarkSmall from "../assets/wallet76-mark-small.png";
 import GlobalSearch from "./GlobalSearch";
 import Sparkline from "./Sparkline";
 import FeedbackWidget from "./FeedbackWidget";
@@ -433,7 +437,7 @@ export default function Layout({ children, currency, setCurrency }) {
             <button onClick={() => setOpen(true)} className="text-zinc-300" data-testid="open-sidebar">
               <Menu className="w-5 h-5"/>
             </button>
-            <img src={walletLogo} alt="Wallet76" className="w-7 h-7 object-contain" />
+            <img src={walletMarkSmall} alt="Wallet76" className="w-7 h-7 object-contain" />
             <div className="font-display text-base tracking-tight text-zinc-100">Wallet76</div>
           </div>
           <button onClick={() => setSearchOpen(true)} className="text-zinc-400 hover:text-zinc-200 transition-colors">
