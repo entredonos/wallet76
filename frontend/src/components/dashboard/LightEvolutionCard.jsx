@@ -89,9 +89,20 @@ export default function LightEvolutionCard({ title, points, changePct, loading, 
     <div
       className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-5"
       // Handlers no cartão inteiro (não só no gráfico) — ver comentário em
-      // chartAreaRef acima. Sem tocar em touchAction: a página continua a
-      // fazer scroll normalmente a partir de qualquer ponto do cartão (só
-      // muda o CÁLCULO da % ao arrastar, não o comportamento de toque).
+      // chartAreaRef acima.
+      // touchAction: "pan-y" (7 jul 2026 — "só anda um de cada vez, tenho
+      // que levantar o dedo e meter novamente") — sem NENHUM touch-action
+      // explícito, o browser tem de "adivinhar" ao primeiro touchmove se o
+      // gesto é um scroll vertical da página ou um arrastar controlado por
+      // JS; assim que decide que é scroll, TOMA CONTA do gesto e para de
+      // entregar touchmove ao React (só chega o primeiro, daí só andar uma
+      // "casa" por toque). "pan-y" resolve isto sem repetir o erro anterior
+      // (touchAction:"none", que bloqueava scroll por completo): diz ao
+      // browser para tratar o scroll vertical nativamente na mesma, mas
+      // NUNCA reclamar o gesto por causa de movimento horizontal — todos os
+      // touchmove continuam a chegar a updateHoverFromClientX enquanto o
+      // dedo desliza, e a página continua a fazer scroll vertical normal.
+      style={{ touchAction: "pan-y" }}
       onMouseMove={(e) => updateHoverFromClientX(e.clientX)}
       onMouseLeave={() => setHoverIndex(null)}
       onTouchMove={(e) => { if (e.touches?.[0]) updateHoverFromClientX(e.touches[0].clientX); }}
