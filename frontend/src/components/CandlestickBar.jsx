@@ -1,3 +1,6 @@
+import { useI18n } from "../context/I18nContext";
+import { ALLOCATION_CLASS_LABEL_KEY, ALLOCATION_CLASS_COLOR } from "../lib/allocation";
+
 // Custom Recharts <Bar> shape that renders a candlestick.
 //
 // Usage: <Bar dataKey={(d) => [d.l, d.h]} shape={<Candle />} />
@@ -57,10 +60,19 @@ export function CandleTooltip({ active, payload, label, formatValue }) {
 // snapshot) always has open === close, which used to leave the badge
 // missing on exactly those ticks. Falls back to this candle's own open,
 // then to the chart's overall trend, for the one candle with no predecessor.
-export function AreaTooltip({ active, payload, label, formatValue, positive, dateLabel = "" }) {
+// chartClasses/hiddenClasses (7 jul 2026) — pedido do utilizador: ao
+// arrastar/hover no gráfico, o popup também mostra a % de cada categoria
+// atualmente visível (linhas ligadas na legenda), não só a % do total. Usa
+// "{cls}_prev" (anexado em Dashboard.jsx junto de prevC) como referência —
+// o último valor CONHECIDO dessa classe, não necessariamente o ponto
+// imediatamente anterior (uma categoria pode faltar nalguns pontos).
+export function AreaTooltip({ active, payload, label, formatValue, positive, dateLabel = "", chartClasses = [], hiddenClasses }) {
+  const { t } = useI18n();
   if (!active || !payload?.length) return null;
   const p = payload[0]?.payload;
   if (!p || p.c == null) return null;
+
+  const visibleClasses = chartClasses.filter((cls) => !hiddenClasses?.has(cls) && p[cls] != null);
 
   const ref = p.prevC != null ? p.prevC : p.o;
   const hasChange = ref != null && ref !== 0 && p.c !== ref;
@@ -97,6 +109,34 @@ export function AreaTooltip({ active, payload, label, formatValue, positive, dat
           <span>{up ? "▲" : "▼"}</span>
           <span>{formatValue(Math.abs(change))}</span>
           <span style={{ opacity: 0.75 }}>({changePct >= 0 ? "+" : ""}{changePct.toFixed(2)}%)</span>
+        </div>
+      )}
+
+      {visibleClasses.length > 0 && (
+        <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px solid #27272a", display: "flex", flexDirection: "column", gap: 3 }}>
+          {visibleClasses.map((cls) => {
+            const val = p[cls];
+            const prev = p[`${cls}_prev`];
+            const clsHasChange = prev != null && prev !== 0 && val !== prev;
+            const clsChangePct = clsHasChange ? ((val - prev) / prev) * 100 : null;
+            const clsColor = ALLOCATION_CLASS_COLOR[cls] || ALLOCATION_CLASS_COLOR.other;
+            return (
+              <div key={cls} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, fontSize: 10 }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#a1a1aa" }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: clsColor, display: "inline-block" }} />
+                  {t(ALLOCATION_CLASS_LABEL_KEY[cls] || `common.${cls}`)}
+                </span>
+                <span style={{ color: "#d4d4d8" }}>
+                  {formatValue(val)}
+                  {clsHasChange && (
+                    <span style={{ color: clsChangePct >= 0 ? "#10b981" : "#ef4444", marginLeft: 5 }}>
+                      ({clsChangePct >= 0 ? "+" : ""}{clsChangePct.toFixed(2)}%)
+                    </span>
+                  )}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

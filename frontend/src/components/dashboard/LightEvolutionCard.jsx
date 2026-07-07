@@ -39,6 +39,28 @@ export default function LightEvolutionCard({ title, points, changePct, loading, 
 
   const isPositive = (displayPct ?? 0) >= 0;
 
+  // % por categoria ao arrastar (7 jul 2026, pedido do utilizador) — mesma
+  // base de comparação que o badge principal usa (início do período até ao
+  // ponto sob o dedo), não o ponto anterior. Procura para trás o primeiro
+  // ponto com valor real dessa classe (pode faltar nalguns, ver
+  // connectNulls removido) em vez de assumir sempre points[0].
+  const displayClassPcts = useMemo(() => {
+    if (hoverIndex === null || !points.length) return null;
+    const result = {};
+    for (const cls of chartClasses) {
+      if (hiddenClasses?.has(cls)) continue;
+      const cur = points[hoverIndex]?.[cls];
+      if (cur == null) continue;
+      let first = null;
+      for (let i = 0; i <= hoverIndex; i++) {
+        if (points[i]?.[cls] != null) { first = points[i][cls]; break; }
+      }
+      if (first == null || first === 0) continue;
+      result[cls] = ((cur - first) / first) * 100;
+    }
+    return result;
+  }, [hoverIndex, points, chartClasses, hiddenClasses]);
+
   return (
     <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-5">
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -53,6 +75,22 @@ export default function LightEvolutionCard({ title, points, changePct, loading, 
           </div>
         )}
       </div>
+
+      {/* % por categoria ao arrastar/hover (7 jul 2026) — só aparece com o
+          dedo/rato em cima do gráfico, mesma lógica do popup do painel
+          avançado, adaptada ao estilo "badge" deste cartão (sem popup
+          flutuante próprio). */}
+      {displayClassPcts && Object.keys(displayClassPcts).length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-3 -mt-1" data-testid="light-evolution-hover-class-pcts">
+          {Object.entries(displayClassPcts).map(([cls, pct]) => (
+            <span key={cls} className="flex items-center gap-1 text-[10px] font-mono">
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: ALLOCATION_CLASS_COLOR[cls] || ALLOCATION_CLASS_COLOR.other }} />
+              <span className="text-zinc-400">{t(ALLOCATION_CLASS_LABEL_KEY[cls] || `common.${cls}`)}</span>
+              <span className={pct >= 0 ? "text-emerald-400" : "text-rose-400"}>{pct >= 0 ? "+" : ""}{pct.toFixed(1)}%</span>
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* 140px -> 190px (6 jul 2026, "da para andar... mas e muito
           complicado, o da evolucao da carteira mexe muito melhor") — o

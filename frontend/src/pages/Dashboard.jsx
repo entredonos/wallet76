@@ -863,9 +863,25 @@ export default function Dashboard({ currency }) {
     // ponto (Recharts salta o gap), a linha do total continua normal.
     const classBucketed = bucketClassClose(strippedLineData, "ts", "byClass", CHART_RANGE_BUCKET_MS[range]);
     const classByT = new Map(classBucketed.map((c) => [c.t, c]));
-    return withPrevC.map((d) => {
+    const withClasses = withPrevC.map((d) => {
       const cls = classByT.get(d.t);
       return cls ? { ...d, ...cls } : d;
+    });
+
+    // "{cls}_prev" (7 jul 2026) — mesma ideia do prevC do total: o último
+    // valor CONHECIDO dessa classe num ponto anterior (não necessariamente
+    // o ponto imediatamente anterior, que pode não ter essa classe — ver
+    // connectNulls removido no EvolutionChart.jsx). Usado pelo popup ao
+    // arrastar/hover para mostrar a % de cada categoria visível, não só do
+    // total.
+    const lastSeen = {};
+    return withClasses.map((d) => {
+      const withPrev = { ...d };
+      for (const cls of ALLOCATION_CLASSES) {
+        if (lastSeen[cls] != null) withPrev[`${cls}_prev`] = lastSeen[cls];
+        if (d[cls] != null) lastSeen[cls] = d[cls];
+      }
+      return withPrev;
     });
   }, [strippedLineData, range]);
 

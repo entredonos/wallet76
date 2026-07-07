@@ -152,7 +152,7 @@ export default function EvolutionChart({
                 <YAxis key={cls} yAxisId={cls} hide domain={["dataMin", "dataMax"]} />
               ))}
 
-              <Tooltip content={<AreaTooltip formatValue={(v) => (hideValues ? "•••••" : fmtCurrency(v, currency))} positive={chartIsPositive} />} />
+              <Tooltip content={<AreaTooltip formatValue={(v) => (hideValues ? "•••••" : fmtCurrency(v, currency))} positive={chartIsPositive} chartClasses={chartClasses} hiddenClasses={hiddenClasses} />} />
 
               {renderWeekendBands(lineWeekendBands)}
               {renderDayBoundaries(lineDayBoundaries)}
