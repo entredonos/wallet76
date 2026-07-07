@@ -101,6 +101,13 @@ export const DEFAULT_VISIBLE_COLS = ["type","price","qty","value","avg_cost","pn
 // ── Widget system ────────────────────────────────────────────────────────────
 export const WIDGET_DEFS = [
   { id: "summary",         labelKey: "dash.widget_summary" },
+  // 7 jul 2026: "Ativos e Liquidez" — quanto da carteira é líquido (ações/
+  // ETFs/cripto/dinheiro, vendável quase de imediato) vs. menos líquido
+  // (fundos/obrigações/REITs, resgates mais lentos). Calculado a partir dos
+  // holdings já carregados (asset_type + value_usd), sem novo endpoint nem
+  // entrada manual de ativos — REITs já cobre exposição a imobiliário sem
+  // precisar de um tipo de ativo novo.
+  { id: "liquidity",       labelKey: "dash.widget_liquidity" },
   { id: "top_movers",      labelKey: "dash.widget_top_movers" },
   { id: "performers",      labelKey: "dash.widget_performers" },  // sub-row inside top_movers
   { id: "evolution",       labelKey: "dash.widget_evolution" },

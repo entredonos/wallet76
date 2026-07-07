@@ -25,6 +25,7 @@ import AllocationWidget from "../components/dashboard/AllocationWidget";
 import AllocationTargetDialog from "../components/dashboard/AllocationTargetDialog";
 import AssetsTable from "../components/dashboard/AssetsTable";
 import MonthlyReturnsPreview from "../components/dashboard/MonthlyReturnsPreview";
+import LiquidityCard from "../components/dashboard/LiquidityCard";
 import {
   SORT_OPTIONS, DEFAULT_VISIBLE_COLS, WIDGET_DEFS, DEFAULT_WIDGETS,
 } from "../constants/dashboardConstants";
@@ -1299,6 +1300,15 @@ const worstPerformer = useMemo(() => {
       <div style={{ order: wOrder("monthly_returns"), display: wVisible("monthly_returns") ? undefined : "none" }}
            data-testid="monthly-returns-widget">
         <MonthlyReturnsPreview walletId={filterWallet} />
+      </div>
+
+      {/* "Ativos e Liquidez" (7 jul 2026) — ver comentário em
+          dashboardConstants.js (WIDGET_DEFS, id "liquidity") e
+          LiquidityCard.jsx. Usa os mesmos holdings (`filtered`) já
+          carregados para o resto do Painel. */}
+      <div style={{ order: wOrder("liquidity"), display: wVisible("liquidity") ? undefined : "none" }}
+           data-testid="liquidity-widget">
+        <LiquidityCard holdings={filtered} currency={currency} fxRates={fxRates} hideValues={hideValues} />
       </div>
 
       {/* Holdings table */}

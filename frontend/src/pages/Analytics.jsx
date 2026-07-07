@@ -13,6 +13,18 @@ import {
 import { usePlan } from "../hooks/usePlan";
 import UpgradeOverlay from "../components/UpgradeOverlay";
 import AnalyticsWidgetDrawer from "../components/AnalyticsWidgetDrawer";
+import { ALLOCATION_CLASS_LABEL_KEY } from "../lib/allocation";
+
+// Benchmarks à escolha (7 jul 2026) — antes fixo em SPY, o que não fazia
+// sentido para quem investe fora dos EUA. Espelha BENCHMARK_CHOICES em
+// backend/routes/analytics.py; os labelKey usam chaves próprias (não há
+// necessidade de reaproveitar nenhuma já existente).
+const BENCHMARK_OPTIONS = [
+  { value: "SPY",       labelKey: "analytics.benchmark_spy" },
+  { value: "VWCE.DE",   labelKey: "analytics.benchmark_world" },
+  { value: "^STOXX50E", labelKey: "analytics.benchmark_europe" },
+  { value: "QQQ",       labelKey: "analytics.benchmark_nasdaq" },
+];
 
 const RANGES = [
   { label: "1M",  days: 30  },
@@ -31,7 +43,10 @@ const ANALYTICS_WIDGET_DEFS = [
   { id: "returns",   labelKey: "analytics.widget_returns"   },
   { id: "heatmap",   labelKey: "analytics.widget_heatmap"   },
   { id: "histogram", labelKey: "analytics.widget_histogram" },
-  { id: "dividends", labelKey: "analytics.widget_dividends" },
+  { id: "class_returns", labelKey: "analytics.widget_class_returns" },
+  { id: "fees",          labelKey: "analytics.widget_fees" },
+  { id: "dividends",     labelKey: "analytics.widget_dividends" },
+  { id: "tax_report",    labelKey: "analytics.widget_tax_report" },
 ];
 const DEFAULT_ANALYTICS_WIDGETS = ANALYTICS_WIDGET_DEFS.map((d) => ({ id: d.id, enabled: true }));
 
@@ -137,6 +152,9 @@ export default function Analytics({ currency }) {
   const [showBenchmark, setShowBenchmark] = useState(true);
   const [wallets, setWallets]         = useState([]);
   const [walletId, setWalletId]       = useState("all");
+  const [benchmark, setBenchmark]     = useState(() => {
+    try { return localStorage.getItem("w76-analytics-benchmark") || "SPY"; } catch { return "SPY"; }
+  });
 
   // Analytics widget config — persisted in localStorage
   const [widgetConfig, setWidgetConfig] = useState(() => {
@@ -169,7 +187,8 @@ export default function Analytics({ currency }) {
       setData(null);
       setApiError(null);
       try {
-        const params = walletId && walletId !== "all" ? { wallet_id: walletId } : {};
+        const params = { benchmark };
+        if (walletId && walletId !== "all") params.wallet_id = walletId;
         const { data: d } = await api.get("/analytics", { params });
         if (!cancelled) setData(d);
       } catch (e) {
@@ -179,7 +198,12 @@ export default function Analytics({ currency }) {
       if (!cancelled) setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [walletId]);
+  }, [walletId, benchmark]);
+
+  const handleBenchmarkChange = (val) => {
+    setBenchmark(val);
+    try { localStorage.setItem("w76-analytics-benchmark", val); } catch { /* noop */ }
+  };
 
   const filtered = useMemo(() => {
     if (!data?.series?.length) return [];
@@ -225,6 +249,7 @@ export default function Analytics({ currency }) {
 
   const m  = data?.metrics          || {};
   const bm = data?.benchmark_metrics || {};
+  const benchmarkLabel = t(BENCHMARK_OPTIONS.find((o) => o.value === (data?.benchmark_symbol || benchmark))?.labelKey) || "S&P 500";
 
   const cagrVal  = m.cagr_pct;
   const cagrDisp = cagrVal != null ? fmtPct(cagrVal) : "N/D";
@@ -332,13 +357,13 @@ export default function Analytics({ currency }) {
           tooltip={t("analytics.drawdown_tooltip") || "Largest % drop from peak to trough."}
         />
         <MetricCard
-          label={t("analytics.vs_benchmark") || "vs S&P 500"}
+          label={`${t("analytics.vs_benchmark_prefix") || "vs"} ${benchmarkLabel}`}
           value={fmtPct((m.total_return_pct ?? 0) - (bm.total_return_pct ?? 0))}
-          sub={`SPY: ${fmtPct(bm.total_return_pct ?? 0)}`}
+          sub={`${benchmarkLabel}: ${fmtPct(bm.total_return_pct ?? 0)}`}
           positive={(m.total_return_pct ?? 0) >= (bm.total_return_pct ?? 0)}
           icon={Award}
           tint={(m.total_return_pct ?? 0) >= (bm.total_return_pct ?? 0) ? "emerald" : "rose"}
-          tooltip={t("analytics.vs_benchmark_tooltip") || "Your return vs SPY over the same period."}
+          tooltip={t("analytics.vs_benchmark_tooltip_generic") || "Your return vs the chosen benchmark over the same period."}
         />
       </div>
       )}
@@ -369,7 +394,7 @@ export default function Analytics({ currency }) {
         <div className="px-5 py-4 border-b border-zinc-800/50 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-1.5">
             <span className="text-sm font-medium text-zinc-200">{t("analytics.chart_title") || "Portfolio vs Cost Basis"}</span>
-            <Tip text={t("analytics.chart_tooltip") || "Blue = current portfolio value. Grey = total amount invested. Amber dashed = SPY (S&P 500) performance scaled to your starting investment."}>
+            <Tip text={t("analytics.chart_tooltip_generic") || "Blue = current portfolio value. Grey = total amount invested. Amber dashed = the chosen benchmark, scaled to your starting investment."}>
               <Info className="w-3.5 h-3.5 text-zinc-600 cursor-help" />
             </Tip>
           </div>
@@ -380,8 +405,20 @@ export default function Analytics({ currency }) {
                 showBenchmark ? "bg-blue-500/20 border-blue-500/40 text-blue-300" : "bg-zinc-900 border-zinc-700 text-zinc-400"
               }`}
             >
-              {t("analytics.spy_toggle") || "SPY benchmark"}
+              {benchmarkLabel}
             </button>
+            {/* Escolha de benchmark (7 jul 2026) — antes fixo em SPY; ver
+                BENCHMARK_OPTIONS acima e BENCHMARK_CHOICES no backend. */}
+            <select
+              value={benchmark}
+              onChange={(e) => handleBenchmarkChange(e.target.value)}
+              className="text-xs font-mono px-2 py-1 rounded-md bg-zinc-900 border border-zinc-700 text-zinc-300"
+              data-testid="analytics-benchmark-select"
+            >
+              {BENCHMARK_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{t(o.labelKey)}</option>
+              ))}
+            </select>
             <div className="flex items-center gap-1">
               {RANGES.map((r) => (
                 <button
@@ -417,12 +454,32 @@ export default function Analytics({ currency }) {
               <Area type="monotone" dataKey="cost"  name={t("analytics.cost_label")  || "Invested"}  stroke="#52525b" strokeWidth={1.5} fill="url(#gradCost)"  dot={false} isAnimationActive={false} />
               <Area type="monotone" dataKey="value" name={t("analytics.value_label") || "Portfolio"} stroke="#3b82f6" strokeWidth={2}   fill="url(#gradValue)" dot={false} isAnimationActive={false} />
               {showBenchmark && (
-                <Line type="monotone" dataKey="benchmark" name="SPY" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="4 2" dot={false} isAnimationActive={false} />
+                <Line type="monotone" dataKey="benchmark" name={benchmarkLabel} stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="4 2" dot={false} isAnimationActive={false} />
               )}
             </AreaChart>
           </ResponsiveContainer>
         </div>
       </div>
+      )}
+
+      {wVisible("class_returns") && data.class_returns && Object.keys(data.class_returns).length > 0 && (
+        <ClassReturnsCard
+          classReturns={data.class_returns}
+          totalReturnPct={m.total_return_pct}
+          benchmarkReturnPct={bm.total_return_pct}
+          benchmarkLabel={benchmarkLabel}
+          t={t}
+        />
+      )}
+
+      {wVisible("fees") && (data.fees_all_time_usd ?? 0) > 0 && (
+        <FeesCard
+          feesThisYear={data.fees_this_year_usd}
+          feesAllTime={data.fees_all_time_usd}
+          portfolioValue={filtered[filtered.length - 1]?.value}
+          fmtVal={fmtVal}
+          t={t}
+        />
       )}
 
       {wVisible("returns") && (m.months?.length > 0 || m.weeks?.length > 0 || m.years?.length > 0) && (
@@ -438,6 +495,7 @@ export default function Analytics({ currency }) {
       )}
 
       {wVisible("dividends") && <DividendsSection walletId={walletId} currency={currency} t={t} />}
+      {wVisible("tax_report") && <TaxReportSection walletId={walletId} currency={currency} t={t} />}
       <AnalyticsWidgetDrawer
         open={widgetDrawer}
         onClose={() => setWidgetDrawer(false)}
@@ -445,6 +503,79 @@ export default function Analytics({ currency }) {
         setWidgetConfig={setWidgetConfig}
         widgetDefs={ANALYTICS_WIDGET_DEFS}
       />
+    </div>
+  );
+}
+
+// Retornos por classe de ativo (7 jul 2026) — complementa o único número
+// "vs benchmark" com uma quebra por tipo (ações/ETFs/cripto/...), mais o
+// total da carteira e o benchmark escolhido lado a lado. Vem de
+// data.class_returns (backend), um retorno simples (valor atual vs. custo),
+// não uma série temporal — por isso é uma lista curta, não um gráfico.
+function ClassReturnsCard({ classReturns, totalReturnPct, benchmarkReturnPct, benchmarkLabel, t }) {
+  const rows = Object.entries(classReturns).map(([cls, pct]) => ({
+    label: t(ALLOCATION_CLASS_LABEL_KEY[cls] || `common.${cls}`) || cls,
+    pct,
+  }));
+  rows.sort((a, b) => b.pct - a.pct);
+
+  return (
+    <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-5">
+      <div className="text-sm font-medium text-zinc-200 mb-4">
+        {t("analytics.class_returns_title") || "Returns by asset class"}
+      </div>
+      <div className="space-y-2">
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-center justify-between text-sm font-mono">
+            <span className="text-zinc-400">{r.label}</span>
+            <span className={r.pct >= 0 ? "text-emerald-400" : "text-rose-400"}>{fmtPct(r.pct)}</span>
+          </div>
+        ))}
+        <div className="border-t border-zinc-800 my-2" />
+        <div className="flex items-center justify-between text-sm font-mono">
+          <span className="text-zinc-200 font-medium">{t("analytics.class_total") || "Total portfolio"}</span>
+          <span className={(totalReturnPct ?? 0) >= 0 ? "text-emerald-400" : "text-rose-400"}>{fmtPct(totalReturnPct ?? 0)}</span>
+        </div>
+        <div className="flex items-center justify-between text-sm font-mono">
+          <span className="text-zinc-500">{`${t("analytics.class_benchmark") || "Benchmark"} (${benchmarkLabel})`}</span>
+          <span className="text-zinc-400">{fmtPct(benchmarkReturnPct ?? 0)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Transparência de comissões (7 jul 2026) — soma o campo fee já gravado em
+// cada transação (data.fees_this_year_usd/fees_all_time_usd, calculado no
+// backend); só um "quanto já pagaste", sem tentar obter o TER de cada
+// ETF/fundo (isso exigiria uma fonte de dados externa que não temos hoje).
+function FeesCard({ feesThisYear, feesAllTime, portfolioValue, fmtVal, t }) {
+  const pct = portfolioValue > 0 ? Math.min(100, (feesAllTime / portfolioValue) * 100) : 0;
+  return (
+    <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-5">
+      <div className="text-sm font-medium text-zinc-200 mb-4">
+        {t("analytics.fees_title") || "Fee transparency"}
+      </div>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between text-sm font-mono">
+          <span className="text-zinc-400">{t("analytics.fees_this_year") || "Paid this year"}</span>
+          <span className="text-rose-400">{fmtVal(feesThisYear)}</span>
+        </div>
+        <div className="flex items-center justify-between text-sm font-mono">
+          <span className="text-zinc-400">{t("analytics.fees_all_time") || "Paid in total"}</span>
+          <span className="text-rose-400">{fmtVal(feesAllTime)}</span>
+        </div>
+        {portfolioValue > 0 && (
+          <div className="pt-1">
+            <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+              <div className="h-full rounded-full bg-rose-500/70" style={{ width: `${pct}%` }} />
+            </div>
+            <div className="text-[11px] text-zinc-500 font-mono mt-1.5">
+              {(t("analytics.fees_pct_of_portfolio") || "{pct}% of current portfolio value").replace("{pct}", pct.toFixed(2))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -804,6 +935,97 @@ function HistogramChart({ m, t }) {
       <div className="px-5 pb-3 text-[10px] font-mono text-zinc-600">
         {total} {t("analytics.histogram_total") || "periods analysed"}
       </div>
+    </div>
+  );
+}
+
+// Relatório fiscal (7 jul 2026) — ganhos/perdas realizados por ano civil e
+// por ativo. O aviso (disclaimer) é fixo no topo, sempre visível, NUNCA um
+// tooltip/rodapé pequeno que dá para ignorar — pedido explícito: "temos
+// que mostrar aviso" sobre as regras variarem por país/ano e isto não
+// substituir um contabilista em casos complexos.
+function TaxReportSection({ walletId, currency, t }) {
+  const [data, setData]       = useState(null);
+  const [loading, setLoading] = useState(true);
+  const sym = curSymbol(currency);
+  const fmt = (n) => `${sym}${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    const params = walletId && walletId !== "all" ? { wallet_id: walletId } : {};
+    api.get("/analytics/tax-report", { params })
+      .then((r) => { if (!cancelled) { setData(r.data); setLoading(false); } })
+      .catch(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [walletId]);
+
+  const exportCsv = () => {
+    if (!data?.years?.length) return;
+    const header = ["year", "asset_type", "symbol", "realized_usd"].join(",");
+    const rows = data.years.flatMap((y) => y.by_asset.map((a) => [y.year, a.asset_type, a.symbol, a.realized_usd].join(",")));
+    const csv = [header, ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "wallet76-tax-report.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  if (loading) return null;
+
+  return (
+    <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-zinc-800/50 flex items-center justify-between flex-wrap gap-2">
+        <span className="text-sm font-medium text-zinc-200">{t("analytics.tax_report_title") || "Tax report"}</span>
+        {data?.years?.length > 0 && (
+          <button
+            onClick={exportCsv}
+            className="flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-zinc-200 transition-colors"
+            data-testid="tax-report-export-csv"
+          >
+            <Download className="w-3.5 h-3.5" /> {t("analytics.export_csv") || "Export CSV"}
+          </button>
+        )}
+      </div>
+
+      {/* Aviso fixo — não é dispensável, não é um tooltip. */}
+      <div className="mx-5 mt-4 flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+        <p className="text-xs text-amber-200/90 leading-relaxed">
+          {t("analytics.tax_report_disclaimer") ||
+            "Rules vary by country and change every year. This report is a starting point, not tax advice — always confirm with an accountant, especially in complex cases."}
+        </p>
+      </div>
+
+      {!data?.years?.length ? (
+        <div className="px-5 py-8 text-center text-zinc-500 text-sm font-mono">
+          {t("analytics.tax_report_no_data") || "No realized gains/losses yet"}
+        </div>
+      ) : (
+        <div className="p-5 space-y-3">
+          {data.years.map((y) => (
+            <div key={y.year} className="border border-zinc-800/50 rounded-lg overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900/60">
+                <span className="text-sm font-mono text-zinc-200">{y.year}</span>
+                <span className={`text-sm font-mono ${y.total_realized_usd >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                  {fmt(y.total_realized_usd)}
+                </span>
+              </div>
+              <div className="divide-y divide-zinc-800/50">
+                {y.by_asset.map((a) => (
+                  <div key={`${y.year}-${a.symbol}`} className="flex items-center justify-between px-4 py-2 text-xs font-mono">
+                    <span className="text-zinc-400">{a.symbol}</span>
+                    <span className={a.realized_usd >= 0 ? "text-emerald-400" : "text-rose-400"}>{fmt(a.realized_usd)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

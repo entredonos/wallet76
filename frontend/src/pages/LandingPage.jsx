@@ -6,7 +6,7 @@ import {
   Bell, Globe2, Wallet, ShieldCheck, MonitorSmartphone,
   Lock, Server, FileText, RefreshCw, Newspaper, PieChart, Zap,
   Users, Star, ChevronRight, BarChart2, Activity, Check, X, BarChart3,
-  Download, Share, SquarePlus,
+  Download, Share, SquarePlus, Eye,
 } from "lucide-react";
 import {
   detectPlatform, isInstalled, canPromptInstall,
@@ -36,6 +36,7 @@ const COPY = {
     hero_sub: "Wallet76 is the professional-grade portfolio tracker built for serious investors. Real-time prices, multi-broker sync, advanced analytics and price alerts — all encrypted, GDPR-compliant, and yours alone.",
     cta_primary: "Start free — no credit card", cta_secondary: "See how it works",
     trust1: "AES-256 Encrypted", trust2: "GDPR Compliant", trust3: "EU Servers", trust4: "No ads. Ever.",
+    trust5: "Read-only — we can never move your money",
     sec_badge: "Bank-grade security",
     mock_balance: "Total Balance", mock_invested: "Invested", mock_pnl: "Total P&L", mock_today: "Today",
     mock_top: "TOP PERFORMERS", mock_alloc: "ALLOCATION",
@@ -56,6 +57,10 @@ const COPY = {
       { title: "Portfolio Sharing", body: "Generate a private link to share your portfolio performance with your advisor, partner or community. Revoke access at any time." },
       { title: "Watchlist & Discovery", body: "Build watchlists to monitor assets you do not yet own. Track prices, 24h moves and market cap without adding them to your portfolio." },
       { title: "Full Transaction History", body: "Log every buy, sell, dividend and transfer with complete history. Filter, search and export your complete investment record." },
+      { title: "Choice of Benchmark", body: "Compare your performance against the S&P 500, a world index, the Euro Stoxx 50 or the Nasdaq — and see returns broken down by asset class side by side." },
+      { title: "Tax Report", body: "Realized gains and losses grouped by calendar year and asset, ready to export — a starting point for tax season." },
+      { title: "Fee Transparency", body: "See how much you've paid in fees this year and in total, and what share that is of your current portfolio value." },
+      { title: "Assets & Liquidity", body: "See at a glance how much of your portfolio you could sell this week vs. what's tied up in funds, bonds or REITs." },
     ],
     integrations_label: "Direct integrations",
     integrations_or: "or import from any broker via",
@@ -68,7 +73,7 @@ const COPY = {
       { title: "EU-Based Infrastructure", body: "All data is stored and processed on servers within the European Union, fully subject to GDPR protections and European data sovereignty law." },
       { title: "Sync Audit Log", body: "Every broker/exchange sync is logged with timestamp, status and IP, and you're alerted by email after repeated failures — so you know if a connection may have been compromised." },
       { title: "Zero Data Selling", body: "We do not sell, rent or share your data with advertisers. Our business model is your subscription — not your information." },
-      { title: "Full GDPR Compliance", body: "Right to access, right to erasure, data portability. Delete your account and all data is permanently wiped within 30 days. No dark patterns, no lock-in." },
+      { title: "Full GDPR Compliance", body: "Right to access, right to erasure, data portability — a button in Settings generates a full copy of your data anytime. Delete your account and all data is permanently wiped within 30 days. No dark patterns, no lock-in." },
     ],
     stats: [
       { value: "11", label: "Chart time ranges" },
@@ -112,6 +117,7 @@ const COPY = {
     hero_sub: "O Wallet76 é o gestor de carteira profissional para investidores sérios. Preços em tempo real, sincronização com brokers, análises avançadas e alertas de preço — tudo encriptado, conforme o RGPD e exclusivamente seu.",
     cta_primary: "Começar grátis — sem cartão", cta_secondary: "Ver como funciona",
     trust1: "Encriptação AES-256", trust2: "Conforme RGPD", trust3: "Servidores na UE", trust4: "Sem publicidade.",
+    trust5: "Só leitura — nunca podemos mover o teu dinheiro",
     sec_badge: "Segurança de nível bancário",
     mock_balance: "Saldo Total", mock_invested: "Investido", mock_pnl: "P&L Total", mock_today: "Hoje",
     mock_top: "MELHORES ATIVOS", mock_alloc: "ALOCAÇÃO",
@@ -132,6 +138,10 @@ const COPY = {
       { title: "Partilha de Carteira", body: "Gere um link privado para partilhar o desempenho com o seu consultor, parceiro ou comunidade. Revogue o acesso a qualquer momento." },
       { title: "Watchlist e Descoberta", body: "Crie watchlists para monitorizar ativos que ainda não possui. Acompanhe preços e movimentos 24h sem os adicionar à carteira." },
       { title: "Histórico de Transações Completo", body: "Registe cada compra, venda, dividendo e transferência com histórico completo. Filtre, pesquise e exporte o seu registo de investimentos." },
+      { title: "Benchmark à Escolha", body: "Compare o seu desempenho com o S&P 500, o índice mundial, o Euro Stoxx 50 ou o Nasdaq — e veja o retorno por classe de ativo lado a lado." },
+      { title: "Relatório Fiscal", body: "Ganhos e perdas realizados agrupados por ano e por ativo, prontos a exportar — um ponto de partida para a época de impostos." },
+      { title: "Transparência de Comissões", body: "Veja quanto pagou em comissões este ano e no total, e que peso isso tem no valor da sua carteira." },
+      { title: "Ativos e Liquidez", body: "Veja num relance quanto da sua carteira pode vender esta semana vs. o que está em fundos, obrigações ou REITs." },
     ],
     integrations_label: "Integrações diretas",
     integrations_or: "ou importe de qualquer broker via",
@@ -144,7 +154,7 @@ const COPY = {
       { title: "Infraestrutura na UE", body: "Todos os dados são armazenados e processados em servidores na União Europeia, totalmente sujeitos às proteções RGPD." },
       { title: "Registo de Sincronizações", body: "Cada sincronização de broker/exchange é registada com timestamp, estado e IP, e recebe um alerta por email após falhas repetidas — para saber se uma ligação pode ter sido comprometida." },
       { title: "Zero Venda de Dados", body: "Não vendemos, alugamos nem partilhamos os seus dados com anunciantes. O nosso modelo de negócio é a sua subscrição — não a sua informação." },
-      { title: "Conformidade Total com RGPD", body: "Direito de acesso, direito ao esquecimento, portabilidade. Elimine a conta e todos os dados são apagados em 30 dias. Sem padrões obscuros." },
+      { title: "Conformidade Total com RGPD", body: "Direito de acesso, direito ao esquecimento, portabilidade — um botão em Definições gera uma cópia completa dos seus dados a qualquer momento. Elimine a conta e todos os dados são apagados em 30 dias. Sem padrões obscuros." },
     ],
     stats: [
       { value: "11", label: "Intervalos de gráfico" },
@@ -188,6 +198,7 @@ const COPY = {
     hero_sub: "Wallet76 est le gestionnaire de portefeuille professionnel conçu pour les investisseurs sérieux. Prix en temps réel, synchronisation multi-courtiers, analyses avancées et alertes de prix — tout chiffré, conforme RGPD, et uniquement à vous.",
     cta_primary: "Commencer gratuitement — sans carte", cta_secondary: "Voir comment ça marche",
     trust1: "Chiffrement AES-256", trust2: "Conforme RGPD", trust3: "Serveurs UE", trust4: "Sans publicité.",
+    trust5: "Lecture seule — nous ne pouvons jamais déplacer votre argent",
     sec_badge: "Sécurité de niveau bancaire",
     mock_balance: "Solde Total", mock_invested: "Investi", mock_pnl: "P&L Total", mock_today: "Aujourd'hui",
     mock_top: "MEILLEURES PERFORMANCES", mock_alloc: "ALLOCATION",
@@ -208,6 +219,10 @@ const COPY = {
       { title: "Partage de Portefeuille", body: "Générez un lien privé pour partager vos performances avec votre conseiller, partenaire ou communauté. Révoquez l'accès à tout moment." },
       { title: "Watchlist et Découverte", body: "Créez des listes de surveillance pour suivre des actifs que vous ne possédez pas encore sans les ajouter à votre portefeuille." },
       { title: "Historique Complet des Transactions", body: "Enregistrez chaque achat, vente, dividende et transfert avec un historique complet. Filtrez, recherchez et exportez." },
+      { title: "Benchmark au Choix", body: "Comparez vos performances au S&P 500, à un indice mondial, à l'Euro Stoxx 50 ou au Nasdaq — et voyez les rendements par classe d'actif côte à côte." },
+      { title: "Rapport Fiscal", body: "Plus-values et moins-values réalisées regroupées par année civile et par actif, prêtes à exporter — un point de départ pour la période fiscale." },
+      { title: "Transparence des Frais", body: "Voyez combien vous avez payé en frais cette année et au total, et quelle part cela représente de la valeur actuelle de votre portefeuille." },
+      { title: "Actifs et Liquidité", body: "Voyez en un coup d'œil combien de votre portefeuille est vendable cette semaine vs. ce qui est immobilisé en fonds, obligations ou REIT." },
     ],
     integrations_label: "Intégrations directes",
     integrations_or: "ou importez depuis tout courtier via",
@@ -220,7 +235,7 @@ const COPY = {
       { title: "Infrastructure UE", body: "Toutes les données sont stockées et traitées sur des serveurs dans l'Union Européenne, pleinement soumis aux protections RGPD." },
       { title: "Journal des Synchronisations", body: "Chaque synchronisation courtier/exchange est enregistrée avec horodatage, statut et IP, et vous êtes alerté par email après des échecs répétés — pour savoir si une connexion a pu être compromise." },
       { title: "Zéro Vente de Données", body: "Nous ne vendons, louons ni partageons vos données avec des annonceurs. Notre modèle commercial est votre abonnement — pas vos informations." },
-      { title: "Conformité RGPD Totale", body: "Droit d'accès, droit à l'effacement, portabilité. Supprimez votre compte et toutes les données sont définitivement effacées sous 30 jours." },
+      { title: "Conformité RGPD Totale", body: "Droit d'accès, droit à l'effacement, portabilité — un bouton dans les Paramètres génère une copie complète de vos données à tout moment. Supprimez votre compte et toutes les données sont définitivement effacées sous 30 jours." },
     ],
     stats: [
       { value: "11", label: "Plages de graphique" },
@@ -264,6 +279,7 @@ const COPY = {
     hero_sub: "Wallet76 ist der professionelle Portfolio-Tracker für ernsthafte Investoren. Echtzeitpreise, Multi-Broker-Synchronisierung, fortgeschrittene Analysen und Preisalarme — alles verschlüsselt, DSGVO-konform und nur für Sie.",
     cta_primary: "Kostenlos starten — keine Kreditkarte", cta_secondary: "So funktioniert es",
     trust1: "AES-256-Verschlüsselung", trust2: "DSGVO-konform", trust3: "EU-Server", trust4: "Keine Werbung.",
+    trust5: "Nur Lesezugriff — wir können nie dein Geld bewegen",
     sec_badge: "Sicherheit auf Bankniveau",
     mock_balance: "Gesamtguthaben", mock_invested: "Investiert", mock_pnl: "Gesamt P&L", mock_today: "Heute",
     mock_top: "TOP-PERFORMER", mock_alloc: "AUFTEILUNG",
@@ -284,6 +300,10 @@ const COPY = {
       { title: "Portfolio-Freigabe", body: "Erstellen Sie einen privaten Link zum Teilen Ihrer Portfolio-Performance mit Ihrem Berater, Partner oder Ihrer Community. Widerrufen Sie den Zugriff jederzeit." },
       { title: "Watchlist und Entdeckung", body: "Erstellen Sie Watchlists für Assets, die Sie noch nicht besitzen. Verfolgen Sie Preise und 24h-Bewegungen ohne sie Ihrem Portfolio hinzuzufügen." },
       { title: "Vollständige Transaktionshistorie", body: "Erfassen Sie jeden Kauf, Verkauf, Dividende und Transfer mit vollständiger Historie. Filtern, suchen und exportieren Sie." },
+      { title: "Benchmark nach Wahl", body: "Vergleichen Sie Ihre Performance mit S&P 500, MSCI World, Euro Stoxx 50 oder Nasdaq 100 — wählen Sie den Maßstab, der zu Ihrer Strategie passt." },
+      { title: "Steuerbericht", body: "Realisierte Gewinne und Verluste automatisch nach Jahr und Anlageklasse gruppiert — bereit für Ihre Steuererklärung." },
+      { title: "Gebührentransparenz", body: "Sehen Sie, wie viel Sie dieses Jahr und insgesamt an Gebühren gezahlt haben, und welchen Anteil das an Ihrem Portfolio ausmacht." },
+      { title: "Vermögen und Liquidität", body: "Sehen Sie auf einen Blick, welcher Teil Ihres Vermögens sofort verfügbar ist und welcher Teil weniger liquide ist." },
     ],
     integrations_label: "Direkte Integrationen",
     integrations_or: "oder von jedem Broker importieren via",
@@ -296,7 +316,7 @@ const COPY = {
       { title: "EU-Infrastruktur", body: "Alle Daten werden auf Servern innerhalb der Europäischen Union gespeichert und verarbeitet, vollständig den DSGVO-Schutzbestimmungen unterworfen." },
       { title: "Sync-Protokoll", body: "Jede Broker-/Exchange-Synchronisierung wird mit Zeitstempel, Status und IP protokolliert, und Sie werden nach wiederholten Fehlversuchen per E-Mail benachrichtigt — so wissen Sie, ob eine Verbindung kompromittiert sein könnte." },
       { title: "Keine Datenweitergabe", body: "Wir verkaufen, vermieten oder teilen Ihre Daten nicht mit Werbetreibenden. Unser Geschäftsmodell ist Ihr Abonnement — nicht Ihre Daten." },
-      { title: "Volle DSGVO-Konformität", body: "Auskunftsrecht, Recht auf Löschung, Datenübertragbarkeit. Konto löschen und alle Daten werden innerhalb von 30 Tagen dauerhaft gelöscht." },
+      { title: "Volle DSGVO-Konformität", body: "Auskunftsrecht, Recht auf Löschung, Datenübertragbarkeit — ein Button in den Einstellungen erstellt jederzeit eine vollständige Kopie Ihrer Daten. Konto löschen und alle Daten werden innerhalb von 30 Tagen dauerhaft gelöscht." },
     ],
     stats: [
       { value: "11", label: "Chart-Zeitrahmen" },
@@ -340,6 +360,7 @@ const COPY = {
     hero_sub: "Wallet76 è il tracker di portafoglio professionale costruito per investitori seri. Prezzi in tempo reale, sincronizzazione multi-broker, analisi avanzate e alert di prezzo — tutto crittografato, conforme GDPR e solo tuo.",
     cta_primary: "Inizia gratis — senza carta", cta_secondary: "Scopri come funziona",
     trust1: "Crittografia AES-256", trust2: "Conforme GDPR", trust3: "Server UE", trust4: "Senza pubblicità.",
+    trust5: "Solo lettura — non possiamo mai muovere i tuoi soldi",
     sec_badge: "Sicurezza di livello bancario",
     mock_balance: "Saldo Totale", mock_invested: "Investito", mock_pnl: "P&L Totale", mock_today: "Oggi",
     mock_top: "TOP PERFORMER", mock_alloc: "ALLOCAZIONE",
@@ -360,6 +381,10 @@ const COPY = {
       { title: "Condivisione del Portafoglio", body: "Genera un link privato per condividere le performance del tuo portafoglio con il tuo consulente, partner o community. Revoca l'accesso in qualsiasi momento." },
       { title: "Watchlist e Scoperta", body: "Crea watchlist per monitorare asset che non possiedi ancora. Segui prezzi e movimenti 24h senza aggiungerli al portafoglio." },
       { title: "Storico Completo delle Transazioni", body: "Registra ogni acquisto, vendita, dividendo e trasferimento con storico completo. Filtra, cerca ed esporta." },
+      { title: "Benchmark a Scelta", body: "Confronta le tue performance con S&P 500, MSCI World, Euro Stoxx 50 o Nasdaq 100 — scegli il parametro più adatto alla tua strategia." },
+      { title: "Rapporto Fiscale", body: "Plusvalenze e minusvalenze realizzate raggruppate automaticamente per anno e classe di asset — pronte per la tua dichiarazione dei redditi." },
+      { title: "Trasparenza delle Commissioni", body: "Vedi quanto hai pagato in commissioni quest'anno e in totale, e quale percentuale rappresentano sul tuo portafoglio." },
+      { title: "Asset e Liquidità", body: "Vedi a colpo d'occhio quale parte del tuo patrimonio è immediatamente disponibile e quale parte è meno liquida." },
     ],
     integrations_label: "Integrazioni dirette",
     integrations_or: "o importa da qualsiasi broker tramite",
@@ -372,7 +397,7 @@ const COPY = {
       { title: "Infrastruttura UE", body: "Tutti i dati sono archiviati ed elaborati su server nell'Unione Europea, pienamente soggetti alle protezioni GDPR." },
       { title: "Log delle Sincronizzazioni", body: "Ogni sincronizzazione broker/exchange è registrata con timestamp, stato e IP, e ricevi un avviso via email dopo errori ripetuti — per sapere se una connessione potrebbe essere compromessa." },
       { title: "Zero Vendita di Dati", body: "Non vendiamo, affittiamo né condividiamo i tuoi dati con inserzionisti. Il nostro modello di business è il tuo abbonamento — non le tue informazioni." },
-      { title: "Piena Conformità GDPR", body: "Diritto di accesso, diritto alla cancellazione, portabilità dei dati. Elimina l'account e tutti i dati vengono cancellati definitivamente entro 30 giorni." },
+      { title: "Piena Conformità GDPR", body: "Diritto di accesso, diritto alla cancellazione, portabilità dei dati — un pulsante nelle Impostazioni genera una copia completa dei tuoi dati in qualsiasi momento. Elimina l'account e tutti i dati vengono cancellati definitivamente entro 30 giorni." },
     ],
     stats: [
       { value: "11", label: "Intervalli di grafico" },
@@ -416,6 +441,7 @@ const COPY = {
     hero_sub: "Wallet76 es el gestor de portafolio profesional para inversores serios. Precios en tiempo real, sincronización multi-broker, análisis avanzados y alertas de precio — todo cifrado, conforme al RGPD y solo tuyo.",
     cta_primary: "Empezar gratis — sin tarjeta", cta_secondary: "Ver cómo funciona",
     trust1: "Cifrado AES-256", trust2: "Conforme RGPD", trust3: "Servidores UE", trust4: "Sin publicidad.",
+    trust5: "Solo lectura — nunca podemos mover tu dinero",
     sec_badge: "Seguridad de nivel bancario",
     mock_balance: "Saldo Total", mock_invested: "Invertido", mock_pnl: "P&L Total", mock_today: "Hoy",
     mock_top: "MEJORES ACTIVOS", mock_alloc: "ASIGNACIÓN",
@@ -436,6 +462,10 @@ const COPY = {
       { title: "Compartir Portafolio", body: "Genera un enlace privado para compartir el rendimiento de tu portafolio con tu asesor, socio o comunidad. Revoca el acceso en cualquier momento." },
       { title: "Watchlist y Descubrimiento", body: "Crea listas de seguimiento para monitorizar activos que aún no posees. Sigue precios y movimientos 24h sin añadirlos a tu portafolio." },
       { title: "Historial Completo de Transacciones", body: "Registra cada compra, venta, dividendo y transferencia con historial completo. Filtra, busca y exporta tu registro de inversiones." },
+      { title: "Benchmark a Elegir", body: "Compara tu rendimiento con el S&P 500, MSCI World, Euro Stoxx 50 o Nasdaq 100 — elige el referente que se ajuste a tu estrategia." },
+      { title: "Informe Fiscal", body: "Ganancias y pérdidas realizadas agrupadas automáticamente por año y clase de activo — listas para tu declaración de la renta." },
+      { title: "Transparencia de Comisiones", body: "Ve cuánto has pagado en comisiones este año y en total, y qué porcentaje representan sobre tu cartera." },
+      { title: "Activos y Liquidez", body: "Ve de un vistazo qué parte de tu patrimonio está disponible de inmediato y qué parte es menos líquida." },
     ],
     integrations_label: "Integraciones directas",
     integrations_or: "o importa desde cualquier broker via",
@@ -448,7 +478,7 @@ const COPY = {
       { title: "Infraestructura UE", body: "Todos los datos se almacenan y procesan en servidores dentro de la Unión Europea, plenamente sujetos a las protecciones del RGPD." },
       { title: "Registro de Sincronizaciones", body: "Cada sincronización de broker/exchange se registra con marca de tiempo, estado e IP, y recibes una alerta por email tras fallos repetidos — para saber si una conexión pudo verse comprometida." },
       { title: "Cero Venta de Datos", body: "No vendemos, alquilamos ni compartimos tus datos con anunciantes. Nuestro modelo de negocio es tu suscripción — no tu información." },
-      { title: "Plena Conformidad RGPD", body: "Derecho de acceso, derecho al olvido, portabilidad. Elimina la cuenta y todos los datos se borran permanentemente en 30 días." },
+      { title: "Plena Conformidad RGPD", body: "Derecho de acceso, derecho al olvido, portabilidad — un botón en Ajustes genera una copia completa de tus datos en cualquier momento. Elimina la cuenta y todos los datos se borran permanentemente en 30 días." },
     ],
     stats: [
       { value: "11", label: "Intervalos de gráfico" },
@@ -708,6 +738,7 @@ export default function LandingPage() {
           </div>
           <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10 mb-16">
             {[
+              { Icon: Eye,          label: c.trust5 },
               { Icon: Lock,         label: c.trust1 },
               { Icon: ShieldCheck,  label: c.trust2 },
               { Icon: Server,       label: c.trust3 },
@@ -910,6 +941,117 @@ export default function LandingPage() {
           <p className="text-zinc-400 text-lg mb-10">{c.cta2_sub}</p>
           <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="inline-flex items-center gap-2 px-8 py-4 bg-white text-zinc-950 font-bold rounded-xl hover:bg-zinc-100 transition-colors text-base">
             {c.cta2_btn} <ChevronRight className="w-5 h-5" />
+          </Link>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="border-t border-zinc-800/60 py-10">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="Wallet76" className="h-6 w-auto opacity-60" />
+            <span className="text-sm font-bold text-zinc-500">Wallet76</span>
+            <span className="text-sm text-zinc-600">© {new Date().getFullYear()} · {c.footer_rights}</span>
+          </div>
+          <div className="flex flex-wrap gap-5 text-xs text-zinc-600">
+            <Link to="/login" onClick={(e) => handleEntryClick(e, "/login")} className="hover:text-zinc-300 transition-colors">{c.footer_login}</Link>
+            <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="hover:text-zinc-300 transition-colors">{c.footer_register}</Link>
+            <Link to="/pricing" className="hover:text-zinc-300 transition-colors">{c.footer_pricing}</Link>
+            <Link to="/privacy" className="hover:text-zinc-300 transition-colors">{c.footer_privacy}</Link>
+            <Link to="/terms" className="hover:text-zinc-300 transition-colors">{c.footer_terms}</Link>
+          </div>
+        </div>
+      </footer>
+
+      {/* INSTALL PROMPT MODAL — só aparece ao clicar Entrar/Começar (ver
+          handleEntryClick), no máximo uma vez por browser. Android/Desktop
+          usam o beforeinstallprompt nativo (mesmo fluxo em ambos: Chrome/
+          Edge desktop também instalam PWAs como app, dispensando o .exe);
+          iOS mostra sempre as instruções manuais, já que o Safari não tem
+          API de instalação programática. */}
+      {installTarget && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={platform === "ios" ? c.ios_title : c.install_title}
+          onClick={dismissInstallModal}
+        >
+          <div
+            className="relative w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={dismissInstallModal}
+              className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors"
+              aria-label={platform === "ios" ? c.ios_continue : c.install_continue}
+              data-testid="install-modal-close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="w-12 h-12 rounded-xl border border-blue-500/30 bg-blue-500/10 flex items-center justify-center mb-4">
+              <img src={logo} alt="Wallet76" className="w-7 h-7 object-contain" />
+            </div>
+
+            {platform === "ios" ? (
+              <>
+                <h3 className="text-lg font-semibold text-zinc-50 mb-2">{c.ios_title}</h3>
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-3 text-sm text-zinc-300">
+                    <span className="w-7 h-7 shrink-0 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+                      <Share className="w-3.5 h-3.5 text-blue-400" />
+                    </span>
+                    {c.ios_step1}
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-zinc-300">
+                    <span className="w-7 h-7 shrink-0 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+                      <SquarePlus className="w-3.5 h-3.5 text-blue-400" />
+                    </span>
+                    {c.ios_step2}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={dismissInstallModal}
+                  className="w-full py-2.5 bg-white text-zinc-950 font-semibold rounded-xl hover:bg-zinc-100 transition-colors text-sm"
+                  data-testid="install-modal-ios-continue"
+                >
+                  {c.ios_continue}
+                </button>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold text-zinc-50 mb-2">{c.install_title}</h3>
+                <p className="text-sm text-zinc-400 mb-6">{c.install_body}</p>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={handleInstallClick}
+                    className="w-full inline-flex items-center justify-center gap-2 py-2.5 bg-white text-zinc-950 font-semibold rounded-xl hover:bg-zinc-100 transition-colors text-sm"
+                    data-testid="install-modal-install-btn"
+                  >
+                    <Download className="w-4 h-4" /> {c.install_btn}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={dismissInstallModal}
+                    className="w-full py-2.5 border border-zinc-700 rounded-xl text-zinc-300 font-medium hover:border-zinc-500 hover:text-white transition-colors text-sm"
+                    data-testid="install-modal-continue-btn"
+                  >
+                    {c.install_continue}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
           </Link>
         </div>
       </section>

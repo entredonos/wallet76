@@ -175,21 +175,42 @@ def _compute_metrics(series: list[dict]) -> dict:
 
 # ── main endpoint ─────────────────────────────────────────────────────────────
 
+# Benchmarks à escolha (7 jul 2026 — antes fixo em SPY, o que não fazia
+# sentido para quem investe fora dos EUA). Allowlist curta em vez de
+# freeform: evita o utilizador escrever um ticker inválido/sem histórico e
+# ficar sem gráfico nenhum, e cobre os índices mais pedidos na pesquisa de
+# mercado (S&P 500, mundial, europeu, tecnológico).
+BENCHMARK_CHOICES = {
+    "SPY": "SPY",           # S&P 500
+    "VWCE.DE": "VWCE.DE",   # Vanguard FTSE All-World (proxy MSCI World, negociado na Xetra)
+    "^STOXX50E": "^STOXX50E",  # Euro Stoxx 50
+    "QQQ": "QQQ",           # Nasdaq 100
+}
+
+
 @router.get("/analytics")
 async def get_analytics(
     user=Depends(get_current_user),
     wallet_id: Optional[str] = Query(None),
+    benchmark: str = Query("SPY", max_length=20),
 ):
     """
     Returns:
       series: [{ts, value, cost, benchmark}]  — daily, full history
       metrics: {total_return_pct, cagr_pct, history_days, max_drawdown_pct, ...}
-      benchmark_metrics: same shape for SPY
+      benchmark_metrics: same shape for the chosen benchmark
+      benchmark_symbol: qual dos BENCHMARK_CHOICES foi usado
+      class_returns: {asset_type: return_pct} — retorno simples (valor atual
+        vs. custo) por classe (ações/etf/crypto/...), calculado no fecho da
+        série (não é uma série temporal por classe, só o ponto atual — pedido
+        7 jul 2026 para complementar o benchmark único com uma quebra por
+        tipo de ativo)
       realized_pnl_usd: total realized gains
       unrealized_pnl_usd: current unrealized
     """
     wid = wallet_id if wallet_id and wallet_id != "all" else None
-    cache_key = f"analytics:{user['id']}:{wid or 'global'}"
+    benchmark_sym = BENCHMARK_CHOICES.get(benchmark, "SPY")
+    cache_key = f"analytics:{user['id']}:{wid or 'global'}:{benchmark_sym}"
     cached = _cache_get(cache_key, ttl=7200)
     if cached:
         return cached
@@ -201,14 +222,28 @@ async def get_analytics(
 
     txns = await db.transactions.find(query, {"_id": 0}).to_list(5000)
     if not txns:
-        return {"series": [], "metrics": {}, "benchmark_metrics": {}, "realized_pnl_usd": 0, "unrealized_pnl_usd": 0}
+        return {"series": [], "metrics": {}, "benchmark_metrics": {}, "benchmark_symbol": benchmark_sym, "class_returns": {}, "fees_this_year_usd": 0, "fees_all_time_usd": 0, "realized_pnl_usd": 0, "unrealized_pnl_usd": 0}
 
     txns.sort(key=lambda t: t.get("date", ""))
     first_date = txns[0].get("date", "")[:10]
     try:
         start = datetime.fromisoformat(first_date).date()
     except (TypeError, ValueError):
-        return {"series": [], "metrics": {}, "benchmark_metrics": {}, "realized_pnl_usd": 0, "unrealized_pnl_usd": 0}
+        return {"series": [], "metrics": {}, "benchmark_metrics": {}, "benchmark_symbol": benchmark_sym, "class_returns": {}, "fees_this_year_usd": 0, "fees_all_time_usd": 0, "realized_pnl_usd": 0, "unrealized_pnl_usd": 0}
+
+    # Comissões pagas (7 jul 2026 — "transparência de comissões") — soma do
+    # campo fee já gravado em cada transação, convertido a USD; separado em
+    # "este ano" e "total" para dar contexto sem precisar de mais um filtro
+    # de período na UI.
+    current_year = str(datetime.now(timezone.utc).year)
+    fees_this_year = 0.0
+    fees_all_time = 0.0
+    for t in txns:
+        fx = float(t.get("fx_to_usd") or 1.0)
+        fee_usd = float(t.get("fee", 0) or 0) * fx
+        fees_all_time += fee_usd
+        if (t.get("date") or "")[:4] == current_year:
+            fees_this_year += fee_usd
 
     end = datetime.now(timezone.utc).date()
     days = []
@@ -223,7 +258,7 @@ async def get_analytics(
 
     closes_list, spy_closes = await asyncio.gather(
         asyncio.gather(*[asyncio.to_thread(_fetch_closes_sync, s) for s in yf_syms]),
-        asyncio.to_thread(_fetch_closes_sync, "SPY"),
+        asyncio.to_thread(_fetch_closes_sync, benchmark_sym),
     )
     closes_map = {k: c for k, c in zip(asset_keys, closes_list)}
 
@@ -302,15 +337,110 @@ async def get_analytics(
     benchmark_series  = [{"ts": s["ts"], "value": s["benchmark"]} for s in series if s.get("benchmark")]
     benchmark_metrics = _compute_metrics(benchmark_series) if len(benchmark_series) > 1 else {}
 
+    # Retorno simples por classe de ativo (valor atual vs. custo, no fecho da
+    # série) — reaproveita os mesmos qty/cost/last_price já calculados acima
+    # pela reconstrução dia-a-dia, não é uma segunda passagem pelos dados.
+    class_agg: dict[str, dict] = {}
+    for k in asset_keys:
+        if qty[k] <= 0:
+            continue
+        cls = k[0]
+        agg = class_agg.setdefault(cls, {"value": 0.0, "cost": 0.0})
+        agg["value"] += qty[k] * (last_price[k] or 0)
+        agg["cost"]  += cost[k]
+    class_returns = {
+        cls: round((agg["value"] - agg["cost"]) / agg["cost"] * 100, 2)
+        for cls, agg in class_agg.items() if agg["cost"] > 0
+    }
+
     result = {
         "series":             series,
         "metrics":            metrics,
         "benchmark_metrics":  benchmark_metrics,
+        "benchmark_symbol":   benchmark_sym,
+        "class_returns":      class_returns,
+        "fees_this_year_usd": round(fees_this_year, 2),
+        "fees_all_time_usd":  round(fees_all_time, 2),
         "realized_pnl_usd":   round(realized, 2),
         "unrealized_pnl_usd": round(unrealized, 2),
     }
     _cache_set(cache_key, result)
     return result
+
+
+# ── Tax report endpoint ───────────────────────────────────────────────────────
+
+@router.get("/analytics/tax-report")
+async def get_tax_report(
+    user=Depends(get_current_user),
+    wallet_id: Optional[str] = Query(None),
+):
+    """Ganhos/perdas realizados agrupados por ano civil e por ativo (7 jul
+    2026 — pedido de "relatório fiscal"). Deliberadamente genérico: cada
+    país tem regras de mais-valias diferentes (FIFO vs. custo médio, isenções,
+    taxas por prazo de detenção) e mudam todos os anos — NÃO tentamos
+    replicar o formulário de nenhuma administração fiscal específica, só
+    agregamos os ganhos/perdas já calculados (mesmo custo médio ponderado
+    usado em get_analytics acima) por ano em que a venda ocorreu. O
+    frontend mostra sempre um aviso fixo (não dispensável) a dizer que isto
+    é um ponto de partida, não substitui um contabilista, e que as regras
+    variam por país/ano — ver 'settings.backup_subtitle'-style disclaimer
+    em I18nContext.jsx (analytics.tax_report_disclaimer).
+
+    Não faz chamadas a yfinance (usa só o preço já gravado em cada
+    transação), por isso é rápido e não tem cache TTL como o /analytics.
+    """
+    wid = wallet_id if wallet_id and wallet_id != "all" else None
+    query: dict = {"user_id": user["id"]}
+    if wid:
+        query["wallet_id"] = wid
+
+    txns = await db.transactions.find(query, {"_id": 0}).to_list(5000)
+    txns.sort(key=lambda t: t.get("date", ""))
+
+    qty: dict = {}
+    cost: dict = {}
+    by_year: dict = {}
+
+    for t in txns:
+        key = (t.get("asset_type", "stock"), t["symbol"].upper())
+        fx = float(t.get("fx_to_usd") or 1.0)
+        q = float(t["quantity"])
+        p_usd = float(t["price"]) * fx
+        year = (t.get("date") or "")[:4] or "?"
+
+        if t["type"] == "BUY":
+            qty[key]  = qty.get(key, 0.0) + q
+            cost[key] = cost.get(key, 0.0) + q * p_usd + float(t.get("fee", 0)) * fx
+        else:
+            held = qty.get(key, 0.0)
+            sell_q = min(q, held)
+            if held > 0:
+                avg = cost[key] / held
+                realized = sell_q * (p_usd - avg)
+                cost[key] -= avg * sell_q
+                yr_bucket = by_year.setdefault(year, {})
+                asset_bucket = yr_bucket.setdefault(key, 0.0)
+                yr_bucket[key] = asset_bucket + realized
+            qty[key] = held - sell_q
+            if qty[key] < 1e-9:
+                qty[key] = 0.0
+                cost[key] = 0.0
+
+    years_out = []
+    for year in sorted(by_year.keys(), reverse=True):
+        assets = by_year[year]
+        total = sum(assets.values())
+        by_asset = sorted(
+            (
+                {"asset_type": k[0], "symbol": k[1], "realized_usd": round(v, 2)}
+                for k, v in assets.items()
+            ),
+            key=lambda a: -a["realized_usd"],
+        )
+        years_out.append({"year": year, "total_realized_usd": round(total, 2), "by_asset": by_asset})
+
+    return {"years": years_out}
 
 
 # ── Dividends endpoint ────────────────────────────────────────────────────────
