@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { ComposedChart, Area, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { ArrowUpRight, TrendingDown } from "lucide-react";
 import { useI18n } from "../../context/I18nContext";
@@ -25,6 +25,30 @@ import { ALLOCATION_CLASS_LABEL_KEY, ALLOCATION_CLASS_COLOR } from "../../lib/al
 export default function LightEvolutionCard({ title, points, changePct, loading, chartClasses = [], hiddenClasses, toggleClassLine }) {
   const { t } = useI18n();
   const [hoverIndex, setHoverIndex] = useState(null);
+  // Margem de erro vertical do arrastar (7 jul 2026) — "o arrastar com o
+  // dedo está muito difícil, tens de por = ao da evolução da carteira mas
+  // sem mexer no peso do gráfico". O gráfico avançado tem 256-288px de
+  // altura, este só 190px — um pequeno desvio vertical do dedo já saía da
+  // área sensível do Recharts (onMouseLeave/onTouchMove só disparam dentro
+  // da SVG de 190px) e o arrastar "soltava". Em vez de aumentar o cartão
+  // (o utilizador pediu explicitamente para NÃO mexer no tamanho visível),
+  // os handlers ficam também no CARTÃO INTEIRO (título + gráfico +
+  // legenda, ref chartAreaRef dá só a largura/posição horizontal do
+  // gráfico em si, sempre a mesma independentemente de onde no cartão o
+  // dedo está verticalmente) — calculando o índice diretamente pela
+  // posição X do dedo, sem depender da deteção interna do Recharts (que só
+  // funciona dentro da caixa de 190px). Isto dá a mesma margem vertical do
+  // avançado sem alterar um único pixel do que se vê.
+  const chartAreaRef = useRef(null);
+  const updateHoverFromClientX = (clientX) => {
+    const el = chartAreaRef.current;
+    if (!el || !points.length) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const frac = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const idx = Math.round(frac * (points.length - 1));
+    setHoverIndex(idx);
+  };
 
   // While hovering, show the change from the first point up to the
   // hovered one instead of the fixed full-period change. Falls back to the
@@ -62,7 +86,17 @@ export default function LightEvolutionCard({ title, points, changePct, loading, 
   }, [hoverIndex, points, chartClasses, hiddenClasses]);
 
   return (
-    <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-5">
+    <div
+      className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-5"
+      // Handlers no cartão inteiro (não só no gráfico) — ver comentário em
+      // chartAreaRef acima. Sem tocar em touchAction: a página continua a
+      // fazer scroll normalmente a partir de qualquer ponto do cartão (só
+      // muda o CÁLCULO da % ao arrastar, não o comportamento de toque).
+      onMouseMove={(e) => updateHoverFromClientX(e.clientX)}
+      onMouseLeave={() => setHoverIndex(null)}
+      onTouchMove={(e) => { if (e.touches?.[0]) updateHoverFromClientX(e.touches[0].clientX); }}
+      onTouchEnd={() => setHoverIndex(null)}
+    >
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="text-sm font-medium text-zinc-300">{title}</div>
         {displayPct !== null && displayPct !== undefined && (
@@ -98,7 +132,7 @@ export default function LightEvolutionCard({ title, points, changePct, loading, 
           mais alto; um alvo de toque tão baixo torna o arrastar mais
           difícil de controlar com o dedo. Mais altura = mais espaço físico
           para deslizar com precisão. */}
-      <div className="h-[190px]">
+      <div className="h-[190px]" ref={chartAreaRef}>
         {loading ? (
           <div className="h-full flex items-center justify-center text-zinc-600 text-sm font-mono">
             {t("dash.chart_loading")}
