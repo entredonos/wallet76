@@ -122,13 +122,21 @@ export default function LightEvolutionCard({ title, points, changePct, loading, 
                   catch { return v; }
                 }}
               />
-              <YAxis hide domain={["dataMin", "dataMax"]} />
+              <YAxis yAxisId="total" hide domain={["dataMin", "dataMax"]} />
+              {/* Eixo Y escondido por categoria (7 jul 2026) — ver comentário
+                  igual em EvolutionChart.jsx: sem um domain próprio por
+                  classe, uma categoria pequena face ao total ficava
+                  esmagada perto do fundo e parecia sem movimento nenhum. */}
+              {chartClasses.map((cls) => (
+                <YAxis key={cls} yAxisId={cls} hide domain={["dataMin", "dataMax"]} />
+              ))}
               {/* No visible tooltip box — the badge above is the "tooltip".
                   This just drives hit-testing (activeTooltipIndex) and draws
                   a subtle vertical cursor line so hovering still feels
                   responsive. */}
               <Tooltip content={() => null} cursor={{ stroke: "#52525b", strokeDasharray: "3 3" }} />
               <Area
+                yAxisId="total"
                 type="monotone"
                 dataKey="v"
                 stroke={isPositive ? "#10b981" : "#ef4444"}
@@ -144,9 +152,13 @@ export default function LightEvolutionCard({ title, points, changePct, loading, 
                 activeDot={{ r: 4, strokeWidth: 2, stroke: "#09090b", fill: isPositive ? "#10b981" : "#ef4444" }}
               />
 
+              {/* connectNulls removido — ver comentário em EvolutionChart.jsx,
+                  mesmo raciocínio: um ponto sem categoria deve mostrar-se
+                  como falha real, não uma interpolação a direito. */}
               {chartClasses.filter((cls) => !hiddenClasses?.has(cls)).map((cls) => (
                 <Line
                   key={cls}
+                  yAxisId={cls}
                   type="monotone"
                   dataKey={cls}
                   stroke={ALLOCATION_CLASS_COLOR[cls] || ALLOCATION_CLASS_COLOR.other}
@@ -155,7 +167,6 @@ export default function LightEvolutionCard({ title, points, changePct, loading, 
                   dot={false}
                   activeDot={false}
                   isAnimationActive={false}
-                  connectNulls
                 />
               ))}
             </ComposedChart>

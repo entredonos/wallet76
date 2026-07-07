@@ -126,6 +126,7 @@ export default function EvolutionChart({
               />
 
               <YAxis
+                yAxisId="total"
                 stroke="#52525b"
                 fontSize={11}
                 tickLine={false}
@@ -139,12 +140,25 @@ export default function EvolutionChart({
                 }
               />
 
+              {/* Um eixo Y escondido POR CATEGORIA (7 jul 2026) — cada linha
+                  fica com o seu próprio domain "dataMin"/"dataMax" em vez de
+                  partilhar a escala (em $) do total. Sem isto, uma classe
+                  pequena face ao total (ex.: 500€ de crypto num portefólio
+                  de 30 mil) ficava visualmente esmagada perto do fundo do
+                  gráfico e parecia "reta"/sem movimento, mesmo variando de
+                  verdade — bug reportado pelo utilizador (7 jul 2026,
+                  "quando ativo cryptos ou ações o gráfico fica a direito"). */}
+              {chartClasses.map((cls) => (
+                <YAxis key={cls} yAxisId={cls} hide domain={["dataMin", "dataMax"]} />
+              ))}
+
               <Tooltip content={<AreaTooltip formatValue={(v) => (hideValues ? "•••••" : fmtCurrency(v, currency))} positive={chartIsPositive} />} />
 
               {renderWeekendBands(lineWeekendBands)}
               {renderDayBoundaries(lineDayBoundaries)}
 
               <Area
+                yAxisId="total"
                 type="monotone"
                 dataKey="c"
                 stroke={chartIsPositive ? "#10b981" : "#ef4444"}
@@ -160,10 +174,15 @@ export default function EvolutionChart({
                   (mesma usada no pie de Distribuição e no diálogo de alvo de
                   alocação, para ler-se como a mesma cor em toda a app).
                   Escondida via legenda por baixo (chartClasses só traz
-                  classes que a carteira teve nalgum ponto do período). */}
+                  classes que a carteira teve nalgum ponto do período).
+                  connectNulls removido: um ponto sem valor de categoria
+                  (ex.: rede de segurança, sem by_class) deve mesmo aparecer
+                  como falha na linha, não ser esticado/interpolado por cima
+                  do tempo em que não há dado real. */}
               {chartClasses.filter((cls) => !hiddenClasses?.has(cls)).map((cls) => (
                 <Line
                   key={cls}
+                  yAxisId={cls}
                   type="monotone"
                   dataKey={cls}
                   stroke={ALLOCATION_CLASS_COLOR[cls] || ALLOCATION_CLASS_COLOR.other}
@@ -172,7 +191,6 @@ export default function EvolutionChart({
                   dot={false}
                   activeDot={{ r: 3, strokeWidth: 0 }}
                   isAnimationActive={false}
-                  connectNulls
                 />
               ))}
             </ComposedChart>
