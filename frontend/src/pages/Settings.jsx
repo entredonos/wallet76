@@ -8,7 +8,7 @@ import { Label } from "../components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "../components/ui/dialog";
-import { Lock, Fingerprint, ShieldOff, Check, Trash2, KeyRound, Bell, BellOff, AlertTriangle, Copy } from "lucide-react";
+import { Lock, Fingerprint, ShieldOff, Check, Trash2, KeyRound, Bell, BellOff, AlertTriangle, Copy, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "../context/I18nContext";
 
@@ -45,6 +45,27 @@ export default function Settings() {
   const [deleteAccountDialog, setDeleteAccountDialog] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [exportingData, setExportingData] = useState(false);
+
+  // 7 jul 2026: "Transferir os meus dados" — backup self-service (GET
+  // /account/export devolve um ZIP). Pedido como blob (não JSON), o mesmo
+  // truque de Blob URL já usado no export CSV da Análise para despoletar o
+  // download do browser sem abrir separador novo.
+  const handleExportData = async () => {
+    setExportingData(true);
+    try {
+      const res = await api.get("/account/export", { responseType: "blob" });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `wallet76-backup-${new Date().toISOString().slice(0, 10)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error(t("settings.backup_failed"));
+    }
+    setExportingData(false);
+  };
 
   const submitDeleteAccount = async () => {
     setDeletingAccount(true);
@@ -338,6 +359,31 @@ export default function Settings() {
             {t("settings.subscription_loading")}
           </div>
         )}
+      </div>
+
+      {/* ── Backup dos dados ──────────────────────────────────────────
+          7 jul 2026: antes da Danger Zone (que só tem opções destrutivas)
+          não havia nenhuma forma de um utilizador levar os seus dados
+          consigo — só existia o CSV estreito de retornos na Análise. Fica
+          mesmo antes da Danger Zone de propósito, para ser o passo óbvio
+          a dar antes de limpar/apagar alguma coisa ali em baixo. */}
+      <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <Download className="w-4 h-4 text-emerald-400" />
+          <div className="text-sm font-medium text-zinc-200">{t("settings.backup_title")}</div>
+        </div>
+        <p className="text-xs text-zinc-400 mb-5">{t("settings.backup_subtitle")}</p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportData}
+          disabled={exportingData}
+          className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+          data-testid="backup-export-btn"
+        >
+          <Download className="w-3.5 h-3.5 mr-1.5" />
+          {exportingData ? t("settings.backup_generating") : t("settings.backup_btn")}
+        </Button>
       </div>
 
       {/* ── Danger Zone ─────────────────────────────────────────────── */}

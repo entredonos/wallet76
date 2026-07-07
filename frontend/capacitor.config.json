@@ -1,0 +1,13 @@
+{
+  "appId": "com.wallet76.app",
+  "appName": "Wallet76",
+  "webDir": "build",
+  "server": {
+    "url": "https://wallet76.com",
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

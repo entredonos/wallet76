@@ -1,12 +1,16 @@
 """Auth + email verification + password reset endpoints."""
 import asyncio
 import hashlib
+import io
+import json
 import secrets
 import uuid
+import zipfile
 from datetime import datetime, timezone, timedelta
 
 import stripe
 from fastapi import APIRouter, HTTPException, Response, Request, Depends
+from fastapi.responses import StreamingResponse
 
 from core import (
     db, hash_password, verify_password, create_access_token, get_current_user,
@@ -17,6 +21,7 @@ from models import (
     UserRegister, UserLogin, ForgotPasswordBody, ResetPasswordBody, TokenBody,
     ResendVerificationBody, DeleteAccountBody,
 )
+from routes.brokers import _sanitise
 
 router = APIRouter()
 
@@ -102,6 +107,78 @@ async def me(user=Depends(get_current_user)):
     if sub_status in ("active", "trialing"):
         full["plan"] = "pro"
     return full
+
+
+# Coleções que fazem parte do backup — mesma lista de USER_DATA_COLLECTIONS
+# (core.py), MENOS user_security e user_keys: essas guardam pin_hash,
+# credenciais WebAuthn e material de cifra, que são estado de segurança
+# interno, não dados de carteira do utilizador — exportá-las devolvia mais
+# risco do que utilidade. broker_connections fica incluída à parte, só com
+# metadados (via _sanitise, que já usa o resto da app para nunca devolver
+# credentials_enc ao frontend).
+_EXPORT_COLLECTIONS = [
+    "transactions", "wallets", "snapshots", "alerts", "watchlists",
+    "watchlist_groups", "feedback", "user_prefs", "allocation_prefs",
+    "share_links",
+]
+
+
+@router.get("/account/export")
+async def export_account_data(user=Depends(get_current_user)):
+    """Backup/exportação self-service dos dados do utilizador (7 jul 2026 —
+    direito à portabilidade do RGPD, Artigo 20; a landing page já promete
+    "Conforme RGPD" e até agora só existia um CSV estreito dos retornos
+    mensais na página Análise. A Danger Zone em Definições deixa limpar uma
+    carteira, limpar tudo, ou apagar a conta — sem isto, sem rede de
+    segurança nenhuma antes disso).
+
+    Formato: um ZIP com um .json por tipo de dado (mesma ideia do "Download
+    your data" da Google/Meta) mais um transactions.csv, que é o formato que
+    a maioria das pessoas realmente abre (Excel/Sheets) — mesmo padrão do
+    export CSV que já existe na Análise. Gerado na hora (síncrono): o
+    volume de dados de um utilizador aqui é pequeno, não justifica fila
+    assíncrona como as apps grandes usam para exports muito maiores.
+
+    Exclui deliberadamente user_security (pin_hash, credenciais WebAuthn) e
+    user_keys (chave de cifra por utilizador) — estado de segurança interno,
+    não dados de carteira. broker_connections entra só com metadados via
+    _sanitise (nunca as credenciais cifradas)."""
+    profile = await db.users.find_one(
+        {"id": user["id"]},
+        {
+            "_id": 0, "password_hash": 0, "verify_token_hash": 0, "reset_token_hash": 0,
+            "verify_token_expires": 0, "reset_token_expires": 0,
+        },
+    ) or {}
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("profile.json", json.dumps(profile, indent=2, default=str))
+
+        for col in _EXPORT_COLLECTIONS:
+            docs = await getattr(db, col).find({"user_id": user["id"]}, {"_id": 0}).to_list(200000)
+            zf.writestr(f"{col}.json", json.dumps(docs, indent=2, default=str))
+
+        brokers = await db.broker_connections.find({"user_id": user["id"]}, {"_id": 0}).to_list(1000)
+        zf.writestr("broker_connections.json", json.dumps([_sanitise(b) for b in brokers], indent=2, default=str))
+
+        # transactions.csv — mesma ideia do export CSV já existente na
+        # Análise: é o ficheiro que as pessoas realmente abrem no Excel.
+        txns = await db.transactions.find({"user_id": user["id"]}, {"_id": 0}).to_list(200000)
+        if txns:
+            cols = sorted({k for t in txns for k in t.keys()})
+            lines = [",".join(cols)]
+            for t in txns:
+                lines.append(",".join(str(t.get(c, "")).replace(",", ";").replace("\n", " ") for c in cols))
+            zf.writestr("transactions.csv", "\n".join(lines))
+
+    buf.seek(0)
+    filename = f"wallet76-backup-{datetime.now(timezone.utc).strftime('%Y-%m-%d')}.zip"
+    return StreamingResponse(
+        buf,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.delete("/account")
