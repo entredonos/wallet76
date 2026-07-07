@@ -22,7 +22,7 @@ from broker_connectors.crypto import (
     get_or_create_user_aes_key, migrate_conn_to_v3,
 )
 from broker_connectors import degiro, ibkr, trading212, binance, coinbase, kraken
-from prices import get_fx_rates
+from prices import get_fx_rates, resolve_asset_types_bulk
 
 router = APIRouter()
 
@@ -150,6 +150,15 @@ async def _import_transactions(
     imported = 0
     errors = []
 
+    # ETF/REIT (7 jul 2026) — DEGIRO/Trading212/IBKR gravam sempre
+    # asset_type="stock" nas suas respostas (ver broker_connectors/*.py);
+    # aqui reclassificamos em bloco, uma única vez por símbolo único desta
+    # sincronização, via Yahoo Finance (resolve_asset_type). Não mexe nos
+    # conectores em si — mais seguro do que alterar o parsing específico de
+    # cada broker, que já está em produção com ligações reais.
+    stock_symbols = [t["symbol"] for t in transactions if t.get("asset_type", "stock") == "stock" and t.get("symbol")]
+    type_map = await resolve_asset_types_bulk(stock_symbols) if stock_symbols else {}
+
     for t in transactions:
         try:
             broker = t.get("_broker", "")
@@ -172,7 +181,7 @@ async def _import_transactions(
                 "wallet_id": wallet_id,
                 "symbol": t["symbol"],
                 "name": t.get("name") or t["symbol"],
-                "asset_type": t.get("asset_type", "stock"),
+                "asset_type": type_map.get(t["symbol"].upper(), t.get("asset_type", "stock")),
                 "type": t["type"],
                 "date": t["date"],
                 "quantity": float(t["quantity"]),

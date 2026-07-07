@@ -199,6 +199,72 @@ async def get_eur_usd_rate() -> float:
     return rates.get("EUR", 0.92)
 
 
+# --- Asset sub-type resolution (ETF / fund / REIT) ---
+# (7 jul 2026) — DEGIRO, Trading212 e IBKR gravam sempre asset_type="stock"
+# nas sincronizações (não distinguem ETF, e IBKR tinha um bug de copy-paste
+# que tornava o "if" sempre "stock"). REIT nunca existiu em lado nenhum: o
+# Yahoo Finance classifica REITs como EQUITY normal (quoteType), só dá para
+# separar olhando ao campo assetProfile.industry (contém "REIT" nesse caso).
+# Esta função faz uma única chamada ao quoteSummary do Yahoo e cacheia o
+# resultado por símbolo durante 30 dias — o tipo de um ativo muda raramente.
+_YF_HEADERS_TYPE = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "Accept": "application/json",
+}
+
+
+async def resolve_asset_type(symbol: str, fallback: str = "stock") -> str:
+    """Devolve 'etf' / 'fund' / 'reit' / o fallback, consultando o Yahoo
+    Finance quando necessário. Só se aplica a símbolos que já estão a ser
+    tratados como ações (fallback == 'stock') — crypto e cash não passam
+    por aqui."""
+    if fallback != "stock":
+        return fallback
+
+    cache_key = f"asset_subtype:{symbol.upper()}"
+    cached = _cache_get(cache_key, ttl=2_592_000)  # 30 dias
+    if cached:
+        return cached.get("type", fallback)
+
+    resolved = fallback
+    try:
+        async with httpx.AsyncClient(timeout=10, headers=_YF_HEADERS_TYPE) as ch:
+            for host in ("query2.finance.yahoo.com", "query1.finance.yahoo.com"):
+                r = await ch.get(
+                    f"https://{host}/v10/finance/quoteSummary/{symbol}",
+                    params={"modules": "price,assetProfile", "corsDomain": "finance.yahoo.com", "formatted": "true"},
+                )
+                if r.status_code != 200:
+                    continue
+                result = (r.json().get("quoteSummary", {}) or {}).get("result") or []
+                if not result:
+                    continue
+                mod = result[0]
+                qt = ((mod.get("price") or {}).get("quoteType") or "").upper()
+                if qt == "ETF":
+                    resolved = "etf"
+                elif qt == "MUTUALFUND":
+                    resolved = "fund"
+                else:
+                    industry = ((mod.get("assetProfile") or {}).get("industry") or "")
+                    if "REIT" in industry.upper():
+                        resolved = "reit"
+                break
+    except Exception as e:
+        logger.warning(f"resolve_asset_type({symbol}): {e}")
+
+    _cache_set(cache_key, {"type": resolved})
+    return resolved
+
+
+async def resolve_asset_types_bulk(symbols: List[str]) -> dict:
+    """Resolve vários símbolos em paralelo (usado na sincronização de
+    brokers, onde há vários símbolos únicos a classificar de uma vez)."""
+    uniq = list({s.upper() for s in symbols if s})
+    results = await asyncio.gather(*[resolve_asset_type(s) for s in uniq], return_exceptions=True)
+    return {s: (r if isinstance(r, str) else "stock") for s, r in zip(uniq, results)}
+
+
 # --- Holdings ---
 def compute_holdings_from_txns(txns: List[dict]) -> List[dict]:
     """Compute current holdings from a list of transactions (weighted average cost)."""

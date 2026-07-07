@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends
 
 from core import db, get_current_user, require_active_subscription, is_pro_user, _cache_get, _cache_set, invalidate_history_cache
 from models import TransactionCreate, TransactionUpdate
-from prices import compute_holdings_from_txns, migrate_legacy_assets, get_fx_rates
+from prices import compute_holdings_from_txns, migrate_legacy_assets, get_fx_rates, resolve_asset_type
 
 router = APIRouter()
 
@@ -31,11 +31,17 @@ async def create_transaction(payload: TransactionCreate, user=Depends(get_curren
     currency = payload.currency or wallet.get("currency") or "USD"
     fx_rates = await get_fx_rates()
     fx_to_usd = 1.0 / fx_rates.get(currency, 1.0)
+    # REIT (7 jul 2026) — a pesquisa do frontend já distingue ETF/fundo via
+    # Yahoo, mas nunca produz "reit" (Yahoo classifica REITs como EQUITY
+    # normal). Confirmamos aqui via industry antes de gravar.
+    asset_type = payload.asset_type
+    if asset_type == "stock":
+        asset_type = await resolve_asset_type(payload.symbol.upper().strip(), "stock")
     doc = {
         "id": str(uuid.uuid4()),
         "user_id": user["id"],
         "wallet_id": payload.wallet_id,
-        "asset_type": payload.asset_type,
+        "asset_type": asset_type,
         "symbol": payload.symbol.upper().strip(),
         "coingecko_id": (payload.coingecko_id or "").lower().strip() if payload.asset_type == "crypto" else None,
         "name": payload.name or payload.symbol.upper(),

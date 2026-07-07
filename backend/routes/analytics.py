@@ -253,14 +253,20 @@ async def get_analytics(
         cur += timedelta(days=1)
 
     # ── 2. unique assets → fetch price histories in parallel ─────────────────
+    # Caixa (7 jul 2026) — o código da moeda (ex. "EUR") não é um ticker de
+    # ação/ETF válido no Yahoo Finance; tentar buscá-lo devolvia sempre vazio
+    # e o valor de caixa ficava a 0 na reconstrução (afetava Retornos por
+    # Classe). Já não pedimos ao Yahoo para chaves "cash" — o preço vem do
+    # fx_to_usd da própria transação (ver loop de replay abaixo).
     asset_keys = list({(t["asset_type"], t["symbol"].upper()) for t in txns})
-    yf_syms = [f"{k[1]}-USD" if k[0] == "crypto" else k[1] for k in asset_keys]
+    non_cash_keys = [k for k in asset_keys if k[0] != "cash"]
+    yf_syms = [f"{k[1]}-USD" if k[0] == "crypto" else k[1] for k in non_cash_keys]
 
     closes_list, spy_closes = await asyncio.gather(
         asyncio.gather(*[asyncio.to_thread(_fetch_closes_sync, s) for s in yf_syms]),
         asyncio.to_thread(_fetch_closes_sync, benchmark_sym),
     )
-    closes_map = {k: c for k, c in zip(asset_keys, closes_list)}
+    closes_map = {k: c for k, c in zip(non_cash_keys, closes_list)}
 
     # ── 3. replay transactions day by day ────────────────────────────────────
     qty  = {k: 0.0 for k in asset_keys}
@@ -283,6 +289,12 @@ async def get_analytics(
             fx  = float(t.get("fx_to_usd") or 1.0)
             q   = float(t["quantity"])
             p_usd = float(t["price"]) * fx
+
+            if key[0] == "cash":
+                # 1 unidade da moeda vale sempre `fx` USD — sem isto, o preço
+                # ficava a 0 (ver comentário acima) e a caixa aparecia com
+                # -100% de "retorno" em vez do valor real depositado.
+                last_price[key] = fx
 
             if t["type"] == "BUY":
                 qty[key]  += q

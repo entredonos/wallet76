@@ -124,6 +124,15 @@ export default function Alerts() {
         </div>
       </div>
 
+      {/* Aviso de canal (7 jul 2026) — não havia nenhuma indicação de que só
+          o email chega com a app fechada; a notificação do browser (botão
+          acima) só dispara com o separador do Wallet76 aberto no momento
+          exato (ver Dashboard.jsx), não é push real. */}
+      <div className="flex items-start gap-2 text-xs text-zinc-500 font-mono bg-zinc-900/30 border border-zinc-800/40 rounded-lg px-4 py-3">
+        <Bell className="w-3.5 h-3.5 mt-0.5 shrink-0 text-zinc-600" />
+        <span>{t("alert.channel_notice")}</span>
+      </div>
+
       <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-lg overflow-hidden">
         {/* Mobile — stacked cards. The desktop table's 7 columns only ever
             produced permanent horizontal scroll on a phone. */}
