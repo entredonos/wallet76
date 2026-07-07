@@ -128,12 +128,22 @@ async def admin_user_stats(user=Depends(require_admin)):
     cutoff_24h = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
     active_24h = await db.users.count_documents({"last_active_at": {"$gte": cutoff_24h}})
 
+    # "Online agora" (7 jul 2026) — mesmo campo, janela de 5 min em vez de
+    # 24h: coincide com o throttle de escrita do last_active_at (core.py
+    # get_current_user), a mesma janela já usada em describeActivity() no
+    # frontend para o ponto verde "Online agora" por utilizador. Não é um
+    # heartbeat em tempo real, é "fez um pedido autenticado nos últimos 5
+    # min" — mesma aproximação, só que agregada; sai grátis da mesma query.
+    cutoff_5m = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+    active_now = await db.users.count_documents({"last_active_at": {"$gte": cutoff_5m}})
+
     return {
         "total":   free + monthly + yearly,
         "free":    free,
         "monthly": monthly,
         "yearly":  yearly,
         "active_24h": active_24h,
+        "active_now": active_now,
         "last10":  last10,
     }
 

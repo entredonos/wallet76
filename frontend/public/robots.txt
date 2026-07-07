@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://wallet76.com/sitemap.xml

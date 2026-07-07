@@ -51,6 +51,45 @@
     <meta name="twitter:description" content="Track stocks, ETFs and crypto in one place." />
     <meta name="twitter:image" content="%PUBLIC_URL%/icon-512x512.png" />
 
+    <!-- ── Structured data (schema.org) ──────────────────────────────────
+         Estático no HTML (não injetado via JS) de propósito — 7 jul 2026,
+         a app não aparecia a pesquisar "wallet76" no Bing (usado pelo
+         Explorer/Edge), cujo crawler é historicamente mais fraco a
+         executar JavaScript do que o do Google. Isto dá aos motores de
+         busca nome/descrição/logo/tipo de site mesmo que nunca cheguem a
+         correr o bundle React. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "name": "Wallet76",
+            "url": "https://wallet76.com",
+            "logo": "https://wallet76.com/icon-512x512.png"
+          },
+          {
+            "@type": "WebSite",
+            "name": "Wallet76",
+            "url": "https://wallet76.com"
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "Wallet76",
+            "applicationCategory": "FinanceApplication",
+            "operatingSystem": "Web, iOS, Android, Windows",
+            "url": "https://wallet76.com",
+            "description": "Track stocks, ETFs and crypto in one place. Real-time prices, alerts, and multi-wallet support.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "EUR"
+            }
+          }
+        ]
+      }
+    </script>
+
     <!-- ── Fonts ──────────────────────────────────────────────────────── -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

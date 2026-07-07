@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { BarChart, Bar, Cell, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { BarChart, Bar, Cell, ResponsiveContainer, XAxis, YAxis, LabelList } from "recharts";
 import { ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
 import { api } from "../../lib/api";
 import { useI18n } from "../../context/I18nContext";
@@ -13,6 +13,31 @@ function fmtMonthLabel(ym) {
   const d = new Date(Number(y), Number(m) - 1, 1);
   if (Number.isNaN(d.getTime())) return ym;
   return d.toLocaleDateString(undefined, { month: "short", year: "2-digit" });
+}
+
+// Label de percentagem por barra (pedido 7 jul 2026: "quero que cada mes
+// mostre as percentagens"). Custom em vez do `position` nativo do LabelList
+// porque numa barra negativa o "top" do rect está na própria baseline (0) —
+// ficaria colado à barra do mês ao lado. Aqui decidimos manualmente:
+// positivo → por cima da barra; negativo → por baixo.
+function PctLabel(props) {
+  const { x, y, width, height, value } = props;
+  if (value === undefined || value === null) return null;
+  const positive = value >= 0;
+  const cx = x + width / 2;
+  const cy = positive ? y - 3 : y + height + 9;
+  return (
+    <text
+      x={cx}
+      y={cy}
+      textAnchor="middle"
+      fontSize={9}
+      fontFamily="ui-monospace, monospace"
+      fill={positive ? "#10b981" : "#ef4444"}
+    >
+      {`${positive ? "+" : ""}${value.toFixed(1)}%`}
+    </text>
+  );
 }
 
 // Prévia compacta do gráfico "Retornos Mensais" que já existe na página
@@ -84,15 +109,16 @@ export default function MonthlyReturnsPreview({ walletId }) {
         </div>
       ) : (
         <>
-          <div className="h-28">
+          <div className="h-36">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={recent} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+              <BarChart data={recent} margin={{ top: 12, right: 4, left: 4, bottom: 12 }}>
                 <XAxis dataKey="month" hide />
-                <YAxis hide domain={["dataMin", "dataMax"]} />
+                <YAxis hide domain={[(min) => min - 4, (max) => max + 4]} />
                 <Bar dataKey="pct" radius={[2, 2, 0, 0]} isAnimationActive={false}>
                   {recent.map((d, i) => (
                     <Cell key={i} fill={d.pct >= 0 ? "#10b981" : "#ef4444"} />
                   ))}
+                  <LabelList dataKey="pct" content={PctLabel} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

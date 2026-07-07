@@ -244,9 +244,18 @@ function UsersTab() {
           describeActivity). 6 jul 2026: "quanto tempo esta ligado... nas
           ultimas 24Hrs" — decidido não fazer heartbeats/sessões, só
           last_active_at throttled a 5 min (ver core.py). */}
-      <div className="flex items-center gap-2 text-xs font-mono text-zinc-500 -mt-2">
-        <Activity className="w-3.5 h-3.5 text-emerald-400" />
-        {loading ? "-" : (stats?.active_24h ?? 0)} ativo(s) nas últimas 24h
+      <div className="flex items-center gap-4 flex-wrap text-xs font-mono text-zinc-500 -mt-2">
+        <span className="flex items-center gap-2">
+          <span className="relative flex w-2 h-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+            <span className="relative inline-flex rounded-full w-2 h-2 bg-emerald-400" />
+          </span>
+          {loading ? "-" : (stats?.active_now ?? 0)} online agora
+        </span>
+        <span className="flex items-center gap-2">
+          <Activity className="w-3.5 h-3.5 text-emerald-400" />
+          {loading ? "-" : (stats?.active_24h ?? 0)} ativo(s) nas últimas 24h
+        </span>
       </div>
 
       <form onSubmit={handleSearch} className="flex gap-2">
