@@ -691,7 +691,11 @@ export default function LandingPage() {
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight mb-6">
             <span className="bg-gradient-to-r from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">{c.hero1}</span>
             <br />
-            <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">{c.hero2}</span>
+            {/* 7 jul 2026: era azul->ciano->verde; pedido para dar mais destaque
+                de "crescimento" — fica só em tons de verde (emerald->lime) em
+                vez de verde->vermelho, para não ler como "o património está a
+                cair" numa frase de vendas (vermelho = perdas em toda a app). */}
+            <span className="bg-gradient-to-r from-emerald-400 to-lime-400 bg-clip-text text-transparent">{c.hero2}</span>
           </h1>
           <p className="max-w-2xl mx-auto text-zinc-400 text-lg leading-relaxed mb-10">{c.hero_sub}</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
