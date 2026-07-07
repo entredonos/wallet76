@@ -18,14 +18,16 @@ function fmtMonthLabel(ym) {
 // Label de percentagem por barra (pedido 7 jul 2026: "quero que cada mes
 // mostre as percentagens"). Custom em vez do `position` nativo do LabelList
 // porque numa barra negativa o "top" do rect está na própria baseline (0) —
-// ficaria colado à barra do mês ao lado. Aqui decidimos manualmente:
-// positivo → por cima da barra; negativo → por baixo.
+// ficaria colado à barra do mês ao lado.
+// Sempre por cima da barra, positiva ou negativa (pedido 7 jul 2026: "meter
+// a percentagem em cima em vez de em baixo, tanto na app como no PC") — para
+// uma barra negativa isso é ACIMA da baseline (y), não abaixo do fundo dela.
 function PctLabel(props) {
   const { x, y, width, height, value } = props;
   if (value === undefined || value === null) return null;
   const positive = value >= 0;
   const cx = x + width / 2;
-  const cy = positive ? y - 3 : y + height + 9;
+  const cy = positive ? y - 3 : y - 5;
   return (
     <text
       x={cx}

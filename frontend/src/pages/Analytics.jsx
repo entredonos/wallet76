@@ -655,9 +655,11 @@ function ReturnsBarchart({ m, t, currency, benchmarkMetrics }) {
     // a guarda de largura (barras muito estreitas em períodos longos, onde
     // o texto ficaria a sobrepor a barra vizinha).
     if (Math.abs(width) < 14) return null;
-    // Offset fixo (não depende da altura da barra) — mesmo uma barra de 1px
-    // fica com a label a 11px de distância dela, nunca colada/sobreposta.
-    const pos = value >= 0 ? y - 3 : y + Math.abs(height) + 11;
+    // Sempre por cima da barra, positiva ou negativa (pedido 7 jul 2026:
+    // "meter a percentagem em cima em vez de em baixo, tanto na app como no
+    // PC") — para uma barra negativa isso é ACIMA da baseline (y), não
+    // abaixo do fundo dela.
+    const pos = value >= 0 ? y - 3 : y - 5;
     return (
       <text x={x + width / 2} y={pos} textAnchor="middle" fontSize={9} fontFamily="monospace"
         fill={value >= 0 ? "#6ee7b7" : "#fca5a5"}>
