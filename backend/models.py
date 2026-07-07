@@ -120,10 +120,12 @@ class UserPrefsUpdate(BaseModel):
 
 # "UPGRADE v1.0" — alocação por classe: alvo global + reclassificação manual
 # por símbolo. Classes suportadas espelham os asset_type já usados no resto
-# da app (stock/crypto/etf/fund/cash) — de propósito, sem comodities/
-# obrigações/imobiliário direto, que não têm hoje forma de ser adicionados
-# como transação real (decisão tomada com o utilizador).
-ALLOCATION_CLASSES = ("stock", "crypto", "etf", "fund", "cash")
+# da app (stock/crypto/etf/fund/cash/reit) — de propósito, sem comodities/
+# obrigações diretas, que não têm hoje forma de ser adicionadas como
+# transação real (decisão tomada com o utilizador). REIT adicionado em 7 jul
+# 2026 para paridade com o resto da app (já existia como asset_type e já
+# tinha tratamento em AssetsTable/LiquidityCard, só faltava aqui).
+ALLOCATION_CLASSES = ("stock", "crypto", "etf", "fund", "cash", "reit")
 
 
 class AllocationTargetUpdate(BaseModel):

@@ -462,24 +462,33 @@ export default function Analytics({ currency }) {
       </div>
       )}
 
-      {wVisible("class_returns") && data.class_returns && Object.keys(data.class_returns).length > 0 && (
-        <ClassReturnsCard
-          classReturns={data.class_returns}
-          totalReturnPct={m.total_return_pct}
-          benchmarkReturnPct={bm.total_return_pct}
-          benchmarkLabel={benchmarkLabel}
-          t={t}
-        />
-      )}
+      {/* Lado a lado em ecrãs md+ (7 jul 2026) — os dois cards em coluna
+          única ocupavam demasiada altura; cada um sozinho é pequeno
+          (poucas linhas), faz sentido partilharem a linha. Em mobile
+          continuam empilhados (grid-cols-1). */}
+      {((wVisible("class_returns") && data.class_returns && Object.keys(data.class_returns).length > 0) ||
+        (wVisible("fees") && (data.fees_all_time_usd ?? 0) > 0)) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {wVisible("class_returns") && data.class_returns && Object.keys(data.class_returns).length > 0 && (
+            <ClassReturnsCard
+              classReturns={data.class_returns}
+              totalReturnPct={m.total_return_pct}
+              benchmarkReturnPct={bm.total_return_pct}
+              benchmarkLabel={benchmarkLabel}
+              t={t}
+            />
+          )}
 
-      {wVisible("fees") && (data.fees_all_time_usd ?? 0) > 0 && (
-        <FeesCard
-          feesThisYear={data.fees_this_year_usd}
-          feesAllTime={data.fees_all_time_usd}
-          portfolioValue={filtered[filtered.length - 1]?.value}
-          fmtVal={fmtVal}
-          t={t}
-        />
+          {wVisible("fees") && (data.fees_all_time_usd ?? 0) > 0 && (
+            <FeesCard
+              feesThisYear={data.fees_this_year_usd}
+              feesAllTime={data.fees_all_time_usd}
+              portfolioValue={filtered[filtered.length - 1]?.value}
+              fmtVal={fmtVal}
+              t={t}
+            />
+          )}
+        </div>
       )}
 
       {wVisible("returns") && (m.months?.length > 0 || m.weeks?.length > 0 || m.years?.length > 0) && (

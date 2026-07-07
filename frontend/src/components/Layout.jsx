@@ -433,7 +433,18 @@ export default function Layout({ children, currency, setCurrency }) {
       {/* Mobile sidebar overlay */}
       {open && (
         <div className="md:hidden fixed inset-0 z-50 bg-black/70" onClick={() => setOpen(false)}>
-          <div className="absolute left-0 top-0 h-full w-72 bg-zinc-950">{Sidebar}</div>
+          {/* stopPropagation (7 jul 2026) — sem isto, QUALQUER clique dentro
+              do painel (incluindo o botão de expandir "Portfólio", que só
+              faz setPortfolioOpen, nunca setOpen) fazia bubble até ao
+              backdrop e fechava a gaveta inteira. Resultado reportado:
+              tocar em "Portfólio" fechava logo o menu, e só ao reabri-lo
+              (tocando no hamburger outra vez) é que o submenu já aparecia
+              expandido — o toggle tinha funcionado, só a gaveta é que
+              fechava a mais. Os links (NavLink) continuam a fechar a
+              gaveta normalmente, via o seu próprio onClick={() =>
+              setOpen(false)} explícito — isto só trava o bubbling para o
+              backdrop, não impede esses handlers próprios de correr. */}
+          <div className="absolute left-0 top-0 h-full w-72 bg-zinc-950" onClick={(e) => e.stopPropagation()}>{Sidebar}</div>
         </div>
       )}
 

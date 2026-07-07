@@ -839,6 +839,13 @@ async def _build_retro_history(user_id: str, wallet_id: str | None = None, asset
                     cost[key] = 0
 
         total_v = 0.0
+        # Retorno por categoria no gráfico de Evolução (7 jul 2026) — soma
+        # aditiva ao lado do total já existente, não muda total_v/total_cost
+        # nem nenhuma das regras de rede de segurança/outliers documentadas
+        # na REGRA #2 do CLAUDE.md. Cada ponto passa a trazer também
+        # "by_class": {asset_type: valor_usd}, para o frontend desenhar uma
+        # linha por categoria além da linha total.
+        by_class: dict[str, float] = {}
 
         for k in keys:
             if qty[k] <= 0:
@@ -852,7 +859,9 @@ async def _build_retro_history(user_id: str, wallet_id: str | None = None, asset
             else:
                 last_price[k] = price
 
-            total_v += qty[k] * (price or 0)
+            contrib = qty[k] * (price or 0)
+            total_v += contrib
+            by_class[k[0]] = by_class.get(k[0], 0.0) + contrib
 
         total_cost = sum(cost.values())
 
@@ -865,6 +874,7 @@ async def _build_retro_history(user_id: str, wallet_id: str | None = None, asset
             "total_usd": total_v,
             "total_pnl_usd": total_v - total_cost,
             "source": "reconstructed",
+            "by_class": {c: round(v, 2) for c, v in by_class.items()},
         })
 
     walk_elapsed = time.monotonic() - t1
@@ -1080,6 +1090,9 @@ async def _build_retro_history_intraday(user_id: str, range_key: str, wallet_id:
             txn_ptr += 1
 
         total_v = 0.0
+        # Ver comentário equivalente em _build_retro_history — mesma soma
+        # aditiva por categoria, sem tocar em total_v/rede de segurança.
+        by_class: dict[str, float] = {}
         for k in keys:
             if qty[k] <= 0:
                 continue
@@ -1089,7 +1102,9 @@ async def _build_retro_history_intraday(user_id: str, range_key: str, wallet_id:
                 last_price[k] = series[p][1]
                 p += 1
             idx_ptr[k] = p
-            total_v += qty[k] * (last_price[k] or 0)
+            contrib = qty[k] * (last_price[k] or 0)
+            total_v += contrib
+            by_class[k[0]] = by_class.get(k[0], 0.0) + contrib
 
         total_cost = sum(cost.values())
         if total_v <= 0:
@@ -1102,6 +1117,7 @@ async def _build_retro_history_intraday(user_id: str, range_key: str, wallet_id:
             "total_usd": total_v,
             "total_pnl_usd": total_v - total_cost,
             "source": "reconstructed",
+            "by_class": {c: round(v, 2) for c, v in by_class.items()},
         })
 
     logger.info(

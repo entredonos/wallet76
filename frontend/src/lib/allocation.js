@@ -1,11 +1,17 @@
 // "UPGRADE v1.0" — asset-class allocation shared helpers.
 //
-// The 5 classes deliberately mirror the asset_type values already used
-// everywhere else in the app (stock/crypto/etf/fund/cash) — no new
-// instrument types, no comodities/obrigações/imobiliário direto (those
-// have no way to be added as a real transaction today).
+// The classes mirror the asset_type values already used everywhere else in
+// the app (stock/crypto/etf/fund/cash/reit) — no new instrument types, no
+// comodities/obrigações/imobiliário direto (those have no way to be added
+// as a real transaction today).
+//
+// REIT (7 jul 2026) — já existia como asset_type e já tinha cor/label nas
+// tabelas de ativos, mas nunca tinha entrado aqui — o que o deixava invisível
+// no pie de distribuição por classe (caía em "Outro") e sem slider próprio
+// no diálogo de alvo de alocação. Adicionado para paridade total com os
+// outros tipos.
 
-export const ALLOCATION_CLASSES = ["stock", "crypto", "etf", "fund", "cash"];
+export const ALLOCATION_CLASSES = ["stock", "crypto", "etf", "fund", "cash", "reit"];
 
 // The i18n key for each class's display label (all reuse existing,
 // already-translated common.* keys — no duplicate label strings needed).
@@ -15,19 +21,22 @@ export const ALLOCATION_CLASS_LABEL_KEY = {
   etf: "common.etfs",
   fund: "common.funds",
   cash: "common.cash",
+  reit: "common.reit",
 };
 
 // Fixed class -> color mapping, shared by the Dashboard target-allocation
 // widget's dialog affordances and the per-wallet mini-donut (Wallets.jsx,
 // "UPGRADE v1.0" task #76) so the same class always reads as the same color
 // everywhere in the app, instead of a palette-index that shifts depending
-// on sort order.
+// on sort order. "reit" uses the same orange already used for its badge in
+// AssetsTable.jsx (border-orange-500/40) for visual consistency.
 export const ALLOCATION_CLASS_COLOR = {
   stock: "#3b82f6",
   crypto: "#eab308",
   etf: "#a855f7",
   fund: "#10b981",
   cash: "#64748b",
+  reit: "#f97316",
   other: "#71717a",
 };
 
@@ -53,8 +62,8 @@ export function aggregateByClass(holdings, overrides) {
   return totals;
 }
 
-// Moves `cls` to `newVal` and redistributes the delta across the other 4
-// classes proportionally to their current weight, so the 5 targets always
+// Moves `cls` to `newVal` and redistributes the delta across the other
+// classes proportionally to their current weight, so the targets always
 // keep summing to 100 — used ONLY by the Dashboard widget's inline sliders
 // (the dedicated Target Allocation dialog stays free-edit with its own
 // sum validation + explicit Save, per the user's explicit choice: auto

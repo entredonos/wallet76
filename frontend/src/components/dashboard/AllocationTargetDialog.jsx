@@ -10,7 +10,7 @@ import { useI18n } from "../../context/I18nContext";
 import { ALLOCATION_CLASSES, ALLOCATION_CLASS_LABEL_KEY, ALLOCATION_CLASS_COLOR, aggregateByClass } from "../../lib/allocation";
 
 // "UPGRADE v1.0" — target-allocation configuration dialog. One draggable
-// slider per known class (stock/crypto/etf/fund/cash) instead of a plain
+// slider per known class (stock/crypto/etf/fund/cash/reit) instead of a plain
 // number input — mirrors the look of the pie legend's horizontal bars
 // underneath the widget's own chart, so the same "bar = percentage"
 // language is used in both places. Each row also shows the class's current

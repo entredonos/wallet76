@@ -1,6 +1,6 @@
 import React from "react";
 import {
-  ComposedChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
+  ComposedChart, Area, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 import { RefreshCw, ShieldAlert } from "lucide-react";
 import { renderDayBoundaries, renderWeekendBands } from "../ChartAnnotations";
@@ -9,6 +9,7 @@ import { CHART_RANGES, CHART_RANGES_SHOW_DATE } from "../../constants/chartRange
 import { fmtCurrency, curSymbol } from "../../lib/format";
 import { useI18n } from "../../context/I18nContext";
 import { TYPE_LABELS } from "../../constants/dashboardConstants";
+import { ALLOCATION_CLASS_LABEL_KEY, ALLOCATION_CLASS_COLOR } from "../../lib/allocation";
 
 const RANGES = CHART_RANGES;
 
@@ -22,6 +23,7 @@ export default function EvolutionChart({
   filterType, usedSafetyNet, range, setRange, candleData, chartLoading,
   chartIsPositive, lineWeekendBands, lineDayBoundaries, candleYDomain,
   hideValues, currency, runBackfill, backfilling,
+  chartClasses = [], hiddenClasses, toggleClassLine,
 }) {
   const { t } = useI18n();
   return (
@@ -152,6 +154,27 @@ export default function EvolutionChart({
                 dot={false}
                 activeDot={{ r: 3.5, strokeWidth: 0 }}
               />
+
+              {/* Uma linha por categoria de ativo (7 jul 2026) — sobreposta
+                  à área do total, cada uma na cor fixa de ALLOCATION_CLASS_COLOR
+                  (mesma usada no pie de Distribuição e no diálogo de alvo de
+                  alocação, para ler-se como a mesma cor em toda a app).
+                  Escondida via legenda por baixo (chartClasses só traz
+                  classes que a carteira teve nalgum ponto do período). */}
+              {chartClasses.filter((cls) => !hiddenClasses?.has(cls)).map((cls) => (
+                <Line
+                  key={cls}
+                  type="monotone"
+                  dataKey={cls}
+                  stroke={ALLOCATION_CLASS_COLOR[cls] || ALLOCATION_CLASS_COLOR.other}
+                  strokeWidth={1.5}
+                  strokeDasharray="4 2"
+                  dot={false}
+                  activeDot={{ r: 3, strokeWidth: 0 }}
+                  isAnimationActive={false}
+                  connectNulls
+                />
+              ))}
             </ComposedChart>
           </ResponsiveContainer>
         ) : chartLoading ? (
@@ -178,6 +201,34 @@ export default function EvolutionChart({
           </div>
         )}
       </div>
+
+      {/* Legenda com toggle por categoria (7 jul 2026) — clicar liga/desliga
+          a linha dessa classe (chartClasses/hiddenClasses vêm do Dashboard,
+          persistido em localStorage). Só aparece quando há mais de uma
+          categoria nos dados — com só uma classe a legenda seria redundante
+          com o resto do widget. */}
+      {chartClasses.length > 1 && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 pt-3 border-t border-zinc-800/50" data-testid="evolution-class-legend">
+          {chartClasses.map((cls) => {
+            const isHidden = hiddenClasses?.has(cls);
+            const color = ALLOCATION_CLASS_COLOR[cls] || ALLOCATION_CLASS_COLOR.other;
+            return (
+              <button
+                key={cls}
+                type="button"
+                onClick={() => toggleClassLine?.(cls)}
+                className={`flex items-center gap-1.5 text-[11px] font-mono transition-opacity ${isHidden ? "opacity-40" : "opacity-100"}`}
+                data-testid={`evolution-class-legend-${cls}`}
+              >
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                <span className={isHidden ? "text-zinc-500 line-through" : "text-zinc-300"}>
+                  {t(ALLOCATION_CLASS_LABEL_KEY[cls] || `common.${cls}`)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </>
   );
 }

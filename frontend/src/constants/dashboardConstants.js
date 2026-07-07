@@ -40,6 +40,7 @@ export const TYPE_PILL_DEFS = [
   { key: "etf",    color: "blue",  icon: "",   labelKey: "common.etfs" },
   { key: "fund",   color: "blue",  icon: "",   labelKey: "common.funds" },
   { key: "cash",   color: "blue",  icon: "",   labelKey: "common.cash" },
+  { key: "reit",   color: "blue",  icon: "",   labelKey: "common.reit" },
 ];
 
 export const PIE_COLORS = ["#3b82f6", "#10b981", "#a855f7", "#eab308", "#ef4444", "#06b6d4", "#f97316", "#8b5cf6"];

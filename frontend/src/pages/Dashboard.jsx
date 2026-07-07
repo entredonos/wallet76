@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api, formatApiErrorDetail } from "../lib/api";
 import { Button } from "../components/ui/button";
 import { toast } from "sonner";
-import { bucketOHLC, getDayBoundaries, getWeekendBands } from "../lib/chartGaps";
+import { bucketOHLC, bucketClassClose, getDayBoundaries, getWeekendBands } from "../lib/chartGaps";
 import { CHART_RANGE_BUCKET_MS, CHART_RANGES_DAY_MARKERS, CHART_RANGES_WEEKEND_SHADING, N_BARS } from "../constants/chartRanges";
 import {
   ArrowUpRight, Receipt, Bell,
@@ -697,6 +697,7 @@ export default function Dashboard({ currency }) {
             fund: t("common.funds"),
             bond: t("common.bonds"),
             cash: t("common.cash"),
+            reit: t("common.reit"),
           }[rawCls] || t("common.other"))
         : a.symbol;
 
@@ -778,6 +779,14 @@ export default function Dashboard({ currency }) {
       .map((s) => ({
         ts: s.ts || s.date,
         value: convert(s.total_usd, currency, fxRates),
+        // Linha por categoria na Evolução (7 jul 2026) — repassa o
+        // "by_class" já calculado no backend (ver REGRA #2 no CLAUDE.md:
+        // soma aditiva ao lado do total, não existe em pontos vindos da
+        // rede de segurança). Convertido para a moeda ativa aqui, junto do
+        // valor total, para não ter de re-percorrer `history` outra vez.
+        byClass: s.by_class
+          ? Object.fromEntries(Object.entries(s.by_class).map(([cls, v]) => [cls, convert(v, currency, fxRates)]))
+          : null,
       }))
       .filter((p) => Number(p.value) > 0);
 
@@ -813,8 +822,50 @@ export default function Dashboard({ currency }) {
     // buckets (common on coarse ranges like 1M/1Y) never do, since a lone
     // point has open === close. Comparing against the previous candle's
     // close instead basically always has something to show.
-    return sliced.map((d, i) => (i > 0 ? { ...d, prevC: sliced[i - 1].c } : d));
+    const withPrevC = sliced.map((d, i) => (i > 0 ? { ...d, prevC: sliced[i - 1].c } : d));
+
+    // Linha por categoria (7 jul 2026) — mesma bucketização (mesmas chaves
+    // de tempo que bucketOHLC), fundida no MESMO array por "t" para o
+    // Recharts conseguir ler tudo de uma vez (candle total + uma linha por
+    // classe). Pontos da rede de segurança não têm by_class (ver REGRA #2)
+    // — nesse bucket a linha de categoria simplesmente não tem valor nesse
+    // ponto (Recharts salta o gap), a linha do total continua normal.
+    const classBucketed = bucketClassClose(strippedLineData, "ts", "byClass", CHART_RANGE_BUCKET_MS[range]);
+    const classByT = new Map(classBucketed.map((c) => [c.t, c]));
+    return withPrevC.map((d) => {
+      const cls = classByT.get(d.t);
+      return cls ? { ...d, ...cls } : d;
+    });
   }, [strippedLineData, range]);
+
+  // Classes realmente presentes nos dados do gráfico atual (une todos os
+  // pontos porque uma classe pode só ter sido comprada a meio do período) —
+  // usado para desenhar só as linhas/legenda relevantes, não as 6 sempre.
+  const chartClasses = useMemo(() => {
+    const set = new Set();
+    for (const d of candleData) {
+      for (const c of ALLOCATION_CLASSES) {
+        if (d[c] != null) set.add(c);
+      }
+    }
+    return ALLOCATION_CLASSES.filter((c) => set.has(c));
+  }, [candleData]);
+
+  // Legenda com toggle (7 jul 2026) — classes escondidas por clique na
+  // legenda por baixo do gráfico de Evolução. Persistido por navegador
+  // (não por conta), reposto se a classe deixar de existir na carteira.
+  const [hiddenClasses, setHiddenClasses] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("w76-evo-hidden-classes") || "[]")); }
+    catch { return new Set(); }
+  });
+  const toggleClassLine = (cls) => {
+    setHiddenClasses((prev) => {
+      const next = new Set(prev);
+      if (next.has(cls)) next.delete(cls); else next.add(cls);
+      try { localStorage.setItem("w76-evo-hidden-classes", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
 
   // True when any point in the raw /history response came from the backend's
   // "rede de segurança" — the intraday reconstruction (15m/30m/1h/4h) falling
@@ -1261,6 +1312,9 @@ const worstPerformer = useMemo(() => {
             currency={currency}
             runBackfill={runBackfill}
             backfilling={backfilling}
+            chartClasses={chartClasses}
+            hiddenClasses={hiddenClasses}
+            toggleClassLine={toggleClassLine}
           />
         </div>
 

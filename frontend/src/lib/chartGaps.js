@@ -130,3 +130,41 @@ export function bucketOHLC(points, tsKey, valueKey, bucketMs, toMs = (v) => new 
 
   return sorted;
 }
+
+/**
+ * Same bucketing (same epoch-floor bucket keys as bucketOHLC, so the two
+ * line up on the same x-axis) but for a per-category breakdown instead of a
+ * single OHLC value — used by the "Evolução da Carteira" chart's per-class
+ * lines (7 jul 2026). Keeps the LAST value seen per bucket per class (the
+ * "close" of that bucket for that class), since these render as simple
+ * lines, not candles — there's no need for open/high/low per category.
+ * @param {Array<object>} points     ascending by time
+ * @param {string} tsKey             field holding the timestamp
+ * @param {string} classesKey       field holding a { class: value } object (may be null/missing on some points — e.g. safety-net snapshots don't carry a per-class breakdown, see REGRA #2)
+ * @param {number|null} bucketMs
+ * @returns {Array<{t:number, [cls:string]:number}>} one object per bucket, spreading each class value as a top-level key so Recharts can read it directly as a dataKey
+ */
+export function bucketClassClose(points, tsKey, classesKey, bucketMs, toMs = (v) => new Date(v).getTime()) {
+  if (!Array.isArray(points) || !points.length) return [];
+
+  const buckets = new Map();
+  let firstMs = null;
+  for (const p of points) {
+    const byClass = p[classesKey];
+    if (!byClass) continue;
+    const ms = toMs(p[tsKey]);
+    if (firstMs === null) firstMs = ms;
+    const key = bucketMs ? Math.floor(ms / bucketMs) * bucketMs : ms;
+    buckets.set(key, byClass); // last write per bucket wins == "close"
+  }
+
+  const sorted = [...buckets.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([t, byClass]) => ({ t, ...byClass }));
+
+  if (sorted.length && firstMs != null && firstMs > sorted[0].t) {
+    sorted[0] = { ...sorted[0], t: firstMs };
+  }
+
+  return sorted;
+}

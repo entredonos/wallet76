@@ -1,8 +1,8 @@
 """Asset-class allocation targets + manual per-symbol reclassification.
 
 "UPGRADE v1.0": lets a user define target percentages per asset class
-(stock/crypto/etf/fund/cash — deliberately the same 5 classes already used
-as asset_type elsewhere in the app, no new instrument types) and compare
+(stock/crypto/etf/fund/cash/reit — the same classes already used as
+asset_type elsewhere in the app, no new instrument types) and compare
 them against the actual live allocation. The "actual %" side and the
 buy/sell rebalancing math are NOT computed here — holdings already carry
 wallet_id + asset_type per item and are already fetched client-side (by
