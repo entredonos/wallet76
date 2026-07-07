@@ -443,19 +443,50 @@ export default function Dashboard({ currency }) {
   // sliced to the last 30 four-hour candles (5 days) instead of N_BARS=70.
   const lightCandles = useMemo(() => {
     const raw = (lightHistory || [])
-      .map((s) => ({ ts: s.ts || s.date, value: Number(s.total_usd || 0) }))
+      .map((s) => ({
+        ts: s.ts || s.date,
+        value: Number(s.total_usd || 0),
+        // Linhas por categoria também no cartão leve (7 jul 2026, a pedido
+        // explícito do utilizador — ver LightEvolutionCard.jsx). Sem
+        // conversão de moeda aqui: como no resto deste cartão, fica em USD
+        // bruto — só interessa a FORMA/proporção da linha, não o valor
+        // absoluto (não há eixo Y neste cartão).
+        byClass: s.by_class || null,
+      }))
       .filter((p) => Number(p.value) > 0);
     const bucketed = bucketOHLC(raw, "ts", "value", CHART_RANGE_BUCKET_MS["4h"]);
-    return bucketed.slice(-LIGHT_BARS);
+    const classBucketed = bucketClassClose(raw, "ts", "byClass", CHART_RANGE_BUCKET_MS["4h"]);
+    const classByT = new Map(classBucketed.map((c) => [c.t, c]));
+    const merged = bucketed.map((d) => {
+      const cls = classByT.get(d.t);
+      return cls ? { ...d, ...cls } : d;
+    });
+    return merged.slice(-LIGHT_BARS);
   }, [lightHistory]);
 
   // Chart points (just t/close — no need for the full OHLC shape since this
   // is a simple area, not candles). % change is currency-independent (a
   // ratio), so both stay in raw USD — no need to convert() just for this.
   const lightChartPoints = useMemo(
-    () => lightCandles.map((c) => ({ t: c.t, v: c.c })),
+    () => lightCandles.map((c) => {
+      const point = { t: c.t, v: c.c };
+      for (const cls of ALLOCATION_CLASSES) {
+        if (c[cls] != null) point[cls] = c[cls];
+      }
+      return point;
+    }),
     [lightCandles]
   );
+
+  const lightChartClasses = useMemo(() => {
+    const set = new Set();
+    for (const p of lightChartPoints) {
+      for (const c of ALLOCATION_CLASSES) {
+        if (p[c] != null) set.add(c);
+      }
+    }
+    return ALLOCATION_CLASSES.filter((c) => set.has(c));
+  }, [lightChartPoints]);
 
   const lightChangePct = useMemo(() => {
     if (lightCandles.length < 2) return null;
@@ -1227,6 +1258,9 @@ const worstPerformer = useMemo(() => {
                 points={lightChartPoints}
                 changePct={lightChangePct}
                 loading={lightHistoryLoading}
+                chartClasses={lightChartClasses}
+                hiddenClasses={hiddenClasses}
+                toggleClassLine={toggleClassLine}
               />
               {(() => {
                 // Highlights the button label ("Painel avançado" / "Advanced

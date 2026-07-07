@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { ComposedChart, Area, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { ArrowUpRight, TrendingDown } from "lucide-react";
 import { useI18n } from "../../context/I18nContext";
+import { ALLOCATION_CLASS_LABEL_KEY, ALLOCATION_CLASS_COLOR } from "../../lib/allocation";
 
 // Dashboard "light" view's evolution card — a static, simplified read of
 // the last 5 days at 4h-candle resolution (~30 points; no range picker, no
@@ -14,7 +15,14 @@ import { useI18n } from "../../context/I18nContext";
 // hovered point (a hidden Tooltip drives the hit-testing; nothing is drawn
 // for it — the badge itself is the "tooltip"). X-axis keeps ~1 day label
 // per tick, not one per 4h point.
-export default function LightEvolutionCard({ title, points, changePct, loading }) {
+//
+// Linhas por categoria (7 jul 2026) — pedido explícito do utilizador depois
+// de perguntar se pesava no carregamento (não pesa: mesmos ~30 pontos já
+// carregados, só mais uma passagem em memória — ver chartClasses/
+// hiddenClasses vindos do Dashboard.jsx). Trocado de AreaChart para
+// ComposedChart para poder misturar a Area do total com uma Line por
+// classe, mesma combinação já usada no EvolutionChart do painel avançado.
+export default function LightEvolutionCard({ title, points, changePct, loading, chartClasses = [], hiddenClasses, toggleClassLine }) {
   const { t } = useI18n();
   const [hoverIndex, setHoverIndex] = useState(null);
 
@@ -59,7 +67,7 @@ export default function LightEvolutionCard({ title, points, changePct, loading }
           </div>
         ) : points.length > 1 ? (
           <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={100}>
-            <AreaChart
+            <ComposedChart
               data={points}
               margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
               onMouseMove={(state) => {
@@ -135,7 +143,22 @@ export default function LightEvolutionCard({ title, points, changePct, loading }
                 // deslizar, só a linha tracejada do cursor.
                 activeDot={{ r: 4, strokeWidth: 2, stroke: "#09090b", fill: isPositive ? "#10b981" : "#ef4444" }}
               />
-            </AreaChart>
+
+              {chartClasses.filter((cls) => !hiddenClasses?.has(cls)).map((cls) => (
+                <Line
+                  key={cls}
+                  type="monotone"
+                  dataKey={cls}
+                  stroke={ALLOCATION_CLASS_COLOR[cls] || ALLOCATION_CLASS_COLOR.other}
+                  strokeWidth={1.25}
+                  strokeDasharray="4 2"
+                  dot={false}
+                  activeDot={false}
+                  isAnimationActive={false}
+                  connectNulls
+                />
+              ))}
+            </ComposedChart>
           </ResponsiveContainer>
         ) : (
           <div className="h-full flex items-center justify-center text-zinc-600 text-sm font-mono">
@@ -143,6 +166,32 @@ export default function LightEvolutionCard({ title, points, changePct, loading }
           </div>
         )}
       </div>
+
+      {/* Legenda compacta com toggle (7 jul 2026) — mesmo padrão do painel
+          avançado, mas mais apertada (gap menor, sem borda superior) para
+          caber num cartão pensado para ser pequeno. */}
+      {chartClasses.length > 1 && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2" data-testid="light-evolution-class-legend">
+          {chartClasses.map((cls) => {
+            const isHidden = hiddenClasses?.has(cls);
+            const color = ALLOCATION_CLASS_COLOR[cls] || ALLOCATION_CLASS_COLOR.other;
+            return (
+              <button
+                key={cls}
+                type="button"
+                onClick={() => toggleClassLine?.(cls)}
+                className={`flex items-center gap-1 text-[10px] font-mono transition-opacity ${isHidden ? "opacity-40" : "opacity-100"}`}
+                data-testid={`light-evolution-class-legend-${cls}`}
+              >
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                <span className={isHidden ? "text-zinc-500 line-through" : "text-zinc-300"}>
+                  {t(ALLOCATION_CLASS_LABEL_KEY[cls] || `common.${cls}`)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
