@@ -186,3 +186,51 @@ Se `BROKER_ENCRYPTION_KEY` voltar a desaparecer, o valor de referência
 — gerar um novo valor só decifra credenciais de broker novas a partir daí;
 todas as ligações de broker já guardadas ficam permanentemente ilegíveis
 se a chave mudar.
+
+---
+
+## REGRA #5 — FRONTEND E BACKEND EM DOMÍNIOS DIFERENTES: PROXY OBRIGATÓRIO NA VERCEL
+
+**Incidente (6 jul 2026):** um utilizador testou a app no iPhone (Safari) e
+ao registar-se levou logo com "Sessão expirada. Por favor inicia sessão
+novamente." — mesmo com o registo a correr bem no servidor. Causa: o
+frontend (`wallet76.com` / `wallet76.vercel.app`) e o backend
+(`wallet76-1cvt.onrender.com`) são domínios diferentes (eTLD+1 distintos),
+e a autenticação assenta só num cookie `httpOnly` (`access_token` —
+deliberadamente sem cópia em localStorage, ver `frontend/src/lib/api.js`).
+O Safari (iOS e Mac) tem "Prevent Cross-Site Tracking" ativo por omissão,
+que bloqueia o armazenamento desse cookie mesmo com
+`SameSite=None; Secure` corretamente configurado no backend — o Chrome/
+Android não têm este problema, por isso passava despercebido nos testes
+habituais.
+
+**Correção aplicada:** `frontend/vercel.json` tem um `rewrites` que faz a
+Vercel servir `/api/*` e `/ping` como proxy para o Render
+(`wallet76-1cvt.onrender.com`), tornando o pedido same-origin do ponto de
+vista do browser — o cookie deixa de ser cross-site e o Safari deixa de o
+bloquear. Confirmado que isto não tem risco prático: um `rewrite` para
+destino externo na Vercel tem 120s de timeout (qualquer plano, mesmo
+gratuito), muito acima dos poucos segundos que o Render demora a
+responder mesmo a frio.
+
+**Isto exige manter dois lados sincronizados — se um dos dois for editado
+sem o outro, volta a partir:**
+
+1. `frontend/vercel.json` — os dois `rewrites` (`/api/:path*` e `/ping`)
+   têm de apontar sempre para o URL atual do backend no Render. Se o
+   serviço no Render for recriado com outro URL, atualizar aqui.
+2. A variável `REACT_APP_BACKEND_URL` na Vercel deve ficar **vazia** em
+   produção (não apagada — vazia), para os pedidos serem feitos a
+   caminhos relativos (`/api/...`, `/ping`) que a Vercel intercepta com o
+   rewrite acima. Todo o código que lê esta variável
+   (`frontend/src/lib/api.js`, `BackendStatusBanner.jsx`,
+   `VerifyEmail.jsx`, `ResetPassword.jsx`, `ForgotPassword.jsx`) já tem
+   `|| ""` como fallback — sem isto, `${undefined}/api` vira a string
+   literal `"undefined/api"` e a app fica muda em produção sem erro
+   nenhum visível.
+3. Em desenvolvimento local, `REACT_APP_BACKEND_URL` continua definida
+   (aponta para o backend local) — nada disto se aplica aí, os pedidos já
+   eram same-origin/localhost.
+4. O `CORS`/`allow_origins` em `backend/server.py` mantém-se como estava
+   — continua a ser necessário para a app Electron e para qualquer cliente
+   que fale diretamente com o Render sem passar pela Vercel.

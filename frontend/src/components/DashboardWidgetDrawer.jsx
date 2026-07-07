@@ -115,12 +115,12 @@ export default function DashboardWidgetDrawer({ open, onClose, widgetConfig, set
 
         {/* Widget list — em modo "light" só "summary" (LightBalanceCard) e
             "evolution" (LightEvolutionCard) chegam a ser desenhados no
-            Painel (ver Dashboard.jsx); os outros 4 (top_movers/performers/
-            allocation/assets) só existem em "advanced". Mostrar os seus
-            toggles aqui também em "light" não tinha efeito nenhum — o
-            utilizador reparou nisto (5 jul 2026: "editor de widgets mas
-            tens que ver se esta atualizado aqui") — por isso filtramos a
-            lista consoante o modo. */}
+            Painel (ver Dashboard.jsx); os outros (top_movers/performers/
+            allocation/monthly_returns/assets) só existem em "advanced".
+            Mostrar os seus toggles aqui também em "light" não tinha efeito
+            nenhum — o utilizador reparou nisto (5 jul 2026: "editor de
+            widgets mas tens que ver se esta atualizado aqui") — por isso
+            filtramos a lista consoante o modo. */}
         <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 space-y-2">
           {widgetConfig
             .filter((w) => dashMode !== "light" || ["summary", "evolution"].includes(w.id))

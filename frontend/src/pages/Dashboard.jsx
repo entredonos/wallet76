@@ -24,6 +24,7 @@ import EvolutionChart from "../components/dashboard/EvolutionChart";
 import AllocationWidget from "../components/dashboard/AllocationWidget";
 import AllocationTargetDialog from "../components/dashboard/AllocationTargetDialog";
 import AssetsTable from "../components/dashboard/AssetsTable";
+import MonthlyReturnsPreview from "../components/dashboard/MonthlyReturnsPreview";
 import {
   SORT_OPTIONS, DEFAULT_VISIBLE_COLS, WIDGET_DEFS, DEFAULT_WIDGETS,
 } from "../constants/dashboardConstants";
@@ -1292,6 +1293,13 @@ const worstPerformer = useMemo(() => {
           onSaved={(targets) => setAllocTargets(targets)}
         />
       )}
+
+      {/* Retornos Mensais — prévia (6 jul 2026), link para a página Análise
+          completa. Pro-only (ver MonthlyReturnsPreview.jsx). */}
+      <div style={{ order: wOrder("monthly_returns"), display: wVisible("monthly_returns") ? undefined : "none" }}
+           data-testid="monthly-returns-widget">
+        <MonthlyReturnsPreview walletId={filterWallet} />
+      </div>
 
       {/* Holdings table */}
       <div style={{ order: wOrder("assets"), display: wVisible("assets") ? undefined : "none" }}>

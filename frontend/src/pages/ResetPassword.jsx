@@ -9,7 +9,9 @@ import { TrendingUp, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import walletLogo from "../assets/wallet76-logo80x60.png";
 import AuthLangSwitcher from "../components/AuthLangSwitcher";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+// || "" — ver lib/api.js para o porquê (proxy same-origin em produção via
+// vercel.json; sem isto, "undefined/api" quando a env var não existe).
+const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 
 export default function ResetPassword() {
   const { token } = useParams();

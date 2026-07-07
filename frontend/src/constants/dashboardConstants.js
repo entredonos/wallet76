@@ -100,12 +100,18 @@ export const DEFAULT_VISIBLE_COLS = ["type","price","qty","value","avg_cost","pn
 
 // ── Widget system ────────────────────────────────────────────────────────────
 export const WIDGET_DEFS = [
-  { id: "summary",    labelKey: "dash.widget_summary" },
-  { id: "top_movers", labelKey: "dash.widget_top_movers" },
-  { id: "performers", labelKey: "dash.widget_performers" },  // sub-row inside top_movers
-  { id: "evolution",  labelKey: "dash.widget_evolution" },
-  { id: "allocation", labelKey: "dash.widget_allocation" },
-  { id: "assets",     labelKey: "dash.widget_assets" },
+  { id: "summary",         labelKey: "dash.widget_summary" },
+  { id: "top_movers",      labelKey: "dash.widget_top_movers" },
+  { id: "performers",      labelKey: "dash.widget_performers" },  // sub-row inside top_movers
+  { id: "evolution",       labelKey: "dash.widget_evolution" },
+  { id: "allocation",      labelKey: "dash.widget_allocation" },
+  // 6 jul 2026: prévia (últimos 12 meses + melhor/pior mês) do gráfico de
+  // Retornos Mensais que já existe na página Análise — pedido pelo
+  // utilizador para não ter de sair do Painel para ver isto. Reutiliza o
+  // mesmo endpoint /analytics; é Pro-only, tal como a página Análise em si
+  // (ver MonthlyReturnsPreview.jsx).
+  { id: "monthly_returns", labelKey: "dash.widget_monthly_returns" },
+  { id: "assets",          labelKey: "dash.widget_assets" },
 ];
 export const DEFAULT_WIDGETS = WIDGET_DEFS.map((d) => ({ id: d.id, enabled: true }));
 

@@ -1,6 +1,17 @@
 import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+// "" (not undefined) when REACT_APP_BACKEND_URL isn't set — 6 jul 2026:
+// produção passou a servir a API através de um rewrite same-origin
+// (frontend/vercel.json: /api/* -> Render) para o cookie httpOnly deixar
+// de ser cross-site e parar de ser bloqueado pelo "Prevent Cross-Site
+// Tracking" do Safari/iOS. Com isso, REACT_APP_BACKEND_URL fica vazio em
+// produção e o pedido passa a ser feito a um caminho relativo ("/api").
+// SEM o fallback `|| ""` aqui, `${undefined}/api` (template literal)
+// resolve para a string literal "undefined/api" (JS converte undefined em
+// texto dentro de template strings) — isto partia tudo silenciosamente. Em
+// desenvolvimento local a env var continua definida (aponta para o
+// backend local), por isso este fallback não muda nada aí.
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 export const API = `${BACKEND_URL}/api`;
 
 export const api = axios.create({

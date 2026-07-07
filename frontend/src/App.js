@@ -156,17 +156,27 @@ function RouteFallback() {
 }
 
 function Protected({ children, currency, setCurrency }) {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading...
-      </div>
-    );
-  }
-
-  if (!user) {
+  // user: null = ainda a confirmar /auth/me, false = confirmado não
+  // autenticado, objeto = autenticado (ver AuthContext.jsx).
+  //
+  // 6 jul 2026: isto costumava bloquear em `loading` (equivalente a
+  // `user === null`) e só desenhar a página a seguir a /auth/me terminar
+  // — o que também adiava o download do PRÓPRIO chunk JS da página (o
+  // lazy() só é invocado quando isto renderiza <Dashboard/>), somando um
+  // round-trip inteiro à abertura da app antes de sequer começar a pedir
+  // /portfolio, /history, etc. Só bloqueamos agora quando `user` já está
+  // confirmado a false — enquanto ainda está a confirmar (null),
+  // desenhamos já a página; o seu próprio pedido de dados dispara em
+  // paralelo com o /auth/me em vez de esperar por ele. Se afinal não
+  // estiver autenticado, esse pedido vem 401 e o interceptor global (ver
+  // lib/api.js) já passa `user` a false, redirecionando na render
+  // seguinte — mesmo mecanismo que já tratava sessão expirada a meio do
+  // uso. O único custo é um flash muito breve da moldura da app (sidebar/
+  // header) para quem não está autenticado; nunca chega a mostrar dados
+  // reais, esses só vêm com um cookie válido.
+  if (user === false) {
     return <Navigate to="/login" replace />;
   }
 
@@ -190,6 +200,17 @@ function AppRoutes() {
   const wrap = (node) => (
     <Protected currency={currency} setCurrency={setCurrency} unlocked={unlocked} setUnlocked={setUnlocked}>{node}</Protected>
   );
+
+  // Prefetch the Dashboard chunk as soon as the app boots, in parallel with
+  // the /auth/me check (AuthContext) instead of after it — most sessions
+  // land on /dashboard right after login or opening the installed PWA, and
+  // its JS previously didn't even start downloading until Protected first
+  // rendered it post-auth. A redundant import() here just resolves against
+  // the same webpack chunk cache the browser already uses for the lazy()
+  // below, so this can't create a second copy of the component.
+  React.useEffect(() => {
+    import("./pages/Dashboard");
+  }, []);
 
   return (
     <Suspense fallback={<RouteFallback />}>

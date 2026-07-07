@@ -2,7 +2,12 @@ import React, { useEffect, useRef, useState } from "react";
 import { useI18n } from "../context/I18nContext";
 import { WifiOff } from "lucide-react";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+// || "" — ver lib/api.js para o porquê (proxy same-origin em produção via
+// vercel.json). Um caminho relativo ("/ping") é um alvo de fetch tão válido
+// como um absoluto, por isso o guard "if (!BACKEND_URL) return" que existia
+// aqui foi removido (ver useEffect abaixo) — com a env var vazia em
+// produção, esse guard desativaria este banner por completo e silenciosamente.
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
 const CHECK_INTERVAL_MS = 10000;
 const TIMEOUT_MS = 4000;
 
@@ -17,7 +22,6 @@ export default function BackendStatusBanner() {
   const timerRef = useRef(null);
 
   useEffect(() => {
-    if (!BACKEND_URL) return undefined;
     let cancelled = false;
 
     const check = async () => {
