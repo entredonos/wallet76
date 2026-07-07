@@ -647,7 +647,16 @@ function ReturnsBarchart({ m, t, currency, benchmarkMetrics }) {
   };
 
   const BarLabel = ({ x, y, width, height, value }) => {
-    if (Math.abs(height) < 14 || Math.abs(width) < 20) return null;
+    // Antes escondia a label sempre que a barra tinha menos de 14px de
+    // altura — o que apaga a percentagem exatamente nos retornos pequenos
+    // (ex.: -0.4%), que são os que ficam pertinho do zero. É aí que o
+    // utilizador mais precisa de ver o número (7 jul 2026: "os negativos
+    // ficam sempre perto do zero... não se vê a percentagem"). Mantém-se só
+    // a guarda de largura (barras muito estreitas em períodos longos, onde
+    // o texto ficaria a sobrepor a barra vizinha).
+    if (Math.abs(width) < 14) return null;
+    // Offset fixo (não depende da altura da barra) — mesmo uma barra de 1px
+    // fica com a label a 11px de distância dela, nunca colada/sobreposta.
     const pos = value >= 0 ? y - 3 : y + Math.abs(height) + 11;
     return (
       <text x={x + width / 2} y={pos} textAnchor="middle" fontSize={9} fontFamily="monospace"
@@ -707,7 +716,7 @@ function ReturnsBarchart({ m, t, currency, benchmarkMetrics }) {
                 axisLine={false}
                 minTickGap={period === "week" ? 28 : 16}
               />
-              <YAxis yAxisId="pct" tickFormatter={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`} tick={{ fill: "#71717a", fontSize: 10 }} tickLine={false} axisLine={false} width={42} />
+              <YAxis yAxisId="pct" domain={[(min) => min - 4, (max) => max + 4]} tickFormatter={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`} tick={{ fill: "#71717a", fontSize: 10 }} tickLine={false} axisLine={false} width={42} />
               <YAxis yAxisId="cum" orientation="right" tickFormatter={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`} tick={{ fill: "#52525b", fontSize: 9 }} tickLine={false} axisLine={false} width={36} />
               <Tooltip
                 content={({ active, payload, label }) => {
