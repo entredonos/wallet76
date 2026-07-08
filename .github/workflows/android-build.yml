@@ -1,0 +1,89 @@
+name: Android build
+
+# Compila a app Android (Capacitor) sem precisares do Android Studio.
+#
+# Corre automaticamente sempre que algo em frontend/ muda no branch main, e
+# também pode ser disparado manualmente a qualquer momento (botão "Run
+# workflow" no separador Actions do GitHub) — útil para testar sem esperar
+# por um push.
+#
+# Por agora só gera um APK de DEBUG (não assinado para a Play Store, mas
+# perfeitamente instalável para testar num telemóvel Android via
+# "Instalar de fontes desconhecidas") — fica disponível para download como
+# "artifact" no final de cada execução, sem precisar de conta na Play
+# Console nem de keystore de assinatura.
+#
+# Quando a conta da Play Console e o keystore de assinatura estiverem
+# prontos (ver PRODUCT-REVIEW/tarefas pendentes), este workflow pode
+# ganhar um segundo job "build-release" que assina um .aab de produção,
+# lendo o keystore e as passwords de GitHub Secrets (nunca em texto no
+# repositório) — nada disso é preciso para o build de debug abaixo.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/android-build.yml"
+  workflow_dispatch: {}
+
+jobs:
+  build-debug:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Java (necessário para o Gradle/Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      # Cache das dependências do Gradle — sem isto, cada build descarrega
+      # de novo dezenas/centenas de MB de bibliotecas Android. Com cache,
+      # builds seguintes ficam bem mais rápidos.
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('frontend/android/gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: Instalar dependências do frontend
+        run: npm ci
+
+      - name: Build da web app
+        run: npm run build
+
+      # Garante que a pasta android/ tem sempre a versão mais recente do
+      # build web (o android/ commitado pode estar uns commits atrás do
+      # build feito agora mesmo neste job).
+      - name: Sincronizar Capacitor
+        run: npx cap sync android
+
+      - name: Dar permissão de execução ao gradlew
+        run: chmod +x android/gradlew
+
+      - name: Compilar APK de debug
+        working-directory: frontend/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Publicar o APK como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wallet76-debug-apk
+          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
