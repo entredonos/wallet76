@@ -8,7 +8,8 @@ import { Label } from "../components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "../components/ui/dialog";
-import { Lock, Fingerprint, ShieldOff, Check, Trash2, KeyRound, Bell, BellOff, AlertTriangle, Copy, Download } from "lucide-react";
+import { Lock, Fingerprint, ShieldOff, ShieldCheck, Check, Trash2, KeyRound, Bell, BellOff, AlertTriangle, Copy, Download } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { useI18n } from "../context/I18nContext";
 
@@ -32,12 +33,26 @@ export default function Settings() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const [status, setStatus] = useState({ lock_mode: "none", has_pin: false, biometric_count: 0 });
+  const [status, setStatus] = useState({ lock_mode: "none", has_pin: false, biometric_count: 0, totp_enabled: false });
   const [pinDialog, setPinDialog] = useState(false);
   const [pin, setPin] = useState("");
   const [pinConfirm, setPinConfirm] = useState("");
   const [saving, setSaving] = useState(false);
   const [registeringBio, setRegisteringBio] = useState(false);
+
+  // 2FA (8 jul 2026) — setup em 2 passos: "qr" mostra o QR + pede o código
+  // de 6 dígitos para confirmar; "recovery" mostra os códigos de reserva
+  // UMA vez só, logo a seguir a confirmar (o backend não os guarda em
+  // texto simples, por isso esta é a única oportunidade de os ver).
+  const [twoFAStep, setTwoFAStep] = useState(null); // null | "qr" | "recovery"
+  const [twoFASecret, setTwoFASecret] = useState("");
+  const [twoFAOtpUrl, setTwoFAOtpUrl] = useState("");
+  const [twoFACode, setTwoFACode] = useState("");
+  const [twoFARecoveryCodes, setTwoFARecoveryCodes] = useState([]);
+  const [twoFABusy, setTwoFABusy] = useState(false);
+  const [twoFAError, setTwoFAError] = useState("");
+  const [disable2FADialog, setDisable2FADialog] = useState(false);
+  const [disable2FAPassword, setDisable2FAPassword] = useState("");
   const [subscription, setSubscription] = useState(null);
   const [alertEmails, setAlertEmails] = useState(true);
   const [wallets, setWallets] = useState([]);
@@ -226,6 +241,44 @@ export default function Settings() {
     } catch { toast.error("Failed"); }
   };
 
+  const startTwoFactorSetup = async () => {
+    setTwoFAError(""); setTwoFACode("");
+    try {
+      const { data } = await api.post("/security/2fa/setup", {});
+      setTwoFASecret(data.secret);
+      setTwoFAOtpUrl(data.otpauth_url);
+      setTwoFAStep("qr");
+    } catch (e) {
+      toast.error(formatApiErrorDetail(e.response?.data?.detail) || t("settings.2fa_setup_failed"));
+    }
+  };
+
+  const confirmTwoFactorSetup = async () => {
+    if (!twoFACode) return;
+    setTwoFABusy(true); setTwoFAError("");
+    try {
+      const { data } = await api.post("/security/2fa/confirm", { code: twoFACode.trim() });
+      setTwoFARecoveryCodes(data.recovery_codes || []);
+      setTwoFAStep("recovery");
+      load();
+    } catch (e) {
+      setTwoFAError(formatApiErrorDetail(e.response?.data?.detail) || t("settings.2fa_invalid_code"));
+    } finally { setTwoFABusy(false); }
+  };
+
+  const disableTwoFactor = async () => {
+    setTwoFABusy(true);
+    try {
+      await api.post("/security/2fa/disable", { password: disable2FAPassword });
+      setDisable2FADialog(false);
+      setDisable2FAPassword("");
+      toast.success(t("settings.2fa_disabled"));
+      load();
+    } catch (e) {
+      toast.error(formatApiErrorDetail(e.response?.data?.detail) || t("settings.delete_account_wrong_password"));
+    } finally { setTwoFABusy(false); }
+  };
+
   return (
     <div className="space-y-8 fade-in max-w-3xl">
       <div>
@@ -287,6 +340,36 @@ export default function Settings() {
           {status.biometric_count > 0 && (
             <Button variant="outline" onClick={removeBiometrics} className="bg-zinc-900/50 border-rose-500/30 text-rose-300 hover:bg-rose-500/15" data-testid="remove-biometric-btn">
               <Trash2 className="w-3.5 h-3.5 mr-1.5"/> {t("settings.remove_biometric")}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* 2FA / TOTP (8 jul 2026) — cartão separado do de PIN/biometria: são
+          camadas diferentes (PIN/biometria trancam a APP já com sessão
+          aberta; 2FA protege o próprio LOGIN, exigido mesmo com a password
+          certa). App autenticadora só, sem custos de SMS. */}
+      <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-6">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400"/>
+            <div className="text-sm font-medium text-zinc-200">{t("settings.2fa_title")}</div>
+          </div>
+          {status.totp_enabled ? (
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">{t("settings.active")}</span>
+          ) : (
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">{t("settings.mode_none")}</span>
+          )}
+        </div>
+        <p className="text-xs text-zinc-400 mt-2 leading-relaxed">{t("settings.2fa_desc")}</p>
+        <div className="mt-4">
+          {status.totp_enabled ? (
+            <Button variant="outline" onClick={() => setDisable2FADialog(true)} className="bg-zinc-900/50 border-rose-500/30 text-rose-300 hover:bg-rose-500/15" data-testid="disable-2fa-btn">
+              <ShieldOff className="w-3.5 h-3.5 mr-1.5"/> {t("settings.2fa_disable")}
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={startTwoFactorSetup} className="bg-zinc-900/50 border-zinc-800 text-zinc-300" data-testid="enable-2fa-btn">
+              <ShieldCheck className="w-3.5 h-3.5 mr-1.5"/> {t("settings.2fa_enable")}
             </Button>
           )}
         </div>
@@ -488,6 +571,104 @@ export default function Settings() {
             <Button variant="outline" onClick={() => setPinDialog(false)} className="bg-zinc-900/50 border-zinc-800 text-zinc-300" data-testid="pin-cancel">{t("common.cancel")}</Button>
             <Button onClick={submitPin} disabled={saving || !pin || !pinConfirm} className="bg-zinc-100 text-zinc-950 hover:bg-white" data-testid="pin-submit">
               {saving ? t("common.saving") : t("common.save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 2FA — passo 1: QR + código de confirmação */}
+      <Dialog open={twoFAStep === "qr"} onOpenChange={(v) => { if (!v) setTwoFAStep(null); }}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display font-light text-2xl">{t("settings.2fa_setup_title")}</DialogTitle>
+            <DialogDescription className="text-zinc-400 text-sm">{t("settings.2fa_setup_desc")}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex justify-center bg-white p-3 rounded-lg w-fit mx-auto">
+              {twoFAOtpUrl && <QRCodeSVG value={twoFAOtpUrl} size={176} />}
+            </div>
+            <div>
+              <div className="text-[11px] font-mono uppercase tracking-[0.15em] text-zinc-500 mb-1">{t("settings.2fa_manual_key")}</div>
+              <div className="bg-zinc-900 border border-zinc-800 rounded-md px-3 py-2 font-mono text-xs text-zinc-300 break-all select-all">{twoFASecret}</div>
+            </div>
+            <div>
+              <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("settings.2fa_code_label")}</Label>
+              <Input
+                type="text" inputMode="numeric" maxLength={6}
+                value={twoFACode}
+                onChange={(e) => { setTwoFACode(e.target.value.replace(/\D/g, "")); setTwoFAError(""); }}
+                onKeyDown={(e) => { if (e.key === "Enter") confirmTwoFactorSetup(); }}
+                placeholder="000000"
+                className="mt-2 bg-zinc-900/50 border-zinc-800 font-mono text-center text-xl tracking-[0.4em]"
+                data-testid="2fa-confirm-code"
+                autoFocus
+              />
+            </div>
+            {twoFAError && <div className="text-xs font-mono text-rose-400">{twoFAError}</div>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTwoFAStep(null)} className="bg-zinc-900/50 border-zinc-800 text-zinc-300" data-testid="2fa-setup-cancel">{t("common.cancel")}</Button>
+            <Button onClick={confirmTwoFactorSetup} disabled={twoFABusy || twoFACode.length !== 6} className="bg-zinc-100 text-zinc-950 hover:bg-white" data-testid="2fa-setup-confirm">
+              {twoFABusy ? t("common.saving") : t("settings.2fa_confirm_btn")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 2FA — passo 2: códigos de recuperação, mostrados uma única vez
+          (o backend só guarda o hash — se se perderem, não há como os
+          recuperar depois, só desativar e configurar de novo). */}
+      <Dialog open={twoFAStep === "recovery"} onOpenChange={(v) => { if (!v) setTwoFAStep(null); }}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display font-light text-2xl text-emerald-400">{t("settings.2fa_enabled_title")}</DialogTitle>
+            <DialogDescription className="text-zinc-400 text-sm">{t("settings.2fa_recovery_desc")}</DialogDescription>
+          </DialogHeader>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 grid grid-cols-2 gap-2 font-mono text-sm text-zinc-200">
+            {twoFARecoveryCodes.map((c) => <div key={c}>{c}</div>)}
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-amber-400 mt-1">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {t("settings.2fa_recovery_warning")}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => navigator.clipboard?.writeText(twoFARecoveryCodes.join("\n"))}
+              className="bg-zinc-900/50 border-zinc-800 text-zinc-300"
+              data-testid="2fa-recovery-copy"
+            >
+              <Copy className="w-3.5 h-3.5 mr-1.5" /> {t("common.copy")}
+            </Button>
+            <Button onClick={() => setTwoFAStep(null)} className="bg-zinc-100 text-zinc-950 hover:bg-white" data-testid="2fa-recovery-done">
+              {t("settings.2fa_recovery_done")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 2FA — desativar, com confirmação de password (mesma exigência do
+          apagar conta: uma proteção de segurança não devia sair com um
+          único clique acidental). */}
+      <Dialog open={disable2FADialog} onOpenChange={setDisable2FADialog}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display font-light text-2xl text-rose-400">{t("settings.2fa_disable")}</DialogTitle>
+            <DialogDescription className="text-zinc-400 text-sm">{t("settings.2fa_disable_desc")}</DialogDescription>
+          </DialogHeader>
+          <Input
+            type="password"
+            value={disable2FAPassword}
+            onChange={(e) => setDisable2FAPassword(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") disableTwoFactor(); }}
+            placeholder={t("auth.password")}
+            className="bg-zinc-900/50 border-zinc-800"
+            data-testid="2fa-disable-password"
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDisable2FADialog(false); setDisable2FAPassword(""); }} className="bg-zinc-900/50 border-zinc-800 text-zinc-300" data-testid="2fa-disable-cancel">{t("common.cancel")}</Button>
+            <Button onClick={disableTwoFactor} disabled={twoFABusy || !disable2FAPassword} className="bg-rose-500 hover:bg-rose-400 text-zinc-950" data-testid="2fa-disable-confirm">
+              {twoFABusy ? t("common.saving") : t("settings.2fa_disable")}
             </Button>
           </DialogFooter>
         </DialogContent>

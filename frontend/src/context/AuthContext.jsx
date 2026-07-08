@@ -40,10 +40,21 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const { data } = await api.post("/auth/login", { email, password });
+    // 2FA ativo (8 jul 2026): a resposta vem sem sessão nenhuma, só
+    // {two_factor_required, pending_token} — NÃO autentica ainda. Devolve
+    // isto tal como veio para o Login.jsx pedir o código a seguir; só
+    // verifyTwoFactor() abaixo é que efetivamente faz setUser().
+    if (data.two_factor_required) return data;
     // The backend also returns `token` in the response body, but we don't
     // persist it anywhere JS-readable (no localStorage) — the httpOnly
     // cookie it also sets is the only thing that authenticates subsequent
     // requests. See lib/api.js for why.
+    setUser(data);
+    return data;
+  };
+
+  const verifyTwoFactor = async (pendingToken, code) => {
+    const { data } = await api.post("/auth/2fa/verify", { pending_token: pendingToken, code });
     setUser(data);
     return data;
   };
@@ -66,7 +77,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, setUser, loading, login, register, logout, verifyTwoFactor }}>
       {children}
     </AuthContext.Provider>
   );

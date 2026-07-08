@@ -94,6 +94,7 @@ class ErrorBoundary extends React.Component {
 }
 import "./App.css";
 import { Suspense, lazy } from "react";
+import { Capacitor } from "@capacitor/core";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -156,7 +157,7 @@ function RouteFallback() {
   );
 }
 
-function Protected({ children, currency, setCurrency }) {
+function Protected({ children, currency, setCurrency, unlocked, setUnlocked }) {
   const { user } = useAuth();
 
   // user: null = ainda a confirmar /auth/me, false = confirmado não
@@ -181,10 +182,25 @@ function Protected({ children, currency, setCurrency }) {
     return <Navigate to="/login" replace />;
   }
 
+  // LockScreen (8 jul 2026) — PIN e biometria (WebAuthn) já estavam
+  // completamente construídos no backend (routes/security.py) e em
+  // Settings.jsx (configurar PIN/biometria), e o próprio componente
+  // LockScreen.jsx já existia pronto a pedir o desbloqueio — só nunca
+  // tinha sido montado em lado nenhum, então nunca aparecia (utilizador:
+  // "ainda faltam a segurança, 2 fatores, biométrica"). LockScreen já
+  // trata sozinho o caso "sem bloqueio configurado" (chama onUnlock
+  // automaticamente e não desenha nada), por isso é seguro montá-lo
+  // sempre para qualquer utilizador autenticado — só aparece de facto para
+  // quem ativou PIN ou biometria em Definições. Fica por cima do <Layout>
+  // (não substitui), com o fundo desfocado atrás — o próprio design do
+  // componente (backdrop-blur-xl) já pressupunha isto.
   return (
-    <Layout currency={currency} setCurrency={setCurrency}>
-      {children}
-    </Layout>
+    <>
+      {user && !unlocked && <LockScreen onUnlock={() => setUnlocked?.(true)} />}
+      <Layout currency={currency} setCurrency={setCurrency}>
+        {children}
+      </Layout>
+    </>
   );
 }
 
@@ -221,7 +237,15 @@ function AppRoutes() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
-        <Route path="/" element={<LandingPage />} />
+        {/* Na app nativa (Capacitor) não faz sentido mostrar a landing page
+            de marketing — quem já instalou a app não precisa de ser
+            "vendido" outra vez, só quer entrar. "/" salta logo para
+            /login, que por sua vez (PublicOnly) já manda para /dashboard
+            se a sessão ainda for válida. Só afeta o build nativo — no
+            browser normal (Capacitor.isNativePlatform() === false)
+            continua tudo como antes. (8 jul 2026: "a app quando abre abre
+            a landpage e deveria abrir logo o login") */}
+        <Route path="/" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <LandingPage />} />
         <Route path="/dashboard" element={wrap(<Dashboard currency={currency} />)} />
         <Route path="/transactions" element={wrap(<Transactions />)} />
         <Route path="/alerts" element={wrap(<Alerts />)} />

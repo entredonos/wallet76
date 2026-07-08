@@ -62,6 +62,35 @@ def create_access_token(user_id: str, email: str) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
 
 
+# 2FA (8 jul 2026) — token de curta duração emitido logo a seguir à
+# password estar certa, mas ANTES de dar acesso: o login com 2FA ativo
+# fica em dois passos (POST /auth/login -> {two_factor_required, pending_
+# token}, depois POST /auth/2fa/verify com o código). Sem este token
+# intermédio, nada impediria alguém de chamar /auth/2fa/verify direto,
+# sem nunca ter acertado a password. Vida curta (10 min) e "type" próprio
+# para não poder ser confundido/reutilizado como access_token.
+def create_2fa_pending_token(user_id: str) -> str:
+    payload = {
+        "sub": user_id,
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=10),
+        "type": "2fa_pending",
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
+
+
+def verify_2fa_pending_token(token: str) -> str:
+    """Devolve o user_id se o token for válido; lança 401 caso contrário."""
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO])
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Code expired, please log in again")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid session")
+    if payload.get("type") != "2fa_pending":
+        raise HTTPException(status_code=401, detail="Invalid session")
+    return payload["sub"]
+
+
 async def get_current_user(request: Request) -> dict:
     token = request.cookies.get("access_token")
     if not token:

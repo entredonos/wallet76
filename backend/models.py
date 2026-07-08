@@ -149,3 +149,16 @@ class LockModeBody(BaseModel):
 
 class PinBody(BaseModel):
     pin: str
+
+
+class TwoFactorConfirmBody(BaseModel):
+    code: str
+
+
+class TwoFactorDisableBody(BaseModel):
+    password: str
+
+
+class TwoFactorLoginVerifyBody(BaseModel):
+    pending_token: str
+    code: str

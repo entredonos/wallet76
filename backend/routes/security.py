@@ -1,7 +1,9 @@
-"""Security: lock-mode (none | pin | biometric) + WebAuthn (biometric)."""
+"""Security: lock-mode (none | pin | biometric) + WebAuthn (biometric) + 2FA (TOTP)."""
 import json as jsonlib
+import secrets
 from datetime import datetime, timezone
 
+import pyotp
 from fastapi import APIRouter, HTTPException, Request, Depends
 from webauthn import (
     generate_registration_options, verify_registration_response,
@@ -20,7 +22,7 @@ from core import (
     db, get_current_user, hash_password, verify_password,
     b64url_decode, b64url_encode, detect_rp_id, origin_from_req, RP_NAME,
 )
-from models import LockModeBody, PinBody
+from models import LockModeBody, PinBody, TwoFactorConfirmBody, TwoFactorDisableBody
 
 router = APIRouter()
 
@@ -32,7 +34,70 @@ async def security_status(user=Depends(get_current_user)):
         "lock_mode": sec.get("lock_mode", "none"),
         "has_pin": bool(sec.get("pin_hash")),
         "biometric_count": len(sec.get("webauthn_credentials", [])),
+        "totp_enabled": bool(sec.get("totp_enabled")),
     }
+
+
+# ----- 2FA (TOTP) — 8 jul 2026 -----
+# App autenticadora (Google Authenticator, Authy, etc.), sem custos de SMS
+# e sem depender de um fornecedor externo para entregar códigos. Fluxo em
+# 2 passos, tal como o WebAuthn acima: /setup gera um segredo PENDENTE
+# (ainda não protege a conta) + o otpauth:// URI para o QR; /confirm exige
+# um código válido gerado a partir desse segredo antes de o ativar de
+# vez — sem isto, um QR mal lido/nunca confirmado deixaria a conta com um
+# segredo "morto" marcado como ativo, e o próprio dono ficaria trancado de
+# fora ao primeiro logout.
+@router.post("/security/2fa/setup")
+async def totp_setup(user=Depends(get_current_user)):
+    secret = pyotp.random_base32()
+    otpauth_url = pyotp.totp.TOTP(secret).provisioning_uri(name=user.get("email", "user"), issuer_name="Wallet76")
+    await db.user_security.update_one(
+        {"user_id": user["id"]},
+        {"$set": {"totp_secret_pending": secret, "user_id": user["id"]}},
+        upsert=True,
+    )
+    return {"secret": secret, "otpauth_url": otpauth_url}
+
+
+@router.post("/security/2fa/confirm")
+async def totp_confirm(body: TwoFactorConfirmBody, user=Depends(get_current_user)):
+    sec = await db.user_security.find_one({"user_id": user["id"]}, {"_id": 0}) or {}
+    secret = sec.get("totp_secret_pending")
+    if not secret:
+        raise HTTPException(400, "No 2FA setup in progress")
+    if not pyotp.TOTP(secret).verify((body.code or "").strip(), valid_window=1):
+        raise HTTPException(401, "Invalid code")
+    # Códigos de recuperação — 8, formato "xxxx-xxxx", mostrados UMA vez
+    # aqui; guardamos só o hash (mesma função que já protege PIN/password),
+    # nunca o texto simples, tal como o resto da app.
+    recovery_codes = [f"{secrets.token_hex(2)}-{secrets.token_hex(2)}" for _ in range(8)]
+    await db.user_security.update_one(
+        {"user_id": user["id"]},
+        {
+            "$set": {
+                "totp_secret": secret,
+                "totp_enabled": True,
+                "totp_recovery_hashes": [hash_password(c) for c in recovery_codes],
+            },
+            "$unset": {"totp_secret_pending": ""},
+        },
+    )
+    return {"ok": True, "recovery_codes": recovery_codes}
+
+
+@router.post("/security/2fa/disable")
+async def totp_disable(body: TwoFactorDisableBody, user=Depends(get_current_user)):
+    full = await db.users.find_one({"id": user["id"]})
+    if not full or not verify_password(body.password, full.get("password_hash", "")):
+        raise HTTPException(401, "Incorrect password")
+    await db.user_security.update_one(
+        {"user_id": user["id"]},
+        {"$unset": {
+            "totp_secret": "", "totp_secret_pending": "", "totp_enabled": "",
+            "totp_recovery_hashes": "",
+        }},
+    )
+    return {"ok": True}
 
 
 @router.post("/security/lock-mode")

@@ -12,14 +12,17 @@ import stripe
 from fastapi import APIRouter, HTTPException, Response, Request, Depends
 from fastapi.responses import StreamingResponse
 
+import pyotp
+
 from core import (
     db, hash_password, verify_password, create_access_token, get_current_user,
     APP_URL, check_rate_limit, logger, delete_all_user_data, write_auth_audit,
+    create_2fa_pending_token, verify_2fa_pending_token,
 )
 from email_utils import send_email, email_layout, _log_email_task_result
 from models import (
     UserRegister, UserLogin, ForgotPasswordBody, ResetPasswordBody, TokenBody,
-    ResendVerificationBody, DeleteAccountBody,
+    ResendVerificationBody, DeleteAccountBody, TwoFactorLoginVerifyBody,
 )
 from routes.brokers import _sanitise
 
@@ -81,10 +84,60 @@ async def login(payload: UserLogin, request: Request, response: Response):
                 "message": "Please verify your email before signing in. Check your inbox for the confirmation link.",
             },
         )
+    # 2FA (8 jul 2026) — se ativo, a password certa NÃO chega para autenticar
+    # sozinha: devolve-se um "pending_token" de curta duração (10 min) em vez
+    # do cookie de sessão, e o frontend pede o código de 6 dígitos a seguir
+    # (POST /auth/2fa/verify) antes de a sessão real ser emitida.
+    sec = await db.user_security.find_one({"user_id": user["id"]}, {"_id": 0}) or {}
+    if sec.get("totp_enabled"):
+        asyncio.create_task(write_auth_audit("login_password_ok_2fa_pending", request, email=email, user_id=user["id"]))
+        return {"two_factor_required": True, "pending_token": create_2fa_pending_token(user["id"])}
+
     token = create_access_token(user["id"], email)
     response.set_cookie("access_token", token, httponly=True, secure=True, samesite="none", max_age=604800, path="/")
     asyncio.create_task(write_auth_audit("login_success", request, email=email, user_id=user["id"]))
     return {"id": user["id"], "email": email, "name": user.get("name"), "token": token}
+
+
+@router.post("/auth/2fa/verify")
+async def two_factor_verify(payload: TwoFactorLoginVerifyBody, request: Request, response: Response):
+    # Mesmo limite do /auth/login — impede tentar às cegas os 10^6 códigos
+    # possíveis (ou a lista curta de códigos de recuperação) num pending_
+    # token válido roubado/adivinhado.
+    check_rate_limit(request, "2fa-verify", max_attempts=10, window_seconds=300)
+    user_id = verify_2fa_pending_token(payload.pending_token)
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid session")
+    sec = await db.user_security.find_one({"user_id": user_id}, {"_id": 0}) or {}
+    secret = sec.get("totp_secret")
+    code = (payload.code or "").strip()
+    if not secret or not sec.get("totp_enabled"):
+        raise HTTPException(status_code=400, detail="2FA not enabled")
+
+    ok = pyotp.TOTP(secret).verify(code, valid_window=1)
+    used_recovery = None
+    if not ok:
+        # Aceita também um código de recuperação (formato "xxxx-xxxx"),
+        # de uso único — removido da lista assim que gasto.
+        for h in sec.get("totp_recovery_hashes", []):
+            if verify_password(code, h):
+                ok = True
+                used_recovery = h
+                break
+    if not ok:
+        asyncio.create_task(write_auth_audit("2fa_failed", request, email=user.get("email", ""), user_id=user_id))
+        raise HTTPException(status_code=401, detail="Invalid code")
+
+    if used_recovery:
+        await db.user_security.update_one(
+            {"user_id": user_id}, {"$pull": {"totp_recovery_hashes": used_recovery}},
+        )
+
+    token = create_access_token(user["id"], user["email"])
+    response.set_cookie("access_token", token, httponly=True, secure=True, samesite="none", max_age=604800, path="/")
+    asyncio.create_task(write_auth_audit("login_success", request, email=user.get("email", ""), user_id=user_id))
+    return {"id": user["id"], "email": user["email"], "name": user.get("name"), "token": token}
 
 
 @router.post("/auth/logout")

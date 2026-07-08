@@ -11,7 +11,7 @@ import walletLogo from "../assets/wallet76-logo80x60.png";
 import AuthLangSwitcher from "../components/AuthLangSwitcher";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, verifyTwoFactor } = useAuth();
   const { t } = useI18n();
   const nav = useNavigate();
   const [email, setEmail] = useState("");
@@ -24,6 +24,13 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
 
+  // 2FA (8 jul 2026) — password certa mas conta com 2FA ativo: em vez de
+  // entrar logo, guarda o pending_token e troca o formulário por um passo
+  // de código de 6 dígitos (ou código de recuperação "xxxx-xxxx").
+  const [pendingToken, setPendingToken] = useState(null);
+  const [twoFACode, setTwoFACode] = useState("");
+  const [twoFABusy, setTwoFABusy] = useState(false);
+
   const submit = async (e) => {
     e.preventDefault();
     setErr("");
@@ -32,9 +39,13 @@ export default function Login() {
     setLoading(true);
     setReconnecting(false);
     try {
-      await withNetworkRetry(() => login(email, password), {
+      const result = await withNetworkRetry(() => login(email, password), {
         onRetry: () => setReconnecting(true),
       });
+      if (result?.two_factor_required) {
+        setPendingToken(result.pending_token);
+        return;
+      }
       nav("/dashboard");
     } catch (e2) {
       const detail = e2.response?.data?.detail;
@@ -49,6 +60,22 @@ export default function Login() {
     } finally {
       setLoading(false);
       setReconnecting(false);
+    }
+  };
+
+  const submitTwoFactor = async (e) => {
+    e.preventDefault();
+    if (!twoFACode) return;
+    setErr("");
+    setTwoFABusy(true);
+    try {
+      await verifyTwoFactor(pendingToken, twoFACode.trim());
+      nav("/dashboard");
+    } catch (e2) {
+      setErr(formatApiErrorDetail(e2.response?.data?.detail) || t("auth.2fa_invalid_code"));
+      setTwoFACode("");
+    } finally {
+      setTwoFABusy(false);
     }
   };
 
@@ -81,6 +108,49 @@ export default function Login() {
           <AuthLangSwitcher />
         </div>
 
+        {pendingToken ? (
+          <>
+            <h1 className="font-display text-4xl sm:text-5xl font-light tracking-tight mb-2">{t("auth.2fa_title")}</h1>
+            <p className="text-zinc-500 mb-10">{t("auth.2fa_subtitle")}</p>
+            <form onSubmit={submitTwoFactor} className="space-y-5" data-testid="login-2fa-form">
+              <div>
+                <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{t("auth.2fa_code_label")}</Label>
+                <Input
+                  data-testid="login-2fa-code"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  required
+                  autoFocus
+                  value={twoFACode}
+                  onChange={(e) => { setTwoFACode(e.target.value); setErr(""); }}
+                  className="mt-2 bg-zinc-900/50 border-zinc-800 focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500 h-12 font-mono text-xl tracking-[0.3em] text-center"
+                  placeholder="000000"
+                  maxLength={9}
+                />
+                <div className="mt-2 text-xs text-zinc-500">{t("auth.2fa_recovery_hint")}</div>
+              </div>
+              {err && <div className="text-rose-400 text-sm font-mono" data-testid="login-2fa-error">{err}</div>}
+              <Button
+                data-testid="login-2fa-submit"
+                type="submit"
+                disabled={twoFABusy || !twoFACode}
+                className="w-full h-12 bg-zinc-100 text-zinc-950 hover:bg-white font-medium"
+              >
+                {twoFABusy ? t("auth.signing_in") : t("auth.2fa_submit")}
+              </Button>
+              <button
+                type="button"
+                onClick={() => { setPendingToken(null); setTwoFACode(""); setErr(""); }}
+                className="w-full text-center text-xs font-mono text-zinc-500 hover:text-zinc-300 transition-colors"
+                data-testid="login-2fa-back"
+              >
+                {t("auth.2fa_back")}
+              </button>
+            </form>
+          </>
+        ) : (
+        <>
         <h1 className="font-display text-4xl sm:text-5xl font-light tracking-tight mb-2">{t("auth.signin_title")}</h1>
         <p className="text-zinc-500 mb-10">{t("auth.signin_subtitle")}</p>
 
@@ -166,6 +236,8 @@ export default function Login() {
           <Link to="/privacy" className="hover:text-zinc-400 transition-colors">{t("common.privacy_policy")}</Link>
           <Link to="/terms" className="hover:text-zinc-400 transition-colors">{t("common.terms_of_service")}</Link>
         </div>
+        </>
+        )}
       </div>
     </div>
   );
