@@ -4,6 +4,8 @@
   "private": true,
   "main": "electron/main.js",
   "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
     "@hookform/resolvers": "5.0.1",
     "@radix-ui/react-alert-dialog": "1.1.11",
     "@radix-ui/react-collapsible": "1.1.8",
@@ -47,7 +49,13 @@
     "build": "craco build",
     "test": "craco test",
     "electron": "electron .",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "cap:add:android": "cap add android",
+    "cap:add:ios": "cap add ios",
+    "cap:sync": "npm run build && cap sync",
+    "cap:open:android": "cap open android",
+    "cap:open:ios": "cap open ios",
+    "cap:assets": "capacitor-assets generate --android"
   },
   "browserslist": {
     "production": [
@@ -89,6 +97,8 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "7.21.11",
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.6.7",
     "@craco/craco": "7.1.0",
     "@eslint/js": "9.23.0",
     "@types/lodash": "4.17.24",
