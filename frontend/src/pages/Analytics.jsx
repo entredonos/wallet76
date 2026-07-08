@@ -50,6 +50,14 @@ const ANALYTICS_WIDGET_DEFS = [
   { id: "tax_report",    labelKey: "analytics.widget_tax_report" },
 ];
 const DEFAULT_ANALYTICS_WIDGETS = ANALYTICS_WIDGET_DEFS.map((d) => ({ id: d.id, enabled: true }));
+// Widgets mais "densos"/situacionais (8 jul 2026, revisão de menu/design
+// antes do TLM) — heatmap e histograma precisam de largura para se lerem
+// bem (grelha mês×ano, várias barras lado a lado) e são dos que menos se
+// olham "de relance"; dividendos e relatório fiscal só interessam a quem
+// tem dividendos ou está a fechar o ano. Só afeta a PRIMEIRA visita (sem
+// nada ainda guardado) num ecrã estreito — continuam a existir e ligáveis
+// a qualquer momento na gaveta de widgets, só não vêm ligados por defeito.
+const MOBILE_DEFAULT_OFF_WIDGETS = new Set(["heatmap", "histogram", "dividends", "tax_report"]);
 
 const HIST_BANDS = [
   { label: "<-10%",   min: -Infinity, max: -10,      pos: false },
@@ -173,7 +181,13 @@ export default function Analytics({ currency }) {
         return [...saved, ...ANALYTICS_WIDGET_DEFS.filter((d) => !ids.has(d.id)).map((d) => ({ id: d.id, enabled: true }))];
       }
     } catch { /* noop */ }
-    return DEFAULT_ANALYTICS_WIDGETS.map((w) => ({ ...w }));
+    // Sem nada guardado (primeira visita): no telemóvel (< md, 768px —
+    // mesmo breakpoint usado em todo o resto da app), os widgets em
+    // MOBILE_DEFAULT_OFF_WIDGETS começam desligados; no desktop, tudo
+    // ligado como sempre foi.
+    const isMobileViewport = typeof window !== "undefined" && window.innerWidth < 768;
+    if (!isMobileViewport) return DEFAULT_ANALYTICS_WIDGETS.map((w) => ({ ...w }));
+    return ANALYTICS_WIDGET_DEFS.map((d) => ({ id: d.id, enabled: !MOBILE_DEFAULT_OFF_WIDGETS.has(d.id) }));
   });
   const [widgetDrawer, setWidgetDrawer] = useState(false);
   const wVisible = (id) => widgetConfig.find((w) => w.id === id)?.enabled !== false;
