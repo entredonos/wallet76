@@ -26,12 +26,19 @@ export default function Transactions() {
   const prefillSymbol = searchParams.get("prefill");
   const prefillType   = searchParams.get("type");
   const prefillPrice  = searchParams.get("price");
+  // ?wallet=ID (8 jul 2026) — chegar aqui a partir de um atalho contextual
+  // "Transações desta carteira" (Dashboard.jsx, carteira selecionada) já
+  // abre com o filtro certo aplicado, em vez de aterrar sempre em "Todas as
+  // carteiras" e obrigar a escolher outra vez algo que o utilizador já
+  // tinha escolhido no ecrã anterior. Mesmo nome de parâmetro que a
+  // sidebar já usa para "/dashboard?wallet=ID" (ver Layout.jsx).
+  const walletParam = searchParams.get("wallet");
 
   const [txns, setTxns] = useState([]);
   const [wallets, setWallets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(!!prefillSymbol);
-  const [filterWallet, setFilterWallet] = useState("all");
+  const [filterWallet, setFilterWallet] = useState(walletParam || "all");
   const [filterType, setFilterType] = useState("all");
   const [editTxn, setEditTxn] = useState(null);
 

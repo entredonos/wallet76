@@ -6,7 +6,7 @@ import { useI18n, LANGUAGES } from "../context/I18nContext";
 import { api } from "../lib/api";
 import {
   TrendingUp, LogOut, Wallet as WalletIcon, LayoutDashboard, Receipt, Bell,
-  Briefcase, Coins, Plus, Menu, X, Sun, Moon, Eye, Newspaper, Languages, LineChart, Settings, Link2, Globe, Search, BarChart2, ShieldCheck, ChevronDown, User,
+  Briefcase, Coins, Plus, Sun, Moon, Eye, Newspaper, Languages, LineChart, Settings, Link2, Globe, Search, BarChart2, ShieldCheck, ChevronDown, User, MoreHorizontal,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import walletLogo from "../assets/wallet76-logo80x60.png";
@@ -37,7 +37,12 @@ export default function Layout({ children, currency, setCurrency }) {
   const [walletStats, setWalletStats] = useState({}); // { [wallet_id]: { value, cost, pnl, pnlPct } }
   const [walletSparks, setWalletSparks] = useState({}); // { [wallet_id]: [number...7] }
   const [searchOpen, setSearchOpen] = useState(false);
-  const [open, setOpen] = useState(false);
+  // Só o setter sobrevive (8 jul 2026, gaveta hambúrguer mobile removida —
+  // ver comentário mais abaixo) — os NavLink/Link da Sidebar (agora só
+  // desktop) continuam a chamar setOpen(false) por hábito/consistência de
+  // código, mas nada mais lê `open`; sem o valor em si não sobra "unused
+  // var" nenhuma variável.
+  const [, setOpen] = useState(false);
   const [unreadFeedback, setUnreadFeedback] = useState(0);
   const isPortfolioRouteActive = PORTFOLIO_GROUP_ROUTES.includes(loc.pathname);
   const [portfolioOpen, setPortfolioOpen] = useState(isPortfolioRouteActive);
@@ -430,23 +435,16 @@ export default function Layout({ children, currency, setCurrency }) {
       {/* Desktop sidebar */}
       <div className="hidden md:block sticky top-0 h-screen">{Sidebar}</div>
 
-      {/* Mobile sidebar overlay */}
-      {open && (
-        <div className="md:hidden fixed inset-0 z-50 bg-black/70" onClick={() => setOpen(false)}>
-          {/* stopPropagation (7 jul 2026) — sem isto, QUALQUER clique dentro
-              do painel (incluindo o botão de expandir "Portfólio", que só
-              faz setPortfolioOpen, nunca setOpen) fazia bubble até ao
-              backdrop e fechava a gaveta inteira. Resultado reportado:
-              tocar em "Portfólio" fechava logo o menu, e só ao reabri-lo
-              (tocando no hamburger outra vez) é que o submenu já aparecia
-              expandido — o toggle tinha funcionado, só a gaveta é que
-              fechava a mais. Os links (NavLink) continuam a fechar a
-              gaveta normalmente, via o seu próprio onClick={() =>
-              setOpen(false)} explícito — isto só trava o bubbling para o
-              backdrop, não impede esses handlers próprios de correr. */}
-          <div className="absolute left-0 top-0 h-full w-72 bg-zinc-950" onClick={(e) => e.stopPropagation()}>{Sidebar}</div>
-        </div>
-      )}
+      {/* Gaveta hambúrguer mobile REMOVIDA (8 jul 2026) — reutilizava a
+          sidebar inteira do desktop dentro de um overlay, competindo com a
+          bottom nav de baixo e escondendo Transações/Watchlist/Análise/
+          Notícias/Contas Ligadas/Definições a 2-3 toques de profundidade
+          (hambúrguer > grupo "Portfólio" > item), um padrão de navegação de
+          desktop, não de app nativa. Substituída pelo separador "Mais" na
+          bottom nav (ver items abaixo + pages/More.jsx), que dá a cada uma
+          dessas páginas um destino direto e plano. `open`/`setOpen` ficam
+          (não removidos) só para não obrigar a tocar em cada onClick da
+          Sidebar acima — deixaram de ter forma de se tornar `true`. */}
 
       <div className="flex-1 min-w-0">
         {/* justify-between com 4 filhos separados espalhava o logo+"Wallet76"
@@ -455,9 +453,6 @@ export default function Layout({ children, currency, setCurrency }) {
             encostados aos 3 traços; só a lupa fica isolada à direita. */}
         <header className="md:hidden sticky top-0 z-30 backdrop-blur-md bg-zinc-950/80 border-b border-zinc-800/50 h-14 flex items-center justify-between px-4">
           <div className="flex items-center gap-2.5">
-            <button onClick={() => setOpen(true)} className="text-zinc-300" data-testid="open-sidebar">
-              <Menu className="w-5 h-5"/>
-            </button>
             <img src={walletMarkSmall} alt="Wallet76" className="w-7 h-7 object-contain" />
             <div className="font-display text-base tracking-tight text-zinc-100">Wallet76</div>
           </div>
@@ -481,11 +476,12 @@ export default function Layout({ children, currency, setCurrency }) {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800/60"
            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="flex items-center justify-around h-14">
-          {/* 5 separadores acordados para a app mobile: Início/Carteiras/
-              Mercado/Alertas/Perfil — "Transações" deixou de ter separador
-              próprio aqui (fica acessível a partir de Carteiras); "Mercado"
-              entrou no lugar, já com watchlist + notícias dentro (ver
-              Market.jsx) em vez de terem separadores próprios.
+          {/* 6 separadores (8 jul 2026, antes eram 5): Início/Carteiras/
+              Mercado/Alertas/Perfil/Mais — "Transações" deixou de ter
+              separador próprio aqui (fica acessível a partir de Carteiras
+              ou do novo "Mais"); "Mercado" entrou no lugar, já com
+              watchlist + notícias dentro (ver Market.jsx) em vez de terem
+              separadores próprios.
               5º separador aponta a /profile (não /settings): o mockup
               aprovado tinha "Perfil" (avatar/email + Idioma + Moeda +
               Segurança + Sair) — página nova em pages/Profile.jsx. A
@@ -493,18 +489,25 @@ export default function Layout({ children, currency, setCurrency }) {
               danger zone) continua a existir em /settings, com um link a
               partir do Perfil (5 jul 2026: reportado como "ta diferente,
               neste momento eh defenicoes e nao tem nada a ver" ao
-              apontar /settings direto). */}
+              apontar /settings direto).
+              6º separador "Mais" (pages/More.jsx) substitui o menu
+              hambúrguer removido — dá um destino direto e plano a
+              Transações/Watchlist/Análise/Notícias/Contas Ligadas/
+              Definições, em vez de os esconder numa gaveta de desktop
+              reaproveitada. px-2 (era px-3) para os 6 caberem sem
+              apertar/cortar em ecrãs estreitos (ex.: iPhone SE, 375px). */}
           {[
             { to: "/dashboard", icon: LayoutDashboard, labelKey: "nav.dashboard" },
             { to: "/wallets",   icon: WalletIcon,       labelKey: "nav.wallets" },
             { to: "/market",    icon: LineChart,        labelKey: "nav.market" },
             { to: "/alerts",    icon: Bell,             labelKey: "nav.alerts", badge: alertCount },
             { to: "/profile",   icon: User,             labelKey: "nav.profile" },
+            { to: "/more",      icon: MoreHorizontal,   labelKey: "nav.more" },
           ].map(({ to, icon: Icon, labelKey, badge }) => (
             <NavLink
               key={to}
               to={to}
-              className={({ isActive }) => `flex flex-col items-center gap-1 px-3 py-2 text-xs transition-colors ${isActive ? "text-zinc-50" : "text-zinc-400 hover:text-zinc-300"}`}
+              className={({ isActive }) => `flex flex-col items-center gap-1 px-2 py-2 text-xs transition-colors ${isActive ? "text-zinc-50" : "text-zinc-400 hover:text-zinc-300"}`}
             >
               <div className="relative">
                 <Icon className="w-5 h-5" />

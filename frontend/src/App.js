@@ -127,6 +127,7 @@ const News = lazy(() => import("./pages/News"));
 const Market = lazy(() => import("./pages/Market"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Profile = lazy(() => import("./pages/Profile"));
+const More = lazy(() => import("./pages/More"));
 const AssetChart = lazy(() => import("./pages/AssetChart"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const BillingSuccess = lazy(() => import("./pages/BillingSuccess"));
@@ -230,6 +231,7 @@ function AppRoutes() {
         <Route path="/market" element={wrap(<Market />)} />
         <Route path="/settings" element={wrap(<Settings />)} />
         <Route path="/profile" element={wrap(<Profile currency={currency} setCurrency={setCurrency} />)} />
+        <Route path="/more" element={wrap(<More />)} />
         <Route path="/connected-accounts" element={wrap(<ConnectedAccounts />)} />
         <Route path="/analytics" element={wrap(<Analytics currency={currency} />)} />
         <Route path="/admin/feedback" element={wrap(<AdminFeedback />)} />

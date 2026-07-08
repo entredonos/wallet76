@@ -1072,6 +1072,36 @@ const worstPerformer = useMemo(() => {
                 <StatChip value={`${lastSyncMinutesLabel}min`} label={t("common.updated")} />
               )}
             </div>
+
+            {/* Atalhos contextuais Transações/Análise DESTA carteira (8 jul
+                2026) — antes só existiam como destinos globais (bottom nav
+                "Mais" ou sidebar desktop), sempre a aterrar em "Todas as
+                carteiras"; agora que Transactions.jsx e Analytics.jsx lêem
+                ?wallet=ID no arranque (ver useSearchParams em cada um),
+                estes links já chegam pré-filtrados à carteira que o
+                utilizador tinha escolhido aqui — sem isto, seria preciso
+                escolher a carteira outra vez do zero em cada página. Só
+                aparecem com uma carteira específica selecionada; em "Todas
+                as carteiras" não fazem sentido (não há um único wallet_id
+                para passar). */}
+            {selectedWallet && (
+              <div className="flex items-center gap-2 mt-2.5" data-testid="wallet-quicklinks">
+                <Link
+                  to={`/transactions?wallet=${selectedWallet.id}`}
+                  className="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-md border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition-colors"
+                  data-testid="wallet-quicklink-transactions"
+                >
+                  <Receipt className="w-3 h-3" /> {t("nav.transactions")}
+                </Link>
+                <Link
+                  to={`/analytics?wallet=${selectedWallet.id}`}
+                  className="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-md border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition-colors"
+                  data-testid="wallet-quicklink-analytics"
+                >
+                  <BarChart3 className="w-3 h-3" /> {t("nav.analytics")}
+                </Link>
+              </div>
+            )}
           </div>
         <div className="flex items-center gap-2 shrink-0 flex-nowrap">
           <button

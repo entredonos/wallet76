@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
 import { useI18n } from "../context/I18nContext";
 import { fmtPct, convert, curSymbol } from "../lib/format";
@@ -145,13 +146,19 @@ const fmtDateShort = (ts) => ts ? new Date(ts).toLocaleDateString(undefined, { m
 export default function Analytics({ currency }) {
   const { t } = useI18n();
   const { isPro } = usePlan();
+  const [searchParams] = useSearchParams();
+  // ?wallet=ID (8 jul 2026) — mesma ideia usada em Transactions.jsx: um
+  // atalho contextual "Análise desta carteira" a partir do Dashboard (com
+  // uma carteira específica selecionada) já chega aqui filtrado, em vez de
+  // aterrar sempre em "Todas as carteiras".
+  const walletParam = searchParams.get("wallet");
   const [data, setData]               = useState(null);
   const [loading, setLoading]         = useState(true);
   const [apiError, setApiError]       = useState(null);
   const [range, setRange]             = useState("ALL");
   const [showBenchmark, setShowBenchmark] = useState(true);
   const [wallets, setWallets]         = useState([]);
-  const [walletId, setWalletId]       = useState("all");
+  const [walletId, setWalletId]       = useState(walletParam || "all");
   const [benchmark, setBenchmark]     = useState(() => {
     try { return localStorage.getItem("w76-analytics-benchmark") || "SPY"; } catch { return "SPY"; }
   });
