@@ -22,6 +22,17 @@ allprojects {
         google()
         mavenCentral()
     }
+
+    // Fix (8 jul 2026) — "duplicate class kotlin.internal.jdk7/jdk8...
+    // found in modules kotlin-stdlib-X.jar and kotlin-stdlib-jdkX.jar".
+    // kotlin-stdlib >= 1.8 já traz as classes jdk7/jdk8 embutidas; alguma
+    // dependência transitiva (capacitor-android ou um plugin cordova)
+    // ainda pede os artefactos antigos separados, duplicando as mesmas
+    // classes. Excluir os antigos resolve sem tocar em versões.
+    configurations.all {
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk7"
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk8"
+    }
 }
 
 task clean(type: Delete) {
