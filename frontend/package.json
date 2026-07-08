@@ -5,6 +5,7 @@
   "main": "electron/main.js",
   "dependencies": {
     "@capacitor/android": "^8.4.1",
+    "@capacitor/app": "^8.1.0",
     "@capacitor/core": "^8.4.1",
     "@capgo/capacitor-native-biometric": "^8.4.5",
     "@hookform/resolvers": "5.0.1",

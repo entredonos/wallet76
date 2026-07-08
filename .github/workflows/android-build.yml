@@ -27,6 +27,14 @@ on:
       - ".github/workflows/android-build.yml"
   workflow_dispatch: {}
 
+# "contents: write" (8 jul 2026) — precisa para o passo abaixo que publica o
+# APK como GitHub Release em vez de só artifact: os artifacts do Actions só
+# são descarregáveis por quem tem sessão iniciada no GitHub e expiram ao fim
+# de 30 dias, por isso o banner "nova versão disponível" (ApkUpdateBanner.jsx)
+# dentro da app aponta antes para releases/latest, que é um link estável.
+permissions:
+  contents: write
+
 jobs:
   build-debug:
     runs-on: ubuntu-latest
@@ -100,3 +108,20 @@ jobs:
           name: wallet76-debug-apk
           path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+      # Release com tag fixa "android-latest" (8 jul 2026) — sempre que este
+      # workflow corre, substitui o APK anexado à mesma release em vez de
+      # criar uma nova; dá um URL estável (releases/latest/download/...) que
+      # o ApkUpdateBanner.jsx da app usa para o link de download, e que ao
+      # contrário do artifact acima não expira nem exige login no GitHub
+      # (desde que o repositório seja público).
+      - name: Publicar o APK como GitHub Release (URL estável)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: "Wallet76 Android (debug)"
+          body: "APK de debug gerado automaticamente a partir do último commit em main. Não assinado para a Play Store — instala via \"permitir fontes desconhecidas\" no Android."
+          files: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -102,6 +102,8 @@ import { I18nProvider } from "./context/I18nContext";
 import { PrivacyProvider } from "./context/PrivacyContext";
 import Layout from "./components/Layout";
 import LockScreen from "./components/LockScreen";
+import WhatsNewModal from "./components/WhatsNewModal";
+import ApkUpdateBanner from "./components/ApkUpdateBanner";
 import PreferencesSync from "./components/PreferencesSync";
 import { Toaster } from "./components/ui/sonner";
 import CookieBanner from "./components/CookieBanner";
@@ -197,6 +199,7 @@ function Protected({ children, currency, setCurrency, unlocked, setUnlocked }) {
   return (
     <>
       {user && !unlocked && <LockScreen onUnlock={() => setUnlocked?.(true)} />}
+      {user && unlocked && <WhatsNewModal />}
       <Layout currency={currency} setCurrency={setCurrency}>
         {children}
       </Layout>
@@ -289,6 +292,7 @@ function App() {
               <BrowserRouter>
                 <BackendStatusBanner />
                 <UpdateAvailableToast />
+                <ApkUpdateBanner />
                 <Toaster position="top-right" richColors />
                 <AppRoutes />
                 <CookieBannerWrapper />
