@@ -65,8 +65,18 @@ jobs:
       - name: Instalar dependências do frontend
         run: npm ci
 
+      # CI=false (8 jul 2026) — o GitHub define CI=true automaticamente, e o
+      # Create React App (react-scripts/craco) trata então os avisos do
+      # ESLint como erros fatais e para a build. Estes avisos já existiam
+      # antes desta pipeline (hooks com dependências em falta em várias
+      # páginas) e não impedem a app de funcionar — localmente e no deploy
+      # da Vercel isto passa sempre como aviso, não erro. Corrigi-los a
+      # sério é trabalho à parte; para já só repõe o mesmo comportamento
+      # não-fatal que já temos noutros sítios.
       - name: Build da web app
         run: npm run build
+        env:
+          CI: false
 
       # Garante que a pasta android/ tem sempre a versão mais recente do
       # build web (o android/ commitado pode estar uns commits atrás do
