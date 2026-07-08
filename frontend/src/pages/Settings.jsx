@@ -12,6 +12,8 @@ import { Lock, Fingerprint, ShieldOff, ShieldCheck, Check, Trash2, KeyRound, Bel
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { useI18n } from "../context/I18nContext";
+import { Capacitor } from "@capacitor/core";
+import { NativeBiometric } from "@capgo/capacitor-native-biometric";
 
 function b64urlToBuf(b64url) {
   const pad = "=".repeat((4 - (b64url.length % 4)) % 4);
@@ -162,6 +164,9 @@ export default function Settings() {
     if (mode === "pin" && !status.has_pin) {
       setPin(""); setPinConfirm(""); setPinDialog(true); return;
     }
+    if (mode === "biometric" && Capacitor.isNativePlatform()) {
+      await registerNativeBiometric(); return;
+    }
     if (mode === "biometric" && status.biometric_count === 0) {
       await registerBiometric(); return;
     }
@@ -228,6 +233,30 @@ export default function Settings() {
       load();
     } catch (e) {
       toast.error(e?.message || formatApiErrorDetail(e.response?.data?.detail) || "Biometric setup failed");
+    } finally { setRegisteringBio(false); }
+  };
+
+  const registerNativeBiometric = async () => {
+    // App nativa: sem WebAuthn fiável na WebView, por isso confirmamos que
+    // o hardware biométrico do aparelho funciona (pede já a digital/Face ID
+    // uma vez) e depois só ligamos o modo no servidor — sem credencial
+    // nenhuma para guardar (ver nota em LockScreen.jsx).
+    setRegisteringBio(true);
+    try {
+      const avail = await NativeBiometric.isAvailable();
+      if (!avail.isAvailable) {
+        toast.error(t("settings.biometric_unsupported"));
+        return;
+      }
+      await NativeBiometric.verifyIdentity({
+        reason: t("settings.mode_biometric_desc"),
+        title: "Wallet76",
+      });
+      await api.post("/security/lock-mode", { mode: "biometric" });
+      toast.success(t("settings.biometric_registered"));
+      load();
+    } catch (e) {
+      toast.error(e?.message || t("settings.biometric_setup_failed_native"));
     } finally { setRegisteringBio(false); }
   };
 
@@ -316,7 +345,13 @@ export default function Settings() {
             title={t("settings.mode_biometric")}
             desc={t("settings.mode_biometric_desc")}
             selected={status.lock_mode === "biometric"}
-            badge={status.biometric_count > 0 ? <span className="text-[10px] font-mono text-emerald-400">{status.biometric_count}</span> : null}
+            badge={
+              status.biometric_count > 0
+                ? <span className="text-[10px] font-mono text-emerald-400">{status.biometric_count}</span>
+                : (Capacitor.isNativePlatform() && status.lock_mode === "biometric")
+                  ? <Check className="w-3 h-3 text-emerald-400"/>
+                  : null
+            }
             onClick={() => choose("biometric")}
             testId="lock-mode-biometric"
             loading={registeringBio}

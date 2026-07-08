@@ -3,6 +3,8 @@ import { api, formatApiErrorDetail } from "../lib/api";
 import { Lock, Fingerprint, KeyRound, LogOut } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../context/I18nContext";
+import { Capacitor } from "@capacitor/core";
+import { NativeBiometric } from "@capgo/capacitor-native-biometric";
 
 function b64urlToBuf(b64url) {
   const pad = "=".repeat((4 - (b64url.length % 4)) % 4);
@@ -68,6 +70,34 @@ export default function LockScreen({ onUnlock }) {
   };
 
   const doBiometric = async (auto = false) => {
+    // App nativa (Capacitor, 8 jul 2026): a WebView do Android/iOS não tem
+    // suporte fiável para WebAuthn platform authenticator, por isso usamos
+    // o plugin nativo (leitor de impressão digital/Face ID do próprio SO)
+    // como gate local — a sessão já existe via cookie httpOnly, o biométrico
+    // aqui só confirma presença do dono do aparelho antes de reabrir a app.
+    if (Capacitor.isNativePlatform()) {
+      setBusy(true); setError("");
+      try {
+        const avail = await NativeBiometric.isAvailable();
+        if (!avail.isAvailable) {
+          if (!auto) setError(t("settings.biometric_unsupported"));
+          return;
+        }
+        await NativeBiometric.verifyIdentity({
+          reason: t("lock.biometric_prompt"),
+          title: "Wallet76",
+        });
+        // Confirma que a sessão (cookie) ainda é válida antes de desbloquear.
+        await api.get("/security/status");
+        onUnlock?.();
+      } catch (e) {
+        if (!auto) setError(e?.message || t("lock.biometric_failed"));
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
     if (!window.PublicKeyCredential) {
       setError(t("settings.biometric_unsupported"));
       return;
