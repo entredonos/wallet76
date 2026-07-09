@@ -16,7 +16,31 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Keystore de debug FIXO (9 jul 2026) — sem isto, cada build no GitHub
+    // Actions gera sozinho uma debug.keystore nova e efémera no runner
+    // (~/.android/debug.keystore, que não existe de início numa máquina
+    // limpa), por isso cada APK saía assinado com uma chave diferente. O
+    // Android recusa instalar um APK assinado com chave diferente por cima
+    // de uma app já instalada com o mesmo applicationId — dá exatamente o
+    // erro "app não instalada" que aconteceu ("nao da para atualizar... diz
+    // app nao instalada"). Ao apontar sempre para o mesmo ficheiro
+    // debug.keystore (comitado no repo — é seguro, só serve para builds de
+    // debug, nunca para a Play Store), todas as build futuras ficam com a
+    // MESMA assinatura e passam a atualizar normalmente por cima da
+    // anterior. Só não resolve o APK já instalado ANTES desta alteração —
+    // esse continua a precisar de uma desinstalação manual uma última vez.
+    signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
