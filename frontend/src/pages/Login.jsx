@@ -97,7 +97,7 @@ export default function Login() {
       <div className="w-full max-w-md fade-in">
         <div className="flex items-center justify-between gap-3 mb-10">
           <div className="flex items-center gap-3">
-            <img src={walletLogo} alt="Wallet76" className="w-13 h-13 object-contain" />
+            <img src={walletLogo} alt="Wallet76" className="w-12 h-12 object-contain shrink-0" />
             <div>
               <div className="flex items-center gap-3">
                 <div className="font-display text-xl tracking-tight">Wallet76</div>

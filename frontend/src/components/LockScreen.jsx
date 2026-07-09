@@ -5,6 +5,16 @@ import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../context/I18nContext";
 import { Capacitor } from "@capacitor/core";
 import { NativeBiometric } from "@capgo/capacitor-native-biometric";
+import { detectPlatform } from "../lib/pwaInstall";
+
+// 9 jul 2026 — "no PC ou via web nunca peça biometria pois normalmente os
+// PCs e notebooks podem não ter leitor". Nem o WebAuthn nem o plugin nativo
+// fazem sentido aqui: um leitor de biometria registado no telemóvel não é
+// acessível a partir de um browser de PC de qualquer forma (a credencial
+// WebAuthn fica presa ao aparelho que a criou), e nem todo o PC/notebook tem
+// hardware biométrico. Em desktop/web, o modo "biometric" é tratado como se
+// fosse "none" — a app nunca pede biometria nesse contexto.
+const isDesktopWeb = !Capacitor.isNativePlatform() && detectPlatform() === "desktop";
 
 function b64urlToBuf(b64url) {
   const pad = "=".repeat((4 - (b64url.length % 4)) % 4);
@@ -38,14 +48,14 @@ export default function LockScreen({ onUnlock }) {
     (async () => {
       try {
         const { data } = await api.get("/security/status");
-        if (data.lock_mode === "none") {
+        if (data.lock_mode === "none" || (data.lock_mode === "biometric" && isDesktopWeb)) {
           onUnlock?.();
           setStatus({ lock_mode: "none" });
           return;
         }
         setStatus(data);
         if (data.lock_mode === "biometric") {
-          // auto-trigger biometric prompt
+          // auto-trigger biometric prompt (só chega aqui em telemóvel/nativo — ver isDesktopWeb acima)
           setTimeout(() => doBiometric(true), 250);
         }
       } catch (e) {

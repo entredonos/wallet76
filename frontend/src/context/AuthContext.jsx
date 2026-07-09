@@ -3,6 +3,29 @@ import { api, formatApiErrorDetail, setUnauthorizedHandler } from "../lib/api";
 
 const AuthContext = createContext(null);
 
+// 9 jul 2026 — na app nativa Android (WebView), o CookieManager por vezes
+// tem uma pequena folga assíncrona a persistir um cookie vindo da resposta
+// de um fetch/XHR (ao contrário de uma navegação de página inteira, onde
+// isso é imediato). O /auth/login já tinha respondido com sucesso e posto
+// o Set-Cookie, mas o pedido seguinte (Dashboard a carregar /portfolio,
+// disparado a low segundos depois) por vezes ainda não via esse cookie —
+// dava 401 e mostrava "Sessão expirada" mesmo o login tendo corrido bem.
+// Este "aquecimento" confirma que /auth/me já responde 200 (cookie mesmo a
+// funcionar) antes de deixar o chamador navegar para o resto da app; no
+// caminho normal (cookie já disponível de imediato) isto resolve-se logo na
+// 1ª tentativa e não acrescenta atraso percetível.
+async function waitForSessionCookie(maxAttempts = 4, delayMs = 250) {
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      await api.get("/auth/me");
+      return true;
+    } catch {
+      if (i < maxAttempts - 1) await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  return false;
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null); // null = checking, false = unauth, obj = auth
   const [loading, setLoading] = useState(true);
@@ -49,12 +72,14 @@ export function AuthProvider({ children }) {
     // persist it anywhere JS-readable (no localStorage) — the httpOnly
     // cookie it also sets is the only thing that authenticates subsequent
     // requests. See lib/api.js for why.
+    await waitForSessionCookie();
     setUser(data);
     return data;
   };
 
   const verifyTwoFactor = async (pendingToken, code) => {
     const { data } = await api.post("/auth/2fa/verify", { pending_token: pendingToken, code });
+    await waitForSessionCookie();
     setUser(data);
     return data;
   };
