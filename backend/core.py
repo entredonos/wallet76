@@ -306,6 +306,23 @@ def check_rate_limit(request: Request, bucket: str, max_attempts: int, window_se
 
 # --- WebAuthn helpers (used by security routes) ---
 import base64
+from urllib.parse import urlparse
+
+# 9 jul 2026 — em produção, o browser/WebView fala sempre com wallet76.com
+# (frontend na Vercel), mas o pedido chega aqui ao Render através do proxy
+# definido em frontend/vercel.json (REGRA #5 do CLAUDE.md: sem isto o
+# Safari/iOS bloqueia o cookie de sessão por ser cross-site). Esse proxy é
+# transparente para cookies, mas o header "Host" que este backend recebe
+# reflete o destino do proxy (o próprio domínio onrender.com), não o
+# domínio público que o utilizador realmente vê. Antes desta correção,
+# detect_rp_id()/origin_from_req() usavam sempre esse Host, por isso o
+# WebAuthn calculava rp.id/origin = "...onrender.com" enquanto o browser
+# via origin = "https://wallet76.com" — mismatch que o WebAuthn rejeita
+# com "The relying party ID is not a registrable domain suffix...".
+# APP_URL (== FRONTEND_URL, já uma variável obrigatória no Render — ver
+# REGRA #4) dá-nos o domínio público real; passa a ser a fonte preferida,
+# com o Host header só como fallback (ex.: desenvolvimento local).
+_app_url_host = urlparse(APP_URL).hostname if APP_URL else ""
 
 
 def b64url_decode(s: str) -> bytes:
@@ -320,12 +337,16 @@ def b64url_encode(b: bytes) -> str:
 def detect_rp_id(req: Request) -> str:
     if RP_ID:
         return RP_ID
+    if _app_url_host:
+        return _app_url_host
     host = req.headers.get("host", "").split(":")[0]
     return host or "localhost"
 
 
 def origin_from_req(req: Request) -> str:
     """Return the expected WebAuthn origin derived from the incoming request."""
+    if APP_URL:
+        return APP_URL.rstrip("/")
     host = req.headers.get("host", "localhost")
     # Strip port for comparison; browsers include it in origin
     scheme = "https" if req.headers.get("x-forwarded-proto") == "https" else "http"
