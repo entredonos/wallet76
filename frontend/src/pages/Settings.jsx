@@ -232,7 +232,12 @@ export default function Settings() {
       toast.success(t("settings.biometric_registered"));
       load();
     } catch (e) {
-      toast.error(e?.message || formatApiErrorDetail(e.response?.data?.detail) || "Biometric setup failed");
+      // 9 jul 2026 — a ordem importa: e?.message do Axios é sempre um texto
+      // genérico tipo "Request failed with status code 400" e mascarava o
+      // "detail" real que o backend manda (ex.: motivo da verificação
+      // WebAuthn ter falhado), que é o que precisamos de ver para
+      // diagnosticar. formatApiErrorDetail(...) vem primeiro agora.
+      toast.error(formatApiErrorDetail(e.response?.data?.detail) || e?.message || "Biometric setup failed");
     } finally { setRegisteringBio(false); }
   };
 

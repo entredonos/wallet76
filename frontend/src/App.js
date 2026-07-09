@@ -4,6 +4,21 @@ import routeFallbackLogo from "./assets/wallet76-logo.png";
 
 const IS_DEV = process.env.NODE_ENV === "development";
 
+// Deteta se a página está a correr "instalada" (PWA em modo standalone, ou
+// o `navigator.standalone` que o Safari/iOS usa há anos para o mesmo fim) —
+// ver nota junto à rota "/" mais abaixo sobre porque isto é preciso além do
+// Capacitor.isNativePlatform().
+function isStandaloneDisplay() {
+  try {
+    return (
+      window.matchMedia?.("(display-mode: standalone)")?.matches ||
+      window.navigator?.standalone === true
+    );
+  } catch {
+    return false;
+  }
+}
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -244,11 +259,24 @@ function AppRoutes() {
             de marketing — quem já instalou a app não precisa de ser
             "vendido" outra vez, só quer entrar. "/" salta logo para
             /login, que por sua vez (PublicOnly) já manda para /dashboard
-            se a sessão ainda for válida. Só afeta o build nativo — no
-            browser normal (Capacitor.isNativePlatform() === false)
-            continua tudo como antes. (8 jul 2026: "a app quando abre abre
-            a landpage e deveria abrir logo o login") */}
-        <Route path="/" element={Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <LandingPage />} />
+            se a sessão ainda for válida. (8 jul 2026: "a app quando abre
+            abre a landpage e deveria abrir logo o login")
+            9 jul 2026: o mesmo pedido voltou a acontecer mesmo depois deste
+            fix — a causa mais provável é o utilizador estar a abrir o
+            ícone que o browser criou ao "Adicionar ao ecrã principal"
+            (instalação da PWA a partir do site, não o .apk do GitHub
+            Actions). Esse atalho corre no mesmo domínio mas
+            Capacitor.isNativePlatform() é false aí (não há bridge nativa),
+            por isso a landing continuava a aparecer. isStandalone cobre
+            esse caso: fica true sempre que a página corre "instalada" (PWA
+            em modo standalone OU o navigator.standalone do Safari/iOS),
+            independentemente de ser o wrapper Capacitor ou a instalação
+            via browser. */}
+        <Route path="/" element={
+          (Capacitor.isNativePlatform() || isStandaloneDisplay())
+            ? <Navigate to="/login" replace />
+            : <LandingPage />
+        } />
         <Route path="/dashboard" element={wrap(<Dashboard currency={currency} />)} />
         <Route path="/transactions" element={wrap(<Transactions />)} />
         <Route path="/alerts" element={wrap(<Alerts />)} />
