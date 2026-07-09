@@ -84,10 +84,19 @@ jobs:
       # da Vercel isto passa sempre como aviso, não erro. Corrigi-los a
       # sério é trabalho à parte; para já só repõe o mesmo comportamento
       # não-fatal que já temos noutros sítios.
+      # REACT_APP_BACKEND_URL="" (9 jul 2026) — força explicitamente pedidos
+      # a caminhos relativos ("/api/...", apanhados pelo rewrite same-origin
+      # em vercel.json) neste build, para nunca ir direto a
+      # wallet76-1cvt.onrender.com independentemente de qualquer valor
+      # ambiente do runner. Descoberto via chrome://inspect que os pedidos da
+      # app estavam cross-site (não same-origin), o que fazia o WebView
+      # tratar o cookie de sessão como de terceiros e falhar a guardá-lo a
+      # tempo do pedido seguinte ("Sessão expirada" logo após o login).
       - name: Build da web app
         run: npm run build
         env:
           CI: false
+          REACT_APP_BACKEND_URL: ""
 
       # Garante que a pasta android/ tem sempre a versão mais recente do
       # build web (o android/ commitado pode estar uns commits atrás do
