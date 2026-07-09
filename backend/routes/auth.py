@@ -16,7 +16,7 @@ import pyotp
 
 from core import (
     db, hash_password, verify_password, create_access_token, get_current_user,
-    APP_URL, check_rate_limit, logger, delete_all_user_data, write_auth_audit,
+    APP_URL, COOKIE_DOMAIN, check_rate_limit, logger, delete_all_user_data, write_auth_audit,
     create_2fa_pending_token, verify_2fa_pending_token,
 )
 from email_utils import send_email, email_layout, _log_email_task_result
@@ -94,7 +94,7 @@ async def login(payload: UserLogin, request: Request, response: Response):
         return {"two_factor_required": True, "pending_token": create_2fa_pending_token(user["id"])}
 
     token = create_access_token(user["id"], email)
-    response.set_cookie("access_token", token, httponly=True, secure=True, samesite="none", max_age=604800, path="/")
+    response.set_cookie("access_token", token, httponly=True, secure=True, samesite="none", max_age=604800, path="/", domain=COOKIE_DOMAIN)
     asyncio.create_task(write_auth_audit("login_success", request, email=email, user_id=user["id"]))
     return {"id": user["id"], "email": email, "name": user.get("name"), "token": token}
 
@@ -135,14 +135,14 @@ async def two_factor_verify(payload: TwoFactorLoginVerifyBody, request: Request,
         )
 
     token = create_access_token(user["id"], user["email"])
-    response.set_cookie("access_token", token, httponly=True, secure=True, samesite="none", max_age=604800, path="/")
+    response.set_cookie("access_token", token, httponly=True, secure=True, samesite="none", max_age=604800, path="/", domain=COOKIE_DOMAIN)
     asyncio.create_task(write_auth_audit("login_success", request, email=user.get("email", ""), user_id=user_id))
     return {"id": user["id"], "email": user["email"], "name": user.get("name"), "token": token}
 
 
 @router.post("/auth/logout")
 async def logout(response: Response):
-    response.delete_cookie("access_token", path="/")
+    response.delete_cookie("access_token", path="/", domain=COOKIE_DOMAIN)
     return {"ok": True}
 
 
@@ -258,7 +258,7 @@ async def delete_account(payload: DeleteAccountBody, response: Response, user=De
             logger.warning(f"Failed to cancel Stripe subscription {sub_id} during account deletion: {e}")
 
     await delete_all_user_data(user["id"])
-    response.delete_cookie("access_token", path="/")
+    response.delete_cookie("access_token", path="/", domain=COOKIE_DOMAIN)
     return {"ok": True}
 
 

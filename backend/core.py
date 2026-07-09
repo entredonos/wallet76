@@ -13,6 +13,7 @@ import certifi
 import jwt
 import resend
 from datetime import datetime, timezone, timedelta
+from urllib.parse import urlparse
 from fastapi import HTTPException, Request, Depends
 from motor.motor_asyncio import AsyncIOMotorClient
 
@@ -35,6 +36,24 @@ FROM_EMAIL = os.environ.get("FROM_EMAIL", "onboarding@resend.dev")
 APP_URL = os.environ.get("APP_URL") or os.environ.get("FRONTEND_URL", "")
 if RESEND_API_KEY:
     resend.api_key = RESEND_API_KEY
+
+# Domínio do cookie de sessão (9 jul 2026) — sem isto, o cookie "access_token"
+# fica preso ao host exato que respondeu ao /auth/login (host-only cookie,
+# sem atributo Domain). No dia em que a Vercel trocou qual dos dois
+# (wallet76.com vs www.wallet76.com) é o domínio "Production", quem já tinha
+# sessão no domínio antigo ficou com "sessão expirada" ao abrir a app no
+# domínio novo — o cookie simplesmente não é visível de um lado para o
+# outro. Um Domain="wallet76.com" (sem "www.") cobre automaticamente
+# wallet76.com E qualquer subdomínio, incluindo www.wallet76.com — a sessão
+# passa a sobreviver a qual dos dois for a origem, sem precisar de voltar a
+# fazer login sempre que a configuração de domínios mudar. Em desenvolvimento
+# local (APP_URL vazio ou localhost) fica None, ou seja, sem atributo
+# Domain — comportamento de sempre, preso ao localhost.
+_cookie_domain_host = urlparse(APP_URL).hostname if APP_URL else ""
+if _cookie_domain_host and _cookie_domain_host not in ("localhost", "127.0.0.1"):
+    COOKIE_DOMAIN = _cookie_domain_host[4:] if _cookie_domain_host.startswith("www.") else _cookie_domain_host
+else:
+    COOKIE_DOMAIN = None
 
 RP_ID = os.environ.get("WEBAUTHN_RP_ID", "")
 RP_NAME = "Wallet76"
@@ -306,7 +325,6 @@ def check_rate_limit(request: Request, bucket: str, max_attempts: int, window_se
 
 # --- WebAuthn helpers (used by security routes) ---
 import base64
-from urllib.parse import urlparse
 
 # 9 jul 2026 — em produção, o browser/WebView fala sempre com wallet76.com
 # (frontend na Vercel), mas o pedido chega aqui ao Render através do proxy
