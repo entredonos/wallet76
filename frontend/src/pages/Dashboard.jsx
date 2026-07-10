@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api, formatApiErrorDetail } from "../lib/api";
-import { Capacitor } from "@capacitor/core";
 import { Button } from "../components/ui/button";
 import { toast } from "sonner";
 import { bucketOHLC, bucketClassClose, getDayBoundaries, getWeekendBands } from "../lib/chartGaps";
@@ -318,15 +317,7 @@ export default function Dashboard({ currency }) {
       } catch (e) {
         const status = e.response?.status;
         if (status === 401) {
-          // 9 jul 2026 — diagnóstico temporário: mostra o URL exato que deu
-          // 401 (baseURL relativo "/api" vs absoluto onrender.com), só na
-          // app nativa, para confirmar sem precisar de ADB/chrome://inspect
-          // se o build está mesmo a usar caminhos relativos. Remover assim
-          // que confirmado.
-          const debugSuffix = Capacitor.isNativePlatform()
-            ? ` [debug: ${e?.config?.baseURL || "?"}${e?.config?.url || "?"}]`
-            : "";
-          toast.error(t("common.session_expired") + debugSuffix, { id: "session-expired", duration: 15000 });
+          toast.error(t("common.session_expired"), { id: "session-expired", duration: 15000 });
         } else if (!cachedPortfolio) {
           toast.error(formatApiErrorDetail(e.response?.data?.detail) || t("dash.load_error"), { id: "portfolio-error" });
         }
@@ -350,10 +341,7 @@ export default function Dashboard({ currency }) {
       } catch (e) {
         if (historyReqIdRef.current === myReqId) setChartLoading(false);
         if (e?.response?.status === 401) {
-          const debugSuffix = Capacitor.isNativePlatform()
-            ? ` [debug: ${e?.config?.baseURL || "?"}${e?.config?.url || "?"}]`
-            : "";
-          toast.error(t("common.session_expired") + debugSuffix, { id: "session-expired", duration: 15000 });
+          toast.error(t("common.session_expired"), { id: "session-expired", duration: 15000 });
         }
         /* else noop — chart stays empty */
       }
