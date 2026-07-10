@@ -735,11 +735,23 @@ function ReturnsBarchart({ m, t, currency, benchmarkMetrics }) {
     // a guarda de largura (barras muito estreitas em períodos longos, onde
     // o texto ficaria a sobrepor a barra vizinha).
     if (Math.abs(width) < 14) return null;
-    // Sempre por cima da barra, positiva ou negativa (pedido 7 jul 2026:
-    // "meter a percentagem em cima em vez de em baixo, tanto na app como no
-    // PC") — para uma barra negativa isso é ACIMA da baseline (y), não
-    // abaixo do fundo dela.
-    const pos = value >= 0 ? y - 3 : y - 5;
+    // 10 jul 2026 (2ª volta) — a versão anterior punha a label negativa só
+    // 5px acima da baseline, que é exatamente o topo da própria barra
+    // vermelha (ela cresce PARA BAIXO a partir daí) — na prática o número
+    // ficava colado/em cima do vermelho, difícil de ler ("os números são
+    // vermelhos e ficam por cima da barra vermelha e mal se veem"). Pedido:
+    // pôr sempre numa zona positiva fixa (~+2%), independente da
+    // profundidade da barra. Para isso, em vez de um offset fixo em pixels,
+    // convertemos usando a própria escala da barra (height representa
+    // |value| em pixels), e subimos o equivalente a 2 pontos percentuais —
+    // fica sempre no espaço preto por cima do zero, nunca dentro da barra.
+    let pos;
+    if (value >= 0) {
+      pos = y - 3;
+    } else {
+      const pxPerPct = value !== 0 ? Math.abs(height / value) : 0;
+      pos = y - pxPerPct * 2 - 3;
+    }
     return (
       <text x={x + width / 2} y={pos} textAnchor="middle" fontSize={9} fontFamily="monospace"
         fill={value >= 0 ? "#6ee7b7" : "#fca5a5"}>
