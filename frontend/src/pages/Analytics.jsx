@@ -201,25 +201,55 @@ export default function Analytics({ currency }) {
     api.get("/wallets").then(r => setWallets(r.data || [])).catch(() => {});
   }, []);
 
+  // reloadTick (10 jul 2026) — só serve para o botão "Tentar novamente"
+  // forçar este efeito a correr outra vez sem duplicar toda a lógica de
+  // fetch numa função à parte.
+  const [reloadTick, setReloadTick] = useState(0);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
       setData(null);
       setApiError(null);
-      try {
-        const params = { benchmark };
-        if (walletId && walletId !== "all") params.wallet_id = walletId;
-        const { data: d } = await api.get("/analytics", { params });
-        if (!cancelled) setData(d);
-      } catch (e) {
-        if (!cancelled) setApiError(e?.response?.data?.detail || e?.message || "Unknown error");
-        console.error("[Analytics] fetch error:", e);
+      const params = { benchmark };
+      if (walletId && walletId !== "all") params.wallet_id = walletId;
+
+      // Retry automático (10 jul 2026) — "por vezes" a página dava logo
+      // "Request failed with status code 502" (o texto cru do axios,
+      // mostrado tal e qual ao utilizador). Na maioria dos casos é o Render
+      // a arrancar a frio ou um 502/503/504 transitório, não um erro real de
+      // dados — 2 tentativas extra com um pequeno atraso resolve sozinho
+      // sem o utilizador ter de fazer nada.
+      const isTransient = (e) => {
+        const status = e?.response?.status;
+        return !e?.response || status === 502 || status === 503 || status === 504;
+      };
+      let lastErr = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const { data: d } = await api.get("/analytics", { params });
+          if (!cancelled) setData(d);
+          lastErr = null;
+          break;
+        } catch (e) {
+          lastErr = e;
+          if (cancelled || attempt === 2 || !isTransient(e)) break;
+          await new Promise((r) => setTimeout(r, 900 * (attempt + 1)));
+        }
+      }
+      if (lastErr && !cancelled) {
+        console.error("[Analytics] fetch error:", lastErr);
+        setApiError(
+          isTransient(lastErr)
+            ? (t("analytics.load_error_transient") || "The server took too long to respond. This is usually temporary.")
+            : (lastErr?.response?.data?.detail || lastErr?.message || "Unknown error")
+        );
       }
       if (!cancelled) setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [walletId, benchmark]);
+  }, [walletId, benchmark, reloadTick]);
 
   const handleBenchmarkChange = (val) => {
     setBenchmark(val);
@@ -329,6 +359,12 @@ export default function Analytics({ currency }) {
       <div className="bg-rose-950/30 border border-rose-700/40 rounded-xl p-12 text-center">
         <AlertTriangle className="w-10 h-10 text-rose-500 mx-auto mb-3" />
         <div className="text-rose-400 font-mono text-sm">{apiError}</div>
+        <button
+          onClick={() => setReloadTick((n) => n + 1)}
+          className="mt-4 inline-flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-lg border border-rose-700/50 text-rose-300 hover:text-rose-100 hover:border-rose-500 transition-colors"
+        >
+          {t("analytics.load_error_retry") || "Try again"}
+        </button>
       </div>
     </div>
   );
@@ -469,8 +505,8 @@ export default function Analytics({ currency }) {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-              <XAxis dataKey="ts" tickFormatter={fmtDateShort} tick={{ fill: "#71717a", fontSize: 10 }} tickLine={false} axisLine={false} minTickGap={60} />
-              <YAxis tickFormatter={(v) => fmtVal(v)} tick={{ fill: "#71717a", fontSize: 10 }} tickLine={false} axisLine={false} width={70} />
+              <XAxis dataKey="ts" tickFormatter={fmtDateShort} tick={{ fill: "#a1a1aa", fontSize: 10 }} tickLine={false} axisLine={false} minTickGap={60} />
+              <YAxis tickFormatter={(v) => fmtVal(v)} tick={{ fill: "#a1a1aa", fontSize: 10 }} tickLine={false} axisLine={false} width={70} />
               <Tooltip content={<CustomTooltip />} />
               <Area type="monotone" dataKey="cost"  name={t("analytics.cost_label")  || "Invested"}  stroke="#52525b" strokeWidth={1.5} fill="url(#gradCost)"  dot={false} isAnimationActive={false} />
               <Area type="monotone" dataKey="value" name={t("analytics.value_label") || "Portfolio"} stroke="#3b82f6" strokeWidth={2}   fill="url(#gradValue)" dot={false} isAnimationActive={false} />
@@ -667,6 +703,29 @@ function ReturnsBarchart({ m, t, currency, benchmarkMetrics }) {
     URL.revokeObjectURL(url);
   };
 
+  // 10 jul 2026 — o "radius" do <Bar> é aplicado sempre aos MESMOS 2 cantos
+  // (topo do retângulo desenhado), mas para uma barra negativa o "topo" do
+  // retângulo em SVG é a própria linha de zero (a barra cresce para baixo).
+  // Isso arredondava o canto junto à baseline nos meses negativos — um
+  // pequeno recorte a deixar o fundo preto à mostra mesmo onde o vermelho
+  // devia estar cheio/visível — e deixava o canto solto na ponta (longe do
+  // eixo) reto. Com esta forma própria, o arredondamento fica sempre na
+  // ponta mais afastada do eixo (como nas barras positivas), e a baseline
+  // fica sempre reta e totalmente preenchida a vermelho/verde.
+  const DivergingBar = (props) => {
+    const { x, y, width, height, fill } = props;
+    const r = Math.min(3, Math.abs(height) / 2, width / 2);
+    const isNeg = height >= 0 ? false : true; // recharts pode dar height negativo consoante a versão
+    // Normaliza para retângulo com y0 = topo real, h = altura absoluta.
+    const top = isNeg ? y + height : y;
+    const h = Math.abs(height);
+    const negative = props.payload ? props.payload.pct < 0 : isNeg;
+    const d = negative
+      ? `M${x},${top} L${x + width},${top} L${x + width},${top + h - r} Q${x + width},${top + h} ${x + width - r},${top + h} L${x + r},${top + h} Q${x},${top + h} ${x},${top + h - r} Z`
+      : `M${x},${top + r} Q${x},${top} ${x + r},${top} L${x + width - r},${top} Q${x + width},${top} ${x + width},${top + r} L${x + width},${top + h} L${x},${top + h} Z`;
+    return <path d={d} fill={fill} fillOpacity={negative ? 1 : 0.85} />;
+  };
+
   const BarLabel = ({ x, y, width, height, value }) => {
     // Antes escondia a label sempre que a barra tinha menos de 14px de
     // altura — o que apaga a percentagem exatamente nos retornos pequenos
@@ -734,13 +793,13 @@ function ReturnsBarchart({ m, t, currency, benchmarkMetrics }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
               <XAxis
                 dataKey={labelKey}
-                tick={{ fill: "#71717a", fontSize: 10 }}
+                tick={{ fill: "#a1a1aa", fontSize: 10 }}
                 tickLine={false}
                 axisLine={false}
                 minTickGap={period === "week" ? 28 : 16}
               />
-              <YAxis yAxisId="pct" domain={[(min) => min - 4, (max) => max + 4]} tickFormatter={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`} tick={{ fill: "#71717a", fontSize: 10 }} tickLine={false} axisLine={false} width={42} />
-              <YAxis yAxisId="cum" orientation="right" tickFormatter={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`} tick={{ fill: "#52525b", fontSize: 9 }} tickLine={false} axisLine={false} width={36} />
+              <YAxis yAxisId="pct" domain={[(min) => min - 4, (max) => max + 4]} tickFormatter={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`} tick={{ fill: "#a1a1aa", fontSize: 10 }} tickLine={false} axisLine={false} width={42} />
+              <YAxis yAxisId="cum" orientation="right" tickFormatter={(v) => `${v > 0 ? "+" : ""}${v.toFixed(0)}%`} tick={{ fill: "#a1a1aa", fontSize: 9 }} tickLine={false} axisLine={false} width={36} />
               <Tooltip
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null;
@@ -776,9 +835,9 @@ function ReturnsBarchart({ m, t, currency, benchmarkMetrics }) {
                   );
                 }}
               />
-              <Bar yAxisId="pct" dataKey="pct" name={t("analytics.return") || "Return"} radius={[3, 3, 0, 0]} isAnimationActive={false} maxBarSize={40}>
+              <Bar yAxisId="pct" dataKey="pct" name={t("analytics.return") || "Return"} shape={<DivergingBar />} isAnimationActive={false} maxBarSize={40}>
                 {cumulData.map((entry, i) => (
-                  <Cell key={i} fill={entry.pct >= 0 ? "#10b981" : "#ef4444"} fillOpacity={0.85} />
+                  <Cell key={i} fill={entry.pct >= 0 ? "#10b981" : "#ef4444"} />
                 ))}
                 <LabelList content={<BarLabel />} />
               </Bar>
@@ -854,11 +913,11 @@ function HeatmapChart({ months, t }) {
         <table className="w-full text-[10px] font-mono border-separate border-spacing-y-1">
           <thead>
             <tr>
-              <th className="text-zinc-600 text-left pr-3 font-normal w-10"></th>
+              <th className="text-zinc-400 text-left pr-3 font-normal w-10"></th>
               {MONTH_LABELS.map((ml) => (
-                <th key={ml} className="text-zinc-600 font-normal text-center pb-1">{ml}</th>
+                <th key={ml} className="text-zinc-400 font-normal text-center pb-1">{ml}</th>
               ))}
-              <th className="text-zinc-600 font-normal text-center pl-2 pb-1">{t("analytics.heatmap_total") || "YTD"}</th>
+              <th className="text-zinc-400 font-normal text-center pl-2 pb-1">{t("analytics.heatmap_total") || "YTD"}</th>
             </tr>
           </thead>
           <tbody>
@@ -955,8 +1014,8 @@ function HistogramChart({ m, t }) {
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={histData} margin={{ top: 12, right: 16, bottom: 0, left: 8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-              <XAxis dataKey="label" tick={{ fill: "#71717a", fontSize: 9 }} tickLine={false} axisLine={false} />
-              <YAxis allowDecimals={false} tick={{ fill: "#71717a", fontSize: 10 }} tickLine={false} axisLine={false} width={28} />
+              <XAxis dataKey="label" tick={{ fill: "#a1a1aa", fontSize: 9 }} tickLine={false} axisLine={false} />
+              <YAxis allowDecimals={false} tick={{ fill: "#a1a1aa", fontSize: 10 }} tickLine={false} axisLine={false} width={28} />
               <Tooltip
                 contentStyle={{ background: "#09090b", border: "1px solid #27272a", borderRadius: 8, fontSize: 11, fontFamily: "monospace", color: "#d4d4d8" }}
                 labelStyle={{ color: "#a1a1aa" }}

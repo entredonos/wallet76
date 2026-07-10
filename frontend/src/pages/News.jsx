@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { api } from "../lib/api";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
@@ -20,6 +20,51 @@ export default function News() {
   const [results, setResults] = useState(null); // null = not searched yet
   const [srchLoading, setSrchLoading] = useState(false);
   const inputRef = useRef(null);
+
+  // --- Autocomplete (10 jul 2026) — ao escrever, mostrar correspondências de
+  // ativos (mesmo endpoint /search usado no GlobalSearch.jsx) antes de o
+  // utilizador ter de carregar em "Pesquisar"/Enter. Sem isto, escrever "BT"
+  // não mostrava nada até se submeter a pesquisa às cegas.
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggLoading, setSuggLoading] = useState(false);
+  const debounceRef = useRef(null);
+  const wrapRef = useRef(null);
+
+  const fetchSuggestions = useCallback(async (q) => {
+    if (!q.trim()) { setSuggestions([]); return; }
+    setSuggLoading(true);
+    try {
+      const { data } = await api.get(`/search?q=${encodeURIComponent(q)}`);
+      setSuggestions(data || []);
+    } catch {
+      setSuggestions([]);
+    } finally {
+      setSuggLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    if (query.trim().length < 1) { setSuggestions([]); return; }
+    debounceRef.current = setTimeout(() => fetchSuggestions(query), 250);
+    return () => clearTimeout(debounceRef.current);
+  }, [query, fetchSuggestions]);
+
+  // Fecha o dropdown ao clicar fora
+  useEffect(() => {
+    const onClickOutside = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setShowSuggestions(false);
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  const pickSuggestion = (item) => {
+    setQuery(item.symbol);
+    setShowSuggestions(false);
+    doSearch(item.symbol);
+  };
 
   // Load all three feeds on mount
   useEffect(() => {
@@ -70,16 +115,47 @@ export default function News() {
       {/* Search bar */}
       <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-4">
         <div className="flex gap-2">
-          <Input
-            ref={inputRef}
-            value={query}
-            onChange={e => setQuery(e.target.value.toUpperCase())}
-            onKeyDown={e => { if (e.key === "Enter") doSearch(); }}
-            placeholder={t("news.search_placeholder") || "AAPL, BTC, TSLA..."}
-            className="bg-zinc-900/50 border-zinc-800 flex-1 font-mono"
-          />
+          <div ref={wrapRef} className="relative flex-1">
+            <Input
+              ref={inputRef}
+              value={query}
+              onChange={e => { setQuery(e.target.value.toUpperCase()); setShowSuggestions(true); }}
+              onFocus={() => setShowSuggestions(true)}
+              onKeyDown={e => { if (e.key === "Enter") { setShowSuggestions(false); doSearch(); } if (e.key === "Escape") setShowSuggestions(false); }}
+              placeholder={t("news.search_placeholder") || "AAPL, BTC, TSLA..."}
+              className="bg-zinc-900/50 border-zinc-800 w-full font-mono"
+              autoComplete="off"
+            />
+            {showSuggestions && query.trim().length >= 1 && (
+              <div className="absolute z-20 mt-1.5 w-full bg-zinc-900 border border-zinc-700/60 rounded-xl shadow-2xl overflow-hidden">
+                {suggLoading ? (
+                  <div className="px-4 py-3 text-xs font-mono text-zinc-400">{t("common.loading") || "Loading…"}</div>
+                ) : suggestions.length === 0 ? (
+                  <div className="px-4 py-3 text-xs font-mono text-zinc-400">{t("search.no_results") || "No results found"}</div>
+                ) : (
+                  <ul className="max-h-72 overflow-y-auto py-1">
+                    {suggestions.map((item) => (
+                      <li key={item.symbol}>
+                        <button
+                          type="button"
+                          onClick={() => pickSuggestion(item)}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-zinc-800/60 transition-colors"
+                        >
+                          <AssetIcon asset={item} size={26} rounded="rounded-md" />
+                          <div className="min-w-0 flex-1">
+                            <span className="text-sm font-mono font-bold text-zinc-100">{item.symbol}</span>
+                            <span className="text-xs text-zinc-400 truncate ml-2">{item.name}</span>
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
           <Button
-            onClick={() => doSearch()}
+            onClick={() => { setShowSuggestions(false); doSearch(); }}
             disabled={srchLoading || !query.trim()}
             className="bg-zinc-100 text-zinc-950 hover:bg-white shrink-0"
           >

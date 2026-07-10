@@ -191,7 +191,7 @@ export default function LightEvolutionCard({ title, points, changePct, loading, 
               </defs>
               <XAxis
                 dataKey="t"
-                stroke="#52525b"
+                stroke="#a1a1aa"
                 fontSize={10}
                 tickLine={false}
                 axisLine={false}

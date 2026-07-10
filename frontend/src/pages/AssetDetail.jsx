@@ -377,7 +377,7 @@ export default function AssetDetail({ currency = "USD" }) {
                       return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
                     } catch { return v; }
                   }}
-                  tick={{ fill: "#52525b", fontSize: 10, fontFamily: "JetBrains Mono" }}
+                  tick={{ fill: "#a1a1aa", fontSize: 10, fontFamily: "JetBrains Mono" }}
                   axisLine={false} tickLine={false}
                   minTickGap={CHART_RANGES_SHOW_DATE.has(range) ? 80 : 50}
                   interval="preserveStartEnd"
@@ -385,7 +385,7 @@ export default function AssetDetail({ currency = "USD" }) {
                 <YAxis
                   domain={chartYDomain}
                   tickFormatter={v => fmtCompact(v)}
-                  tick={{ fill: "#52525b", fontSize: 10, fontFamily: "JetBrains Mono" }}
+                  tick={{ fill: "#a1a1aa", fontSize: 10, fontFamily: "JetBrains Mono" }}
                   axisLine={false} tickLine={false} width={60}
                 />
                 <Tooltip content={<CandleTooltip formatValue={(v) => fmt(v, currency, fxRates)} />} />

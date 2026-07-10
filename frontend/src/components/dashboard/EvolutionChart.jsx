@@ -93,7 +93,7 @@ export default function EvolutionChart({
               <XAxis
                 dataKey="t"
                 type="category"
-                stroke="#52525b"
+                stroke="#a1a1aa"
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
@@ -127,7 +127,7 @@ export default function EvolutionChart({
 
               <YAxis
                 yAxisId="total"
-                stroke="#52525b"
+                stroke="#a1a1aa"
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
