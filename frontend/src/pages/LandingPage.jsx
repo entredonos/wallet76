@@ -68,12 +68,9 @@ const COPY = {
     sec_title: "Security you can trust",
     sec_sub: "Your financial data is sensitive. We treat it that way — with bank-grade protection at every layer.",
     security: [
-      { title: "Envelope Encryption", body: "Every broker API key and sensitive credential is encrypted (Fernet: AES-128 + HMAC authentication) with a key unique to your account before storage. Even if our database were ever compromised alone, your keys remain unreadable." },
-      { title: "bcrypt Password Hashing", body: "Passwords are never stored in plain text. We use bcrypt with adaptive cost factor — the industry gold standard for password security." },
-      { title: "EU-Based Infrastructure", body: "All data is stored and processed on servers within the European Union, fully subject to GDPR protections and European data sovereignty law." },
-      { title: "Sync Audit Log", body: "Every broker/exchange sync is logged with timestamp, status and IP, and you're alerted by email after repeated failures — so you know if a connection may have been compromised." },
-      { title: "Zero Data Selling", body: "We do not sell, rent or share your data with advertisers. Our business model is your subscription — not your information." },
-      { title: "Full GDPR Compliance", body: "Right to access, right to erasure, data portability — a button in Settings generates a full copy of your data anytime. Delete your account and all data is permanently wiped within 30 days. No dark patterns, no lock-in." },
+      { title: "Encryption, End to End", body: "Every broker API key and credential is encrypted (Fernet: AES-128 + HMAC) with a key unique to your account before it ever touches storage — even a database-only breach leaves it unreadable. Passwords are never stored in plain text either: we use bcrypt with an adaptive cost factor, the industry standard." },
+      { title: "EU Infrastructure, Full GDPR Rights", body: "All data lives on servers within the European Union, under full GDPR protection. Right to access, right to erasure, data portability — a button in Settings generates a complete copy of your data anytime, and deleting your account wipes everything within 30 days. No dark patterns, no lock-in." },
+      { title: "Nothing to Sell, Nothing to Hide", body: "We don't sell, rent or share your data with advertisers — our business model is your subscription, not your information. Every broker/exchange sync is logged with timestamp, status and IP, and you're alerted by email after repeated failures, so you always know if a connection may be compromised." },
     ],
     stats: [
       { value: "11", label: "Chart time ranges" },
@@ -121,6 +118,15 @@ const COPY = {
     family_wallet1: "My Retirement", family_wallet2: "Kids' Future", family_wallet3: "My Partner", family_wallet4: "Crypto Play",
     family_total_label: "Combined Total",
     family_switch_hint: "Consolidated view · switch anytime",
+    alerts_badge: "Never miss a move",
+    alerts_title: "Price alerts that actually reach you.",
+    alerts_sub: "Set an above or below target on any stock, ETF or coin. The instant it's crossed, an email lands in your inbox — no need to keep the app open.",
+    alerts_ex1: "NVDA crossed $950", alerts_ex2: "BTC dropped below $58,000", alerts_ex3: "VWCE reached your buy target",
+    alerts_status_triggered: "Triggered", alerts_status_active: "Active",
+    sync_badge: "Set up once, stay in sync",
+    sync_title: "Your brokers, automatically up to date.",
+    sync_sub: "Connect DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase or Kraken once — every new trade shows up on its own. Anything else imports from CSV or XLSX in seconds.",
+    sync_status: "Synced 3 min ago",
   },
   pt: {
     nav_features: "Funcionalidades", nav_security: "Segurança", nav_pricing: "Preços",
@@ -162,12 +168,9 @@ const COPY = {
     sec_title: "Segurança em que pode confiar",
     sec_sub: "Os seus dados financeiros são sensíveis. Nós tratamo-los dessa forma — com proteção de nível bancário em cada camada.",
     security: [
-      { title: "Encriptação por Envelope", body: "Cada chave API de broker e credencial sensível é encriptada (Fernet: AES-128 + autenticação HMAC) com uma chave única da sua conta antes do armazenamento. As suas chaves permanecem ilegíveis mesmo que só a base de dados seja comprometida." },
-      { title: "Hash de Password com bcrypt", body: "As passwords nunca são armazenadas em texto simples. Usamos bcrypt com fator de custo adaptativo — o padrão de ouro da indústria." },
-      { title: "Infraestrutura na UE", body: "Todos os dados são armazenados e processados em servidores na União Europeia, totalmente sujeitos às proteções RGPD." },
-      { title: "Registo de Sincronizações", body: "Cada sincronização de broker/exchange é registada com timestamp, estado e IP, e recebe um alerta por email após falhas repetidas — para saber se uma ligação pode ter sido comprometida." },
-      { title: "Zero Venda de Dados", body: "Não vendemos, alugamos nem partilhamos os seus dados com anunciantes. O nosso modelo de negócio é a sua subscrição — não a sua informação." },
-      { title: "Conformidade Total com RGPD", body: "Direito de acesso, direito ao esquecimento, portabilidade — um botão em Definições gera uma cópia completa dos seus dados a qualquer momento. Elimine a conta e todos os dados são apagados em 30 dias. Sem padrões obscuros." },
+      { title: "Encriptação de Ponta a Ponta", body: "Cada chave API de broker e credencial sensível é encriptada (Fernet: AES-128 + HMAC) com uma chave única da tua conta antes de sequer tocar no armazenamento — mesmo um acesso só à base de dados deixa-as ilegíveis. As passwords também nunca são guardadas em texto simples: usamos bcrypt com fator de custo adaptativo, o padrão da indústria." },
+      { title: "Infraestrutura na UE, Direitos RGPD Completos", body: "Todos os dados vivem em servidores dentro da União Europeia, sob proteção total do RGPD. Direito de acesso, direito ao esquecimento, portabilidade — um botão em Definições gera uma cópia completa dos teus dados a qualquer momento, e eliminar a conta apaga tudo em 30 dias. Sem padrões obscuros, sem prisão." },
+      { title: "Nada para Vender, Nada a Esconder", body: "Não vendemos, alugamos nem partilhamos os teus dados com anunciantes — o nosso modelo de negócio é a tua subscrição, não a tua informação. Cada sincronização de broker/exchange é registada com timestamp, estado e IP, e recebes um alerta por email após falhas repetidas, para saberes sempre se uma ligação pode estar comprometida." },
     ],
     stats: [
       { value: "11", label: "Intervalos de gráfico" },
@@ -215,6 +218,15 @@ const COPY = {
     family_wallet1: "A Minha Reforma", family_wallet2: "Futuro dos Filhos", family_wallet3: "O Meu Companheiro/a", family_wallet4: "Cripto Especulativo",
     family_total_label: "Total Combinado",
     family_switch_hint: "Vista consolidada · alterna quando quiseres",
+    alerts_badge: "Nunca percas um movimento",
+    alerts_title: "Alertas de preço que chegam mesmo até ti.",
+    alerts_sub: "Define um alvo acima ou abaixo em qualquer ação, ETF ou moeda. No instante em que é cruzado, chega-te um email — sem precisares de ter a app aberta.",
+    alerts_ex1: "NVDA ultrapassou os $950", alerts_ex2: "BTC caiu abaixo dos $58.000", alerts_ex3: "VWCE atingiu o teu alvo de compra",
+    alerts_status_triggered: "Acionado", alerts_status_active: "Ativo",
+    sync_badge: "Configura uma vez, fica sempre sincronizado",
+    sync_title: "Os teus brokers, sempre atualizados sozinhos.",
+    sync_sub: "Liga o DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase ou Kraken uma vez — cada nova transação aparece sozinha. O resto importa-se por CSV ou XLSX em segundos.",
+    sync_status: "Sincronizado há 3 min",
   },
   fr: {
     nav_features: "Fonctionnalités", nav_security: "Sécurité", nav_pricing: "Tarifs",
@@ -256,12 +268,9 @@ const COPY = {
     sec_title: "Une sécurité en qui vous pouvez avoir confiance",
     sec_sub: "Vos données financières sont sensibles. Nous les traitons ainsi — avec une protection de niveau bancaire à chaque couche.",
     security: [
-      { title: "Chiffrement par enveloppe", body: "Chaque clé API de courtier et identifiant sensible est chiffré (Fernet : AES-128 + authentification HMAC) avec une clé unique à votre compte avant stockage. Vos clés restent illisibles même si seule la base de données est compromise." },
-      { title: "Hachage de Mot de Passe bcrypt", body: "Les mots de passe ne sont jamais stockés en clair. Nous utilisons bcrypt avec facteur de coût adaptatif — la référence de l'industrie." },
-      { title: "Infrastructure UE", body: "Toutes les données sont stockées et traitées sur des serveurs dans l'Union Européenne, pleinement soumis aux protections RGPD." },
-      { title: "Journal des Synchronisations", body: "Chaque synchronisation courtier/exchange est enregistrée avec horodatage, statut et IP, et vous êtes alerté par email après des échecs répétés — pour savoir si une connexion a pu être compromise." },
-      { title: "Zéro Vente de Données", body: "Nous ne vendons, louons ni partageons vos données avec des annonceurs. Notre modèle commercial est votre abonnement — pas vos informations." },
-      { title: "Conformité RGPD Totale", body: "Droit d'accès, droit à l'effacement, portabilité — un bouton dans les Paramètres génère une copie complète de vos données à tout moment. Supprimez votre compte et toutes les données sont définitivement effacées sous 30 jours." },
+      { title: "Chiffrement de Bout en Bout", body: "Chaque clé API de courtier et identifiant sensible est chiffré (Fernet : AES-128 + HMAC) avec une clé unique à votre compte avant même de toucher au stockage — même une brèche limitée à la base de données les rend illisibles. Les mots de passe ne sont jamais stockés en clair non plus : nous utilisons bcrypt avec un facteur de coût adaptatif, la référence du secteur." },
+      { title: "Infrastructure UE, Droits RGPD Complets", body: "Toutes les données résident sur des serveurs au sein de l'Union Européenne, sous pleine protection RGPD. Droit d'accès, droit à l'effacement, portabilité — un bouton dans les Paramètres génère une copie complète de vos données à tout moment, et la suppression de votre compte efface tout sous 30 jours. Pas de dark patterns, pas de verrouillage." },
+      { title: "Rien à Vendre, Rien à Cacher", body: "Nous ne vendons, ne louons ni ne partageons vos données avec des annonceurs — notre modèle économique est votre abonnement, pas vos informations. Chaque synchronisation courtier/exchange est journalisée avec horodatage, statut et IP, et vous êtes alerté par email après des échecs répétés, pour toujours savoir si une connexion a pu être compromise." },
     ],
     stats: [
       { value: "11", label: "Plages de graphique" },
@@ -309,6 +318,15 @@ const COPY = {
     family_wallet1: "Ma Retraite", family_wallet2: "Avenir des Enfants", family_wallet3: "Mon/Ma Partenaire", family_wallet4: "Crypto Spéculatif",
     family_total_label: "Total Combiné",
     family_switch_hint: "Vue consolidée · basculez à tout moment",
+    alerts_badge: "Ne ratez plus aucun mouvement",
+    alerts_title: "Des alertes de prix qui vous atteignent vraiment.",
+    alerts_sub: "Définissez un objectif au-dessus ou en dessous sur une action, un ETF ou une crypto. Dès qu'il est franchi, un email arrive — sans avoir besoin de garder l'app ouverte.",
+    alerts_ex1: "NVDA a dépassé 950 $", alerts_ex2: "BTC est passé sous 58 000 $", alerts_ex3: "VWCE a atteint votre objectif d'achat",
+    alerts_status_triggered: "Déclenché", alerts_status_active: "Actif",
+    sync_badge: "Configurez une fois, restez synchronisé",
+    sync_title: "Vos courtiers, toujours à jour automatiquement.",
+    sync_sub: "Connectez DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase ou Kraken une fois — chaque nouvelle transaction apparaît toute seule. Le reste s'importe via CSV ou XLSX en quelques secondes.",
+    sync_status: "Synchronisé il y a 3 min",
   },
   de: {
     nav_features: "Funktionen", nav_security: "Sicherheit", nav_pricing: "Preise",
@@ -350,12 +368,9 @@ const COPY = {
     sec_title: "Sicherheit, der Sie vertrauen können",
     sec_sub: "Ihre Finanzdaten sind sensibel. Wir behandeln sie so — mit bankähnlichem Schutz auf jeder Ebene.",
     security: [
-      { title: "Umschlagverschlüsselung", body: "Jeder Broker-API-Schlüssel wird vor der Speicherung mit einem für Ihr Konto einzigartigen Schlüssel verschlüsselt (Fernet: AES-128 + HMAC-Authentifizierung). Selbst bei einem reinen Datenbankleck bleiben Ihre Schlüssel unlesbar." },
-      { title: "bcrypt-Passwort-Hashing", body: "Passwörter werden niemals im Klartext gespeichert. Wir verwenden bcrypt mit adaptivem Kostenfaktor — der Industriestandard für Passwortsicherheit." },
-      { title: "EU-Infrastruktur", body: "Alle Daten werden auf Servern innerhalb der Europäischen Union gespeichert und verarbeitet, vollständig den DSGVO-Schutzbestimmungen unterworfen." },
-      { title: "Sync-Protokoll", body: "Jede Broker-/Exchange-Synchronisierung wird mit Zeitstempel, Status und IP protokolliert, und Sie werden nach wiederholten Fehlversuchen per E-Mail benachrichtigt — so wissen Sie, ob eine Verbindung kompromittiert sein könnte." },
-      { title: "Keine Datenweitergabe", body: "Wir verkaufen, vermieten oder teilen Ihre Daten nicht mit Werbetreibenden. Unser Geschäftsmodell ist Ihr Abonnement — nicht Ihre Daten." },
-      { title: "Volle DSGVO-Konformität", body: "Auskunftsrecht, Recht auf Löschung, Datenübertragbarkeit — ein Button in den Einstellungen erstellt jederzeit eine vollständige Kopie Ihrer Daten. Konto löschen und alle Daten werden innerhalb von 30 Tagen dauerhaft gelöscht." },
+      { title: "Verschlüsselung, Ende zu Ende", body: "Jeder Broker-API-Schlüssel und jede sensible Anmeldeinformation wird verschlüsselt (Fernet: AES-128 + HMAC) mit einem für Ihr Konto einzigartigen Schlüssel, bevor sie überhaupt gespeichert wird — selbst ein reiner Datenbank-Einbruch lässt sie unlesbar. Passwörter werden ebenfalls nie im Klartext gespeichert: Wir verwenden bcrypt mit adaptivem Kostenfaktor, dem Industriestandard." },
+      { title: "EU-Infrastruktur, Volle DSGVO-Rechte", body: "Alle Daten liegen auf Servern innerhalb der Europäischen Union, unter vollem DSGVO-Schutz. Auskunftsrecht, Recht auf Löschung, Datenübertragbarkeit — ein Button in den Einstellungen erstellt jederzeit eine vollständige Kopie Ihrer Daten, und das Löschen Ihres Kontos entfernt alles innerhalb von 30 Tagen. Keine Dark Patterns, keine Bindung." },
+      { title: "Nichts zu verkaufen, nichts zu verbergen", body: "Wir verkaufen, vermieten oder teilen Ihre Daten nicht mit Werbetreibenden — unser Geschäftsmodell ist Ihr Abonnement, nicht Ihre Daten. Jede Broker-/Exchange-Synchronisierung wird mit Zeitstempel, Status und IP protokolliert, und Sie werden nach wiederholten Fehlversuchen per E-Mail benachrichtigt, damit Sie immer wissen, ob eine Verbindung kompromittiert sein könnte." },
     ],
     stats: [
       { value: "11", label: "Chart-Zeitrahmen" },
@@ -403,6 +418,15 @@ const COPY = {
     family_wallet1: "Meine Rente", family_wallet2: "Zukunft der Kinder", family_wallet3: "Mein Partner", family_wallet4: "Krypto-Spekulation",
     family_total_label: "Gesamtsumme",
     family_switch_hint: "Konsolidierte Ansicht · jederzeit wechselbar",
+    alerts_badge: "Verpassen Sie keine Bewegung mehr",
+    alerts_title: "Preisalarme, die Sie wirklich erreichen.",
+    alerts_sub: "Legen Sie ein Ziel über oder unter einem Kurs für jede Aktie, jeden ETF oder jede Krypto fest. Sobald es überschritten wird, landet eine E-Mail in Ihrem Posteingang — ganz ohne die App offen zu halten.",
+    alerts_ex1: "NVDA hat 950 $ überschritten", alerts_ex2: "BTC ist unter 58.000 $ gefallen", alerts_ex3: "VWCE hat Ihr Kaufziel erreicht",
+    alerts_status_triggered: "Ausgelöst", alerts_status_active: "Aktiv",
+    sync_badge: "Einmal einrichten, immer synchron",
+    sync_title: "Ihre Broker, automatisch immer aktuell.",
+    sync_sub: "Verbinden Sie DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase oder Kraken einmal — jeder neue Trade erscheint von selbst. Alles andere importieren Sie in Sekunden per CSV oder XLSX.",
+    sync_status: "Vor 3 Min. synchronisiert",
   },
   it: {
     nav_features: "Funzionalità", nav_security: "Sicurezza", nav_pricing: "Prezzi",
@@ -444,12 +468,9 @@ const COPY = {
     sec_title: "Sicurezza di cui puoi fidarti",
     sec_sub: "I tuoi dati finanziari sono sensibili. Li trattiamo come tali — con protezione di livello bancario ad ogni strato.",
     security: [
-      { title: "Crittografia a Busta", body: "Ogni chiave API broker e credenziale sensibile è crittografata (Fernet: AES-128 + autenticazione HMAC) con una chiave unica del tuo account prima dell'archiviazione. Le tue chiavi restano illeggibili anche se solo il database viene compromesso." },
-      { title: "Hashing Password bcrypt", body: "Le password non vengono mai archiviate in chiaro. Usiamo bcrypt con fattore di costo adattivo — lo standard d'oro del settore." },
-      { title: "Infrastruttura UE", body: "Tutti i dati sono archiviati ed elaborati su server nell'Unione Europea, pienamente soggetti alle protezioni GDPR." },
-      { title: "Log delle Sincronizzazioni", body: "Ogni sincronizzazione broker/exchange è registrata con timestamp, stato e IP, e ricevi un avviso via email dopo errori ripetuti — per sapere se una connessione potrebbe essere compromessa." },
-      { title: "Zero Vendita di Dati", body: "Non vendiamo, affittiamo né condividiamo i tuoi dati con inserzionisti. Il nostro modello di business è il tuo abbonamento — non le tue informazioni." },
-      { title: "Piena Conformità GDPR", body: "Diritto di accesso, diritto alla cancellazione, portabilità dei dati — un pulsante nelle Impostazioni genera una copia completa dei tuoi dati in qualsiasi momento. Elimina l'account e tutti i dati vengono cancellati definitivamente entro 30 giorni." },
+      { title: "Crittografia End-to-End", body: "Ogni chiave API broker e credenziale sensibile è crittografata (Fernet: AES-128 + HMAC) con una chiave unica del tuo account prima ancora di toccare l'archiviazione — anche una violazione limitata al database le lascia illeggibili. Anche le password non vengono mai archiviate in chiaro: usiamo bcrypt con fattore di costo adattivo, lo standard del settore." },
+      { title: "Infrastruttura UE, Pieni Diritti GDPR", body: "Tutti i dati risiedono su server all'interno dell'Unione Europea, sotto piena protezione GDPR. Diritto di accesso, diritto alla cancellazione, portabilità — un pulsante nelle Impostazioni genera una copia completa dei tuoi dati in qualsiasi momento, ed eliminare l'account cancella tutto entro 30 giorni. Nessun dark pattern, nessun vincolo." },
+      { title: "Niente da Vendere, Niente da Nascondere", body: "Non vendiamo, affittiamo né condividiamo i tuoi dati con inserzionisti — il nostro modello di business è il tuo abbonamento, non le tue informazioni. Ogni sincronizzazione broker/exchange è registrata con timestamp, stato e IP, e ricevi un avviso via email dopo errori ripetuti, così sai sempre se una connessione potrebbe essere compromessa." },
     ],
     stats: [
       { value: "11", label: "Intervalli di grafico" },
@@ -497,6 +518,15 @@ const COPY = {
     family_wallet1: "La Mia Pensione", family_wallet2: "Futuro dei Figli", family_wallet3: "Il Mio Partner", family_wallet4: "Crypto Speculativo",
     family_total_label: "Totale Combinato",
     family_switch_hint: "Vista consolidata · cambia quando vuoi",
+    alerts_badge: "Non perdere mai un movimento",
+    alerts_title: "Avvisi di prezzo che ti raggiungono davvero.",
+    alerts_sub: "Imposta un obiettivo sopra o sotto su qualsiasi azione, ETF o crypto. Nell'istante in cui viene superato, ricevi un'email — senza dover tenere l'app aperta.",
+    alerts_ex1: "NVDA ha superato i $950", alerts_ex2: "BTC è sceso sotto i $58.000", alerts_ex3: "VWCE ha raggiunto il tuo obiettivo d'acquisto",
+    alerts_status_triggered: "Attivato", alerts_status_active: "Attivo",
+    sync_badge: "Configura una volta, resta sincronizzato",
+    sync_title: "I tuoi broker, sempre aggiornati automaticamente.",
+    sync_sub: "Collega DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase o Kraken una volta — ogni nuova operazione appare da sola. Il resto si importa via CSV o XLSX in pochi secondi.",
+    sync_status: "Sincronizzato 3 min fa",
   },
   es: {
     nav_features: "Funcionalidades", nav_security: "Seguridad", nav_pricing: "Precios",
@@ -538,12 +568,9 @@ const COPY = {
     sec_title: "Seguridad en la que puedes confiar",
     sec_sub: "Tus datos financieros son sensibles. Los tratamos como tales — con protección de nivel bancario en cada capa.",
     security: [
-      { title: "Cifrado por Sobre", body: "Cada clave API de broker y credencial sensible se cifra (Fernet: AES-128 + autenticación HMAC) con una clave única de tu cuenta antes del almacenamiento. Tus claves permanecen ilegibles incluso si solo la base de datos se ve comprometida." },
-      { title: "Hash de Contraseña bcrypt", body: "Las contraseñas nunca se almacenan en texto plano. Usamos bcrypt con factor de coste adaptativo — el estándar de oro del sector." },
-      { title: "Infraestructura UE", body: "Todos los datos se almacenan y procesan en servidores dentro de la Unión Europea, plenamente sujetos a las protecciones del RGPD." },
-      { title: "Registro de Sincronizaciones", body: "Cada sincronización de broker/exchange se registra con marca de tiempo, estado e IP, y recibes una alerta por email tras fallos repetidos — para saber si una conexión pudo verse comprometida." },
-      { title: "Cero Venta de Datos", body: "No vendemos, alquilamos ni compartimos tus datos con anunciantes. Nuestro modelo de negocio es tu suscripción — no tu información." },
-      { title: "Plena Conformidad RGPD", body: "Derecho de acceso, derecho al olvido, portabilidad — un botón en Ajustes genera una copia completa de tus datos en cualquier momento. Elimina la cuenta y todos los datos se borran permanentemente en 30 días." },
+      { title: "Cifrado de Extremo a Extremo", body: "Cada clave API de broker y credencial sensible se cifra (Fernet: AES-128 + HMAC) con una clave única de tu cuenta antes incluso de tocar el almacenamiento — incluso una brecha limitada a la base de datos las deja ilegibles. Las contraseñas tampoco se almacenan nunca en texto plano: usamos bcrypt con factor de coste adaptativo, el estándar del sector." },
+      { title: "Infraestructura UE, Derechos RGPD Completos", body: "Todos los datos residen en servidores dentro de la Unión Europea, bajo plena protección del RGPD. Derecho de acceso, derecho al olvido, portabilidad — un botón en Ajustes genera una copia completa de tus datos en cualquier momento, y eliminar tu cuenta borra todo en 30 días. Sin patrones oscuros, sin ataduras." },
+      { title: "Nada que Vender, Nada que Ocultar", body: "No vendemos, alquilamos ni compartimos tus datos con anunciantes — nuestro modelo de negocio es tu suscripción, no tu información. Cada sincronización de broker/exchange se registra con marca de tiempo, estado e IP, y recibes una alerta por email tras fallos repetidos, para que siempre sepas si una conexión pudo verse comprometida." },
     ],
     stats: [
       { value: "11", label: "Intervalos de gráfico" },
@@ -591,6 +618,15 @@ const COPY = {
     family_wallet1: "Mi Jubilación", family_wallet2: "Futuro de los Hijos", family_wallet3: "Mi Pareja", family_wallet4: "Cripto Especulativo",
     family_total_label: "Total Combinado",
     family_switch_hint: "Vista consolidada · cambia cuando quieras",
+    alerts_badge: "No te pierdas ningún movimiento",
+    alerts_title: "Alertas de precio que realmente te llegan.",
+    alerts_sub: "Define un objetivo por encima o por debajo en cualquier acción, ETF o cripto. En el instante en que se cruza, recibes un email — sin necesidad de tener la app abierta.",
+    alerts_ex1: "NVDA superó los $950", alerts_ex2: "BTC cayó por debajo de $58.000", alerts_ex3: "VWCE alcanzó tu objetivo de compra",
+    alerts_status_triggered: "Activada", alerts_status_active: "Activa",
+    sync_badge: "Configúralo una vez, mantente sincronizado",
+    sync_title: "Tus brokers, siempre actualizados automáticamente.",
+    sync_sub: "Conecta DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase o Kraken una vez — cada nueva operación aparece sola. Todo lo demás se importa por CSV o XLSX en segundos.",
+    sync_status: "Sincronizado hace 3 min",
   },
 };
 
@@ -801,11 +837,24 @@ export default function LandingPage() {
       </header>
 
       {/* HERO */}
+      {/* 10 jul 2026 — trocado o par de "blobs" de gradiente desfocado
+          (azul + verde a flutuar) por uma textura de pontos subtil com um
+          único glow contido por baixo. Duas manchas coloridas desfocadas no
+          hero é praticamente o clichê visual de "SaaS genérico feito à
+          pressa" (pedido do utilizador: "quero algo que não pareça feito
+          por IA") — a textura de pontos é o mesmo recurso usado por sites
+          como Linear/Mercury para dar textura sem parecer um template. */}
       <section className="relative overflow-hidden pt-24 pb-16 md:pt-32 md:pb-24">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-500/10 rounded-full blur-3xl" />
-          <div className="absolute top-20 right-1/4 w-[300px] h-[300px] bg-emerald-500/8 rounded-full blur-3xl" />
-        </div>
+        <div
+          className="absolute inset-0 pointer-events-none opacity-60"
+          style={{
+            backgroundImage: "radial-gradient(rgba(161,161,170,0.35) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+            maskImage: "radial-gradient(ellipse 65% 55% at 50% 0%, black 30%, transparent 100%)",
+            WebkitMaskImage: "radial-gradient(ellipse 65% 55% at 50% 0%, black 30%, transparent 100%)",
+          }}
+        />
+        <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[500px] h-[220px] bg-emerald-500/10 rounded-full blur-[110px] pointer-events-none" />
         <div className="relative max-w-7xl mx-auto px-6 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 rounded-full border border-zinc-700/60 bg-zinc-900/60 text-xs text-zinc-400">
             <Zap className="w-3 h-3 text-amber-400" />{c.badge}
@@ -1016,6 +1065,72 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ALERTS SHOWCASE — 10 jul 2026: quebra o grid genérico de cards
+          ícone+parágrafo com um destaque maior e ilustrado para uma das
+          funcionalidades mais fortes, mockup à esquerda desta vez para
+          alternar o ritmo visual com a secção da família acima. */}
+      <section className="py-24 max-w-7xl mx-auto px-6">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="order-2 lg:order-1 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-amber-500/10">
+            <div className="space-y-2.5">
+              {[
+                { text: c.alerts_ex1, status: c.alerts_status_triggered, up: true },
+                { text: c.alerts_ex2, status: c.alerts_status_triggered, up: false },
+                { text: c.alerts_ex3, status: c.alerts_status_active, up: true, pending: true },
+              ].map((a, i) => (
+                <div key={i} className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/50 rounded-xl px-4 py-3">
+                  <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${a.up ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" : "text-rose-400 bg-rose-500/10 border-rose-500/20"}`}>
+                    <Bell className="w-4 h-4" />
+                  </div>
+                  <span className="text-sm text-zinc-200 flex-1 min-w-0 truncate">{a.text}</span>
+                  <span className={`text-[10px] font-mono px-2 py-1 rounded-full shrink-0 ${a.pending ? "bg-blue-500/15 text-blue-300" : "bg-zinc-800 text-zinc-400"}`}>
+                    {a.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="order-1 lg:order-2">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full border border-amber-500/30 bg-amber-500/10 text-xs text-amber-300">
+              <Bell className="w-3.5 h-3.5" /> {c.alerts_badge}
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold mb-5 tracking-tight">{c.alerts_title}</h2>
+            <p className="text-zinc-400 text-lg leading-relaxed">{c.alerts_sub}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* BROKER SYNC SHOWCASE */}
+      <section className="py-24 max-w-7xl mx-auto px-6">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-xs text-cyan-300">
+              <RefreshCw className="w-3.5 h-3.5" /> {c.sync_badge}
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold mb-5 tracking-tight">{c.sync_title}</h2>
+            <p className="text-zinc-400 text-lg leading-relaxed">{c.sync_sub}</p>
+          </div>
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-cyan-500/10">
+            <div className="space-y-2.5">
+              {["DEGIRO", "Interactive Brokers", "Trading 212", "Binance"].map((b) => (
+                <div key={b} className="flex items-center justify-between bg-zinc-900/50 border border-zinc-800/50 rounded-xl px-4 py-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-lg border border-cyan-500/20 bg-cyan-500/10 flex items-center justify-center shrink-0 text-cyan-400">
+                      <RefreshCw className="w-4 h-4" />
+                    </div>
+                    <span className="text-sm text-zinc-200 truncate">{b}</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-300 shrink-0">{c.sync_status}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 text-center text-[11px] font-mono text-zinc-600">
+              {c.integrations_or} <span className="text-zinc-400 font-semibold">{c.integrations_formats}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* STATS */}
       <div className="py-16 border-y border-zinc-800/60 bg-gradient-to-r from-zinc-900/60 to-zinc-950">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
@@ -1156,9 +1271,16 @@ export default function LandingPage() {
 
       {/* FINAL CTA */}
       <section className="py-28 relative overflow-hidden border-t border-zinc-800/60">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-blue-500/10 rounded-full blur-3xl" />
-        </div>
+        <div
+          className="absolute inset-0 pointer-events-none opacity-50"
+          style={{
+            backgroundImage: "radial-gradient(rgba(161,161,170,0.3) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+            maskImage: "radial-gradient(ellipse 55% 70% at 50% 50%, black 20%, transparent 100%)",
+            WebkitMaskImage: "radial-gradient(ellipse 55% 70% at 50% 50%, black 20%, transparent 100%)",
+          }}
+        />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[220px] bg-blue-500/8 rounded-full blur-[110px] pointer-events-none" />
         <div className="relative max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-5 bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
             {c.cta2_title}
