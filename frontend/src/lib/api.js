@@ -96,7 +96,15 @@ export async function withNetworkRetry(fn, { retries = 2, delayMs = 2500, onRetr
 }
 
 export function formatApiErrorDetail(detail) {
-  if (detail == null) return "Something went wrong. Please try again.";
+  // 10 jul 2026 — isto costumava devolver um texto fixo em inglês
+  // ("Something went wrong. Please try again.") sempre que o erro não vinha
+  // com "detail" (ex.: falha de rede/timeout, sem resposta do servidor).
+  // Como essa string nunca é "" nem null, o padrão usado em todo o código
+  // (`formatApiErrorDetail(...) || t("algo.traduzido")`) nunca chegava a
+  // usar a tradução de reserva — o utilizador via sempre o texto em inglês,
+  // mesmo com a app em português. Devolver null aqui deixa cada chamador
+  // usar a sua própria mensagem traduzida, como já estava previsto.
+  if (detail == null) return null;
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail))
     return detail.map((e) => (e && typeof e.msg === "string" ? e.msg : JSON.stringify(e))).filter(Boolean).join(" ");
