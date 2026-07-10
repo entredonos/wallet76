@@ -95,7 +95,7 @@ export default function Settings() {
       if (e.response?.status === 401) {
         toast.error(t("settings.delete_account_wrong_password"));
       } else {
-        toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Error");
+        toast.error(formatApiErrorDetail(e.response?.data?.detail) || t("common.error"));
       }
     } finally {
       setDeletingAccount(false);
@@ -125,7 +125,7 @@ export default function Settings() {
       }
       setResetModal(null);
     } catch (e) {
-      toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Error");
+      toast.error(formatApiErrorDetail(e.response?.data?.detail) || t("common.error"));
       setResetModal((m) => ({ ...m, loading: false }));
     }
   };
@@ -155,7 +155,7 @@ export default function Settings() {
       toast.success(next ? t("settings.alert_emails_on") : t("settings.alert_emails_off"));
     } catch {
       setAlertEmails(!next);
-      toast.error("Failed to save preference.");
+      toast.error(t("common.error"));
     }
   };
     useEffect(() => { load(); }, []);
@@ -175,7 +175,7 @@ export default function Settings() {
       toast.success(t("settings.lock_updated"));
       load();
     } catch (e) {
-      toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Failed");
+      toast.error(formatApiErrorDetail(e.response?.data?.detail) || t("common.error"));
     }
   };
 
@@ -191,7 +191,7 @@ export default function Settings() {
       setPin(""); setPinConfirm("");
       load();
     } catch (e) {
-      toast.error(formatApiErrorDetail(e.response?.data?.detail) || "Failed");
+      toast.error(formatApiErrorDetail(e.response?.data?.detail) || t("common.error"));
     } finally { setSaving(false); }
   };
 
@@ -237,7 +237,7 @@ export default function Settings() {
       // "detail" real que o backend manda (ex.: motivo da verificação
       // WebAuthn ter falhado), que é o que precisamos de ver para
       // diagnosticar. formatApiErrorDetail(...) vem primeiro agora.
-      toast.error(formatApiErrorDetail(e.response?.data?.detail) || e?.message || "Biometric setup failed");
+      toast.error(formatApiErrorDetail(e.response?.data?.detail) || e?.message || t("settings.biometric_setup_failed"));
     } finally { setRegisteringBio(false); }
   };
 
@@ -272,7 +272,7 @@ export default function Settings() {
       // List would require an endpoint; for now we instruct user to re-register if needed
       toast.success(t("settings.biometric_removed"));
       load();
-    } catch { toast.error("Failed"); }
+    } catch { toast.error(t("common.error")); }
   };
 
   const startTwoFactorSetup = async () => {
