@@ -4,7 +4,7 @@ import { Lock, Fingerprint, KeyRound, LogOut } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../context/I18nContext";
 import { Capacitor } from "@capacitor/core";
-import { NativeBiometric } from "@capgo/capacitor-native-biometric";
+import * as SimpleBiometric from "../lib/simpleBiometric";
 import { detectPlatform } from "../lib/pwaInstall";
 
 // 9 jul 2026 — "no PC ou via web nunca peça biometria pois normalmente os
@@ -88,12 +88,12 @@ export default function LockScreen({ onUnlock }) {
     if (Capacitor.isNativePlatform()) {
       setBusy(true); setError("");
       try {
-        const avail = await NativeBiometric.isAvailable();
+        const avail = await SimpleBiometric.isAvailable();
         if (!avail.isAvailable) {
           if (!auto) setError(t("settings.biometric_unsupported"));
           return;
         }
-        await NativeBiometric.verifyIdentity({
+        await SimpleBiometric.verify({
           reason: t("lock.biometric_prompt"),
           title: "Wallet76",
         });

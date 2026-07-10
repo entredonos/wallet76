@@ -13,7 +13,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { useI18n } from "../context/I18nContext";
 import { Capacitor } from "@capacitor/core";
-import { NativeBiometric } from "@capgo/capacitor-native-biometric";
+import * as SimpleBiometric from "../lib/simpleBiometric";
 
 function b64urlToBuf(b64url) {
   const pad = "=".repeat((4 - (b64url.length % 4)) % 4);
@@ -248,12 +248,12 @@ export default function Settings() {
     // nenhuma para guardar (ver nota em LockScreen.jsx).
     setRegisteringBio(true);
     try {
-      const avail = await NativeBiometric.isAvailable();
+      const avail = await SimpleBiometric.isAvailable();
       if (!avail.isAvailable) {
         toast.error(t("settings.biometric_unsupported"));
         return;
       }
-      await NativeBiometric.verifyIdentity({
+      await SimpleBiometric.verify({
         reason: t("settings.mode_biometric_desc"),
         title: "Wallet76",
       });

@@ -7,6 +7,11 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // 10 jul 2026 — plugin próprio para o gate de biometria (ver
+        // SimpleBiometricPlugin.java): substitui @capgo/capacitor-native-biometric,
+        // que crashava em sensores "Class 2 (Weak)" por exigir sempre um
+        // CryptoObject. Tem de ser registado ANTES de super.onCreate().
+        registerPlugin(SimpleBiometricPlugin.class);
         super.onCreate(savedInstanceState);
         // 9 jul 2026 — encontrado via depuração remota (chrome://inspect): os
         // pedidos da app (Dashboard, Login) estavam a ir diretos para
