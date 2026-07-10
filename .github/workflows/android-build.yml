@@ -118,6 +118,21 @@ jobs:
           path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
+      # 10 jul 2026 — apagar a release anterior ANTES de publicar a nova.
+      # Confirmado por hash (Get-FileHash no PowerShell) que o passo
+      # softprops/action-gh-release@v2 seguinte, ao "atualizar" uma release
+      # já existente com o mesmo tag_name, nem sempre substitui de facto o
+      # asset app-debug.apk anexado — o link releases/latest/download/...
+      # continuava a servir um ficheiro de um build bem mais antigo, mesmo
+      # com o job a reportar sucesso. Apagar a release por completo e deixar
+      # o passo seguinte criar uma nova do zero elimina essa ambiguidade.
+      # "|| true" porque na primeira vez que este workflow corre a release
+      # ainda não existe (gh release delete falhava e parava o job).
+      - name: Apagar release "android-latest" anterior (garante asset sempre atualizado)
+        run: gh release delete android-latest --yes --cleanup-tag || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       # Release com tag fixa "android-latest" (8 jul 2026) — sempre que este
       # workflow corre, substitui o APK anexado à mesma release em vez de
       # criar uma nova; dá um URL estável (releases/latest/download/...) que
