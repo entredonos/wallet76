@@ -1,0 +1,88 @@
+name: Windows build
+
+# Compila o instalador Windows do Wallet76 (Electron + electron-builder/NSIS)
+# e publica-o como GitHub Release com um URL estável — mesmo padrão do
+# android-build.yml (ver esse ficheiro para o histórico do bug de asset
+# desatualizado que motivou o passo "apagar release anterior" abaixo).
+#
+# 10 jul 2026 — IMPORTANTE: usamos o URL de download por TAG específica
+# (.../releases/download/windows-latest/Wallet76-Setup.exe), NÃO o endpoint
+# genérico ".../releases/latest/download/...". O endpoint genérico
+# "/releases/latest" é ÚNICO por repositório (não por tag) — aponta sempre
+# para a release publicada mais recentemente em TODO o repo. Como já existe
+# a release "android-latest" a usar esse padrão, se esta release Windows
+# também disparasse o mesmo endpoint genérico, o link do Android passaria a
+# apontar às vezes para o instalador Windows (e vice-versa), consoante qual
+# dos dois workflows correu por último. O URL por tag específica evita isso
+# por completo: cada plataforma tem sempre o seu próprio link estável,
+# independente da outra.
+#
+# Corre automaticamente sempre que algo em frontend/ muda no branch main, e
+# também pode ser disparado manualmente (botão "Run workflow" no separador
+# Actions do GitHub).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/windows-build.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependências do frontend
+        run: npm ci
+
+      # CI=false + REACT_APP_BACKEND_URL="" — mesmo motivo que no
+      # android-build.yml: evita que avisos do ESLint parem o build (CI=true
+      # trata-os como erros fatais) e força caminhos relativos ("/api/...")
+      # em vez de ir direto ao Render, para o cookie de sessão nunca ser
+      # tratado como cross-site.
+      - name: Build da web app
+        run: npm run build
+        env:
+          CI: false
+          REACT_APP_BACKEND_URL: ""
+
+      # --publish never: publicamos nós próprios via GitHub Release mais
+      # abaixo (softprops/action-gh-release), não queremos que o
+      # electron-builder tente publicar sozinho (precisaria de um token
+      # GH_TOKEN próprio e outro fluxo).
+      - name: Compilar instalador Windows (electron-builder/NSIS)
+        run: npx electron-builder --win nsis --publish never
+
+      - name: Apagar release "windows-latest" anterior (garante instalador sempre atualizado)
+        run: gh release delete windows-latest --yes --cleanup-tag || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publicar o instalador como GitHub Release (URL estável)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: windows-latest
+          name: "Wallet76 Windows"
+          body: "Instalador Windows gerado automaticamente a partir do último commit em main. Não assinado (Windows SmartScreen pode avisar) — clica em \"Mais informações\" > \"Executar mesmo assim\"."
+          files: frontend/dist/Wallet76-Setup.exe
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

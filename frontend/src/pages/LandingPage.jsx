@@ -6,7 +6,7 @@ import {
   Bell, Globe2, Wallet, ShieldCheck, MonitorSmartphone,
   Lock, Server, FileText, RefreshCw, Newspaper, PieChart, Zap,
   Users, Star, ChevronRight, BarChart2, Activity, Check, X, BarChart3,
-  Download, Share, SquarePlus, Eye,
+  Download, Share, SquarePlus, Eye, Smartphone, Baby, Heart, Bitcoin,
 } from "lucide-react";
 import {
   detectPlatform, isInstalled, canPromptInstall,
@@ -108,6 +108,19 @@ const COPY = {
     ios_step1: "Tap the Share icon",
     ios_step2: "Then choose \"Add to Home Screen\"",
     ios_continue: "Got it, continue",
+    dl_title: "Get Wallet76 on every device",
+    dl_sub: "Native apps for Windows and Android, or install as a web app anywhere else — same account, same data, everywhere.",
+    dl_windows: "Windows", dl_windows_desc: "Desktop app for Windows 10 & 11. No browser tab, no distractions.",
+    dl_android: "Android", dl_android_desc: "Direct APK install — Play Store coming soon.",
+    dl_web: "Mac, iOS & Web", dl_web_desc: "Install Wallet76 straight from your browser as a Progressive Web App.",
+    dl_btn: "Download", dl_web_btn: "Install app", dl_version: "Version",
+    dl_ios_hint: "On iPhone/iPad: tap Share, then \"Add to Home Screen\".",
+    family_badge: "Built for real households",
+    family_title: "One login. Every wallet that matters.",
+    family_sub: "Keep your own investments separate from your kids' savings or your partner's portfolio — or view everything combined in a single number. Switch between them in one tap.",
+    family_wallet1: "My Retirement", family_wallet2: "Kids' Future", family_wallet3: "My Partner", family_wallet4: "Crypto Play",
+    family_total_label: "Combined Total",
+    family_switch_hint: "Consolidated view · switch anytime",
   },
   pt: {
     nav_features: "Funcionalidades", nav_security: "Segurança", nav_pricing: "Preços",
@@ -189,6 +202,19 @@ const COPY = {
     ios_step1: "Toque no ícone Partilhar",
     ios_step2: "Depois escolha \"Adicionar ao ecrã principal\"",
     ios_continue: "Entendi, continuar",
+    dl_title: "Leva o Wallet76 para todos os teus dispositivos",
+    dl_sub: "Apps nativas para Windows e Android, ou instala como app web em qualquer outro sítio — a mesma conta, os mesmos dados, em todo o lado.",
+    dl_windows: "Windows", dl_windows_desc: "App de secretária para Windows 10 e 11. Sem separador de browser, sem distrações.",
+    dl_android: "Android", dl_android_desc: "Instalação direta do APK — Play Store brevemente.",
+    dl_web: "Mac, iOS e Web", dl_web_desc: "Instala o Wallet76 diretamente do browser como Progressive Web App.",
+    dl_btn: "Transferir", dl_web_btn: "Instalar app", dl_version: "Versão",
+    dl_ios_hint: "No iPhone/iPad: toca em Partilhar e depois \"Adicionar ao ecrã principal\".",
+    family_badge: "Feito para famílias a sério",
+    family_title: "Um login. Todas as carteiras que importam.",
+    family_sub: "Mantém os teus investimentos separados das poupanças dos teus filhos ou da carteira do teu companheiro/a — ou vê tudo junto num único número. Alterna entre eles num toque.",
+    family_wallet1: "A Minha Reforma", family_wallet2: "Futuro dos Filhos", family_wallet3: "O Meu Companheiro/a", family_wallet4: "Cripto Especulativo",
+    family_total_label: "Total Combinado",
+    family_switch_hint: "Vista consolidada · alterna quando quiseres",
   },
   fr: {
     nav_features: "Fonctionnalités", nav_security: "Sécurité", nav_pricing: "Tarifs",
@@ -270,6 +296,19 @@ const COPY = {
     ios_step1: "Appuyez sur l'icône Partager",
     ios_step2: "Puis choisissez « Sur l'écran d'accueil »",
     ios_continue: "Compris, continuer",
+    dl_title: "Wallet76 sur tous vos appareils",
+    dl_sub: "Applications natives pour Windows et Android, ou installation en tant qu'application web ailleurs — même compte, mêmes données, partout.",
+    dl_windows: "Windows", dl_windows_desc: "Application de bureau pour Windows 10 et 11. Sans onglet de navigateur, sans distraction.",
+    dl_android: "Android", dl_android_desc: "Installation directe de l'APK — Play Store bientôt disponible.",
+    dl_web: "Mac, iOS et Web", dl_web_desc: "Installez Wallet76 directement depuis votre navigateur en tant que Progressive Web App.",
+    dl_btn: "Télécharger", dl_web_btn: "Installer l'app", dl_version: "Version",
+    dl_ios_hint: "Sur iPhone/iPad : appuyez sur Partager, puis « Sur l'écran d'accueil ».",
+    family_badge: "Conçu pour les vrais foyers",
+    family_title: "Une connexion. Tous les portefeuilles qui comptent.",
+    family_sub: "Séparez vos investissements de l'épargne de vos enfants ou du portefeuille de votre partenaire — ou voyez tout regroupé en un seul chiffre. Basculez entre eux en un instant.",
+    family_wallet1: "Ma Retraite", family_wallet2: "Avenir des Enfants", family_wallet3: "Mon/Ma Partenaire", family_wallet4: "Crypto Spéculatif",
+    family_total_label: "Total Combiné",
+    family_switch_hint: "Vue consolidée · basculez à tout moment",
   },
   de: {
     nav_features: "Funktionen", nav_security: "Sicherheit", nav_pricing: "Preise",
@@ -351,6 +390,19 @@ const COPY = {
     ios_step1: "Tippen Sie auf das Teilen-Symbol",
     ios_step2: "Wählen Sie dann \"Zum Home-Bildschirm\"",
     ios_continue: "Verstanden, weiter",
+    dl_title: "Wallet76 auf all deinen Geräten",
+    dl_sub: "Native Apps für Windows und Android, oder installiere es überall sonst als Web-App — derselbe Account, dieselben Daten, überall.",
+    dl_windows: "Windows", dl_windows_desc: "Desktop-App für Windows 10 und 11. Ohne Browser-Tab, ohne Ablenkung.",
+    dl_android: "Android", dl_android_desc: "Direkte APK-Installation — Play Store folgt bald.",
+    dl_web: "Mac, iOS & Web", dl_web_desc: "Installiere Wallet76 direkt aus deinem Browser als Progressive Web App.",
+    dl_btn: "Herunterladen", dl_web_btn: "App installieren", dl_version: "Version",
+    dl_ios_hint: "Auf iPhone/iPad: Tippe auf Teilen, dann \"Zum Home-Bildschirm\".",
+    family_badge: "Für echte Haushalte gemacht",
+    family_title: "Ein Login. Jedes Depot, das zählt.",
+    family_sub: "Halte deine eigenen Investitionen getrennt von den Ersparnissen deiner Kinder oder dem Portfolio deines Partners — oder sieh alles zusammengefasst in einer einzigen Zahl. Wechsle jederzeit mit einem Klick.",
+    family_wallet1: "Meine Rente", family_wallet2: "Zukunft der Kinder", family_wallet3: "Mein Partner", family_wallet4: "Krypto-Spekulation",
+    family_total_label: "Gesamtsumme",
+    family_switch_hint: "Konsolidierte Ansicht · jederzeit wechselbar",
   },
   it: {
     nav_features: "Funzionalità", nav_security: "Sicurezza", nav_pricing: "Prezzi",
@@ -432,6 +484,19 @@ const COPY = {
     ios_step1: "Tocca l'icona Condividi",
     ios_step2: "Poi scegli \"Aggiungi a Home\"",
     ios_continue: "Capito, continua",
+    dl_title: "Wallet76 su tutti i tuoi dispositivi",
+    dl_sub: "App native per Windows e Android, oppure installala come app web ovunque altro — stesso account, stessi dati, ovunque.",
+    dl_windows: "Windows", dl_windows_desc: "App desktop per Windows 10 e 11. Niente scheda del browser, niente distrazioni.",
+    dl_android: "Android", dl_android_desc: "Installazione diretta dell'APK — Play Store in arrivo.",
+    dl_web: "Mac, iOS e Web", dl_web_desc: "Installa Wallet76 direttamente dal browser come Progressive Web App.",
+    dl_btn: "Scarica", dl_web_btn: "Installa app", dl_version: "Versione",
+    dl_ios_hint: "Su iPhone/iPad: tocca Condividi, poi \"Aggiungi a Home\".",
+    family_badge: "Pensato per le famiglie vere",
+    family_title: "Un accesso. Ogni portafoglio che conta.",
+    family_sub: "Tieni i tuoi investimenti separati dai risparmi dei tuoi figli o dal portafoglio del tuo partner — oppure vedi tutto insieme in un unico numero. Passa da uno all'altro in un tocco.",
+    family_wallet1: "La Mia Pensione", family_wallet2: "Futuro dei Figli", family_wallet3: "Il Mio Partner", family_wallet4: "Crypto Speculativo",
+    family_total_label: "Totale Combinato",
+    family_switch_hint: "Vista consolidata · cambia quando vuoi",
   },
   es: {
     nav_features: "Funcionalidades", nav_security: "Seguridad", nav_pricing: "Precios",
@@ -513,6 +578,19 @@ const COPY = {
     ios_step1: "Toca el icono Compartir",
     ios_step2: "Luego elige \"Añadir a pantalla de inicio\"",
     ios_continue: "Entendido, continuar",
+    dl_title: "Wallet76 en todos tus dispositivos",
+    dl_sub: "Apps nativas para Windows y Android, o instálala como app web en cualquier otro sitio — la misma cuenta, los mismos datos, en todas partes.",
+    dl_windows: "Windows", dl_windows_desc: "App de escritorio para Windows 10 y 11. Sin pestaña del navegador, sin distracciones.",
+    dl_android: "Android", dl_android_desc: "Instalación directa del APK — Play Store próximamente.",
+    dl_web: "Mac, iOS y Web", dl_web_desc: "Instala Wallet76 directamente desde tu navegador como Progressive Web App.",
+    dl_btn: "Descargar", dl_web_btn: "Instalar app", dl_version: "Versión",
+    dl_ios_hint: "En iPhone/iPad: toca Compartir y luego \"Añadir a pantalla de inicio\".",
+    family_badge: "Hecho para familias de verdad",
+    family_title: "Un inicio de sesión. Cada cartera que importa.",
+    family_sub: "Mantén tus inversiones separadas de los ahorros de tus hijos o de la cartera de tu pareja — o ve todo junto en un único número. Cambia entre ellas al instante.",
+    family_wallet1: "Mi Jubilación", family_wallet2: "Futuro de los Hijos", family_wallet3: "Mi Pareja", family_wallet4: "Cripto Especulativo",
+    family_total_label: "Total Combinado",
+    family_switch_hint: "Vista consolidada · cambia cuando quieras",
   },
 };
 
@@ -633,6 +711,20 @@ export default function LandingPage() {
   const platform = useMemo(() => detectPlatform(), []);
   const [canPrompt, setCanPrompt] = useState(canPromptInstall());
   const [installTarget, setInstallTarget] = useState(null); // null | "/login" | "/register"
+
+  // Versões reais para a secção de Downloads (10 jul 2026) — os mesmos
+  // ficheiros estáticos já usados pelo ApkUpdateBanner.jsx (Android) e pelo
+  // novo workflow windows-build.yml (Windows), servidos pelo próprio
+  // domínio. cache: "no-store" para nunca mostrar uma versão desatualizada
+  // por causa de cache do browser/CDN.
+  const [androidInfo, setAndroidInfo] = useState(null);
+  const [desktopInfo, setDesktopInfo] = useState(null);
+  useEffect(() => {
+    fetch("/app-version.json", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null)).then(setAndroidInfo).catch(() => {});
+    fetch("/desktop-version.json", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null)).then(setDesktopInfo).catch(() => {});
+  }, []);
 
   // beforeinstallprompt (Android/Desktop) pode chegar depois deste
   // componente já ter montado — subscreve para saber assim que ficar
@@ -769,6 +861,93 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* DOWNLOADS — 10 jul 2026 (pedido: "deveria ter la os arquivos para
+          download tipo para PC, Android etc... com as versões"). Windows e
+          Android têm um link real e estável para GitHub Releases (versão
+          buscada em runtime a app-version.json / desktop-version.json, os
+          mesmos ficheiros que o ApkUpdateBanner.jsx e o novo
+          windows-build.yml mantêm atualizados). Mac/iOS/outros browsers não
+          têm ficheiro nenhum para descarregar — usam o mesmo mecanismo de
+          instalação PWA (triggerInstall) já usado no resto da página. */}
+      <section id="downloads" className="py-24 max-w-7xl mx-auto px-6">
+        <div className="text-center mb-14">
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">{c.dl_title}</h2>
+          <p className="text-zinc-400 text-lg max-w-2xl mx-auto">{c.dl_sub}</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+          {/* Windows */}
+          <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-6 flex flex-col">
+            <div className="w-10 h-10 rounded-xl border flex items-center justify-center mb-4 text-blue-400 bg-blue-500/10 border-blue-500/20">
+              <MonitorSmartphone className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-semibold text-zinc-100 mb-2">{c.dl_windows}</h3>
+            <p className="text-zinc-500 text-sm leading-relaxed mb-4 flex-1">{c.dl_windows_desc}</p>
+            {desktopInfo?.versionName && (
+              <div className="text-[11px] font-mono text-zinc-600 mb-3">{c.dl_version} {desktopInfo.versionName}</div>
+            )}
+            <a
+              href={desktopInfo?.downloadUrl || "https://github.com/entredonos/wallet76/releases/download/windows-latest/Wallet76-Setup.exe"}
+              className="inline-flex items-center justify-center gap-2 py-2.5 border border-zinc-700 rounded-xl text-zinc-200 font-medium hover:border-zinc-500 hover:text-white transition-colors text-sm"
+              data-testid="download-windows"
+            >
+              <Download className="w-4 h-4" /> {c.dl_btn}
+            </a>
+          </div>
+
+          {/* Android */}
+          <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-6 flex flex-col">
+            <div className="w-10 h-10 rounded-xl border flex items-center justify-center mb-4 text-emerald-400 bg-emerald-500/10 border-emerald-500/20">
+              <Smartphone className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-semibold text-zinc-100 mb-2">{c.dl_android}</h3>
+            <p className="text-zinc-500 text-sm leading-relaxed mb-4 flex-1">{c.dl_android_desc}</p>
+            {androidInfo?.latestVersionName && (
+              <div className="text-[11px] font-mono text-zinc-600 mb-3">{c.dl_version} {androidInfo.latestVersionName}</div>
+            )}
+            <a
+              href={androidInfo?.downloadUrl || "https://github.com/entredonos/wallet76/releases/download/android-latest/app-debug.apk"}
+              className="inline-flex items-center justify-center gap-2 py-2.5 border border-zinc-700 rounded-xl text-zinc-200 font-medium hover:border-zinc-500 hover:text-white transition-colors text-sm"
+              data-testid="download-android"
+            >
+              <Download className="w-4 h-4" /> {c.dl_btn}
+            </a>
+          </div>
+
+          {/* Mac / iOS / Web (PWA) */}
+          <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-6 flex flex-col">
+            <div className="w-10 h-10 rounded-xl border flex items-center justify-center mb-4 text-purple-400 bg-purple-500/10 border-purple-500/20">
+              <Globe2 className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-semibold text-zinc-100 mb-2">{c.dl_web}</h3>
+            <p className="text-zinc-500 text-sm leading-relaxed mb-4 flex-1">
+              {c.dl_web_desc}
+              {platform === "ios" && <span className="block mt-2 text-zinc-600 text-xs">{c.dl_ios_hint}</span>}
+            </p>
+            {platform === "ios" ? (
+              <a
+                href="/login"
+                onClick={(e) => handleEntryClick(e, "/login")}
+                className="inline-flex items-center justify-center gap-2 py-2.5 border border-zinc-700 rounded-xl text-zinc-200 font-medium hover:border-zinc-500 hover:text-white transition-colors text-sm"
+                data-testid="download-web-ios"
+              >
+                {c.dl_web_btn}
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={canPrompt ? handleInstallClick : () => navigate("/login")}
+                className="inline-flex items-center justify-center gap-2 py-2.5 border border-zinc-700 rounded-xl text-zinc-200 font-medium hover:border-zinc-500 hover:text-white transition-colors text-sm"
+                data-testid="download-web"
+              >
+                <Download className="w-4 h-4" /> {c.dl_web_btn}
+              </button>
+            )}
+          </div>
+
+        </div>
+      </section>
+
       {/* FEATURES */}
       <section id="features" className="py-24 max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
@@ -788,6 +967,52 @@ export default function LandingPage() {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* FAMILY / MULTI-WALLET SHOWCASE — 10 jul 2026 (pedido: destacar em
+          grande a organização multi-carteira já existente, com um exemplo
+          concreto tipo "uma carteira para os filhos, outra para a mulher,
+          controla tudo junto"). Mockup ilustrativo em código, mesmo estilo
+          do MockDashboard do hero — sem dados/nomes reais de ninguém. */}
+      <section className="py-24 border-t border-zinc-800/60 bg-zinc-900/20">
+        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full border border-purple-500/30 bg-purple-500/10 text-xs text-purple-300">
+              <Users className="w-3.5 h-3.5" /> {c.family_badge}
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold mb-5 tracking-tight">{c.family_title}</h2>
+            <p className="text-zinc-400 text-lg leading-relaxed">{c.family_sub}</p>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-purple-500/10">
+            <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-4 mb-3 flex items-center justify-between">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">{c.family_total_label}</span>
+              <span className="text-xl font-mono font-bold text-zinc-100">$186,420</span>
+            </div>
+            <div className="space-y-2.5">
+              {[
+                { label: c.family_wallet1, Icon: Wallet,   val: "$98,120", pct: "+18.4%", color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
+                { label: c.family_wallet2, Icon: Baby,     val: "$21,300", pct: "+6.1%",  color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" },
+                { label: c.family_wallet3, Icon: Heart,    val: "$52,900", pct: "+11.7%", color: "text-rose-400 bg-rose-500/10 border-rose-500/20" },
+                { label: c.family_wallet4, Icon: Bitcoin,  val: "$14,100", pct: "-4.2%",  color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
+              ].map((w) => (
+                <div key={w.label} className="flex items-center justify-between bg-zinc-900/50 border border-zinc-800/50 rounded-xl px-4 py-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${w.color}`}>
+                      <w.Icon className="w-4 h-4" />
+                    </div>
+                    <span className="text-sm text-zinc-200 truncate">{w.label}</span>
+                  </div>
+                  <div className="text-right shrink-0 ml-3">
+                    <div className="text-sm font-mono text-zinc-100">{w.val}</div>
+                    <div className={`text-[11px] font-mono ${w.pct.startsWith("-") ? "text-rose-400" : "text-emerald-400"}`}>{w.pct}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 text-center text-[11px] font-mono text-zinc-600">{c.family_switch_hint}</div>
+          </div>
         </div>
       </section>
 
