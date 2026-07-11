@@ -735,21 +735,21 @@ function ReturnsBarchart({ m, t, currency, benchmarkMetrics }) {
     // a guarda de largura (barras muito estreitas em períodos longos, onde
     // o texto ficaria a sobrepor a barra vizinha).
     if (Math.abs(width) < 14) return null;
-    // 11 jul 2026 (3ª volta) — a 2ª volta calculava o offset da negativa a
-    // partir da escala da própria barra (2 pontos percentuais convertidos
-    // em pixels), mas nesta escala (eixo -18% a +87%) isso dava só uns
-    // 6-10px de folga — visualmente ainda colado ao topo da barra vermelha.
-    // Pedido: "quero os valores das percentagens negativas... que fiquem ao
-    // nivel de onde escrevi aqui" (screenshot com seta a apontar bem acima
-    // do topo das barras vermelhas, ao nível dos labels das barras verdes
-    // pequenas). Troca-se o offset proporcional por um valor FIXO em
-    // pixels, sempre igual para todas as negativas, independente da
-    // profundidade de cada barra — assim ficam todas ao mesmo nível.
+    // 11 jul 2026 (4ª volta) — a 3ª volta já fixava a altura das negativas
+    // relativa à baseline (y, comum a todas as barras negativas, já que
+    // "y" no Recharts é sempre o pixel do 0%, não do topo da barra) em vez
+    // de escalar com o valor — mas 16px ainda ficava perto de mais.
+    // Pedido, com screenshot marcado com uma linha branca: "quero que os
+    // negativos esteja sempre onde desenhei uma linha branca independente
+    // do tamanho das percentagens ou tamanho das barras". Sobe-se o offset
+    // fixo para 28px acima da baseline (medido a partir da posição da
+    // linha branca desenhada face à baseline no screenshot) — continua
+    // igual para todas as negativas, independente da barra.
     let pos;
     if (value >= 0) {
       pos = y - 3;
     } else {
-      pos = y - 16;
+      pos = y - 28;
     }
     return (
       <text x={x + width / 2} y={pos} textAnchor="middle" fontSize={9} fontFamily="monospace"
