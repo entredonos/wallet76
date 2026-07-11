@@ -735,21 +735,27 @@ function ReturnsBarchart({ m, t, currency, benchmarkMetrics }) {
     // a guarda de largura (barras muito estreitas em períodos longos, onde
     // o texto ficaria a sobrepor a barra vizinha).
     if (Math.abs(width) < 14) return null;
-    // 11 jul 2026 (4ª volta) — a 3ª volta já fixava a altura das negativas
-    // relativa à baseline (y, comum a todas as barras negativas, já que
-    // "y" no Recharts é sempre o pixel do 0%, não do topo da barra) em vez
-    // de escalar com o valor — mas 16px ainda ficava perto de mais.
-    // Pedido, com screenshot marcado com uma linha branca: "quero que os
-    // negativos esteja sempre onde desenhei uma linha branca independente
-    // do tamanho das percentagens ou tamanho das barras". Sobe-se o offset
-    // fixo para 28px acima da baseline (medido a partir da posição da
-    // linha branca desenhada face à baseline no screenshot) — continua
-    // igual para todas as negativas, independente da barra.
+    // 11 jul 2026 (5ª volta) — as voltas 3 e 4 assumiam que, para uma barra
+    // negativa, o "y" que o Recharts passa ao LabelList é sempre o pixel da
+    // baseline (0%), constante para todas as barras — mas o utilizador
+    // confirmou por screenshot que os labels negativos continuavam a
+    // subir/descer conforme a percentagem de cada barra, ou seja essa
+    // suposição estava errada nesta versão/configuração (possivelmente por
+    // causa do "shape" custom do DivergingBar a alterar como o LabelList
+    // deriva a geometria). Correção à prova disto: em vez de confiar em
+    // qual de "y" é a baseline, calcula-se sempre o MENOR dos dois pixels
+    // do retângulo da barra (y e y+height) — esse é, por definição, sempre
+    // o pixel mais alto (mais perto do topo do ecrã) dos dois extremos de
+    // uma barra negativa, ou seja sempre a baseline (0%), seja qual for a
+    // convenção usada internamente. Assim o offset fixo de 28px acima
+    // desse ponto fica garantidamente igual em todas as barras negativas,
+    // independente da percentagem ou do tamanho da barra.
     let pos;
     if (value >= 0) {
       pos = y - 3;
     } else {
-      pos = y - 28;
+      const baselineY = Math.min(y, y + height);
+      pos = baselineY - 28;
     }
     return (
       <text x={x + width / 2} y={pos} textAnchor="middle" fontSize={9} fontFamily="monospace"
