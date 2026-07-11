@@ -749,13 +749,16 @@ function ReturnsBarchart({ m, t, currency, benchmarkMetrics }) {
     // uma barra negativa, ou seja sempre a baseline (0%), seja qual for a
     // convenção usada internamente. Assim o offset fixo de 28px acima
     // desse ponto fica garantidamente igual em todas as barras negativas,
-    // independente da percentagem ou do tamanho da barra.
+    // independente da percentagem ou do tamanho da barra. 28px ficava
+    // longe de mais da linha de zero (pedido: "quase encostadas ao 0%,
+    // tipo encostadas ao 1% positivo ou 0,5%") — reduzido para 9px, só o
+    // suficiente para não tocar no traço do eixo/na própria barra.
     let pos;
     if (value >= 0) {
       pos = y - 3;
     } else {
       const baselineY = Math.min(y, y + height);
-      pos = baselineY - 28;
+      pos = baselineY - 9;
     }
     return (
       <text x={x + width / 2} y={pos} textAnchor="middle" fontSize={9} fontFamily="monospace"
