@@ -735,22 +735,21 @@ function ReturnsBarchart({ m, t, currency, benchmarkMetrics }) {
     // a guarda de largura (barras muito estreitas em períodos longos, onde
     // o texto ficaria a sobrepor a barra vizinha).
     if (Math.abs(width) < 14) return null;
-    // 10 jul 2026 (2ª volta) — a versão anterior punha a label negativa só
-    // 5px acima da baseline, que é exatamente o topo da própria barra
-    // vermelha (ela cresce PARA BAIXO a partir daí) — na prática o número
-    // ficava colado/em cima do vermelho, difícil de ler ("os números são
-    // vermelhos e ficam por cima da barra vermelha e mal se veem"). Pedido:
-    // pôr sempre numa zona positiva fixa (~+2%), independente da
-    // profundidade da barra. Para isso, em vez de um offset fixo em pixels,
-    // convertemos usando a própria escala da barra (height representa
-    // |value| em pixels), e subimos o equivalente a 2 pontos percentuais —
-    // fica sempre no espaço preto por cima do zero, nunca dentro da barra.
+    // 11 jul 2026 (3ª volta) — a 2ª volta calculava o offset da negativa a
+    // partir da escala da própria barra (2 pontos percentuais convertidos
+    // em pixels), mas nesta escala (eixo -18% a +87%) isso dava só uns
+    // 6-10px de folga — visualmente ainda colado ao topo da barra vermelha.
+    // Pedido: "quero os valores das percentagens negativas... que fiquem ao
+    // nivel de onde escrevi aqui" (screenshot com seta a apontar bem acima
+    // do topo das barras vermelhas, ao nível dos labels das barras verdes
+    // pequenas). Troca-se o offset proporcional por um valor FIXO em
+    // pixels, sempre igual para todas as negativas, independente da
+    // profundidade de cada barra — assim ficam todas ao mesmo nível.
     let pos;
     if (value >= 0) {
       pos = y - 3;
     } else {
-      const pxPerPct = value !== 0 ? Math.abs(height / value) : 0;
-      pos = y - pxPerPct * 2 - 3;
+      pos = y - 16;
     }
     return (
       <text x={x + width / 2} y={pos} textAnchor="middle" fontSize={9} fontFamily="monospace"
