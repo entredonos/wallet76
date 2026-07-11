@@ -758,7 +758,7 @@ function ReturnsBarchart({ m, t, currency, benchmarkMetrics }) {
       pos = y - 3;
     } else {
       const baselineY = Math.min(y, y + height);
-      pos = baselineY - 9;
+      pos = baselineY - 5;
     }
     return (
       <text x={x + width / 2} y={pos} textAnchor="middle" fontSize={9} fontFamily="monospace"
