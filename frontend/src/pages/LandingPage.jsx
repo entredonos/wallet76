@@ -127,6 +127,9 @@ const COPY = {
     sync_title: "Your brokers, automatically up to date.",
     sync_sub: "Connect DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase or Kraken once — every new trade shows up on its own. Anything else imports from CSV or XLSX in seconds.",
     sync_status: "Synced 3 min ago",
+    screens_title: "See the real app, not a mockup",
+    screens_sub: "Every screen below is an actual screenshot from Wallet76 — this is exactly what you'll see after signing up.",
+    screens_tab_dashboard: "Dashboard", screens_tab_analytics: "Analytics", screens_tab_news: "News", screens_tab_mobile: "Mobile",
   },
   pt: {
     nav_features: "Funcionalidades", nav_security: "Segurança", nav_pricing: "Preços",
@@ -227,6 +230,9 @@ const COPY = {
     sync_title: "Os teus brokers, sempre atualizados sozinhos.",
     sync_sub: "Liga o DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase ou Kraken uma vez — cada nova transação aparece sozinha. O resto importa-se por CSV ou XLSX em segundos.",
     sync_status: "Sincronizado há 3 min",
+    screens_title: "A app real, sem mockups",
+    screens_sub: "Cada ecrã abaixo é uma captura real do Wallet76 — é exatamente isto que vai ver depois de se registar.",
+    screens_tab_dashboard: "Painel", screens_tab_analytics: "Análise", screens_tab_news: "Notícias", screens_tab_mobile: "Telemóvel",
   },
   fr: {
     nav_features: "Fonctionnalités", nav_security: "Sécurité", nav_pricing: "Tarifs",
@@ -327,6 +333,9 @@ const COPY = {
     sync_title: "Vos courtiers, toujours à jour automatiquement.",
     sync_sub: "Connectez DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase ou Kraken une fois — chaque nouvelle transaction apparaît toute seule. Le reste s'importe via CSV ou XLSX en quelques secondes.",
     sync_status: "Synchronisé il y a 3 min",
+    screens_title: "La vraie app, pas une maquette",
+    screens_sub: "Chaque écran ci-dessous est une capture réelle de Wallet76 — c'est exactement ce que vous verrez après inscription.",
+    screens_tab_dashboard: "Tableau de bord", screens_tab_analytics: "Analyse", screens_tab_news: "Actualités", screens_tab_mobile: "Mobile",
   },
   de: {
     nav_features: "Funktionen", nav_security: "Sicherheit", nav_pricing: "Preise",
@@ -427,6 +436,9 @@ const COPY = {
     sync_title: "Ihre Broker, automatisch immer aktuell.",
     sync_sub: "Verbinden Sie DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase oder Kraken einmal — jeder neue Trade erscheint von selbst. Alles andere importieren Sie in Sekunden per CSV oder XLSX.",
     sync_status: "Vor 3 Min. synchronisiert",
+    screens_title: "Die echte App, kein Mockup",
+    screens_sub: "Jeder Bildschirm unten ist ein echter Screenshot von Wallet76 — genau das sehen Sie nach der Anmeldung.",
+    screens_tab_dashboard: "Dashboard", screens_tab_analytics: "Analyse", screens_tab_news: "Nachrichten", screens_tab_mobile: "Mobil",
   },
   it: {
     nav_features: "Funzionalità", nav_security: "Sicurezza", nav_pricing: "Prezzi",
@@ -527,6 +539,9 @@ const COPY = {
     sync_title: "I tuoi broker, sempre aggiornati automaticamente.",
     sync_sub: "Collega DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase o Kraken una volta — ogni nuova operazione appare da sola. Il resto si importa via CSV o XLSX in pochi secondi.",
     sync_status: "Sincronizzato 3 min fa",
+    screens_title: "L'app reale, non un mockup",
+    screens_sub: "Ogni schermata qui sotto è una vera schermata di Wallet76 — è esattamente ciò che vedrai dopo la registrazione.",
+    screens_tab_dashboard: "Dashboard", screens_tab_analytics: "Analisi", screens_tab_news: "Notizie", screens_tab_mobile: "Mobile",
   },
   es: {
     nav_features: "Funcionalidades", nav_security: "Seguridad", nav_pricing: "Precios",
@@ -627,8 +642,38 @@ const COPY = {
     sync_title: "Tus brokers, siempre actualizados automáticamente.",
     sync_sub: "Conecta DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase o Kraken una vez — cada nueva operación aparece sola. Todo lo demás se importa por CSV o XLSX en segundos.",
     sync_status: "Sincronizado hace 3 min",
+    screens_title: "La app real, no una maqueta",
+    screens_sub: "Cada pantalla de abajo es una captura real de Wallet76 — es exactamente lo que verás después de registrarte.",
+    screens_tab_dashboard: "Panel", screens_tab_analytics: "Análisis", screens_tab_news: "Noticias", screens_tab_mobile: "Móvil",
   },
 };
+
+// Capturas reais da app (11 jul 2026) — pedido explícito do utilizador
+// ("quero mais exemplos reais da app, fotos reais"), em substituição/
+// complemento aos mockups desenhados em CSS/SVG usados no resto da
+// página. Carteiras de teste (XTB/Binance/Nova), sem dados de
+// utilizadores reais. Ficheiros em frontend/public/screenshots/.
+const SCREEN_TABS = [
+  { key: "dashboard", src: "/screenshots/dashboard.png", labelKey: "screens_tab_dashboard", mobile: false },
+  { key: "analytics", src: "/screenshots/analytics.png", labelKey: "screens_tab_analytics", mobile: false },
+  { key: "news", src: "/screenshots/News.png", labelKey: "screens_tab_news", mobile: false },
+  { key: "mobile", src: "/screenshots/TLM1.png", labelKey: "screens_tab_mobile", mobile: true },
+];
+
+function BrowserFrame({ children }) {
+  return (
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-2 shadow-2xl shadow-black/40">
+      <div className="rounded-xl border border-zinc-800/60 overflow-hidden bg-zinc-900">
+        <div className="border-b border-zinc-800/60 px-4 py-2.5 flex items-center gap-1.5 bg-zinc-900/80">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 function getCopy(lang) { return COPY[lang] || COPY.en; }
 
@@ -747,6 +792,8 @@ export default function LandingPage() {
   const platform = useMemo(() => detectPlatform(), []);
   const [canPrompt, setCanPrompt] = useState(canPromptInstall());
   const [installTarget, setInstallTarget] = useState(null); // null | "/login" | "/register"
+  const [screenTab, setScreenTab] = useState("dashboard");
+  const activeScreen = SCREEN_TABS.find((t) => t.key === screenTab) || SCREEN_TABS[0];
 
   // Versões reais para a secção de Downloads (10 jul 2026) — os mesmos
   // ficheiros estáticos já usados pelo ApkUpdateBanner.jsx (Android) e pelo
@@ -909,6 +956,45 @@ export default function LandingPage() {
           <span className="text-xs text-zinc-600">{c.integrations_or} <span className="text-zinc-400 font-semibold">{c.integrations_formats}</span></span>
         </div>
       </div>
+
+      {/* PRODUCT SCREENSHOTS — 11 jul 2026: capturas reais da app (não
+          mockups desenhados), pedido explícito do utilizador. Carteiras de
+          teste, sem dados de utilizadores reais. */}
+      <section className="py-24 max-w-7xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">{c.screens_title}</h2>
+          <p className="text-zinc-400 text-lg max-w-2xl mx-auto">{c.screens_sub}</p>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
+          {SCREEN_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setScreenTab(tab.key)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                screenTab === tab.key
+                  ? "bg-white text-zinc-950"
+                  : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600"
+              }`}
+            >
+              {c[tab.labelKey]}
+            </button>
+          ))}
+        </div>
+        <div className="max-w-4xl mx-auto">
+          {activeScreen.mobile ? (
+            <div className="flex justify-center">
+              <div className="w-[260px] rounded-[2rem] border-4 border-zinc-800 bg-zinc-950 p-1.5 shadow-2xl shadow-black/40 overflow-hidden">
+                <img src={activeScreen.src} alt={c[activeScreen.labelKey]} className="w-full rounded-[1.5rem]" />
+              </div>
+            </div>
+          ) : (
+            <BrowserFrame>
+              <img src={activeScreen.src} alt={c[activeScreen.labelKey]} className="w-full" />
+            </BrowserFrame>
+          )}
+        </div>
+      </section>
 
       {/* DOWNLOADS — 10 jul 2026 (pedido: "deveria ter la os arquivos para
           download tipo para PC, Android etc... com as versões"). Windows e
