@@ -6,7 +6,7 @@ import {
   Bell, Globe2, Wallet, ShieldCheck, MonitorSmartphone,
   Lock, Server, FileText, RefreshCw, Newspaper, PieChart, Zap,
   Users, Star, ChevronRight, BarChart2, Activity, Check, X, BarChart3,
-  Download, Share, SquarePlus, Eye, Smartphone, Baby, Heart, Bitcoin,
+  Download, Share, SquarePlus, Eye, Smartphone, Baby, Heart, Bitcoin, Mail, Send,
 } from "lucide-react";
 import {
   detectPlatform, isInstalled, canPromptInstall,
@@ -120,7 +120,8 @@ const COPY = {
     family_switch_hint: "Consolidated view · switch anytime",
     alerts_badge: "Never miss a move",
     alerts_title: "Price alerts that actually reach you.",
-    alerts_sub: "Set an above or below target on any stock, ETF or coin. The instant it's crossed, an email lands in your inbox — no need to keep the app open.",
+    alerts_sub: "Set an above or below target on any stock, ETF or coin. The instant it's crossed, you're notified — by email, push notification, or Telegram — no need to keep the app open.",
+    alerts_channel_email: "Email", alerts_channel_push: "Push", alerts_channel_telegram: "Telegram",
     alerts_ex1: "NVDA crossed $950", alerts_ex2: "BTC dropped below $58,000", alerts_ex3: "VWCE reached your buy target",
     alerts_status_triggered: "Triggered", alerts_status_active: "Active",
     sync_badge: "Set up once, stay in sync",
@@ -223,7 +224,8 @@ const COPY = {
     family_switch_hint: "Vista consolidada · alterna quando quiseres",
     alerts_badge: "Nunca percas um movimento",
     alerts_title: "Alertas de preço que chegam mesmo até ti.",
-    alerts_sub: "Define um alvo acima ou abaixo em qualquer ação, ETF ou moeda. No instante em que é cruzado, chega-te um email — sem precisares de ter a app aberta.",
+    alerts_sub: "Define um alvo acima ou abaixo em qualquer ação, ETF ou moeda. No instante em que é cruzado, és avisado — por email, notificação push ou Telegram — sem precisares de ter a app aberta.",
+    alerts_channel_email: "Email", alerts_channel_push: "Push", alerts_channel_telegram: "Telegram",
     alerts_ex1: "NVDA ultrapassou os $950", alerts_ex2: "BTC caiu abaixo dos $58.000", alerts_ex3: "VWCE atingiu o teu alvo de compra",
     alerts_status_triggered: "Acionado", alerts_status_active: "Ativo",
     sync_badge: "Configura uma vez, fica sempre sincronizado",
@@ -326,7 +328,8 @@ const COPY = {
     family_switch_hint: "Vue consolidée · basculez à tout moment",
     alerts_badge: "Ne ratez plus aucun mouvement",
     alerts_title: "Des alertes de prix qui vous atteignent vraiment.",
-    alerts_sub: "Définissez un objectif au-dessus ou en dessous sur une action, un ETF ou une crypto. Dès qu'il est franchi, un email arrive — sans avoir besoin de garder l'app ouverte.",
+    alerts_sub: "Définissez un objectif au-dessus ou en dessous sur une action, un ETF ou une crypto. Dès qu'il est franchi, vous êtes averti — par email, notification push ou Telegram — sans avoir besoin de garder l'app ouverte.",
+    alerts_channel_email: "Email", alerts_channel_push: "Push", alerts_channel_telegram: "Telegram",
     alerts_ex1: "NVDA a dépassé 950 $", alerts_ex2: "BTC est passé sous 58 000 $", alerts_ex3: "VWCE a atteint votre objectif d'achat",
     alerts_status_triggered: "Déclenché", alerts_status_active: "Actif",
     sync_badge: "Configurez une fois, restez synchronisé",
@@ -429,7 +432,8 @@ const COPY = {
     family_switch_hint: "Konsolidierte Ansicht · jederzeit wechselbar",
     alerts_badge: "Verpassen Sie keine Bewegung mehr",
     alerts_title: "Preisalarme, die Sie wirklich erreichen.",
-    alerts_sub: "Legen Sie ein Ziel über oder unter einem Kurs für jede Aktie, jeden ETF oder jede Krypto fest. Sobald es überschritten wird, landet eine E-Mail in Ihrem Posteingang — ganz ohne die App offen zu halten.",
+    alerts_sub: "Legen Sie ein Ziel über oder unter einem Kurs für jede Aktie, jeden ETF oder jede Krypto fest. Sobald es überschritten wird, werden Sie benachrichtigt — per E-Mail, Push-Benachrichtigung oder Telegram — ganz ohne die App offen zu halten.",
+    alerts_channel_email: "E-Mail", alerts_channel_push: "Push", alerts_channel_telegram: "Telegram",
     alerts_ex1: "NVDA hat 950 $ überschritten", alerts_ex2: "BTC ist unter 58.000 $ gefallen", alerts_ex3: "VWCE hat Ihr Kaufziel erreicht",
     alerts_status_triggered: "Ausgelöst", alerts_status_active: "Aktiv",
     sync_badge: "Einmal einrichten, immer synchron",
@@ -532,7 +536,8 @@ const COPY = {
     family_switch_hint: "Vista consolidata · cambia quando vuoi",
     alerts_badge: "Non perdere mai un movimento",
     alerts_title: "Avvisi di prezzo che ti raggiungono davvero.",
-    alerts_sub: "Imposta un obiettivo sopra o sotto su qualsiasi azione, ETF o crypto. Nell'istante in cui viene superato, ricevi un'email — senza dover tenere l'app aperta.",
+    alerts_sub: "Imposta un obiettivo sopra o sotto su qualsiasi azione, ETF o crypto. Nell'istante in cui viene superato, vieni avvisato — via email, notifica push o Telegram — senza dover tenere l'app aperta.",
+    alerts_channel_email: "Email", alerts_channel_push: "Push", alerts_channel_telegram: "Telegram",
     alerts_ex1: "NVDA ha superato i $950", alerts_ex2: "BTC è sceso sotto i $58.000", alerts_ex3: "VWCE ha raggiunto il tuo obiettivo d'acquisto",
     alerts_status_triggered: "Attivato", alerts_status_active: "Attivo",
     sync_badge: "Configura una volta, resta sincronizzato",
@@ -635,7 +640,8 @@ const COPY = {
     family_switch_hint: "Vista consolidada · cambia cuando quieras",
     alerts_badge: "No te pierdas ningún movimiento",
     alerts_title: "Alertas de precio que realmente te llegan.",
-    alerts_sub: "Define un objetivo por encima o por debajo en cualquier acción, ETF o cripto. En el instante en que se cruza, recibes un email — sin necesidad de tener la app abierta.",
+    alerts_sub: "Define un objetivo por encima o por debajo en cualquier acción, ETF o cripto. En el instante en que se cruza, recibes un aviso — por email, notificación push o Telegram — sin necesidad de tener la app abierta.",
+    alerts_channel_email: "Email", alerts_channel_push: "Push", alerts_channel_telegram: "Telegram",
     alerts_ex1: "NVDA superó los $950", alerts_ex2: "BTC cayó por debajo de $58.000", alerts_ex3: "VWCE alcanzó tu objetivo de compra",
     alerts_status_triggered: "Activada", alerts_status_active: "Activa",
     sync_badge: "Configúralo una vez, mantente sincronizado",
@@ -1182,6 +1188,21 @@ export default function LandingPage() {
             </div>
             <h2 className="text-4xl md:text-5xl font-bold mb-5 tracking-tight">{c.alerts_title}</h2>
             <p className="text-zinc-400 text-lg leading-relaxed">{c.alerts_sub}</p>
+            {/* 11 jul 2026 — pedido do utilizador para os 3 canais reais de
+                alerta (email sempre ativo; push e Telegram configuráveis em
+                Definições) ficarem visíveis também na landing page, não só
+                dentro da app. */}
+            <div className="flex flex-wrap items-center gap-2 mt-6">
+              {[
+                { Icon: Mail, label: c.alerts_channel_email },
+                { Icon: Bell, label: c.alerts_channel_push },
+                { Icon: Send, label: c.alerts_channel_telegram },
+              ].map(({ Icon, label }) => (
+                <span key={label} className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-300 border border-zinc-800 bg-zinc-900/60 rounded-full px-3 py-1.5">
+                  <Icon className="w-3.5 h-3.5 text-amber-400" /> {label}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </section>
