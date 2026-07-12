@@ -20,6 +20,26 @@ export function pushPermission() {
   return Notification.permission; // "granted" | "denied" | "default"
 }
 
+// 12 jul 2026 — "a notificação push fica a pensar e não sai disso": o botão
+// ficava preso a carregar indefinidamente porque `navigator.serviceWorker
+// .ready` só resolve quando um service worker fica realmente a controlar a
+// página, e nunca tinha um limite de tempo — se o registo do SW falhasse
+// silenciosamente ou ainda não tivesse assumido controlo (primeiro load
+// depois de um deploy, por exemplo), a promise ficava pendente para
+// sempre e o `finally` que desliga o spinner nunca chegava a correr.
+// withTimeout força uma rejeição ao fim de `ms`, para o botão sempre voltar
+// a um estado claro (erro + mensagem) em vez de ficar preso a girar.
+function withTimeout(promise, ms, reason) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => {
+      const err = new Error(reason);
+      err.reason = reason;
+      reject(err);
+    }, ms)),
+  ]);
+}
+
 // applicationServerKey precisa de ser um Uint8Array, mas o backend devolve
 // a chave VAPID pública em base64url (formato padrão do protocolo Web
 // Push) — conversão manual, sem depender de nenhuma lib extra.
@@ -59,7 +79,10 @@ export async function enablePush() {
     throw err;
   }
 
-  const registration = await navigator.serviceWorker.ready;
+  // 10s: dá tempo de sobra a um service worker que ainda esteja a instalar
+  // (primeiro load depois de um deploy), mas não fica preso para sempre se
+  // o registo tiver falhado (ver comentário do withTimeout acima).
+  const registration = await withTimeout(navigator.serviceWorker.ready, 10000, "sw_timeout");
   let subscription = await registration.pushManager.getSubscription();
   if (!subscription) {
     subscription = await registration.pushManager.subscribe({
@@ -74,7 +97,7 @@ export async function enablePush() {
 
 export async function disablePush() {
   if (!pushSupported()) return;
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await withTimeout(navigator.serviceWorker.ready, 10000, "sw_timeout");
   const subscription = await registration.pushManager.getSubscription();
   if (!subscription) return;
   const endpoint = subscription.endpoint;
@@ -91,7 +114,7 @@ export async function disablePush() {
 export async function isPushSubscribed() {
   if (!pushSupported()) return false;
   try {
-    const registration = await navigator.serviceWorker.ready;
+    const registration = await withTimeout(navigator.serviceWorker.ready, 10000, "sw_timeout");
     const subscription = await registration.pushManager.getSubscription();
     return !!subscription;
   } catch {

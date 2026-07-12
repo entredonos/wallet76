@@ -203,6 +203,7 @@ export default function Settings() {
       if (reason === "denied") toast.error(t("settings.alert_push_denied"));
       else if (reason === "unsupported") toast.error(t("settings.alert_push_unsupported"));
       else if (reason === "not_configured") toast.error(t("settings.alert_push_unavailable"));
+      else if (reason === "sw_timeout") toast.error(t("settings.alert_push_sw_timeout"));
       else toast.error(t("common.error"));
     } finally {
       setPushBusy(false);
