@@ -116,6 +116,22 @@ class UserPrefsUpdate(BaseModel):
     dash_cols: Optional[List[str]] = None
     watch_cols: Optional[List[str]] = None
     alert_emails: Optional[bool] = None
+    alert_push: Optional[bool] = None
+    alert_telegram: Optional[bool] = None
+
+
+# --- Alertas multi-canal (11 jul 2026) ---
+class PushSubscriptionKeys(BaseModel):
+    p256dh: str
+    auth: str
+
+
+class PushSubscriptionIn(BaseModel):
+    # Espelha exatamente o que PushSubscription.toJSON() devolve no browser
+    # (ver frontend/src/lib/push.js) — endpoint identifica univocamente o
+    # dispositivo/browser junto do serviço de push (FCM, Mozilla, etc.).
+    endpoint: str
+    keys: PushSubscriptionKeys
 
 
 # "UPGRADE v1.0" — alocação por classe: alvo global + reclassificação manual

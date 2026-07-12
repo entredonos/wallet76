@@ -8,12 +8,13 @@ import { Label } from "../components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "../components/ui/dialog";
-import { Lock, Fingerprint, ShieldOff, ShieldCheck, Check, Trash2, KeyRound, Bell, BellOff, AlertTriangle, Copy, Download } from "lucide-react";
+import { Lock, Fingerprint, ShieldOff, ShieldCheck, Check, Trash2, KeyRound, Bell, BellOff, AlertTriangle, Copy, Download, Send, Smartphone, Loader2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { useI18n } from "../context/I18nContext";
 import { Capacitor } from "@capacitor/core";
 import * as SimpleBiometric from "../lib/simpleBiometric";
+import { enablePush, disablePush, isPushSubscribed, pushSupported } from "../lib/push";
 
 function b64urlToBuf(b64url) {
   const pad = "=".repeat((4 - (b64url.length % 4)) % 4);
@@ -57,6 +58,19 @@ export default function Settings() {
   const [disable2FAPassword, setDisable2FAPassword] = useState("");
   const [subscription, setSubscription] = useState(null);
   const [alertEmails, setAlertEmails] = useState(true);
+
+  // Alertas multi-canal (11 jul 2026): push + Telegram, além do email já
+  // existente acima. notifStatus vem de GET /notifications/status
+  // (disponibilidade dos canais no servidor + se este utilizador já ligou
+  // o Telegram); pushOn combina a preferência guardada com o estado real
+  // da subscrição do browser (podem divergir — ex.: utilizador limpou os
+  // dados do site sem passar pela app).
+  const [notifStatus, setNotifStatus] = useState({ telegram_linked: false, push_subscribed: false, push_available: false, telegram_available: false });
+  const [alertPush, setAlertPush] = useState(true);
+  const [alertTelegram, setAlertTelegram] = useState(true);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [telegramBusy, setTelegramBusy] = useState(false);
+  const [telegramLinkInfo, setTelegramLinkInfo] = useState(null); // { code, deepLink }
   const [wallets, setWallets] = useState([]);
   const [resetModal, setResetModal] = useState(null); // { type:"wallet"|"all", walletId, walletName, code, input, loading }
   const [deleteAccountDialog, setDeleteAccountDialog] = useState(false);
@@ -132,16 +146,20 @@ export default function Settings() {
 
   const load = async () => {
     try {
-      const [secRes, subRes, prefsRes, wRes] = await Promise.all([
+      const [secRes, subRes, prefsRes, wRes, notifRes] = await Promise.all([
         api.get("/security/status"),
         api.get("/billing/subscription-status"),
         api.get("/preferences"),
         api.get("/wallets"),
+        api.get("/notifications/status").catch(() => ({ data: null })),
       ]);
       setStatus(secRes.data);
       setSubscription(subRes.data);
       setAlertEmails(prefsRes.data.alert_emails !== false);
+      setAlertPush(prefsRes.data.alert_push !== false);
+      setAlertTelegram(prefsRes.data.alert_telegram !== false);
       setWallets(wRes.data || []);
+      if (notifRes.data) setNotifStatus(notifRes.data);
     } catch {
       /* noop */
     }
@@ -158,6 +176,100 @@ export default function Settings() {
       toast.error(t("common.error"));
     }
   };
+
+  // Push: ligar pede permissão + subscreve o browser + regista no backend
+  // (lib/push.js). Desligar cancela a subscrição real E a preferência —
+  // as duas coisas juntas, para não ficar "desligado" na preferência mas
+  // continuar tecnicamente subscrito (ou vice-versa).
+  const togglePush = async () => {
+    if (pushBusy) return;
+    setPushBusy(true);
+    try {
+      if (!alertPush || !notifStatus.push_subscribed) {
+        await enablePush();
+        setAlertPush(true);
+        await api.put("/preferences", { alert_push: true });
+        setNotifStatus((s) => ({ ...s, push_subscribed: true }));
+        toast.success(t("settings.alert_push_on"));
+      } else {
+        await disablePush();
+        setAlertPush(false);
+        await api.put("/preferences", { alert_push: false });
+        setNotifStatus((s) => ({ ...s, push_subscribed: false }));
+        toast.success(t("settings.alert_push_off"));
+      }
+    } catch (e) {
+      const reason = e?.reason;
+      if (reason === "denied") toast.error(t("settings.alert_push_denied"));
+      else if (reason === "unsupported") toast.error(t("settings.alert_push_unsupported"));
+      else if (reason === "not_configured") toast.error(t("settings.alert_push_unavailable"));
+      else toast.error(t("common.error"));
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  // Telegram: "ligar" gera um código de curta duração + deep link
+  // t.me/<bot>?start=<code>; o utilizador abre o Telegram, manda /start e o
+  // bot liga o chat_id à conta (ver backend/routes/notifications.py). Faz
+  // polling a /notifications/status enquanto o painel do código está
+  // aberto, para a UI atualizar sozinha assim que o /start chegar — sem
+  // isto, o utilizador tinha de voltar à app e recarregar manualmente.
+  const startTelegramLink = async () => {
+    if (telegramBusy) return;
+    setTelegramBusy(true);
+    try {
+      const { data } = await api.post("/notifications/telegram/link-code");
+      setTelegramLinkInfo(data);
+      if (data.deepLink) window.open(data.deepLink, "_blank", "noopener,noreferrer");
+    } catch {
+      toast.error(t("common.error"));
+    } finally {
+      setTelegramBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!telegramLinkInfo) return;
+    let cancelled = false;
+    const interval = setInterval(async () => {
+      try {
+        const { data } = await api.get("/notifications/status");
+        if (cancelled) return;
+        if (data.telegram_linked) {
+          setNotifStatus(data);
+          setTelegramLinkInfo(null);
+          toast.success(t("settings.telegram_linked_toast"));
+        }
+      } catch { /* noop, tenta de novo no próximo tick */ }
+    }, 3000);
+    // Para de tentar ao fim de 2 min — o código no backend também expira
+    // (LINK_CODE_TTL_MIN), não faz sentido continuar a fazer polling depois.
+    const timeout = setTimeout(() => { clearInterval(interval); setTelegramLinkInfo(null); }, 120000);
+    return () => { cancelled = true; clearInterval(interval); clearTimeout(timeout); };
+  }, [telegramLinkInfo, t]);
+
+  const unlinkTelegram = async () => {
+    try {
+      await api.post("/notifications/telegram/unlink");
+      setNotifStatus((s) => ({ ...s, telegram_linked: false }));
+      toast.success(t("settings.telegram_unlinked_toast"));
+    } catch {
+      toast.error(t("common.error"));
+    }
+  };
+
+  const toggleAlertTelegram = async () => {
+    const next = !alertTelegram;
+    setAlertTelegram(next);
+    try {
+      await api.put("/preferences", { alert_telegram: next });
+    } catch {
+      setAlertTelegram(!next);
+      toast.error(t("common.error"));
+    }
+  };
+
     useEffect(() => { load(); }, []);
 
   const choose = async (mode) => {
@@ -443,6 +555,108 @@ export default function Settings() {
           }
         </div>
       </div>
+
+      {/* Push notifications (11 jul 2026) — canal em tempo real, funciona
+          com a app fechada (ao contrário do botão "Ativar notificações do
+          navegador" mais antigo em Alerts.jsx, que só dispara com o
+          separador aberto). Não aparece se o browser não suportar Push API
+          (ex.: Safari em iOS fora de PWA instalada) nem se o servidor não
+          tiver chaves VAPID configuradas. */}
+      {pushSupported() && (
+        <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-sm font-medium text-zinc-200 mb-1">{t("settings.alert_push_title")}</div>
+              <p className="text-xs text-zinc-400">{t("settings.alert_push_desc")}</p>
+            </div>
+            <button
+              onClick={togglePush}
+              disabled={pushBusy || !notifStatus.push_available}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none disabled:opacity-40 ${alertPush && notifStatus.push_subscribed ? "bg-emerald-500" : "bg-zinc-700"}`}
+              aria-checked={alertPush && notifStatus.push_subscribed}
+              role="switch"
+              data-testid="toggle-alert-push"
+            >
+              {pushBusy
+                ? <Loader2 className="w-3.5 h-3.5 mx-auto animate-spin text-zinc-300" />
+                : <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${alertPush && notifStatus.push_subscribed ? "translate-x-6" : "translate-x-1"}`} />
+              }
+            </button>
+          </div>
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-zinc-400">
+            {!notifStatus.push_available
+              ? <><BellOff className="w-3.5 h-3.5" /> {t("settings.alert_push_unavailable")}</>
+              : alertPush && notifStatus.push_subscribed
+                ? <><Smartphone className="w-3.5 h-3.5 text-emerald-400" /> {t("settings.alert_push_active")}</>
+                : <><BellOff className="w-3.5 h-3.5" /> {t("settings.alert_push_inactive")}</>
+            }
+          </div>
+        </div>
+      )}
+
+      {/* Telegram (11 jul 2026) — alternativa a WhatsApp/Messenger/
+          Instagram: sem verificação de negócio nem janela de 24h, um bot
+          criado via @BotFather chega. Fluxo: gerar código -> abrir Telegram
+          -> /start <código> -> o webhook liga o chat_id à conta (ver
+          backend/routes/notifications.py). */}
+      {notifStatus.telegram_available && (
+        <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-sm font-medium text-zinc-200 mb-1">{t("settings.alert_telegram_title")}</div>
+              <p className="text-xs text-zinc-400">{t("settings.alert_telegram_desc")}</p>
+            </div>
+            {notifStatus.telegram_linked ? (
+              <button
+                onClick={toggleAlertTelegram}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${alertTelegram ? "bg-emerald-500" : "bg-zinc-700"}`}
+                aria-checked={alertTelegram}
+                role="switch"
+                data-testid="toggle-alert-telegram"
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${alertTelegram ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={startTelegramLink}
+                disabled={telegramBusy}
+                className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 shrink-0"
+                data-testid="link-telegram-btn"
+              >
+                {telegramBusy ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin"/> : <Send className="w-3.5 h-3.5 mr-1.5"/>}
+                {t("settings.alert_telegram_connect")}
+              </Button>
+            )}
+          </div>
+
+          {telegramLinkInfo && (
+            <div className="mt-4 border border-amber-500/20 bg-amber-500/5 rounded-lg px-4 py-3 space-y-2">
+              <p className="text-xs text-amber-300">{t("settings.alert_telegram_link_hint")}</p>
+              {telegramLinkInfo.deepLink && (
+                <a href={telegramLinkInfo.deepLink} target="_blank" rel="noopener noreferrer"
+                   className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 hover:text-emerald-300">
+                  <Send className="w-3.5 h-3.5"/> {t("settings.alert_telegram_open_btn")}
+                </a>
+              )}
+              <div className="text-xs text-zinc-500 font-mono">{t("settings.alert_telegram_code_label")}: <span className="text-zinc-300">{telegramLinkInfo.code}</span></div>
+            </div>
+          )}
+
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-zinc-400">
+            {notifStatus.telegram_linked ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" /> {t("settings.alert_telegram_linked")}
+                <button onClick={unlinkTelegram} className="ml-2 text-zinc-500 hover:text-rose-400 underline underline-offset-2" data-testid="unlink-telegram-btn">
+                  {t("settings.alert_telegram_unlink")}
+                </button>
+              </>
+            ) : (
+              <><BellOff className="w-3.5 h-3.5" /> {t("settings.alert_telegram_not_linked")}</>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-6">
         <div className="text-sm font-medium text-zinc-200 mb-4">

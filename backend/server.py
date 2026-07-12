@@ -6,10 +6,11 @@ from fastapi import FastAPI, APIRouter
 from starlette.middleware.cors import CORSMiddleware
 from routes import billing as billing_routes
 
-from core import db, client, logger  # noqa: F401  (loads .env via core import)
+from core import db, client, logger, APP_URL, TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET  # noqa: F401  (loads .env via core import)
 from alert_checker import run_alert_checker
 from routes.portfolio import run_snapshot_scheduler
 from routes.market import run_market_movers_refresher
+from telegram_utils import set_telegram_webhook
 from routes import (
     auth as auth_routes,
     wallets as wallets_routes,
@@ -28,6 +29,7 @@ from routes import (
     analytics as analytics_routes,
     feedback as feedback_routes,
     allocation as allocation_routes,
+    notifications as notifications_routes,
 )
 
 # Render sets RENDER=true automatically on every deployed instance — use it
@@ -72,6 +74,7 @@ for sub in (
     analytics_routes,
     feedback_routes,
     allocation_routes,
+    notifications_routes,
 ):
     api_router.include_router(sub.router)
 
@@ -140,6 +143,11 @@ async def _ensure_indexes():
     await _idx(db.allocation_prefs, [("user_id", 1)], unique=True)
     await _idx(db.share_links, [("user_id", 1)])
     await _idx(db.share_links, [("slug", 1)], unique=True, sparse=True)
+    # Alertas multi-canal (11 jul 2026)
+    await _idx(db.telegram_links, [("user_id", 1)], unique=True)
+    await _idx(db.telegram_link_codes, [("code", 1)], unique=True)
+    await _idx(db.push_subscriptions, [("endpoint", 1)], unique=True)
+    await _idx(db.push_subscriptions, [("user_id", 1)])
     logger.info("MongoDB indexes ensured.")
 
 
@@ -176,5 +184,16 @@ async def startup():
     # stock tickers in market_movers_stocks) — see run_market_movers_refresher
     # docstring in routes/market.py.
     asyncio.create_task(run_market_movers_refresher())
+
+    # Regista o webhook do Telegram automaticamente sempre que
+    # TELEGRAM_BOT_TOKEN estiver definido — zero passos manuais além de
+    # criar o bot no @BotFather e pôr o token no Render (ver
+    # routes/notifications.py e telegram_utils.py). Sem TELEGRAM_BOT_TOKEN,
+    # set_telegram_webhook() não faz nada (mesmo padrão "skip se não
+    # configurado" do resto dos canais opcionais).
+    if TELEGRAM_BOT_TOKEN and APP_URL:
+        asyncio.create_task(
+            set_telegram_webhook(f"{APP_URL.rstrip('/')}/api/webhooks/telegram", TELEGRAM_WEBHOOK_SECRET)
+        )
 
 

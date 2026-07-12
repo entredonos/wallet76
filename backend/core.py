@@ -58,6 +58,31 @@ else:
 RP_ID = os.environ.get("WEBAUTHN_RP_ID", "")
 RP_NAME = "Wallet76"
 
+# --- Alertas multi-canal (11 jul 2026): Telegram + Web Push ---
+# Ambas opcionais — se as variáveis não estiverem definidas, os respetivos
+# endpoints/checker simplesmente não enviam nada (mesmo padrão do
+# RESEND_API_KEY acima: "if not X: skip", nunca falha o arranque por causa
+# de um canal em falta). Só BROKER_ENCRYPTION_KEY é obrigatória para arrancar
+# (ver startup() em server.py) — estas não.
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_BOT_USERNAME = os.environ.get("TELEGRAM_BOT_USERNAME", "")
+# Enviado pelo Telegram no cabeçalho X-Telegram-Bot-Api-Secret-Token em cada
+# chamada ao webhook — confirma que o pedido vem mesmo do Telegram e não de
+# alguém a tentar chamar /webhooks/telegram diretamente. Se não estiver
+# definido, gera-se um valor aleatório por processo (webhook ainda funciona,
+# só não sobrevive a um restart do serviço sem novo setWebhook — aceitável
+# para um canal opcional, mas o ideal é defini-la fixa no Render).
+TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET") or uuid.uuid4().hex
+
+# Chaves VAPID para Web Push (geradas uma única vez, não por utilizador —
+# identificam o SERVIDOR perante os serviços de push do browser, ex.: FCM
+# para Chrome/Edge, Mozilla Push para Firefox). VAPID_CLAIM_EMAIL vai no
+# "sub" claim do JWT VAPID — os serviços de push usam-no para poderem
+# contactar o dono do servidor em caso de abuso.
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+VAPID_CLAIM_EMAIL = os.environ.get("VAPID_CLAIM_EMAIL", "mailto:entredonos@gmail.com")
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("wallet76")
 

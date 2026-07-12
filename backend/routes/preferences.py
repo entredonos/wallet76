@@ -20,6 +20,8 @@ async def get_preferences(user=Depends(get_current_user)):
         "dash_cols": doc.get("dash_cols") or [],
         "watch_cols": doc.get("watch_cols") or [],
         "alert_emails": bool(doc.get("alert_emails", True)),
+        "alert_push": bool(doc.get("alert_push", True)),
+        "alert_telegram": bool(doc.get("alert_telegram", True)),
     }
 
 
