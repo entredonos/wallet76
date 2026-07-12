@@ -46,6 +46,15 @@ dump.rdb
 .DS_Store
 *.pem
 
+# Keystore de PRODUÇÃO Android (12 jul 2026) — NUNCA vai para o repositório
+# (ao contrário de frontend/android/app/debug.keystore, que é seguro
+# comitar). Este é o segredo real da app na Play Store: guardado só como
+# GitHub Secret (ANDROID_RELEASE_KEYSTORE_BASE64) e numa cópia local segura
+# do utilizador, fora do repo.
+frontend/android/app/release.keystore
+frontend/android/app/wallet76-release.keystore
+*.jks
+
 # Python
 __pycache__/
 *pyc*

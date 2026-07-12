@@ -36,6 +36,22 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        // Keystore de PRODUÇÃO para a Play Store (12 jul 2026) — ao contrário
+        // do debug.keystore acima, este NUNCA é comitado no repositório. Só
+        // existe no runner do GitHub Actions durante o job "build-release"
+        // (ver android-build.yml), reconstruído a partir do GitHub Secret
+        // ANDROID_RELEASE_KEYSTORE_BASE64. Localmente/nos outros builds estas
+        // variáveis de ambiente não existem, por isso este bloco fica vazio e
+        // o buildType "release" simplesmente não é assinado (sem erro) —
+        // só o job "build-release" no CI é que efetivamente usa isto.
+        release {
+            if (System.getenv("WALLET76_RELEASE_STORE_FILE")) {
+                storeFile file(System.getenv("WALLET76_RELEASE_STORE_FILE"))
+                storePassword System.getenv("WALLET76_RELEASE_STORE_PASSWORD")
+                keyAlias System.getenv("WALLET76_RELEASE_KEY_ALIAS")
+                keyPassword System.getenv("WALLET76_RELEASE_KEY_PASSWORD")
+            }
+        }
     }
     buildTypes {
         debug {
@@ -44,6 +60,9 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (System.getenv("WALLET76_RELEASE_STORE_FILE")) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
