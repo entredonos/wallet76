@@ -137,12 +137,18 @@ export default function Transactions() {
         </Select>
       </div>
 
-      <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-lg overflow-hidden">
-        {/* Mobile — stacked cards. The desktop table's 9 columns only ever
-            produced permanent horizontal scroll on a phone. */}
-        <div className="md:hidden divide-y divide-zinc-800/30">
+      <div className="bg-transparent md:bg-zinc-900/40 border-0 md:border md:border-zinc-800/50 rounded-lg overflow-hidden">
+        {/* Mobile — stacked cards. Antes era um único bloco com "divide-y"
+            (linhas separadas por um traço quase invisível a 30% de opacidade)
+            — sem espaço nem contorno próprio entre transações, tudo ficava
+            visualmente amontoado num só retângulo (11 jul 2026, pedido do
+            utilizador com screenshot: "parece que esta tudo amontuado").
+            Agora cada transação é o seu próprio cartão (borda + fundo +
+            cantos arredondados), com espaço real entre eles — o mesmo
+            padrão visual usado nas listas de Top Movers do Dashboard. */}
+        <div className="md:hidden space-y-3">
           {loading && [0, 1, 2].map((i) => (
-            <div key={i} className="p-4 space-y-3 animate-pulse">
+            <div key={i} className="p-4 space-y-3 rounded-xl border border-zinc-800/60 bg-zinc-900/40 animate-pulse">
               <div className="flex items-center gap-3">
                 <div className="h-6 w-6 rounded-full bg-zinc-800 shrink-0" />
                 <div className="h-3 bg-zinc-800 rounded w-24" />
@@ -151,7 +157,7 @@ export default function Transactions() {
             </div>
           ))}
           {!loading && filtered.length === 0 && (
-            <div className="px-6 py-12 text-center text-zinc-600 font-mono text-sm" data-testid="no-transactions-mobile">
+            <div className="px-6 py-12 text-center text-zinc-600 font-mono text-sm rounded-xl border border-zinc-800/60 bg-zinc-900/40" data-testid="no-transactions-mobile">
               {t("tx.no_tx")}. {t("tx.no_tx_hint")}
             </div>
           )}
@@ -248,13 +254,13 @@ function TxCard({ txn, walletName, onEdit, onDelete }) {
   const total = txn.quantity * txn.price + (txn.type === "BUY" ? (txn.fee || 0) : -(txn.fee || 0));
   const isBuy = txn.type === "BUY";
   return (
-    <div className="p-4 space-y-3" data-testid={`tx-card-${txn.id}`}>
+    <div className="p-4 space-y-3.5 rounded-xl border border-zinc-800/60 bg-zinc-900/40" data-testid={`tx-card-${txn.id}`}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <AssetIcon asset={txn} size={24}/>
+          <AssetIcon asset={txn} size={28}/>
           <div className="min-w-0">
             <div className="font-mono text-zinc-100 truncate">{txn.symbol}</div>
-            <div className="text-xs text-zinc-400 truncate">{txn.date} · {walletName}</div>
+            <div className="text-xs text-zinc-500 truncate">{txn.date} · {walletName}</div>
           </div>
         </div>
         <span className={`inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider px-2 py-1 rounded border shrink-0 ${
@@ -265,26 +271,26 @@ function TxCard({ txn, walletName, onEdit, onDelete }) {
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 font-mono text-sm">
+      <div className="grid grid-cols-3 gap-3 font-mono text-sm bg-black/30 border border-zinc-800/40 rounded-lg px-3 py-2.5">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-400">{t("tx.quantity")}</div>
-          <div className="text-zinc-200">{Number(txn.quantity).toLocaleString("en-US", { maximumFractionDigits: 8 })}</div>
+          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500 mb-0.5">{t("tx.quantity")}</div>
+          <div className="text-zinc-200 truncate">{Number(txn.quantity).toLocaleString("en-US", { maximumFractionDigits: 8 })}</div>
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-400">{t("common.price")}</div>
-          <div className="text-zinc-200">{sym}{Number(txn.price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</div>
+          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500 mb-0.5">{t("common.price")}</div>
+          <div className="text-zinc-200 truncate">{sym}{Number(txn.price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</div>
         </div>
         <div className="text-right">
-          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-400">{t("tx.total")}</div>
-          <div className="text-zinc-100">{sym}{total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500 mb-0.5">{t("tx.total")}</div>
+          <div className="text-zinc-100 truncate">{sym}{total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-3">
-        <button onClick={onEdit} className="text-zinc-600 hover:text-blue-400 transition-colors" data-testid={`tx-edit-card-${txn.id}`} aria-label={t("common.edit")}>
+      <div className="flex items-center justify-end gap-4 pt-0.5">
+        <button onClick={onEdit} className="text-zinc-500 hover:text-blue-400 transition-colors" data-testid={`tx-edit-card-${txn.id}`} aria-label={t("common.edit")}>
           <Pencil className="w-4 h-4"/>
         </button>
-        <button onClick={onDelete} className="text-zinc-600 hover:text-rose-400 transition-colors" data-testid={`tx-delete-card-${txn.id}`} aria-label={t("common.delete")}>
+        <button onClick={onDelete} className="text-zinc-500 hover:text-rose-400 transition-colors" data-testid={`tx-delete-card-${txn.id}`} aria-label={t("common.delete")}>
           <Trash2 className="w-4 h-4"/>
         </button>
       </div>
