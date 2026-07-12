@@ -451,7 +451,17 @@ export default function Layout({ children, currency, setCurrency }) {
             no meio do cabeçalho, com um vão grande entre eles e o hambúrguer
             — feio (5 jul 2026). Agrupados agora num só bloco à esquerda,
             encostados aos 3 traços; só a lupa fica isolada à direita. */}
-        <header className="md:hidden sticky top-0 z-30 backdrop-blur-md bg-zinc-950/80 border-b border-zinc-800/50 h-14 flex items-center justify-between px-4">
+        {/* 11 jul 2026 — faltava padding para a "safe area" do topo (notch/
+            barra de estado do telemóvel); o bottom nav já tinha o
+            equivalente para baixo (env(safe-area-inset-bottom)) mas este
+            header não tinha nada para cima, por isso o logo+"Wallet76"
+            ficava colado/por baixo do relógio e dos ícones do sistema
+            (pedido do utilizador com screenshot). Altura passa a
+            calc(3.5rem + safe-area) para a barra de pesquisa continuar com
+            a mesma altura visual de sempre, só empurrada para baixo da
+            área do sistema. */}
+        <header className="md:hidden sticky top-0 z-30 backdrop-blur-md bg-zinc-950/80 border-b border-zinc-800/50 flex items-center justify-between px-4"
+                style={{ paddingTop: "env(safe-area-inset-top)", height: "calc(3.5rem + env(safe-area-inset-top))" }}>
           <div className="flex items-center gap-2.5">
             <img src={walletMarkSmall} alt="Wallet76" className="w-7 h-7 object-contain" />
             <div className="font-display text-base tracking-tight text-zinc-100">Wallet76</div>
