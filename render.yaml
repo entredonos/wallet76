@@ -1,0 +1,58 @@
+# Blueprint (Infrastructure as Code) para o Wallet76.
+#
+# Descreve a estrutura do serviço backend na Render — que env vars devem
+# existir, comando de build/arranque, health check — para servir de
+# "checklist vivo" versionado no Git (ver CLAUDE.md REGRA #4: incidente de
+# 3 jul 2026 em que BROKER_ENCRYPTION_KEY desapareceu numa mudança de
+# Instance Type).
+#
+# IMPORTANTE: os valores reais dos secrets (sync: false) NUNCA ficam
+# guardados neste ficheiro nem no Git — a Render só lê daqui que a variável
+# deve existir; o valor continua a ser inserido manualmente em
+# Settings -> Environment, exatamente como acontece hoje.
+#
+# Ajusta "plan" e "region" abaixo para corresponderem ao que o serviço
+# `wallet76` já tem hoje na Render antes de aplicares este Blueprint.
+
+services:
+  - type: web
+    name: wallet76
+    runtime: python
+    plan: starter
+    region: oregon
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /ping
+    envVars:
+      # Crítica — sem ela o backend recusa arrancar (ver server.py).
+      - key: BROKER_ENCRYPTION_KEY
+        sync: false
+      - key: MONGO_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PRICE_MONTHLY
+        sync: false
+      - key: STRIPE_PRICE_YEARLY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_BOT_USERNAME
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_CLAIM_EMAIL
+        sync: false
