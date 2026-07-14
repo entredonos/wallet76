@@ -146,7 +146,7 @@ export default function OnboardingWizard({ onDone }) {
               </p>
               <button
                 type="button"
-                onClick={() => finish("/")}
+                onClick={() => finish("/dashboard")}
                 className="text-xs text-zinc-500 hover:text-zinc-300"
               >
                 {t("onboarding.skip")}
@@ -178,7 +178,7 @@ export default function OnboardingWizard({ onDone }) {
               </button>
             </div>
             <button
-              onClick={() => finish("/")}
+              onClick={() => finish("/dashboard")}
               className="text-xs text-zinc-500 hover:text-zinc-300 mt-6 block"
             >
               {t("onboarding.skip")}
@@ -202,7 +202,7 @@ export default function OnboardingWizard({ onDone }) {
                 {t("onboarding.cta_add_transaction")}
               </button>
               <button
-                onClick={() => finish("/")}
+                onClick={() => finish("/dashboard")}
                 className="text-zinc-400 hover:text-zinc-200 text-sm px-5 py-3"
               >
                 {t("onboarding.cta_go_dashboard")}

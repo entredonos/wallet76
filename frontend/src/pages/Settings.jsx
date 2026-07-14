@@ -761,8 +761,21 @@ export default function Settings() {
 
             <Button
               onClick={async () => {
-                const { data } = await api.post("/billing/create-portal-session");
-                window.location.href = data.url;
+                try {
+                  const { data } = await api.post("/billing/create-portal-session");
+                  window.location.href = data.url;
+                } catch (e) {
+                  // 14 jul 2026 — sem try/catch isto falhava em silêncio
+                  // (promise rejeitada sem handler) sempre que a conta ainda
+                  // não tinha stripe_customer_id, ou seja, nunca tinha
+                  // passado por um checkout — o botão parecia simplesmente
+                  // não fazer nada. O backend devolve 400 nesse caso.
+                  if (e.response?.status === 400) {
+                    toast.error(t("settings.subscription_manage_no_customer"));
+                  } else {
+                    toast.error(formatApiErrorDetail(e.response?.data?.detail) || t("common.error"));
+                  }
+                }
               }}
             >
               {t("settings.subscription_manage")}
