@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import DashboardWidgetDrawer from "../components/DashboardWidgetDrawer";
 import DashboardSkeleton from "../components/DashboardSkeleton";
-import OnboardingFlow from "../components/OnboardingFlow";
 import Sparkline from "../components/Sparkline";
 import SummaryCard from "../components/dashboard/SummaryCard";
 import LightEvolutionCard from "../components/dashboard/LightEvolutionCard";
@@ -148,7 +147,6 @@ export default function Dashboard({ currency }) {
   // uses; fetched here too since Dashboard doesn't share state with Layout.
   const [walletSparks, setWalletSparks] = useState({});
   const [loading, setLoading] = useState(true);
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [livePriceVersion, setLivePriceVersion] = useState(0);
   const [lastSync, setLastSync] = useState(null);
@@ -257,12 +255,6 @@ export default function Dashboard({ currency }) {
     setPortfolio(data);
     const ws = data.wallets || [];
     setWallets(ws);
-    // Show onboarding for brand-new users (no wallets + never completed before)
-    if (ws.length === 0) {
-      try {
-        if (!localStorage.getItem("w76_onboarding_done")) setShowOnboarding(true);
-      } catch { /* noop */ }
-    }
   };
 
   const handleTriggeredAlerts = (data) => {
@@ -1029,16 +1021,6 @@ const worstPerformer = useMemo(() => {
         );
       })()}
 
-      {/* Onboarding overlay for new users */}
-      {showOnboarding && (
-        <OnboardingFlow
-          onComplete={() => {
-            setShowOnboarding(false);
-            // Reload dashboard to pick up the newly created wallet + asset
-            load();
-          }}
-        />
-      )}
       {/* Title row — Widgets/Esconder/Partilhar ficam SEMPRE na mesma linha
           do título, nowrap, encostados à direita, em qualquer modo (6 jul
           2026: dentro de uma carteira, com o "+Adicionar" também na

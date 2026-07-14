@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth, formatApiErrorDetail } from "../context/AuthContext";
 import { useI18n } from "../context/I18nContext";
 import { api, isNetworkError, withNetworkRetry } from "../lib/api";
@@ -14,6 +14,10 @@ export default function Register() {
   const { register } = useAuth();
   const { t } = useI18n();
   const nav = useNavigate();
+  // Programa de referral (14 jul 2026) — código vindo de links tipo
+  // "/register?ref=CODE" partilhados pelos utilizadores (ver Settings.jsx).
+  const [searchParams] = useSearchParams();
+  const referralCode = searchParams.get("ref") || "";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,7 +35,7 @@ export default function Register() {
     setLoading(true);
     setReconnecting(false);
     try {
-      await withNetworkRetry(() => register(email, password, name), {
+      await withNetworkRetry(() => register(email, password, name, referralCode), {
         onRetry: () => setReconnecting(true),
       });
       setDone(true);

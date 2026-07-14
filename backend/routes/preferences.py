@@ -22,6 +22,7 @@ async def get_preferences(user=Depends(get_current_user)):
         "alert_emails": bool(doc.get("alert_emails", True)),
         "alert_push": bool(doc.get("alert_push", True)),
         "alert_telegram": bool(doc.get("alert_telegram", True)),
+        "onboarding_completed": bool(doc.get("onboarding_completed", False)),
     }
 
 

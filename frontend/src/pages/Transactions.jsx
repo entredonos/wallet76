@@ -42,9 +42,12 @@ export default function Transactions() {
   const [filterType, setFilterType] = useState("all");
   const [editTxn, setEditTxn] = useState(null);
 
-  // Auto-open when navigated with ?prefill=
+  // Auto-open when navigated with ?prefill= (autocomplete de Notícias/Mercado)
+  // ou ?open=1 (ex.: assistente de configuração inicial, ver OnboardingWizard.jsx,
+  // que já filtra pela carteira criada via ?wallet=<id> acima).
   useEffect(() => {
-    if (prefillSymbol) setOpen(true);
+    if (prefillSymbol || searchParams.get("open") === "1") setOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefillSymbol]);
 
   const load = async () => {

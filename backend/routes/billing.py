@@ -1,8 +1,10 @@
 import os
+from datetime import datetime, timezone
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request
-from core import db
+from core import db, logger
 from routes.auth import get_current_user
+from referral_utils import grant_referrer_reward_if_needed
 
 router = APIRouter()
 
@@ -39,6 +41,18 @@ async def create_checkout_session(plan: str, user=Depends(get_current_user)):
             {"$set": {"stripe_customer_id": customer_id}}
         )
 
+    # Programa de referral (14 jul 2026) — quem se registou com um código de
+    # convite ganha 15 dias extra de trial (30 -> 45), uma única vez. Marcado
+    # logo aqui (não à espera do webhook) porque é aqui que o
+    # trial_period_days fica de facto definido na subscrição Stripe.
+    trial_days = 30
+    if user.get("referred_by") and not user.get("referral_trial_bonus_applied"):
+        trial_days = 45
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {"referral_trial_bonus_applied": True}}
+        )
+
     session = stripe.checkout.Session.create(
         mode="subscription",
         customer=customer_id,
@@ -50,7 +64,7 @@ async def create_checkout_session(plan: str, user=Depends(get_current_user)):
         ],
         payment_method_collection="always",
         subscription_data={
-            "trial_period_days": 30,
+            "trial_period_days": trial_days,
             "metadata": {
                 "user_id": user["id"],
                 "plan": plan
@@ -123,6 +137,14 @@ async def stripe_webhook(request: Request):
         current_period_end = subscription.get("current_period_end")
         plan = subscription.get("metadata", {}).get("plan")
 
+        # Programa de referral (14 jul 2026) — lê o estado ANTERIOR antes de
+        # sobrescrever, para detetar a transição trialing -> active (primeiro
+        # pagamento feito com sucesso). É só nesse momento que um convite
+        # passa a "válido" — nunca no registo, para não poder ser gamed com
+        # contas que nunca chegam a pagar.
+        existing_user = await db.users.find_one({"stripe_customer_id": customer_id}, {"_id": 0, "id": 1, "subscription_status": 1})
+        prev_status = existing_user.get("subscription_status") if existing_user else None
+
         await db.users.update_one(
             {"stripe_customer_id": customer_id},
             {
@@ -135,5 +157,20 @@ async def stripe_webhook(request: Request):
                 }
             }
         )
+
+        if existing_user and prev_status != "active" and status == "active":
+            referral = await db.referrals.find_one({
+                "referred_user_id": existing_user["id"],
+                "status": "pending",
+            })
+            if referral:
+                await db.referrals.update_one(
+                    {"id": referral["id"]},
+                    {"$set": {"status": "valid", "valid_at": datetime.now(timezone.utc).isoformat()}},
+                )
+                try:
+                    await grant_referrer_reward_if_needed(referral["referrer_id"])
+                except Exception as e:
+                    logger.error(f"referral: falha ao conceder recompensa ao referrer {referral['referrer_id']}: {e}")
 
     return {"ok": True}

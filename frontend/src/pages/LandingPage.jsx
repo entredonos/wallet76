@@ -6,7 +6,7 @@ import {
   Bell, Globe2, Wallet, ShieldCheck, MonitorSmartphone,
   Lock, Server, FileText, RefreshCw, Newspaper, PieChart, Zap,
   Users, Star, ChevronRight, BarChart2, Activity, Check, X, BarChart3,
-  Download, Share, SquarePlus, Eye, Smartphone, Baby, Heart, Bitcoin, Mail, Send,
+  Download, Share, SquarePlus, Eye, Smartphone, Baby, Heart, Bitcoin, Mail, Send, Gift,
 } from "lucide-react";
 import {
   detectPlatform, isInstalled, canPromptInstall,
@@ -95,6 +95,16 @@ const COPY = {
     footer_rights: "All rights reserved.",
     footer_login: "Login", footer_register: "Register", footer_pricing: "Pricing",
     footer_privacy: "Privacy Policy", footer_terms: "Terms of Service",
+    referral_title: "Invite friends, earn free months",
+    referral_sub: "Every friend who signs up with your code gets 1 month free. Once they become a paying subscriber, you start earning too.",
+    referral_step1: "Share your invite link",
+    referral_step2: "Your friend gets 1 month free + 15 extra days",
+    referral_step3: "Once the free trial ends and payment is made, your reward kicks in",
+    referral_base: "Plus +15 days free for every valid referral, on top of the milestones below — no limit.",
+    referral_tier1: "3 friends → 2 months free",
+    referral_tier2: "6 friends → 6 months free",
+    referral_tier3: "10 friends → 12 months free",
+    referral_promo_note: "Launch promo — valid until August 2027.",
     most_popular: "Most Popular",
     best_value: "Best Value",
     install_title: "Install Wallet76",
@@ -199,6 +209,16 @@ const COPY = {
     footer_rights: "Todos os direitos reservados.",
     footer_login: "Entrar", footer_register: "Criar conta", footer_pricing: "Preços",
     footer_privacy: "Política de Privacidade", footer_terms: "Termos de Serviço",
+    referral_title: "Convida amigos, ganha meses grátis",
+    referral_sub: "Cada amigo que se registar com o teu código ganha 1 mês grátis. Assim que ele se tornar assinante pago, tu também começas a ganhar.",
+    referral_step1: "Partilha o teu link de convite",
+    referral_step2: "O teu amigo ganha 1 mês grátis + 15 dias extra",
+    referral_step3: "Assim que o período grátis terminar e o pagamento for efetuado, a tua recompensa entra em ação",
+    referral_base: "Além disso, +15 dias grátis por cada convite válido, por cima dos marcos abaixo — sem limite.",
+    referral_tier1: "3 amigos → 2 meses grátis",
+    referral_tier2: "6 amigos → 6 meses grátis",
+    referral_tier3: "10 amigos → 12 meses grátis",
+    referral_promo_note: "Promoção de lançamento — válida até agosto de 2027.",
     most_popular: "Mais Popular",
     best_value: "Melhor Valor",
     install_title: "Instalar o Wallet76",
@@ -303,6 +323,16 @@ const COPY = {
     footer_rights: "Tous droits réservés.",
     footer_login: "Connexion", footer_register: "Créer un compte", footer_pricing: "Tarifs",
     footer_privacy: "Politique de confidentialité", footer_terms: "Conditions d'utilisation",
+    referral_title: "Invite des amis, gagne des mois gratuits",
+    referral_sub: "Chaque ami qui s'inscrit avec ton code obtient 1 mois gratuit. Dès qu'il devient abonné payant, tu commences aussi à gagner.",
+    referral_step1: "Partage ton lien d'invitation",
+    referral_step2: "Ton ami obtient 1 mois gratuit + 15 jours en plus",
+    referral_step3: "Dès que la période d'essai gratuite se termine et que le paiement est effectué, ta récompense s'active",
+    referral_base: "En plus, +15 jours gratuits pour chaque parrainage validé, en plus des paliers ci-dessous — sans limite.",
+    referral_tier1: "3 amis → 2 mois gratuits",
+    referral_tier2: "6 amis → 6 mois gratuits",
+    referral_tier3: "10 amis → 12 mois gratuits",
+    referral_promo_note: "Offre de lancement — valable jusqu'en août 2027.",
     most_popular: "Le Plus Populaire",
     best_value: "Meilleur Rapport",
     install_title: "Installer Wallet76",
@@ -407,6 +437,16 @@ const COPY = {
     footer_rights: "Alle Rechte vorbehalten.",
     footer_login: "Anmelden", footer_register: "Konto erstellen", footer_pricing: "Preise",
     footer_privacy: "Datenschutzerklärung", footer_terms: "Nutzungsbedingungen",
+    referral_title: "Freunde einladen, Freimonate sichern",
+    referral_sub: "Jeder Freund, der sich mit deinem Code anmeldet, bekommt 1 Monat gratis. Sobald er zahlender Abonnent wird, verdienst auch du.",
+    referral_step1: "Teile deinen Einladungslink",
+    referral_step2: "Dein Freund bekommt 1 Monat gratis + 15 Tage extra",
+    referral_step3: "Sobald die Gratisphase endet und die Zahlung erfolgt, greift deine Belohnung",
+    referral_base: "Zusätzlich +15 Tage gratis für jede gültige Empfehlung, oben drauf zu den Meilensteinen unten — ohne Limit.",
+    referral_tier1: "3 Freunde → 2 Monate gratis",
+    referral_tier2: "6 Freunde → 6 Monate gratis",
+    referral_tier3: "10 Freunde → 12 Monate gratis",
+    referral_promo_note: "Launch-Aktion — gültig bis August 2027.",
     most_popular: "Beliebteste",
     best_value: "Bestes Angebot",
     install_title: "Wallet76 installieren",
@@ -511,6 +551,16 @@ const COPY = {
     footer_rights: "Tutti i diritti riservati.",
     footer_login: "Accedi", footer_register: "Crea account", footer_pricing: "Prezzi",
     footer_privacy: "Informativa sulla Privacy", footer_terms: "Termini di Servizio",
+    referral_title: "Invita amici, guadagna mesi gratis",
+    referral_sub: "Ogni amico che si registra con il tuo codice riceve 1 mese gratis. Non appena diventa abbonato pagante, inizi a guadagnare anche tu.",
+    referral_step1: "Condividi il tuo link di invito",
+    referral_step2: "Il tuo amico riceve 1 mese gratis + 15 giorni extra",
+    referral_step3: "Non appena il periodo gratuito termina e il pagamento viene effettuato, la tua ricompensa si attiva",
+    referral_base: "In più, +15 giorni gratis per ogni invito valido, sopra ai traguardi qui sotto — senza limiti.",
+    referral_tier1: "3 amici → 2 mesi gratis",
+    referral_tier2: "6 amici → 6 mesi gratis",
+    referral_tier3: "10 amici → 12 mesi gratis",
+    referral_promo_note: "Promo di lancio — valida fino ad agosto 2027.",
     most_popular: "Più Popolare",
     best_value: "Miglior Valore",
     install_title: "Installa Wallet76",
@@ -615,6 +665,16 @@ const COPY = {
     footer_rights: "Todos los derechos reservados.",
     footer_login: "Iniciar sesión", footer_register: "Crear cuenta", footer_pricing: "Precios",
     footer_privacy: "Política de Privacidad", footer_terms: "Términos de Servicio",
+    referral_title: "Invita amigos, gana meses gratis",
+    referral_sub: "Cada amigo que se registre con tu código recibe 1 mes gratis. En cuanto se convierta en suscriptor de pago, tú también empiezas a ganar.",
+    referral_step1: "Comparte tu enlace de invitación",
+    referral_step2: "Tu amigo recibe 1 mes gratis + 15 días extra",
+    referral_step3: "En cuanto termine el período gratis y se realice el pago, tu recompensa se activa",
+    referral_base: "Además, +15 días gratis por cada invitación válida, encima de los niveles de abajo — sin límite.",
+    referral_tier1: "3 amigos → 2 meses gratis",
+    referral_tier2: "6 amigos → 6 meses gratis",
+    referral_tier3: "10 amigos → 12 meses gratis",
+    referral_promo_note: "Promoción de lanzamiento — válida hasta agosto de 2027.",
     most_popular: "Más Popular",
     best_value: "Mejor Valor",
     install_title: "Instalar Wallet76",
@@ -1373,6 +1433,50 @@ export default function LandingPage() {
             </div>
 
           </div>
+        </div>
+      </section>
+
+      {/* CONVIDA E GANHA — 14 jul 2026: preview do programa de referral
+          (proposta ainda em discussão, backend de tracking por implementar)
+          para o utilizador ver o modelo antes de avançarmos com a lógica
+          real. Modelo híbrido: base contínua por convite válido (+15 dias
+          por amigo que passe a pagar, sem limite) + bónus nos marcos de
+          3/6/10 convites, calibrado para dar exatamente os mesmos totais
+          (2/6/12 meses) do modelo original por níveis nesses marcos. */}
+      <section className="py-24 border-t border-zinc-800/60">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center gap-2 mb-4 text-xs font-mono uppercase tracking-widest text-emerald-400">
+              <Gift className="w-4 h-4" /> {c.referral_title}
+            </div>
+            <p className="text-zinc-400 text-lg max-w-2xl mx-auto">{c.referral_sub}</p>
+          </div>
+
+          {/* 3 passos */}
+          <div className="grid sm:grid-cols-3 gap-5 mb-10">
+            {[c.referral_step1, c.referral_step2, c.referral_step3].map((step, i) => (
+              <div key={step} className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 text-center">
+                <div className="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mx-auto mb-3 text-emerald-400 font-mono text-sm font-bold">
+                  {i + 1}
+                </div>
+                <p className="text-sm text-zinc-300">{step}</p>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-center text-sm text-zinc-500 mb-8">{c.referral_base}</p>
+
+          {/* Marcos de bónus */}
+          <div className="grid sm:grid-cols-3 gap-5">
+            {[c.referral_tier1, c.referral_tier2, c.referral_tier3].map((tier) => (
+              <div key={tier} className="rounded-2xl border border-emerald-500/20 bg-gradient-to-b from-emerald-500/5 to-zinc-900/40 p-6 text-center">
+                <Star className="w-5 h-5 text-emerald-400 mx-auto mb-2" />
+                <p className="text-zinc-100 font-semibold">{tier}</p>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-center text-xs text-zinc-600 mt-8">{c.referral_promo_note}</p>
         </div>
       </section>
 

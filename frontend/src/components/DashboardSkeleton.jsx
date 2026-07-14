@@ -1,81 +1,22 @@
 import React from "react";
+import walletLogo from "../assets/wallet76-logo.png";
 
-function Bone({ className = "" }) {
-  return (
-    <div
-      className={`rounded-md bg-zinc-800 animate-pulse ${className}`}
-    />
-  );
-}
-
+// 14 jul 2026: substitui os antigos "bones" cinzentos (blocos com pulse a
+// imitar a forma do dashboard) por um splash com o logo + barra de
+// carregamento — mesmo visual do RouteFallback em App.js. Os blocos
+// cinzentos apareciam sozinhos por baixo do cabeçalho/menu do Layout (que
+// já monta antes disto), dando a sensação de a app estar "presa" em fundos
+// cinzentos em vez de mostrar a marca enquanto os dados (portfolio/
+// carteiras) ainda vêm do servidor — sobretudo notório na app nativa, onde
+// o JS já vem todo empacotado (sem download de chunk), por isso o
+// RouteFallback do Suspense nunca chega a aparecer e este era o único
+// ecrã de espera que o utilizador via.
 export default function DashboardSkeleton() {
   return (
-    <div className="space-y-6 fade-in">
-      {/* Title row */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="space-y-2">
-          <Bone className="h-9 w-48" />
-          <Bone className="h-3 w-64" />
-        </div>
-        <div className="flex gap-2">
-          <Bone className="h-8 w-8 rounded-md" />
-          <Bone className="h-8 w-8 rounded-md" />
-          <Bone className="h-8 w-24 rounded-md" />
-        </div>
-      </div>
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="border border-zinc-800 rounded-xl p-4 space-y-2">
-            <Bone className="h-3 w-24" />
-            <Bone className="h-7 w-32" />
-            <Bone className="h-3 w-16" />
-          </div>
-        ))}
-      </div>
-
-      {/* Chart */}
-      <div className="border border-zinc-800 rounded-xl p-4 space-y-3">
-        <div className="flex justify-between items-center">
-          <Bone className="h-4 w-32" />
-          <div className="flex gap-1">
-            {[...Array(6)].map((_, i) => (
-              <Bone key={i} className="h-6 w-10 rounded-md" />
-            ))}
-          </div>
-        </div>
-        <Bone className="h-48 w-full rounded-lg" />
-      </div>
-
-      {/* Filter pills + table */}
-      <div className="space-y-3">
-        <div className="flex gap-2">
-          {[...Array(4)].map((_, i) => (
-            <Bone key={i} className="h-7 w-20 rounded-full" />
-          ))}
-        </div>
-        {/* Table header */}
-        <div className="border border-zinc-800 rounded-xl overflow-hidden">
-          <div className="grid grid-cols-5 gap-4 px-4 py-3 border-b border-zinc-800">
-            {["w-16", "w-24", "w-20", "w-20", "w-16"].map((w, i) => (
-              <Bone key={i} className={`h-3 ${w}`} />
-            ))}
-          </div>
-          {/* Table rows */}
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="grid grid-cols-5 gap-4 px-4 py-4 border-b border-zinc-800/50 last:border-0">
-              <div className="flex items-center gap-2">
-                <Bone className="h-7 w-7 rounded-full" />
-                <Bone className="h-3 w-12" />
-              </div>
-              <Bone className="h-3 w-20" />
-              <Bone className="h-3 w-16" />
-              <Bone className="h-3 w-16" />
-              <Bone className="h-3 w-12" />
-            </div>
-          ))}
-        </div>
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 fade-in">
+      <img src={walletLogo} alt="Wallet76" className="w-12 h-12 object-contain opacity-90" />
+      <div className="w-36 h-1 rounded-full bg-zinc-800 overflow-hidden">
+        <div className="h-full w-1/3 bg-blue-500 rounded-full loading-bar-sweep" />
       </div>
     </div>
   );

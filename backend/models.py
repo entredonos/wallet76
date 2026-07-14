@@ -7,6 +7,9 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6)
     name: Optional[str] = None
+    # Programa de referral (14 jul 2026) — código de convite opcional,
+    # capturado do link "?ref=CODE" no registo (ver Register.jsx).
+    referral_code: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -118,6 +121,7 @@ class UserPrefsUpdate(BaseModel):
     alert_emails: Optional[bool] = None
     alert_push: Optional[bool] = None
     alert_telegram: Optional[bool] = None
+    onboarding_completed: Optional[bool] = None
 
 
 # --- Alertas multi-canal (11 jul 2026) ---

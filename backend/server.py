@@ -30,6 +30,7 @@ from routes import (
     feedback as feedback_routes,
     allocation as allocation_routes,
     notifications as notifications_routes,
+    referrals as referrals_routes,
 )
 
 # Render sets RENDER=true automatically on every deployed instance — use it
@@ -75,6 +76,7 @@ for sub in (
     feedback_routes,
     allocation_routes,
     notifications_routes,
+    referrals_routes,
 ):
     api_router.include_router(sub.router)
 
@@ -148,6 +150,10 @@ async def _ensure_indexes():
     await _idx(db.telegram_link_codes, [("code", 1)], unique=True)
     await _idx(db.push_subscriptions, [("endpoint", 1)], unique=True)
     await _idx(db.push_subscriptions, [("user_id", 1)])
+    # Programa de referral (14 jul 2026)
+    await _idx(db.users, "referral_code", unique=True, sparse=True)
+    await _idx(db.referrals, [("referrer_id", 1), ("status", 1)])
+    await _idx(db.referrals, [("referred_user_id", 1)], unique=True, sparse=True)
     logger.info("MongoDB indexes ensured.")
 
 

@@ -84,8 +84,11 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  const register = async (email, password, name) => {
-    const { data } = await api.post("/auth/register", { email, password, name });
+  const register = async (email, password, name, referralCode) => {
+    const { data } = await api.post("/auth/register", {
+      email, password, name,
+      referral_code: referralCode || undefined,
+    });
     // Do NOT auto-login. User must verify email first.
     return data;
   };

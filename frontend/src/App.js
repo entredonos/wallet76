@@ -118,6 +118,7 @@ import { PrivacyProvider } from "./context/PrivacyContext";
 import Layout from "./components/Layout";
 import LockScreen from "./components/LockScreen";
 import WhatsNewModal from "./components/WhatsNewModal";
+import OnboardingWizard from "./components/OnboardingWizard";
 import ApkUpdateBanner from "./components/ApkUpdateBanner";
 import PreferencesSync from "./components/PreferencesSync";
 import { Toaster } from "./components/ui/sonner";
@@ -176,6 +177,10 @@ function RouteFallback() {
 
 function Protected({ children, currency, setCurrency, unlocked, setUnlocked }) {
   const { user } = useAuth();
+  // Só mostra o "O que há de novo" depois de resolvido se é preciso mostrar
+  // o assistente de configuração inicial primeiro — evita os dois popups a
+  // competir no primeiro login de um utilizador novo (ver OnboardingWizard.jsx).
+  const [onboardingResolved, setOnboardingResolved] = useState(false);
 
   // user: null = ainda a confirmar /auth/me, false = confirmado não
   // autenticado, objeto = autenticado (ver AuthContext.jsx).
@@ -214,7 +219,8 @@ function Protected({ children, currency, setCurrency, unlocked, setUnlocked }) {
   return (
     <>
       {user && !unlocked && <LockScreen onUnlock={() => setUnlocked?.(true)} />}
-      {user && unlocked && <WhatsNewModal />}
+      {user && unlocked && <OnboardingWizard onDone={() => setOnboardingResolved(true)} />}
+      {user && unlocked && onboardingResolved && <WhatsNewModal />}
       <Layout currency={currency} setCurrency={setCurrency}>
         {children}
       </Layout>

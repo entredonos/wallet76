@@ -40,6 +40,19 @@ async def register(payload: UserRegister, request: Request, response: Response):
     verify_token = secrets.token_urlsafe(32)
     verify_hash = hashlib.sha256(verify_token.encode()).hexdigest()
     verify_expires = (datetime.now(timezone.utc) + timedelta(days=2)).isoformat()
+
+    # Programa de referral (14 jul 2026) — código opcional vindo de
+    # "?ref=CODE" no registo (ver Register.jsx). Só liga ao referrer se o
+    # código existir mesmo; nunca falha o registo por causa de um código
+    # inválido/expirado, só ignora silenciosamente.
+    referred_by = None
+    referral_code_used = None
+    if payload.referral_code:
+        referral_code_used = payload.referral_code.strip().upper()
+        referrer = await db.users.find_one({"referral_code": referral_code_used}, {"_id": 0, "id": 1})
+        if referrer and referrer["id"] != user_id:
+            referred_by = referrer["id"]
+
     doc = {
         "id": user_id,
         "email": email,
@@ -51,8 +64,20 @@ async def register(payload: UserRegister, request: Request, response: Response):
         "last_verification_sent_at": datetime.now(timezone.utc).isoformat(),
         "created_at": datetime.now(timezone.utc).isoformat(),
         "plan": "free",
+        "referred_by": referred_by,
     }
     await db.users.insert_one(doc)
+
+    if referred_by:
+        await db.referrals.insert_one({
+            "id": str(uuid.uuid4()),
+            "referrer_id": referred_by,
+            "referred_user_id": user_id,
+            "code": referral_code_used,
+            "status": "pending",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "valid_at": None,
+        })
 
     verify_url = f"{APP_URL}/verify-email/{verify_token}"
     html = email_layout(

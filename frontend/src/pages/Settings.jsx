@@ -8,7 +8,7 @@ import { Label } from "../components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "../components/ui/dialog";
-import { Lock, Fingerprint, ShieldOff, ShieldCheck, Check, Trash2, KeyRound, Bell, BellOff, AlertTriangle, Copy, Download, Send, Smartphone, Loader2 } from "lucide-react";
+import { Lock, Fingerprint, ShieldOff, ShieldCheck, Check, Trash2, KeyRound, Bell, BellOff, AlertTriangle, Copy, Download, Send, Smartphone, Loader2, Gift } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { useI18n } from "../context/I18nContext";
@@ -78,6 +78,12 @@ export default function Settings() {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [exportingData, setExportingData] = useState(false);
 
+  // Programa de referral (14 jul 2026) — código próprio + link de convite,
+  // vindo de GET /referrals/me (ver backend/routes/referrals.py). copied
+  // controla o feedback visual momentâneo do botão de copiar.
+  const [referral, setReferral] = useState(null);
+  const [referralCopied, setReferralCopied] = useState(false);
+
   // 7 jul 2026: "Transferir os meus dados" — backup self-service (GET
   // /account/export devolve um ZIP). Pedido como blob (não JSON), o mesmo
   // truque de Blob URL já usado no export CSV da Análise para despoletar o
@@ -116,6 +122,17 @@ export default function Settings() {
     }
   };
 
+  const copyReferralLink = async () => {
+    if (!referral?.invite_link) return;
+    try {
+      await navigator.clipboard.writeText(referral.invite_link);
+      setReferralCopied(true);
+      setTimeout(() => setReferralCopied(false), 2000);
+    } catch {
+      toast.error(t("common.error"));
+    }
+  };
+
   const genCode = () => String(Math.floor(1000 + Math.random() * 9000));
 
   const openReset = (type, walletId = null, walletName = null) => {
@@ -146,12 +163,13 @@ export default function Settings() {
 
   const load = async () => {
     try {
-      const [secRes, subRes, prefsRes, wRes, notifRes] = await Promise.all([
+      const [secRes, subRes, prefsRes, wRes, notifRes, refRes] = await Promise.all([
         api.get("/security/status"),
         api.get("/billing/subscription-status"),
         api.get("/preferences"),
         api.get("/wallets"),
         api.get("/notifications/status").catch(() => ({ data: null })),
+        api.get("/referrals/me").catch(() => ({ data: null })),
       ]);
       setStatus(secRes.data);
       setSubscription(subRes.data);
@@ -160,6 +178,7 @@ export default function Settings() {
       setAlertTelegram(prefsRes.data.alert_telegram !== false);
       setWallets(wRes.data || []);
       if (notifRes.data) setNotifStatus(notifRes.data);
+      if (refRes.data) setReferral(refRes.data);
     } catch {
       /* noop */
     }
@@ -656,6 +675,63 @@ export default function Settings() {
               <><BellOff className="w-3.5 h-3.5" /> {t("settings.alert_telegram_not_linked")}</>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Programa de referral (14 jul 2026) — código próprio + link de
+          convite, contagem de convites válidos/pendentes e progresso até ao
+          próximo nível (ver backend/routes/referrals.py e referral_utils.py
+          para o cálculo/aplicação das recompensas via crédito de saldo
+          Stripe). */}
+      {referral && (
+        <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-6">
+          <div className="flex items-center gap-2 mb-1">
+            <Gift className="w-4 h-4 text-emerald-400" />
+            <div className="text-sm font-medium text-zinc-200">{t("settings.referral_title")}</div>
+          </div>
+          <p className="text-xs text-zinc-400 mb-4">{t("settings.referral_desc")}</p>
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex-1 min-w-0 bg-zinc-950/50 border border-zinc-800 rounded-lg px-3 py-2.5 font-mono text-xs text-zinc-300 truncate">
+              {referral.invite_link}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={copyReferralLink}
+              className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 shrink-0"
+              data-testid="copy-referral-link"
+            >
+              {referralCopied
+                ? <><Check className="w-3.5 h-3.5 mr-1.5 text-emerald-400" /> {t("common.copied")}</>
+                : <><Copy className="w-3.5 h-3.5 mr-1.5" /> {t("common.copy")}</>
+              }
+            </Button>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="bg-zinc-950/40 border border-zinc-800/60 rounded-lg px-3 py-2.5 text-center">
+              <div className="text-lg font-semibold text-emerald-400">{referral.valid_referrals}</div>
+              <div className="text-[11px] text-zinc-500">{t("settings.referral_valid_label")}</div>
+            </div>
+            <div className="bg-zinc-950/40 border border-zinc-800/60 rounded-lg px-3 py-2.5 text-center">
+              <div className="text-lg font-semibold text-zinc-300">{referral.pending_referrals}</div>
+              <div className="text-[11px] text-zinc-500">{t("settings.referral_pending_label")}</div>
+            </div>
+            <div className="bg-zinc-950/40 border border-zinc-800/60 rounded-lg px-3 py-2.5 text-center col-span-2 sm:col-span-1">
+              <div className="text-lg font-semibold text-zinc-300">{referral.reward_days_granted}</div>
+              <div className="text-[11px] text-zinc-500">{t("settings.referral_days_label")}</div>
+            </div>
+          </div>
+
+          <p className="mt-3 text-xs text-zinc-500">
+            {referral.next_milestone
+              ? t("settings.referral_progress", {
+                  remaining: referral.referrals_until_next_milestone,
+                  milestone: referral.next_milestone,
+                })
+              : t("settings.referral_all_milestones")}
+          </p>
         </div>
       )}
 
