@@ -12,6 +12,7 @@ import bcrypt
 import certifi
 import jwt
 import resend
+from collections import OrderedDict
 from datetime import datetime, timezone, timedelta
 from urllib.parse import urlparse
 from fastapi import HTTPException, Request, Depends
@@ -256,7 +257,22 @@ async def delete_all_user_data(user_id: str) -> None:
     await db.users.delete_one({"id": user_id})
 
 # --- Simple in-memory cache ---
-_cache: dict = {}
+# 15 jul 2026 — era um dict simples sem limite de tamanho nem limpeza de
+# entradas expiradas: cada cache_set() ficava para sempre em memória (o
+# processo só reinicia a cada deploy no Render), e muitas chaves incluem
+# IDs de utilizador/carteira/símbolo/intervalo de datas (histórico,
+# análise, watchlists, resolução de ativos, etc.) — o dicionário só
+# crescia, nunca encolhia. Principal suspeito para os OOMs recorrentes
+# ("Ran out of memory, used over 512MB") vistos no plano Starter. Passa a
+# ser um LRU com limite fixo de entradas (MAX_CACHE_ENTRIES): ao ultrapassar
+# o limite, a entrada menos recentemente usada é descartada — o pior
+# cenário passa a ser um cache miss extra (refetch), nunca um crash por
+# memória. Entradas expiradas também são removidas assim que detetadas em
+# cache_get, em vez de ficarem à espera de uma consulta futura com a mesma
+# chave exata que pode nunca vir a acontecer (ex.: chaves com data/intervalo
+# específicos, só consultadas uma vez).
+MAX_CACHE_ENTRIES = 3000
+_cache: "OrderedDict[str, tuple]" = OrderedDict()
 
 
 def cache_get(key: str, ttl: int):
@@ -265,12 +281,17 @@ def cache_get(key: str, ttl: int):
         return None
     ts, data = entry
     if (datetime.now(timezone.utc) - ts).total_seconds() < ttl:
+        _cache.move_to_end(key)
         return data
+    _cache.pop(key, None)
     return None
 
 
 def cache_set(key: str, data) -> None:
     _cache[key] = (datetime.now(timezone.utc), data)
+    _cache.move_to_end(key)
+    while len(_cache) > MAX_CACHE_ENTRIES:
+        _cache.popitem(last=False)
 
 
 def cache_get_stale(key: str):
