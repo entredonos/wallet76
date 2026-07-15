@@ -216,7 +216,7 @@ const COPY = {
     referral_step1: "Partilha o teu link de convite",
     referral_step2: "O teu amigo ganha 1 mês grátis + 15 dias extra",
     referral_step3: "Assim que o período grátis terminar e o pagamento for efetuado, a tua recompensa entra em ação",
-    referral_base: "Além disso, +15 dias grátis por cada convite válido, que ainda pode somar aos marcos abaixo — sem limite.",
+    referral_base: "Além disso, +15 dias grátis por cada convite válido, tu ainda podes somar os marcos abaixo — sem limite.",
     referral_tier1: "3 amigos → 2 meses grátis",
     referral_tier2: "6 amigos → 6 meses grátis",
     referral_tier3: "10 amigos → 12 meses grátis",
