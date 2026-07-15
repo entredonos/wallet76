@@ -167,7 +167,7 @@ const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 function RouteFallback() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-zinc-950">
-      <img src={routeFallbackLogo} alt="Wallet76" className="w-12 h-12 object-contain opacity-90" />
+      <img src={routeFallbackLogo} alt="Wallet76" className="w-14 h-14 object-contain opacity-90" />
       <div className="w-36 h-1 rounded-full bg-zinc-800 overflow-hidden">
         <div className="h-full w-1/3 bg-blue-500 rounded-full loading-bar-sweep" />
       </div>

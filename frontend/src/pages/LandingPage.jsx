@@ -932,7 +932,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 border-b border-zinc-800/60 bg-zinc-950/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 shrink-0">
-            <img src={logo} alt="Wallet76" className="h-7 sm:h-8 w-auto shrink-0" />
+            <img src={logo} alt="Wallet76" className="h-9 sm:h-10 w-auto shrink-0" />
             <span className="text-base sm:text-lg font-extrabold tracking-tight text-white truncate">Wallet76</span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-zinc-400">
