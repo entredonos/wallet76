@@ -29,7 +29,7 @@ const LANGS_LIST = {
 
 const COPY = {
   en: {
-    nav_features: "Features", nav_security: "Security", nav_pricing: "Pricing",
+    nav_features: "Features", nav_security: "Security", nav_pricing: "Pricing", nav_referral: "Invite & Earn",
     nav_login: "Sign in", nav_start: "Start for free",
     badge: "Your investments. One place. Full control.",
     hero1: "The smarter way", hero2: "to track your wealth.",
@@ -96,7 +96,8 @@ const COPY = {
     footer_login: "Login", footer_register: "Register", footer_pricing: "Pricing",
     footer_privacy: "Privacy Policy", footer_terms: "Terms of Service",
     referral_title: "Invite friends, earn free months",
-    referral_sub: "Every friend who signs up with your code gets 1 month free. Once they become a paying subscriber, you start earning too.",
+    referral_sub: "Every friend who signs up with your code gets 1 month free from us, plus 15 extra days from you. Once they become a paying subscriber*, you also earn at least +15 free days.",
+    referral_paid_note: "*A paying subscriber is someone whose free trial has ended and whose first payment was successfully processed — never at sign-up.",
     referral_step1: "Share your invite link",
     referral_step2: "Your friend gets 1 month free + 15 extra days",
     referral_step3: "Once the free trial ends and payment is made, your reward kicks in",
@@ -143,7 +144,7 @@ const COPY = {
     screens_tab_dashboard: "Dashboard", screens_tab_analytics: "Analytics", screens_tab_news: "News", screens_tab_mobile: "Mobile",
   },
   pt: {
-    nav_features: "Funcionalidades", nav_security: "Segurança", nav_pricing: "Preços",
+    nav_features: "Funcionalidades", nav_security: "Segurança", nav_pricing: "Preços", nav_referral: "Convida e Ganha",
     nav_login: "Entrar", nav_start: "Começar grátis",
     badge: "Os seus investimentos. Um lugar. Controlo total.",
     hero1: "A forma mais inteligente", hero2: "de acompanhar o seu património.",
@@ -210,11 +211,12 @@ const COPY = {
     footer_login: "Entrar", footer_register: "Criar conta", footer_pricing: "Preços",
     footer_privacy: "Política de Privacidade", footer_terms: "Termos de Serviço",
     referral_title: "Convida amigos, ganha meses grátis",
-    referral_sub: "Cada amigo que se registar com o teu código ganha 1 mês grátis. Assim que ele se tornar assinante pago, tu também começas a ganhar.",
+    referral_sub: "Cada amigo que se registar com o teu código ganha 1 mês grátis nosso, mais 15 dias extra da tua parte. Assim que ele se tornar assinante pago*, tu também ganhas no mínimo +15 dias grátis.",
+    referral_paid_note: "*Assinante pago é alguém cujo período de teste grátis terminou e cujo primeiro pagamento foi processado com sucesso — nunca no momento do registo.",
     referral_step1: "Partilha o teu link de convite",
     referral_step2: "O teu amigo ganha 1 mês grátis + 15 dias extra",
     referral_step3: "Assim que o período grátis terminar e o pagamento for efetuado, a tua recompensa entra em ação",
-    referral_base: "Além disso, +15 dias grátis por cada convite válido, por cima dos marcos abaixo — sem limite.",
+    referral_base: "Além disso, +15 dias grátis por cada convite válido, que ainda pode somar aos marcos abaixo — sem limite.",
     referral_tier1: "3 amigos → 2 meses grátis",
     referral_tier2: "6 amigos → 6 meses grátis",
     referral_tier3: "10 amigos → 12 meses grátis",
@@ -257,7 +259,7 @@ const COPY = {
     screens_tab_dashboard: "Painel", screens_tab_analytics: "Análise", screens_tab_news: "Notícias", screens_tab_mobile: "Telemóvel",
   },
   fr: {
-    nav_features: "Fonctionnalités", nav_security: "Sécurité", nav_pricing: "Tarifs",
+    nav_features: "Fonctionnalités", nav_security: "Sécurité", nav_pricing: "Tarifs", nav_referral: "Parrainage",
     nav_login: "Connexion", nav_start: "Commencer gratuitement",
     badge: "Vos investissements. Un endroit. Contrôle total.",
     hero1: "La manière la plus intelligente", hero2: "de suivre votre patrimoine.",
@@ -324,7 +326,8 @@ const COPY = {
     footer_login: "Connexion", footer_register: "Créer un compte", footer_pricing: "Tarifs",
     footer_privacy: "Politique de confidentialité", footer_terms: "Conditions d'utilisation",
     referral_title: "Invite des amis, gagne des mois gratuits",
-    referral_sub: "Chaque ami qui s'inscrit avec ton code obtient 1 mois gratuit. Dès qu'il devient abonné payant, tu commences aussi à gagner.",
+    referral_sub: "Chaque ami qui s'inscrit avec ton code obtient 1 mois gratuit de notre part, plus 15 jours en plus de ta part. Dès qu'il devient abonné payant*, tu gagnes toi aussi au moins +15 jours gratuits.",
+    referral_paid_note: "*Un abonné payant est quelqu'un dont l'essai gratuit s'est terminé et dont le premier paiement a été traité avec succès — jamais au moment de l'inscription.",
     referral_step1: "Partage ton lien d'invitation",
     referral_step2: "Ton ami obtient 1 mois gratuit + 15 jours en plus",
     referral_step3: "Dès que la période d'essai gratuite se termine et que le paiement est effectué, ta récompense s'active",
@@ -371,7 +374,7 @@ const COPY = {
     screens_tab_dashboard: "Tableau de bord", screens_tab_analytics: "Analyse", screens_tab_news: "Actualités", screens_tab_mobile: "Mobile",
   },
   de: {
-    nav_features: "Funktionen", nav_security: "Sicherheit", nav_pricing: "Preise",
+    nav_features: "Funktionen", nav_security: "Sicherheit", nav_pricing: "Preise", nav_referral: "Empfehlen & Verdienen",
     nav_login: "Anmelden", nav_start: "Kostenlos starten",
     badge: "Ihre Investments. Ein Ort. Volle Kontrolle.",
     hero1: "Der intelligentere Weg", hero2: "Ihr Vermögen zu verfolgen.",
@@ -438,7 +441,8 @@ const COPY = {
     footer_login: "Anmelden", footer_register: "Konto erstellen", footer_pricing: "Preise",
     footer_privacy: "Datenschutzerklärung", footer_terms: "Nutzungsbedingungen",
     referral_title: "Freunde einladen, Freimonate sichern",
-    referral_sub: "Jeder Freund, der sich mit deinem Code anmeldet, bekommt 1 Monat gratis. Sobald er zahlender Abonnent wird, verdienst auch du.",
+    referral_sub: "Jeder Freund, der sich mit deinem Code anmeldet, bekommt 1 Monat gratis von uns, plus 15 zusätzliche Tage von dir. Sobald er zahlender Abonnent wird*, verdienst auch du mindestens +15 Gratistage.",
+    referral_paid_note: "*Ein zahlender Abonnent ist jemand, dessen kostenlose Testphase beendet ist und dessen erste Zahlung erfolgreich verarbeitet wurde — nie zum Zeitpunkt der Anmeldung.",
     referral_step1: "Teile deinen Einladungslink",
     referral_step2: "Dein Freund bekommt 1 Monat gratis + 15 Tage extra",
     referral_step3: "Sobald die Gratisphase endet und die Zahlung erfolgt, greift deine Belohnung",
@@ -485,7 +489,7 @@ const COPY = {
     screens_tab_dashboard: "Dashboard", screens_tab_analytics: "Analyse", screens_tab_news: "Nachrichten", screens_tab_mobile: "Mobil",
   },
   it: {
-    nav_features: "Funzionalità", nav_security: "Sicurezza", nav_pricing: "Prezzi",
+    nav_features: "Funzionalità", nav_security: "Sicurezza", nav_pricing: "Prezzi", nav_referral: "Invita e Guadagna",
     nav_login: "Accedi", nav_start: "Inizia gratis",
     badge: "I tuoi investimenti. Un posto. Controllo totale.",
     hero1: "Il modo più intelligente", hero2: "di monitorare il tuo patrimonio.",
@@ -552,7 +556,8 @@ const COPY = {
     footer_login: "Accedi", footer_register: "Crea account", footer_pricing: "Prezzi",
     footer_privacy: "Informativa sulla Privacy", footer_terms: "Termini di Servizio",
     referral_title: "Invita amici, guadagna mesi gratis",
-    referral_sub: "Ogni amico che si registra con il tuo codice riceve 1 mese gratis. Non appena diventa abbonato pagante, inizi a guadagnare anche tu.",
+    referral_sub: "Ogni amico che si registra con il tuo codice riceve 1 mese gratis da noi, più 15 giorni extra da parte tua. Non appena diventa abbonato pagante*, guadagni anche tu almeno +15 giorni gratis.",
+    referral_paid_note: "*Un abbonato pagante è qualcuno il cui periodo di prova gratuito è terminato e il cui primo pagamento è stato elaborato con successo — mai al momento della registrazione.",
     referral_step1: "Condividi il tuo link di invito",
     referral_step2: "Il tuo amico riceve 1 mese gratis + 15 giorni extra",
     referral_step3: "Non appena il periodo gratuito termina e il pagamento viene effettuato, la tua ricompensa si attiva",
@@ -599,7 +604,7 @@ const COPY = {
     screens_tab_dashboard: "Dashboard", screens_tab_analytics: "Analisi", screens_tab_news: "Notizie", screens_tab_mobile: "Mobile",
   },
   es: {
-    nav_features: "Funcionalidades", nav_security: "Seguridad", nav_pricing: "Precios",
+    nav_features: "Funcionalidades", nav_security: "Seguridad", nav_pricing: "Precios", nav_referral: "Invita y Gana",
     nav_login: "Iniciar sesión", nav_start: "Empezar gratis",
     badge: "Tus inversiones. Un lugar. Control total.",
     hero1: "La forma más inteligente", hero2: "de seguir tu patrimonio.",
@@ -666,7 +671,8 @@ const COPY = {
     footer_login: "Iniciar sesión", footer_register: "Crear cuenta", footer_pricing: "Precios",
     footer_privacy: "Política de Privacidad", footer_terms: "Términos de Servicio",
     referral_title: "Invita amigos, gana meses gratis",
-    referral_sub: "Cada amigo que se registre con tu código recibe 1 mes gratis. En cuanto se convierta en suscriptor de pago, tú también empiezas a ganar.",
+    referral_sub: "Cada amigo que se registre con tu código recibe 1 mes gratis de nuestra parte, más 15 días extra de la tuya. En cuanto se convierta en suscriptor de pago*, tú también ganas al menos +15 días gratis.",
+    referral_paid_note: "*Un suscriptor de pago es alguien cuyo período de prueba gratuito ha terminado y cuyo primer pago se ha procesado con éxito — nunca en el momento del registro.",
     referral_step1: "Comparte tu enlace de invitación",
     referral_step2: "Tu amigo recibe 1 mes gratis + 15 días extra",
     referral_step3: "En cuanto termine el período gratis y se realice el pago, tu recompensa se activa",
@@ -933,6 +939,7 @@ export default function LandingPage() {
             <a href="#features" className="hover:text-white transition-colors">{c.nav_features}</a>
             <a href="#security" className="hover:text-white transition-colors">{c.nav_security}</a>
             <a href="#pricing" className="hover:text-white transition-colors">{c.nav_pricing}</a>
+            <a href="#referral" className="hover:text-white transition-colors">{c.nav_referral}</a>
           </nav>
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <select value={lang} onChange={(e) => setLang(e.target.value)} className="bg-zinc-900 border border-zinc-700 rounded-lg px-1.5 sm:px-2 py-1.5 text-xs text-zinc-300 focus:outline-none">
@@ -1443,13 +1450,15 @@ export default function LandingPage() {
           por amigo que passe a pagar, sem limite) + bónus nos marcos de
           3/6/10 convites, calibrado para dar exatamente os mesmos totais
           (2/6/12 meses) do modelo original por níveis nesses marcos. */}
-      <section className="py-24 border-t border-zinc-800/60">
+      <section id="referral" className="py-24 border-t border-zinc-800/60">
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 mb-4 text-xs font-mono uppercase tracking-widest text-emerald-400">
-              <Gift className="w-4 h-4" /> {c.referral_title}
+            <div className="inline-flex items-center gap-3 mb-4 text-emerald-400">
+              <Gift className="w-8 h-8" />
+              <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-white">{c.referral_title}</h2>
             </div>
             <p className="text-zinc-400 text-lg max-w-2xl mx-auto">{c.referral_sub}</p>
+            <p className="text-zinc-600 text-xs max-w-xl mx-auto mt-3">{c.referral_paid_note}</p>
           </div>
 
           {/* 3 passos */}
