@@ -6,7 +6,7 @@ from typing import List
 import httpx
 import yfinance as yf
 
-from core import _cache_get, _cache_set, logger, db
+from core import _cache_get, _cache_set, _cache_get_stale, logger, db
 
 
 # --- Crypto prices ---
@@ -53,6 +53,21 @@ async def get_crypto_prices(coingecko_ids: List[str]) -> dict:
                 result[cid] = val
     except Exception as e:
         logger.error(f"CoinGecko error: {e}")
+
+    # 15 jul 2026 — qualquer id que continue sem preço aqui (CoinGecko caiu
+    # de vez, ou simplesmente não devolveu esse id na resposta, ex.:
+    # rate-limit parcial) ficava com price_usd=0 no /portfolio (ver
+    # _price_holdings em routes/portfolio.py), o que faz esse ativo aparecer
+    # a -100% de PnL — um crash de preço falso, não um crash real. Cai para o
+    # último preço conhecido (mesmo expirado) em vez de deixar o chamador
+    # tratar "sem preço" como preço zero. Mesma técnica já usada em
+    # _fetch_movers_crypto (routes/market.py).
+    for cid in missing:
+        if cid in result:
+            continue
+        stale = _cache_get_stale(f"crypto_price:{cid}")
+        if stale is not None:
+            result[cid] = stale
     return result
 
 
@@ -170,6 +185,18 @@ async def get_stock_prices(symbols: List[str]) -> dict:
                 if real in resolved_data and resolved_data[real].get("usd"):
                     result[orig] = resolved_data[real]
                     _cache_set(f"stock_price:{orig}", resolved_data[real])
+
+    # 15 jul 2026 — mesmo fallback do get_crypto_prices acima: um símbolo que
+    # continue sem preço aqui (yfinance em baixo/rate-limited e a resolução
+    # via Yahoo Search também falhou) virava price_usd=0 no /portfolio,
+    # mostrando -100% de PnL nesse ativo/carteira em vez de manter o último
+    # valor conhecido enquanto a fonte de preços recupera.
+    for sym in missing:
+        if sym in result and result[sym].get("usd"):
+            continue
+        stale = _cache_get_stale(f"stock_price:{sym}")
+        if stale is not None:
+            result[sym] = stale
     return result
 
 
