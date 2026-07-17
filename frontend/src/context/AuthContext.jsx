@@ -61,6 +61,16 @@ export function AuthProvider({ children }) {
     return () => setUnauthorizedHandler(null);
   }, []);
 
+  // Push nativo (FCM) — quando o utilizador fica autenticado numa app
+  // nativa (Capacitor/Android), regista o token FCM no backend. No
+  // browser/PWA e no-op (esse usa Web Push, lib/push.js). Import dinamico
+  // para nao pesar no bundle web nem rebentar se o plugin nao existir.
+  useEffect(() => {
+    if (user && typeof user === "object") {
+      import("../lib/nativePush").then((m) => m.initNativePush()).catch(() => {});
+    }
+  }, [user]);
+
   const login = async (email, password) => {
     const { data } = await api.post("/auth/login", { email, password });
     // 2FA ativo (8 jul 2026): a resposta vem sem sessão nenhuma, só
