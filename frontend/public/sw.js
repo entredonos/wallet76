@@ -24,7 +24,7 @@
 // controlling the page indefinitely. Also added explicit no-cache headers
 // (frontend/vercel.json) and updateViaCache: "none" (serviceWorkerRegistration.js)
 // so this doesn't need a manual bump every time going forward.
-const CACHE_NAME = "wallet76-v3";
+const CACHE_NAME = "wallet76-v4";
 const OFFLINE_URL = "/";
 
 // Assets to pre-cache on install
@@ -66,11 +66,14 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET, cross-origin, and chrome-extension requests
-  if (
-    request.method !== "GET" ||
-    !url.origin.startsWith(self.location.origin.split("://")[0])
-  ) {
+  // Skip non-GET and cross-origin requests.
+  // Correção (17 jul 2026): a verificação antiga
+  // `!url.origin.startsWith(self.location.origin.split("://")[0])` resolvia
+  // para `!url.origin.startsWith("https")` — ou seja, só descartava pedidos
+  // NÃO-https, deixando passar TODOS os GET https de outras origens (Google
+  // Fonts, etc.) para dentro da lógica de cache do SW. Comparar a origem
+  // completa descarta corretamente tudo o que é cross-origin.
+  if (request.method !== "GET" || url.origin !== self.location.origin) {
     return;
   }
 

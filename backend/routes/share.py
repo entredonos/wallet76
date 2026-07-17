@@ -135,7 +135,16 @@ async def public_portfolio(slug: str):
         (h.get("coingecko_id") or h["symbol"]).lower()
         for h in holdings if h["asset_type"] == "crypto"
     ]
-    stock_syms = [h["symbol"].upper() for h in holdings if h["asset_type"] == "stock"]
+    # Correção (17 jul 2026): antes só juntava asset_type == "stock", mas o
+    # loop de enriquecimento abaixo trata TODOS os não-crypto (etf/fundo/
+    # obrigação/reit) via stock_prices. Como esses símbolos não iam a
+    # get_stock_prices, ficavam com preço 0 → a página pública mostrava-os a
+    # $0 e distorcia os pesos. Inclui todos os tipos de "equity" (mesma lista
+    # que EQUITY_TYPES em routes/portfolio.py).
+    stock_syms = [
+        h["symbol"].upper() for h in holdings
+        if h["asset_type"] in ("stock", "etf", "fund", "bond", "reit")
+    ]
 
     crypto_prices, stock_prices, fx_rates = await asyncio.gather(
         get_crypto_prices(list(set(crypto_ids))),

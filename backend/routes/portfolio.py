@@ -1141,7 +1141,15 @@ async def _build_retro_history_intraday(user_id: str, range_key: str, wallet_id:
         }
         cutoff = datetime.now(timezone.utc) - window_deltas.get(range_key, timedelta(days=3))
 
-        real_snaps = await db.snapshots.find({"user_id": user_id}, {"_id": 0}).sort("bucket_ts", 1).to_list(2000)
+        # Correção (17 jul 2026): antes usava .sort("bucket_ts", 1) (ascendente)
+        # + to_list(2000), ou seja, os 2000 snapshots MAIS ANTIGOS. Com ~96
+        # snapshots/dia, qualquer conta com mais de ~3 semanas tinha todos os
+        # 2000 mais antigos FORA da janela recente → o filtro `snap_dt < cutoff`
+        # descartava tudo e a rede de segurança não devolvia nada exatamente
+        # para as contas estabelecidas. Agora buscamos os 2000 MAIS RECENTES
+        # (sort -1) e voltamos à ordem cronológica para a guarda de outliers.
+        real_snaps = await db.snapshots.find({"user_id": user_id}, {"_id": 0}).sort("bucket_ts", -1).to_list(2000)
+        real_snaps.reverse()
         existing_ts = {p["ts"] for p in result}
         # Continua a partir do último valor já reconstruído (se houver),
         # para o primeiro snapshot juntado também ser verificado contra ele
