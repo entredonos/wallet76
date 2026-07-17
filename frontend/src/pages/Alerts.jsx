@@ -7,6 +7,10 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription,
 } from "../components/ui/dialog";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "../components/ui/alert-dialog";
+import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "../components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
@@ -32,6 +36,7 @@ export default function Alerts() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(!!prefillSymbol);
   const [notifPerm, setNotifPerm] = useState(typeof Notification !== "undefined" ? Notification.permission : "denied");
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   useEffect(() => { if (prefillSymbol) setOpen(true); }, [prefillSymbol]);
 
@@ -61,10 +66,10 @@ export default function Alerts() {
   };
 
   const deleteAlert = async (id) => {
-    if (!window.confirm(t("alert.confirm_delete"))) return;
     try {
       await api.delete(`/alerts/${id}`);
       toast.success(t("alert.deleted"));
+      setConfirmDelete(null);
       load();
       requestSidebarRefresh();
     } catch { toast.error(t("common.error")); }
@@ -161,7 +166,7 @@ export default function Alerts() {
                 current={current}
                 distance={distance}
                 onToggle={() => toggleAlert(a)}
-                onDelete={() => deleteAlert(a.id)}
+                onDelete={() => setConfirmDelete(a)}
               />
             );
           })}
@@ -227,7 +232,7 @@ export default function Alerts() {
                       </button>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button onClick={() => deleteAlert(a.id)} className="text-zinc-600 hover:text-rose-400 transition-colors" data-testid={`alert-delete-${a.id}`}>
+                      <button onClick={() => setConfirmDelete(a)} className="text-zinc-600 hover:text-rose-400 transition-colors" data-testid={`alert-delete-${a.id}`}>
                         <Trash2 className="w-4 h-4"/>
                       </button>
                     </td>
@@ -238,6 +243,21 @@ export default function Alerts() {
           </table>
         </div>
       </div>
+
+      <AlertDialog open={!!confirmDelete} onOpenChange={(v) => { if (!v) setConfirmDelete(null); }}>
+        <AlertDialogContent className="bg-zinc-950 border-zinc-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("alert.confirm_delete")}</AlertDialogTitle>
+            <AlertDialogDescription className="font-mono text-zinc-400">
+              {confirmDelete ? `${confirmDelete.symbol} · ${confirmDelete.condition === "above" ? t("alert.above") : t("alert.below")} ${fmtCurrency(confirmDelete.target_price_usd, "USD")}` : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800">{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => confirmDelete && deleteAlert(confirmDelete.id)} className="bg-rose-600 text-white hover:bg-rose-500">{t("common.delete")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

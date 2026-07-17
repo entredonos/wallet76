@@ -56,16 +56,18 @@ async def _fetch_prices_for_alerts(alerts: list) -> dict[str, float]:
     """
     crypto_ids = []
     stock_syms = []
+    crypto_symbol_map = {}
 
     for a in alerts:
         if a["asset_type"] == "crypto":
             cg_id = (a.get("coingecko_id") or a["symbol"]).lower()
             crypto_ids.append(cg_id)
+            crypto_symbol_map[cg_id] = a["symbol"]
         else:
             stock_syms.append(a["symbol"].upper())
 
     crypto_prices, stock_prices = await asyncio.gather(
-        get_crypto_prices(list(set(crypto_ids))),
+        get_crypto_prices(list(set(crypto_ids)), crypto_symbol_map),
         get_stock_prices(list(set(stock_syms))),
     )
 

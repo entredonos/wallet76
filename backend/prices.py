@@ -1,5 +1,6 @@
 """Price fetching helpers (CoinGecko, yfinance, FX) and holding computation."""
 import asyncio
+import os
 import re as _re
 from typing import List
 
@@ -10,7 +11,7 @@ from core import _cache_get, _cache_set, _cache_get_stale, logger, db
 
 
 # --- Crypto prices ---
-async def get_crypto_prices(coingecko_ids: List[str]) -> dict:
+async def get_crypto_prices(coingecko_ids: List[str], symbol_map: dict | None = None) -> dict:
     """Returns dict { coingecko_id: { usd, eur, usd_24h_change, eur_24h_change } }.
 
     Cached PER SYMBOL (not per combined request), and shared across every
@@ -43,9 +44,15 @@ async def get_crypto_prices(coingecko_ids: List[str]) -> dict:
         "vs_currencies": "usd,eur",
         "include_24hr_change": "true",
     }
+    # Chave demo gratuita da CoinGecko (30 req/min dedicados em vez do limite
+    # partilhado por IP, que IPs de cloud como o Render apanham quase sempre em
+    # 429). Definir COINGECKO_API_KEY no ambiente ativa-a; sem ela funciona
+    # como antes.
+    _cg_key = os.environ.get("COINGECKO_API_KEY", "").strip()
+    headers = {"x-cg-demo-api-key": _cg_key} if _cg_key else {}
     try:
         async with httpx.AsyncClient(timeout=15) as client_http:
-            r = await client_http.get(url, params=params)
+            r = await client_http.get(url, params=params, headers=headers)
             r.raise_for_status()
             data = r.json()
             for cid, val in data.items():
@@ -68,6 +75,25 @@ async def get_crypto_prices(coingecko_ids: List[str]) -> dict:
         stale = _cache_get_stale(f"crypto_price:{cid}")
         if stale is not None:
             result[cid] = stale
+
+    # Fallback independente (17 jul 2026): se a CoinGecko falhou e nao ha valor
+    # em cache (ex.: cache fria logo apos deploy + rate-limit), tenta a yfinance
+    # com o ticker "SIMBOLO-USD". So corre para ids ainda sem preco e apenas se
+    # o chamador deu o mapa id->simbolo (alertas). Evita que "sem preco" cale os
+    # alertas por completo.
+    still_missing = {cid: (symbol_map or {}).get(cid) for cid in missing if cid not in result}
+    yf_syms = {f"{s.upper()}-USD": cid for cid, s in still_missing.items() if s}
+    if yf_syms:
+        try:
+            yf_data = await asyncio.to_thread(_yf_fetch, list(yf_syms.keys()))
+            for yfsym, val in yf_data.items():
+                cid = yf_syms.get(yfsym)
+                if cid and val.get("usd"):
+                    entry = {"usd": val["usd"], "usd_24h_change": val.get("change_pct", 0)}
+                    _cache_set(f"crypto_price:{cid}", entry)
+                    result[cid] = entry
+        except Exception as e:
+            logger.warning(f"yfinance crypto fallback error: {e}")
     return result
 
 

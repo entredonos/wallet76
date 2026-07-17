@@ -27,7 +27,9 @@ async def list_alerts(user=Depends(get_current_user)):
                            for a in alerts if a.get("asset_type") == "crypto"})
         stock_syms = list({a["symbol"].upper()
                            for a in alerts if a.get("asset_type") != "crypto"})
-        crypto_prices = await get_crypto_prices(crypto_ids) if crypto_ids else {}
+        crypto_symbol_map = {(a.get("coingecko_id") or a["symbol"].lower()): a["symbol"]
+                             for a in alerts if a.get("asset_type") == "crypto"}
+        crypto_prices = await get_crypto_prices(crypto_ids, crypto_symbol_map) if crypto_ids else {}
         stock_prices = await get_stock_prices(stock_syms) if stock_syms else {}
         for a in alerts:
             if a.get("asset_type") == "crypto":
