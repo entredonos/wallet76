@@ -152,7 +152,7 @@ export default function Alerts() {
             </div>
           )}
           {alerts.map((a) => {
-            const current = livePrices[`${a.asset_type}:${a.symbol.toUpperCase()}`] || 0;
+            const current = a.current_price_usd || livePrices[`${a.asset_type}:${a.symbol.toUpperCase()}`] || 0;
             const distance = current > 0 ? ((a.target_price_usd - current) / current) * 100 : 0;
             return (
               <AlertCard
@@ -188,7 +188,7 @@ export default function Alerts() {
                 </td></tr>
               )}
               {alerts.map((a) => {
-                const current = livePrices[`${a.asset_type}:${a.symbol.toUpperCase()}`] || 0;
+                const current = a.current_price_usd || livePrices[`${a.asset_type}:${a.symbol.toUpperCase()}`] || 0;
                 const distance = current > 0 ? ((a.target_price_usd - current) / current) * 100 : 0;
                 const isAbove = a.condition === "above";
                 return (

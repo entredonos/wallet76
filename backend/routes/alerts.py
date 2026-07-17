@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends
 
 from core import db, get_current_user, is_pro_user, _cache_get, _cache_set
 from models import AlertCreate, AlertUpdate
+from prices import get_crypto_prices, get_stock_prices
 
 router = APIRouter()
 
@@ -14,7 +15,28 @@ FREE_ALERT_LIMIT = 3
 
 @router.get("/alerts")
 async def list_alerts(user=Depends(get_current_user)):
-    return await db.alerts.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    alerts = await db.alerts.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    # Preço atual (17 jul 2026): antes o frontend só tinha preço para ativos EM
+    # CARTEIRA (vindo de /portfolio), por isso um alerta num ativo que NÃO se
+    # detém mostrava "Atual"/"Distância" a "—" — logo nos alertas, que servem
+    # justamente para ativos que ainda não se têm. Buscamos aqui o preço com as
+    # funções já cacheadas (get_crypto_prices 60s / get_stock_prices 120s), sem
+    # pedidos extra às APIs além do que a app já faz noutras páginas.
+    if alerts:
+        crypto_ids = list({(a.get("coingecko_id") or a["symbol"].lower())
+                           for a in alerts if a.get("asset_type") == "crypto"})
+        stock_syms = list({a["symbol"].upper()
+                           for a in alerts if a.get("asset_type") != "crypto"})
+        crypto_prices = await get_crypto_prices(crypto_ids) if crypto_ids else {}
+        stock_prices = await get_stock_prices(stock_syms) if stock_syms else {}
+        for a in alerts:
+            if a.get("asset_type") == "crypto":
+                cg = a.get("coingecko_id") or a["symbol"].lower()
+                price = (crypto_prices.get(cg) or {}).get("usd")
+            else:
+                price = (stock_prices.get(a["symbol"].upper()) or {}).get("usd")
+            a["current_price_usd"] = float(price) if price else None
+    return alerts
 
 
 @router.post("/alerts")
