@@ -351,7 +351,7 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
                   <SelectValue placeholder={t("alert.pick_held")}/>
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-900 border-zinc-800">
-                  {holdings.map((h) => (
+                  {Array.from(new Map(holdings.map((h) => [`${h.asset_type}:${h.symbol}`, h])).values()).map((h) => (
                     <SelectItem key={`${h.asset_type}:${h.symbol}`} value={`${h.asset_type}:${h.symbol}`}>
                       {h.symbol} · {h.name}
                     </SelectItem>
