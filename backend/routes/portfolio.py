@@ -325,10 +325,12 @@ async def get_portfolio(user=Depends(get_current_user)):
         cond = a.get("condition")
         hit = (cond == "above" and price >= target) or (cond == "below" and price <= target)
         if hit:
-            await db.alerts.update_one(
-                {"id": a["id"]},
-                {"$set": {"active": False, "triggered_at": now.isoformat(), "triggered_price_usd": price}},
-            )
+            # Correcao (17 jul 2026): NAO desativar aqui. O disparo real +
+            # notificacao (email/push/Telegram) + desativacao ficam SO a cargo
+            # do alert_checker (unico responsavel). Antes, marcar active=False
+            # aqui sem notificar fazia o checker (que so ve active=True) ignorar
+            # o alerta, logo a notificacao nunca saia quando o preco cruzava com
+            # a app aberta. So reportamos para o aviso instantaneo (dedup por id).
             triggered.append({
                 "id": a["id"],
                 "symbol": sym,
