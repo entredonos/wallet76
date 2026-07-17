@@ -18,7 +18,7 @@ from core import db, APP_URL, logger
 from prices import get_crypto_prices, get_stock_prices
 from email_utils import send_email, alert_email_html
 from telegram_utils import send_telegram_message
-from push_utils import send_web_push
+from push_utils import send_web_push, send_fcm
 
 CHECK_INTERVAL = 300  # seconds (5 minutes)
 
@@ -125,6 +125,13 @@ async def _send_push_and_cleanup(subscription: dict, title: str, body: str, url:
         await db.push_subscriptions.delete_one({"endpoint": subscription["endpoint"]})
 
 
+async def _send_fcm_and_cleanup(token: str, title: str, body: str, url: str) -> None:
+    """Envia FCM e apaga o token da BD se estiver invalido/desregistado."""
+    _ok, gone = await send_fcm(token, title, body, url)
+    if gone:
+        await db.fcm_tokens.delete_one({"token": token})
+
+
 async def check_alerts_once() -> None:
     """Single pass: load alerts, fetch prices, trigger matches."""
     try:
@@ -184,6 +191,10 @@ async def check_alerts_once() -> None:
         async for s in db.push_subscriptions.find({"user_id": {"$in": user_ids}}, {"_id": 0}):
             push_subs_by_user.setdefault(s["user_id"], []).append(s)
 
+        fcm_by_user: dict[str, list] = {}
+        async for f in db.fcm_tokens.find({"user_id": {"$in": user_ids}}, {"_id": 0, "user_id": 1, "token": 1}):
+            fcm_by_user.setdefault(f["user_id"], []).append(f["token"])
+
         now = datetime.now(timezone.utc).isoformat()
 
         for alert, price in triggered:
@@ -225,6 +236,15 @@ async def check_alerts_once() -> None:
                     body = _alert_line(lang, alert["symbol"], alert["condition"], price, float(alert["target_price_usd"]))
                     task = asyncio.create_task(
                         _send_push_and_cleanup(subscription, _ALERT_TITLE[lang], body, APP_URL)
+                    )
+                    task.add_done_callback(_task_error_logger)
+
+            # FCM (app nativa Android/iOS) — mesma preferencia alert_push
+            if prefs.get("alert_push", True):
+                for token in fcm_by_user.get(alert["user_id"], []):
+                    body = _alert_line(lang, alert["symbol"], alert["condition"], price, float(alert["target_price_usd"]))
+                    task = asyncio.create_task(
+                        _send_fcm_and_cleanup(token, _ALERT_TITLE[lang], body, APP_URL)
                     )
                     task.add_done_callback(_task_error_logger)
 

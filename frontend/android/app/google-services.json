@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "470785132500",
+    "project_id": "wallet76-de97f",
+    "storage_bucket": "wallet76-de97f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:470785132500:android:0ef015bdddee535be87841",
+        "android_client_info": {
+          "package_name": "com.wallet76.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYlaGrf5HujBAMHbVoM5ez4AR0EtGBEBA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

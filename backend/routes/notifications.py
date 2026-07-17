@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, Header
 
 from core import db, get_current_user, logger, VAPID_PUBLIC_KEY, TELEGRAM_WEBHOOK_SECRET, TELEGRAM_BOT_USERNAME
 from models import PushSubscriptionIn
+from push_utils import fcm_configured
 from telegram_utils import (
     telegram_configured, new_link_code, get_telegram_bot_username, send_telegram_message,
     TELEGRAM_LINKED_MSG, TELEGRAM_INVALID_CODE_MSG,
@@ -26,11 +27,14 @@ LINK_CODE_TTL_MIN = 10
 async def notifications_status(user=Depends(get_current_user)):
     link = await db.telegram_links.find_one({"user_id": user["id"]}, {"_id": 0, "chat_id": 1})
     sub_count = await db.push_subscriptions.count_documents({"user_id": user["id"]})
+    fcm_count = await db.fcm_tokens.count_documents({"user_id": user["id"]})
     return {
         "telegram_linked": bool(link),
         "push_subscribed": sub_count > 0,
         "push_available": bool(VAPID_PUBLIC_KEY),
         "telegram_available": telegram_configured(),
+        "fcm_registered": fcm_count > 0,
+        "fcm_available": fcm_configured(),
     }
 
 
@@ -66,6 +70,32 @@ async def push_unsubscribe(payload: dict, user=Depends(get_current_user)):
     if not endpoint:
         raise HTTPException(400, "endpoint required")
     await db.push_subscriptions.delete_one({"endpoint": endpoint, "user_id": user["id"]})
+    return {"ok": True}
+
+
+# --- FCM (app nativa Android/iOS) ---
+
+@router.post("/notifications/fcm/register")
+async def fcm_register(payload: dict, user=Depends(get_current_user)):
+    token = (payload.get("token") or "").strip()
+    if not token:
+        raise HTTPException(400, "token required")
+    now = datetime.now(timezone.utc).isoformat()
+    await db.fcm_tokens.update_one(
+        {"token": token},
+        {"$set": {"user_id": user["id"], "token": token,
+                  "platform": (payload.get("platform") or "android"), "updated_at": now},
+         "$setOnInsert": {"created_at": now}},
+        upsert=True,
+    )
+    return {"ok": True}
+
+
+@router.post("/notifications/fcm/unregister")
+async def fcm_unregister(payload: dict, user=Depends(get_current_user)):
+    token = (payload.get("token") or "").strip()
+    if token:
+        await db.fcm_tokens.delete_one({"token": token, "user_id": user["id"]})
     return {"ok": True}
 
 

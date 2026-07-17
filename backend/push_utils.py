@@ -53,3 +53,56 @@ async def send_web_push(subscription: dict, title: str, body: str, url: str = ""
         return False, False
     payload = {"title": title, "body": body, "url": url}
     return await asyncio.to_thread(_send_sync, subscription, payload)
+
+
+# --- FCM (Firebase Cloud Messaging) — push nativo para a app Android/iOS ---
+# (17 jul 2026) A WebView do APK Capacitor nao suporta Web Push; o FCM cobre
+# esse caso (e o iOS via APNs por baixo). Init OPCIONAL: sem FCM_SERVICE_ACCOUNT
+# no ambiente, fcm_configured() e False e send_fcm() e no-op — o backend
+# continua a funcionar sem FCM (dev, ou antes de configurar). Import tambem
+# opcional: se firebase-admin nao estiver instalado, ignora sem rebentar.
+import os as _os
+
+_FCM_APP = None
+try:
+    import firebase_admin as _fb
+    from firebase_admin import credentials as _fb_credentials, messaging as _fcm
+    _fcm_json = _os.environ.get("FCM_SERVICE_ACCOUNT")
+    if _fcm_json:
+        try:
+            _FCM_APP = _fb.initialize_app(_fb_credentials.Certificate(json.loads(_fcm_json)), name="wallet76-fcm")
+            logger.info("FCM configured (firebase-admin)")
+        except Exception as _e:
+            logger.error(f"FCM init failed: {_e}")
+except ImportError:
+    _fcm = None
+
+
+def fcm_configured() -> bool:
+    return _FCM_APP is not None
+
+
+def _send_fcm_sync(token: str, title: str, body: str, url: str):
+    try:
+        msg = _fcm.Message(
+            token=token,
+            notification=_fcm.Notification(title=title, body=body),
+            data={"url": url or ""},
+            android=_fcm.AndroidConfig(priority="high"),
+        )
+        _fcm.send(msg, app=_FCM_APP)
+        return True, False
+    except Exception as e:
+        name = type(e).__name__
+        if name in ("UnregisteredError", "InvalidArgumentError", "SenderIdMismatchError"):
+            logger.info(f"FCM token invalido ({name}) — remover da BD")
+            return False, True
+        logger.warning(f"FCM send failed: {e}")
+        return False, False
+
+
+async def send_fcm(token: str, title: str, body: str, url: str = ""):
+    """Nunca levanta — retorna (success, gone). SDK sincrono -> thread."""
+    if not fcm_configured():
+        return False, False
+    return await asyncio.to_thread(_send_fcm_sync, token, title, body, url)
