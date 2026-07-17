@@ -102,6 +102,21 @@ app.add_middleware(
 )
 
 
+# Cabeçalhos de segurança (17 jul 2026) — defesa em profundidade + ajuda nos
+# scanners de segurança (Mozilla Observatory, etc.) que dão credibilidade.
+# Só valores seguros e aditivos (sem CSP restritiva, que poderia partir
+# chamadas a APIs externas/fontes). HSTS só em produção (local é http).
+@app.middleware("http")
+async def security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    if _is_production:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+
 async def _ensure_indexes():
     """Creates all MongoDB indexes. Runs as a background task (see startup()
     below) instead of being awaited directly during FastAPI startup.

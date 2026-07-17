@@ -44,26 +44,31 @@ export default function LockScreen({ onUnlock }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await api.get("/security/status");
-        if (data.lock_mode === "none" || (data.lock_mode === "biometric" && isDesktopWeb)) {
-          onUnlock?.();
-          setStatus({ lock_mode: "none" });
-          return;
-        }
-        setStatus(data);
-        if (data.lock_mode === "biometric") {
-          // auto-trigger biometric prompt (só chega aqui em telemóvel/nativo — ver isDesktopWeb acima)
-          setTimeout(() => doBiometric(true), 250);
-        }
-      } catch (e) {
-        // If endpoint fails, default to unlocked to avoid lockout
+  const loadStatus = async () => {
+    try {
+      const { data } = await api.get("/security/status");
+      if (data.lock_mode === "none" || (data.lock_mode === "biometric" && isDesktopWeb)) {
         onUnlock?.();
         setStatus({ lock_mode: "none" });
+        return;
       }
-    })();
+      setStatus(data);
+      if (data.lock_mode === "biometric") {
+        // auto-trigger biometric prompt (só chega aqui em telemóvel/nativo — ver isDesktopWeb acima)
+        setTimeout(() => doBiometric(true), 250);
+      }
+    } catch (e) {
+      // Segurança (17 jul 2026) — NÃO desbloquear em erro. Antes, um erro aqui
+      // (backend em cold start, timeout, 500) chamava onUnlock() e abria a app
+      // — um bypass do PIN/biometria (bastava cortar a rede, ex.: modo avião).
+      // A sessão já é válida via cookie httpOnly; nada se perde em esperar.
+      // Mostramos um estado de erro com "tentar de novo" + "sair".
+      setStatus({ lock_mode: "error" });
+    }
+  };
+
+  useEffect(() => {
+    loadStatus();
     // eslint-disable-next-line
   }, []);
 
@@ -184,6 +189,20 @@ export default function LockScreen({ onUnlock }) {
             >
               <Fingerprint className="w-5 h-5"/>
               {busy ? "…" : t("lock.use_biometric")}
+            </button>
+          </div>
+        )}
+
+        {status.lock_mode === "error" && (
+          <div className="space-y-3">
+            <div className="text-sm text-zinc-400">{t("lock.status_error")}</div>
+            <button
+              onClick={async () => { setBusy(true); await loadStatus(); setBusy(false); }}
+              disabled={busy}
+              className="w-full bg-zinc-100 text-zinc-950 hover:bg-white disabled:opacity-50 rounded-md py-2.5 font-medium"
+              data-testid="lock-retry"
+            >
+              {busy ? "…" : t("lock.retry")}
             </button>
           </div>
         )}
