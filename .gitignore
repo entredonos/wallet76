@@ -1,113 +1,58 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ============================================================
+# Wallet76 — .gitignore (criado 16 jul 2026)
+# ============================================================
+# CRÍTICO: nunca comitar segredos. O backend/.env tinha a chave-mestra
+# de cifra das credenciais de corretora, MONGO_URL com password, JWT,
+# Stripe e Resend em texto simples. Ver backend/.env.example para o
+# template sem segredos.
+# ------------------------------------------------------------
 
-# IDE and editors
-.idea/
-.vscode/
-
-# Dependencies
-node_modules/
-/node_modules
-/.pnp
-.pnp.js
-.yarn/install-state.gz
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# Testing
-/coverage
-
-# Next.js
-/.next/
-/out/
-next-env.d.ts
-*.tsbuildinfo
-
-# Production builds
-/build
-dist/
-dist
-
-# Environment files (comprehensive coverage)
-
-*token.json*
-*credentials.json*
-
-# Logs and debug files
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-dump.rdb
-
-# System files
-.DS_Store
-*.pem
-
-# Keystore de PRODUÇÃO Android (12 jul 2026) — NUNCA vai para o repositório
-# (ao contrário de frontend/android/app/debug.keystore, que é seguro
-# comitar). Este é o segredo real da app na Play Store: guardado só como
-# GitHub Secret (ANDROID_RELEASE_KEYSTORE_BASE64) e numa cópia local segura
-# do utilizador, fora do repo.
-frontend/android/app/release.keystore
-frontend/android/app/wallet76-release.keystore
-*.jks
+# Segredos / ambiente
+.env
+.env.*
+!.env.example
+*.env
+backend/.env
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
 
 # Python
 __pycache__/
-*pyc*
-venv/
+*.py[cod]
+*$py.class
+*.egg-info/
 .venv/
+venv/
+backend/venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
 
-# Development tools
-chainlit.md
-.chainlit
-.ipynb_checkpoints/
-.ac
+# Node / frontend
+node_modules/
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+frontend/.eslintcache
 
-# Deployment
-.vercel
+# Artefactos de build nativos (grandes — não pertencem ao git)
+*.exe
+*.exe.blockmap
+*.apk
+*.aab
+frontend/android/app/build/
+frontend/android/.gradle/
+frontend/ios/App/build/
 
-# Data and databases
-agenthub/agents/youtube/db
+# IDE / SO
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
 
-# Archive files and large assets
-**/*.zip
-**/*.tar.gz
-**/*.tar
-**/*.tgz
-*.pack
-*.deb
-*.dylib
-
-# Build caches
-.cache/
-
-memory/test_credentials.md
-
-# Mobile development
-android-sdk/frontend/node_modules/.cache/default-development/3.pack
-frontend/node_modules/.cache/default-development/3.pack
-frontend/node_modules/.cache/default-development/4.pack
-frontend/node_modules/.cache/default-development/11.pack
-frontend/node_modules/.cache/default-development/12.pack_
-frontend/node_modules/.cache/default-development/17.pack
-frontend/node_modules/.cache/default-development/4.pack_
-frontend/node_modules/.cache/default-development/2.pack
-frontend/node_modules/.cache/default-development/1.pack
-frontend/node_modules/.cache/default-development/5.pack
-frontend/node_modules/.cache/default-development/5.pack
-frontend/node_modules/.cache/default-development/10.pack
-frontend/node_modules/.cache/default-development/9.pack
-frontend/node_modules/.cache/default-development/12.pack
-frontend/node_modules/.cache/default-development/13.pack
-.env
-.env.*
-*.env
-credentials.json
-*.key
-.credentials
-frontend/node_modules/.cache/default-development/0.pack
-frontend/node_modules/.cache/default-development/7.pack
+# Logs / temporários
+*.log
+tmp/
+.tmp/
+_backup_*/

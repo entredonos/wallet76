@@ -185,6 +185,22 @@ async def _import_transactions(
                 "type": t["type"],
                 "date": t["date"],
                 "quantity": float(t["quantity"]),
+                # Correção (16 jul 2026) — os consumidores de transações
+                # (compute_holdings_from_txns em prices.py, _build_retro_history
+                # em portfolio.py, get_analytics/get_tax_report em analytics.py,
+                # etc.) leem SEMPRE t["price"], t.get("fee") e t.get("fx_to_usd")
+                # — o mesmo formato das transações manuais. Antes, a importação
+                # de corretora gravava só "price_usd"/"fee_usd" e NENHUM "price",
+                # pelo que, após a 1ª sincronização, GET /portfolio, /holdings,
+                # /history e /analytics rebentavam com KeyError: 'price' (HTTP
+                # 500 permanente para esse utilizador). Como price_usd/fee_usd
+                # já vêm convertidos para USD acima, gravamos "price"/"fee" com
+                # currency="USD" e fx_to_usd=1.0 para o cálculo dar exatamente o
+                # mesmo valor. Mantemos "price_usd"/"fee_usd" por compatibilidade.
+                "price": price_usd,
+                "fee": fee_usd,
+                "currency": "USD",
+                "fx_to_usd": 1.0,
                 "price_usd": price_usd,
                 "fee_usd": fee_usd,
                 "notes": t.get("notes", ""),

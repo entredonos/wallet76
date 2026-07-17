@@ -55,7 +55,11 @@ export default function Login() {
       } else if (isNetworkError(e2)) {
         setErr(t("errors.network"));
       } else {
-        setErr(formatApiErrorDetail(detail) || e2.message);
+        // 16 jul 2026 — em vez de mostrar `e2.message` (texto cru do axios,
+        // "Request failed with status code 500", sempre em inglês), cair
+        // numa mensagem traduzida quando o backend não devolve um detalhe
+        // legível (ex.: erro 500). Respeita a REGRA #1 (6 idiomas).
+        setErr(formatApiErrorDetail(detail) || t("errors.generic"));
       }
     } finally {
       setLoading(false);

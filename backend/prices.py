@@ -202,17 +202,28 @@ async def get_stock_prices(symbols: List[str]) -> dict:
 
 # --- FX rates ---
 async def get_fx_rates() -> dict:
-    """Returns { 'USD': 1.0, 'EUR': eur_per_usd, 'CHF': chf_per_usd, 'BRL': brl_per_usd }."""
+    """Returns per-USD rates for every currency the app accepts, e.g.
+    { 'USD': 1.0, 'EUR': eur_per_usd, 'GBP': ..., 'CHF': ..., 'JPY': ...,
+      'BRL': ..., 'CAD': ..., 'AUD': ... }."""
     cached = _cache_get("fx:rates", ttl=600)
     if cached:
         return cached
-    rates = {"USD": 1.0, "EUR": 0.92, "CHF": 0.88, "BRL": 5.0}
+    # Correção (16 jul 2026) — TransactionCreate aceita USD/EUR/GBP/CHF/JPY/BRL/
+    # CAD/AUD (ver models.py), mas esta função só devolvia EUR/CHF/BRL. Para as
+    # restantes, `fx_rates.get(currency, 1.0)` caía no fallback 1.0 e a moeda
+    # era tratada 1:1 com o USD — uma compra em JPY ficava ~150x sobreavaliada,
+    # GBP/CAD/AUD ~30-50% erradas. Agora buscamos e devolvemos todas. Os valores
+    # abaixo são só fallback para quando a API falha; a chamada ao vivo sobrepõe.
+    rates = {
+        "USD": 1.0, "EUR": 0.92, "GBP": 0.79, "CHF": 0.88,
+        "JPY": 155.0, "BRL": 5.0, "CAD": 1.37, "AUD": 1.52,
+    }
     try:
         async with httpx.AsyncClient(timeout=10) as ch:
             r = await ch.get("https://open.er-api.com/v6/latest/USD")
             if r.status_code == 200:
                 data = r.json().get("rates", {})
-                for c in ("EUR", "CHF", "BRL"):
+                for c in ("EUR", "GBP", "CHF", "JPY", "BRL", "CAD", "AUD"):
                     if data.get(c):
                         rates[c] = float(data[c])
     except Exception as e:

@@ -94,7 +94,18 @@ async def fetch_transactions(api_key: str, is_paper: bool = False) -> list[dict]
             r.raise_for_status()
 
             data = r.json()
-            items = data.get("items") or data if isinstance(data, list) else []
+            # Correção (16 jul 2026) — a precedência de operadores tornava isto
+            # `(data.get("items") or data) if isinstance(data, list) else []`.
+            # A API do T212 devolve um dict {"items": [...]}, logo isinstance(
+            # data, list) era False e `items` ficava SEMPRE []: toda a sync do
+            # Trading212 reportava "0 importadas". Agora tratamos o dict (caso
+            # real) e uma eventual lista à parte, sem depender da precedência.
+            if isinstance(data, dict):
+                items = data.get("items", [])
+            elif isinstance(data, list):
+                items = data
+            else:
+                items = []
 
             for order in items:
                 m = _map_order(order)

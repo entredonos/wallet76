@@ -1174,7 +1174,7 @@ const worstPerformer = useMemo(() => {
         <SummaryCard
           icon={<DollarSign className="w-4 h-4"/>}
           label={t("dash.balance")}
-          value={mask(fmtCompact(convert(summary.total, currency, fxRates), currency))}
+          value={mask(fmtCurrency(convert(summary.total, currency, fxRates), currency))}
           delta={fmtPct(summary.cost > 0 ? ((summary.total - summary.cost) / summary.cost) * 100 : 0)}
           positive={(summary.total - summary.cost) >= 0}
           testId="card-total-balance"
@@ -1191,7 +1191,7 @@ const worstPerformer = useMemo(() => {
         <SummaryCard
           icon={<BarChart3 className="w-4 h-4"/>}
           label={t("dash.invested")}
-          value={mask(fmtCompact(convert(summary.cost, currency, fxRates), currency))}
+          value={mask(fmtCurrency(convert(summary.cost, currency, fxRates), currency))}
           testId="card-cost-basis"
           tint="amber"
         />
@@ -1262,7 +1262,7 @@ const worstPerformer = useMemo(() => {
           {wVisible("summary") && (
             <div style={{ order: wOrder("summary") }}>
               <LightBalanceCard
-                totalLabel={mask(fmtCompact(convert(summary.total, currency, fxRates), currency))}
+                totalLabel={mask(fmtCurrency(convert(summary.total, currency, fxRates), currency))}
                 changeLabel={fmtPct(summary.cost > 0 ? ((summary.total - summary.cost) / summary.cost) * 100 : 0)}
                 positive={(summary.total - summary.cost) >= 0}
                 sparkline={<Sparkline data={summarySparkData} positive={chartIsPositive} width={70} height={22} />}

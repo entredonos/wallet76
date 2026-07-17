@@ -79,6 +79,13 @@ export default function Transactions() {
   const walletName = (id) => wallets.find((w) => w.id === id)?.name || "—";
 
   const removeTxn = async (id) => {
+    // 16 jul 2026 — pedir confirmação antes de apagar. Antes, clicar no
+    // caixote eliminava a transação de imediato, sem rede de segurança
+    // (um toque acidental perdia o registo). Mostramos o tipo + símbolo na
+    // pergunta, com mensagem traduzida nos 6 idiomas (REGRA #1).
+    const txn = txns.find((tx) => tx.id === id);
+    const label = txn ? `${txn.type === "BUY" ? t("tx.buy") : t("tx.sell")} ${txn.symbol}` : "";
+    if (!window.confirm(t("tx.delete_confirm", { label }))) return;
     try {
       await api.delete(`/transactions/${id}`);
       toast.success(t("tx.toast_deleted"));

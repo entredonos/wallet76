@@ -150,6 +150,15 @@ async def get_current_user(request: Request) -> dict:
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
+    # Segurança (16 jul 2026) — só um token do tipo "access" pode servir de
+    # sessão. Sem esta guarda, o "pending_token" emitido no passo 1 do login
+    # com 2FA (type="2fa_pending", ver create_2fa_pending_token) — devolvido
+    # ASSIM QUE a password está certa, ANTES do código TOTP — era aceite aqui
+    # como se fosse um access_token, dando acesso total à conta durante 10 min
+    # sem nunca passar o segundo fator. Ou seja, o 2FA ficava contornável só
+    # com a password. Rejeitar tudo o que não seja "access" fecha esse bypass.
+    if payload.get("type") != "access":
+        raise HTTPException(status_code=401, detail="Invalid token")
     user = await db.users.find_one({"id": payload["sub"]})
     if not user:
         raise HTTPException(status_code=401, detail="User not found")

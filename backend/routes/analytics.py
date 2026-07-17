@@ -638,5 +638,10 @@ async def get_dividends(
         "total_annual_income": total_annual,
         "total_received":     total_received,
     }
-    _cache_set(cache_key, payload, ttl=3600)
+    # Correção (16 jul 2026) — cache_set(key, data) não aceita `ttl` (a TTL é
+    # aplicada na LEITURA, via _cache_get(cache_key, ttl=3600) na linha ~468).
+    # O `ttl=3600` aqui lançava TypeError, fazendo /analytics/dividends dar 500
+    # em cada pedido depois de calcular tudo. Removido para casar com o padrão
+    # usado no resto do ficheiro (ex.: _cache_set(cache_key, result) na linha ~379).
+    _cache_set(cache_key, payload)
     return payload
