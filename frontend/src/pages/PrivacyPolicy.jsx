@@ -6,7 +6,7 @@ import { useI18n } from "../context/I18nContext";
 function getContent(lang) {
   if (lang === "pt") return {
     title: "Política de Privacidade",
-    updated: "Última atualização: Junho 2025",
+    updated: "Última atualização: Julho 2026",
     sections: [
       { heading: "1. Quem Somos", body: "O Wallet76 é uma aplicação de acompanhamento de carteiras de investimento. Contacto: support@wallet76.com." },
       { heading: "2. Dados que Recolhemos", body: "Recolhemos os dados que fornece ao criar uma conta (nome, email, hash da password) e os dados financeiros que introduz (ativos, transações, alertas de preço). Também recolhemos registos básicos de utilização para operar e proteger o serviço." },
@@ -15,14 +15,14 @@ function getContent(lang) {
       { heading: "5. Cookies", body: "Usamos cookies estritamente necessários para manter a sessão e lembrar as suas preferências (língua, moeda). Não usamos cookies de publicidade ou rastreamento." },
       { heading: "6. Os Seus Direitos (RGPD)", body: "Ao abrigo do RGPD tem direito a: aceder aos seus dados, corrigir dados inexatos, solicitar eliminação, opor-se ao tratamento e portabilidade dos dados. Contacte-nos em support@wallet76.com." },
       { heading: "7. Retenção de Dados", body: "Mantemos os seus dados enquanto a conta estiver ativa. Ao eliminar a conta, todos os dados pessoais são apagados permanentemente em 30 dias." },
-      { heading: "8. Serviços de Terceiros", body: "Usamos as APIs Yahoo Finance e CoinGecko para obter preços de mercado. Apenas os símbolos dos ativos são transmitidos, sem dados pessoais." },
+      { heading: "8. Serviços de Terceiros", body: "Para operar a Wallet76 recorremos a fornecedores terceiros de confiança que podem tratar os seus dados em nosso nome: Stripe (processamento de pagamentos), Resend (emails transacionais como verificação, reposição de password e alertas de preço), Google Firebase (notificações push no telemóvel), Telegram (envio de alertas de preço, apenas se o ligar) e MongoDB Atlas, Render e Vercel (alojamento da base de dados e da aplicação). Os preços de mercado vêm do Yahoo Finance e da CoinGecko, que recebem apenas os símbolos dos ativos que acompanha — nunca os seus dados pessoais. Estes fornecedores atuam ao abrigo de acordos de subcontratação, e quaisquer transferências internacionais de dados assentam em garantias adequadas, como as Cláusulas Contratuais-Tipo da UE." },
       { heading: "9. Alterações à Política", body: "Podemos atualizar esta política. Notificaremos por email ou aviso na app com pelo menos 14 dias de antecedência em caso de alterações materiais." },
       { heading: "10. Contacto", body: "Dúvidas? Contacte-nos em support@wallet76.com." },
     ],
   };
   if (lang === "fr") return {
     title: "Politique de Confidentialité",
-    updated: "Dernière mise à jour : Juin 2025",
+    updated: "Dernière mise à jour : Juillet 2026",
     sections: [
       { heading: "1. Qui Sommes-Nous", body: "Wallet76 est une application de suivi de portefeuille d'investissement. Contact : support@wallet76.com." },
       { heading: "2. Données Collectées", body: "Nous collectons les informations que vous fournissez lors de la création d'un compte (nom, email, hash du mot de passe) et les données financières que vous saisissez. Nous collectons également des journaux d'utilisation de base." },
@@ -31,14 +31,14 @@ function getContent(lang) {
       { heading: "5. Cookies", body: "Nous utilisons uniquement des cookies strictement nécessaires pour maintenir votre session et mémoriser vos préférences. Aucun cookie publicitaire ou de traçage." },
       { heading: "6. Vos Droits (RGPD)", body: "Conformément au RGPD, vous avez le droit d'accéder à vos données, de les corriger, de les supprimer, de vous opposer au traitement et à la portabilité. Contactez-nous à support@wallet76.com." },
       { heading: "7. Conservation des Données", body: "Nous conservons vos données tant que votre compte est actif. En cas de suppression de compte, toutes les données personnelles sont effacées dans les 30 jours." },
-      { heading: "8. Services Tiers", body: "Nous utilisons les API Yahoo Finance et CoinGecko pour les prix de marché. Seuls les symboles des actifs sont transmis, aucune donnée personnelle." },
+      { heading: "8. Services Tiers", body: "Pour faire fonctionner Wallet76, nous faisons appel à des prestataires tiers de confiance susceptibles de traiter vos données pour notre compte : Stripe (traitement des paiements), Resend (e-mails transactionnels tels que vérification, réinitialisation du mot de passe et alertes de prix), Google Firebase (notifications push mobiles), Telegram (envoi des alertes de prix, uniquement si vous le connectez), ainsi que MongoDB Atlas, Render et Vercel (hébergement de la base de données et de l'application). Les prix de marché proviennent de Yahoo Finance et CoinGecko, qui ne reçoivent que les symboles des actifs suivis — jamais vos données personnelles. Ces prestataires agissent dans le cadre d'accords de sous-traitance, et tout transfert international de données repose sur des garanties appropriées telles que les Clauses Contractuelles Types de l'UE." },
       { heading: "9. Modifications", body: "Nous pouvons mettre à jour cette politique. Nous vous notifierons au moins 14 jours avant toute modification importante." },
       { heading: "10. Contact", body: "Questions ? Contactez-nous à support@wallet76.com." },
     ],
   };
   if (lang === "de") return {
     title: "Datenschutzerklärung",
-    updated: "Zuletzt aktualisiert: Juni 2025",
+    updated: "Zuletzt aktualisiert: Juli 2026",
     sections: [
       { heading: "1. Wer Wir Sind", body: "Wallet76 ist eine Anwendung zur Verfolgung von Anlageportfolios. Kontakt: support@wallet76.com." },
       { heading: "2. Erhobene Daten", body: "Wir erheben die Informationen, die Sie bei der Kontoerstellung angeben sowie die von Ihnen eingegebenen Finanzdaten. Außerdem erheben wir grundlegende Nutzungsprotokolle." },
@@ -47,14 +47,14 @@ function getContent(lang) {
       { heading: "5. Cookies", body: "Wir verwenden nur unbedingt notwendige Cookies, um Sie angemeldet zu halten und Ihre Einstellungen zu speichern. Keine Werbe- oder Tracking-Cookies." },
       { heading: "6. Ihre Rechte (DSGVO)", body: "Gemäß DSGVO haben Sie das Recht auf Auskunft, Berichtigung, Löschung, Widerspruch und Datenübertragbarkeit. Kontaktieren Sie uns unter support@wallet76.com." },
       { heading: "7. Datenspeicherdauer", body: "Wir speichern Ihre Daten so lange Ihr Konto aktiv ist. Nach Kontolöschung werden alle persönlichen Daten innerhalb von 30 Tagen dauerhaft gelöscht." },
-      { heading: "8. Drittanbieter-Dienste", body: "Wir nutzen die Yahoo Finance und CoinGecko APIs für Marktpreise. Es werden nur Tickersymbole übertragen, keine persönlichen Daten." },
+      { heading: "8. Drittanbieter-Dienste", body: "Für den Betrieb von Wallet76 nutzen wir vertrauenswürdige Drittanbieter, die Ihre Daten in unserem Auftrag verarbeiten können: Stripe (Zahlungsabwicklung), Resend (transaktionale E-Mails wie Verifizierung, Passwort-Zurücksetzung und Preisalarme), Google Firebase (mobile Push-Benachrichtigungen), Telegram (Zustellung von Preisalarmen, nur wenn Sie es verbinden) sowie MongoDB Atlas, Render und Vercel (Datenbank- und Anwendungs-Hosting). Marktpreise stammen von Yahoo Finance und CoinGecko, die nur die von Ihnen verfolgten Tickersymbole erhalten — niemals Ihre persönlichen Daten. Diese Anbieter handeln im Rahmen von Auftragsverarbeitungsverträgen, und internationale Datenübermittlungen beruhen auf geeigneten Garantien wie den EU-Standardvertragsklauseln." },
       { heading: "9. Änderungen", body: "Wir können diese Richtlinie aktualisieren. Bei wesentlichen Änderungen benachrichtigen wir Sie mindestens 14 Tage vorher." },
       { heading: "10. Kontakt", body: "Fragen? Kontaktieren Sie uns unter support@wallet76.com." },
     ],
   };
   if (lang === "it") return {
     title: "Informativa sulla Privacy",
-    updated: "Ultimo aggiornamento: Giugno 2025",
+    updated: "Ultimo aggiornamento: Luglio 2026",
     sections: [
       { heading: "1. Chi Siamo", body: "Wallet76 è un'applicazione per il monitoraggio del portafoglio di investimenti. Contatto: support@wallet76.com." },
       { heading: "2. Dati Raccolti", body: "Raccogliamo le informazioni fornite durante la creazione dell'account e i dati finanziari inseriti. Raccogliamo anche log di utilizzo di base." },
@@ -63,14 +63,14 @@ function getContent(lang) {
       { heading: "5. Cookie", body: "Utilizziamo solo cookie strettamente necessari per mantenerti connesso e ricordare le tue preferenze. Nessun cookie pubblicitario o di tracciamento." },
       { heading: "6. I Tuoi Diritti (GDPR)", body: "Ai sensi del GDPR hai il diritto di accedere, correggere, cancellare i tuoi dati, opporti al trattamento e alla portabilità. Contattaci all'indirizzo support@wallet76.com." },
       { heading: "7. Conservazione dei Dati", body: "Conserviamo i tuoi dati finché il tuo account è attivo. In caso di eliminazione dell'account, tutti i dati personali vengono cancellati definitivamente entro 30 giorni." },
-      { heading: "8. Servizi di Terze Parti", body: "Utilizziamo le API Yahoo Finance e CoinGecko per i prezzi di mercato. Vengono trasmessi solo i simboli degli asset, nessun dato personale." },
+      { heading: "8. Servizi di Terze Parti", body: "Per far funzionare Wallet76 ci avvaliamo di fornitori terzi affidabili che possono trattare i tuoi dati per nostro conto: Stripe (elaborazione dei pagamenti), Resend (email transazionali come verifica, reimpostazione della password e avvisi di prezzo), Google Firebase (notifiche push su dispositivi mobili), Telegram (invio degli avvisi di prezzo, solo se lo colleghi) e MongoDB Atlas, Render e Vercel (hosting del database e dell'applicazione). I prezzi di mercato provengono da Yahoo Finance e CoinGecko, che ricevono solo i simboli degli asset che segui — mai i tuoi dati personali. Questi fornitori operano nell'ambito di accordi sul trattamento dei dati, e qualsiasi trasferimento internazionale si basa su garanzie adeguate come le Clausole Contrattuali Tipo dell'UE." },
       { heading: "9. Modifiche", body: "Potremmo aggiornare questa informativa. Ti notificheremo almeno 14 giorni prima di modifiche sostanziali." },
       { heading: "10. Contatto", body: "Domande? Contattaci a support@wallet76.com." },
     ],
   };
   if (lang === "es") return {
     title: "Política de Privacidad",
-    updated: "Última actualización: Junio 2025",
+    updated: "Última actualización: Julio 2026",
     sections: [
       { heading: "1. Quiénes Somos", body: "Wallet76 es una aplicación de seguimiento de portafolio de inversiones. Contacto: support@wallet76.com." },
       { heading: "2. Datos que Recopilamos", body: "Recopilamos la información que proporcionas al crear una cuenta (nombre, email, hash de contraseña) y los datos financieros que introduces (activos, transacciones, alertas de precio). También recopilamos registros básicos de uso para operar y proteger el servicio." },
@@ -79,14 +79,14 @@ function getContent(lang) {
       { heading: "5. Cookies", body: "Usamos solo cookies estrictamente necesarias para mantener tu sesión y recordar tus preferencias (idioma, divisa). No usamos cookies publicitarias ni de rastreo." },
       { heading: "6. Tus Derechos (RGPD)", body: "Bajo el RGPD tienes derecho a: acceder a tus datos, corregir datos inexactos, solicitar la eliminación, oponerte al tratamiento y a la portabilidad. Contacta con nosotros en support@wallet76.com." },
       { heading: "7. Retención de Datos", body: "Conservamos tus datos mientras tu cuenta esté activa. Al eliminar la cuenta, todos los datos personales se borran permanentemente en 30 días." },
-      { heading: "8. Servicios de Terceros", body: "Usamos las APIs de Yahoo Finance y CoinGecko para obtener precios de mercado. Solo se transmiten los símbolos de los activos, sin datos personales." },
+      { heading: "8. Servicios de Terceros", body: "Para operar Wallet76 recurrimos a proveedores externos de confianza que pueden tratar tus datos en nuestro nombre: Stripe (procesamiento de pagos), Resend (correos transaccionales como verificación, restablecimiento de contraseña y alertas de precio), Google Firebase (notificaciones push móviles), Telegram (envío de alertas de precio, solo si lo conectas) y MongoDB Atlas, Render y Vercel (alojamiento de la base de datos y de la aplicación). Los precios de mercado provienen de Yahoo Finance y CoinGecko, que reciben solo los símbolos de los activos que sigues — nunca tus datos personales. Estos proveedores actúan en virtud de acuerdos de tratamiento de datos, y cualquier transferencia internacional se basa en garantías adecuadas como las Cláusulas Contractuales Tipo de la UE." },
       { heading: "9. Cambios en la Política", body: "Podemos actualizar esta política. Te notificaremos por email o aviso en la app con al menos 14 días de antelación en caso de cambios materiales." },
       { heading: "10. Contacto", body: "¿Preguntas? Contacta con nosotros en support@wallet76.com." },
     ],
   };
   return {
     title: "Privacy Policy",
-    updated: "Last updated: June 2025",
+    updated: "Last updated: July 2026",
     sections: [
       { heading: "1. Who We Are", body: "Wallet76 is a personal finance and portfolio tracking application. Our registered contact email is support@wallet76.com." },
       { heading: "2. Data We Collect", body: "We collect the information you provide when creating an account (name, email address, password hash) and the financial data you choose to enter (portfolio holdings, transactions, price alerts). We also collect basic usage logs to operate and secure the service." },
@@ -95,7 +95,7 @@ function getContent(lang) {
       { heading: "5. Cookies", body: "We use strictly necessary cookies to keep you logged in and remember your preferences (language, currency). We do not use advertising or tracking cookies." },
       { heading: "6. Your Rights (GDPR)", body: "Under the GDPR you have the right to: access your personal data; request correction of inaccurate data; request erasure; object to processing; and data portability. Email us at support@wallet76.com." },
       { heading: "7. Data Retention", body: "We retain your account data for as long as your account is active. If you delete your account, all personal data is permanently erased within 30 days." },
-      { heading: "8. Third-Party Services", body: "We use Yahoo Finance and CoinGecko APIs to fetch market prices. These services receive only the ticker symbols you track, no personal information is transmitted." },
+      { heading: "8. Third-Party Services", body: "To run Wallet76 we use trusted third-party providers that may process your data on our behalf: Stripe (payment processing), Resend (transactional emails such as verification, password reset and price alerts), Google Firebase (mobile push notifications), Telegram (price-alert delivery, only if you connect it), and MongoDB Atlas, Render and Vercel (database and application hosting). Market prices come from Yahoo Finance and CoinGecko, which receive only the ticker symbols you track — never your personal data. These providers act under data-processing agreements, and any international data transfers rely on appropriate safeguards such as the EU Standard Contractual Clauses." },
       { heading: "9. Changes to This Policy", body: "We may update this policy from time to time. We will notify you by email or in-app notice at least 14 days before material changes take effect." },
       { heading: "10. Contact", body: "Questions about this policy? Contact us at support@wallet76.com." },
     ],
