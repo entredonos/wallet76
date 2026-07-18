@@ -286,7 +286,7 @@ function AppRoutes() {
         <Route path="/dashboard" element={wrap(<Dashboard currency={currency} />)} />
         <Route path="/transactions" element={wrap(<Transactions currency={currency} />)} />
         <Route path="/alerts" element={wrap(<Alerts currency={currency} />)} />
-        <Route path="/wallets" element={wrap(<Wallets />)} />
+        <Route path="/wallets" element={wrap(<Wallets baseCurrency={currency} />)} />
         <Route path="/watchlist"    element={wrap(<Watchlist currency={currency} />)} />
         <Route path="/news" element={wrap(<News />)} />
         <Route path="/market"       element={wrap(<Market currency={currency} />)} />

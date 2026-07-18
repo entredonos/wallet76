@@ -19,6 +19,7 @@ import { usePlan } from "../hooks/usePlan";
 import { WALLET_COLOR_KEYS, WALLET_BORDER_CLASS, WALLET_TEXT_CLASS } from "../lib/walletColors";
 import { ALLOCATION_CLASSES, ALLOCATION_CLASS_LABEL_KEY, ALLOCATION_CLASS_COLOR, aggregateByClass } from "../lib/allocation";
 import { requestSidebarRefresh } from "../lib/sidebarRefresh";
+import { fmtCurrency, fmtPct, convert } from "../lib/format";
 
 const TYPE_PRESETS = [
   { value: "broker", label: "Broker", Icon: Briefcase },
@@ -29,12 +30,13 @@ const TYPE_PRESETS = [
 const CURRENCIES = ["USD", "EUR", "CHF", "BRL"];
 const CUR_SYMBOL = { USD: "$", EUR: "€", CHF: "CHF", BRL: "R$" };
 
-export default function Wallets() {
+export default function Wallets({ baseCurrency = "USD" }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { isPro } = usePlan();
   const [wallets, setWallets] = useState([]);
   const [holdings, setHoldings] = useState([]);
+  const [fxRates, setFxRates] = useState({ USD: 1, EUR: 0.92 });
   const [allocOverrides, setAllocOverrides] = useState({});
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -63,6 +65,7 @@ export default function Wallets() {
       ]);
       if (w.status === "fulfilled") setWallets(w.value.data || []);
       if (p.status === "fulfilled") setHoldings(p.value.data?.assets || []);
+      if (p.status === "fulfilled") setFxRates(p.value.data?.summary?.fx_rates || { USD: 1, EUR: p.value.data?.summary?.eur_rate || 0.92, CHF: p.value.data?.summary?.chf_rate || 0.88, BRL: p.value.data?.summary?.brl_rate || 5.0 });
       if (alloc.status === "fulfilled") setAllocOverrides(alloc.value.data?.overrides || {});
       if (w.status === "rejected" || p.status === "rejected") {
         toast.error(t("wallets.toast_load_failed"));
@@ -232,61 +235,74 @@ export default function Wallets() {
             const wCost = wAssets.reduce((s, a) => s + Number(a.cost_usd || 0), 0);
             const wPnlPct = wCost > 0 ? ((wValue - wCost) / wCost) * 100 : 0;
             const wHasPnl = wAssets.length > 0 && wCost > 0;
+            const wPnlUsd = wValue - wCost;
+            const wPrevUsd = wAssets.reduce((sm, a) => sm + (Number(a.value_usd || 0) / (1 + Number(a.change_24h || 0) / 100)), 0);
+            const wDayUsd = wValue - wPrevUsd;
+            const wDayPct = wPrevUsd > 0 ? (wDayUsd / wPrevUsd) * 100 : 0;
+            const b = (usd) => fmtCurrency(convert(usd, baseCurrency, fxRates), baseCurrency);
             return (
-              <div key={w.id} className="bg-zinc-900/40 border border-zinc-800/50 hover:border-zinc-700/60 transition-colors rounded-lg p-6" data-testid={`wallet-card-${w.id}`}>
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`w-10 h-10 rounded-md border-2 ${WALLET_BORDER_CLASS[walletColor]} bg-zinc-900 flex items-center justify-center`}>
-                    <Icon className={`w-5 h-5 ${WALLET_TEXT_CLASS[walletColor]}`} />
+              <div key={w.id} className="bg-zinc-900/40 border border-zinc-800/50 hover:border-zinc-700/60 transition-colors rounded-xl p-5 flex flex-col" data-testid={`wallet-card-${w.id}`}>
+                {/* Cabecalho: icone + nome/corretora + acoes */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-10 h-10 rounded-md border-2 ${WALLET_BORDER_CLASS[walletColor]} bg-zinc-900 flex items-center justify-center shrink-0`}>
+                      <Icon className={`w-5 h-5 ${WALLET_TEXT_CLASS[walletColor]}`} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-display text-xl text-zinc-100 truncate">{w.name}</div>
+                      <div className="text-[11px] font-mono uppercase tracking-[0.15em] text-zinc-500 truncate">{Preset.label} · {CUR_SYMBOL[cur] || cur} {cur}</div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1 shrink-0">
                     <button
                       onClick={() => navigate(`/dashboard?wallet=${w.id}`)}
-                      className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.15em] px-2.5 py-1 border border-blue-500/30 text-blue-300 hover:text-blue-200 hover:bg-blue-500/15 rounded-md transition-colors"
+                      className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-[0.15em] px-2 py-1 border border-blue-500/30 text-blue-300 hover:text-blue-200 hover:bg-blue-500/15 rounded-md transition-colors"
                       data-testid={`enter-wallet-${w.id}`}
                       title={t("wallets.tooltip_open")}
                     >
-                      <ArrowRight className="w-3.5 h-3.5" />
-                      <span>{t("wallets.enter")}</span>
+                      <ArrowRight className="w-3.5 h-3.5" /><span className="hidden sm:inline">{t("wallets.enter")}</span>
                     </button>
-                    <button
-                      onClick={() => startEdit(w)}
-                      className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.15em] px-2.5 py-1 border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-md transition-colors"
-                      title={t("wallets.tooltip_rename")}
-                    >
+                    <button onClick={() => startEdit(w)} className="p-1.5 border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-md transition-colors" title={t("wallets.tooltip_rename")}>
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
-                    <button
-                      onClick={() => remove(w)}
-                      className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.15em] px-2.5 py-1 border border-rose-500/30 text-rose-300 hover:text-rose-200 hover:bg-rose-500/15 rounded-md transition-colors"
-                      data-testid={`delete-wallet-${w.id}`}
-                      title={t("wallets.tooltip_delete")}
-                    >
+                    <button onClick={() => remove(w)} className="p-1.5 border border-rose-500/30 text-rose-300 hover:text-rose-200 hover:bg-rose-500/15 rounded-md transition-colors" data-testid={`delete-wallet-${w.id}`} title={t("wallets.tooltip_delete")}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
-                <div className="font-display text-xl text-zinc-100">{w.name}</div>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{Preset.label}</span>
-                  <span className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400 border border-zinc-800 rounded px-1.5 py-0.5">{CUR_SYMBOL[cur] || cur} {cur}</span>
-                  {wHasPnl && (
-                    <span
-                      className={`text-xs font-mono px-1.5 py-0.5 rounded border ${wPnlPct >= 0 ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" : "text-rose-400 border-rose-500/30 bg-rose-500/10"}`}
-                      data-testid={`wallet-pnl-${w.id}`}
-                    >
-                      {wPnlPct >= 0 ? "+" : ""}{wPnlPct.toFixed(2)}%
-                    </span>
-                  )}
+
+                {/* Valor total (heroi) */}
+                <div className="mt-5">
+                  <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">{t("wallets.total_value")}</div>
+                  <div className="font-display text-3xl text-zinc-50 mt-0.5 tabular-nums">{b(wValue)}</div>
                 </div>
-                <div className="mt-6 pt-4 border-t border-zinc-800/50 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    {/* "UPGRADE v1.0" (task #76) — informational only, no
-                        target comparison here (target is always global, see
-                        Dashboard's Asset Allocation widget). */}
-                    <MiniAllocationDonut holdings={wAssets} overrides={allocOverrides} t={t} />
-                    <span className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-400 truncate">{t("wallets.assets_count")}</span>
+
+                {/* Variacao do dia + P&L */}
+                <div className="grid grid-cols-2 gap-2.5 mt-4">
+                  <div className="rounded-lg border border-zinc-800/60 bg-black/20 px-3 py-2">
+                    <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500">{t("wallets.today")}</div>
+                    {wHasPnl ? (
+                      <>
+                        <div className={`font-mono text-sm mt-0.5 ${wDayUsd >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{wDayUsd >= 0 ? "▲" : "▼"} {fmtPct(wDayPct)}</div>
+                        <div className="text-[10px] font-mono text-zinc-500">{b(wDayUsd)}</div>
+                      </>
+                    ) : <div className="font-mono text-sm mt-0.5 text-zinc-600">—</div>}
                   </div>
-                  <span className="font-mono text-zinc-200 shrink-0">{wAssets.length}</span>
+                  <div className="rounded-lg border border-zinc-800/60 bg-black/20 px-3 py-2" data-testid={`wallet-pnl-${w.id}`}>
+                    <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500">{t("wallets.pnl")}</div>
+                    {wHasPnl ? (
+                      <>
+                        <div className={`font-mono text-sm mt-0.5 ${wPnlUsd >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{fmtPct(wPnlPct)}</div>
+                        <div className="text-[10px] font-mono text-zinc-500">{b(wPnlUsd)}</div>
+                      </>
+                    ) : <div className="font-mono text-sm mt-0.5 text-zinc-600">—</div>}
+                  </div>
+                </div>
+
+                {/* Rodape: alocacao + nº ativos */}
+                <div className="mt-4 pt-3 border-t border-zinc-800/50 flex items-center justify-between gap-3">
+                  <MiniAllocationDonut holdings={wAssets} overrides={allocOverrides} t={t} size={28} />
+                  <span className="text-xs font-mono text-zinc-400"><span className="text-zinc-200">{wAssets.length}</span> {t("wallets.assets_count")}</span>
                 </div>
               </div>
             );
