@@ -18,6 +18,7 @@ from core import (
     db, hash_password, verify_password, create_access_token, get_current_user,
     APP_URL, COOKIE_DOMAIN, check_rate_limit, logger, delete_all_user_data, write_auth_audit,
     create_2fa_pending_token, verify_2fa_pending_token,
+    invalidate_user_sessions, decode_access_token_silent,
 )
 from email_utils import send_email, email_layout, _log_email_task_result
 from models import (
@@ -118,7 +119,7 @@ async def login(payload: UserLogin, request: Request, response: Response):
         asyncio.create_task(write_auth_audit("login_password_ok_2fa_pending", request, email=email, user_id=user["id"]))
         return {"two_factor_required": True, "pending_token": create_2fa_pending_token(user["id"])}
 
-    token = create_access_token(user["id"], email)
+    token = create_access_token(user["id"], email, user.get("token_version", 0))
     response.set_cookie("access_token", token, httponly=True, secure=True, samesite="none", max_age=604800, path="/", domain=COOKIE_DOMAIN)
     asyncio.create_task(write_auth_audit("login_success", request, email=email, user_id=user["id"]))
     return {"id": user["id"], "email": email, "name": user.get("name"), "token": token}
@@ -159,14 +160,26 @@ async def two_factor_verify(payload: TwoFactorLoginVerifyBody, request: Request,
             {"user_id": user_id}, {"$pull": {"totp_recovery_hashes": used_recovery}},
         )
 
-    token = create_access_token(user["id"], user["email"])
+    token = create_access_token(user["id"], user["email"], user.get("token_version", 0))
     response.set_cookie("access_token", token, httponly=True, secure=True, samesite="none", max_age=604800, path="/", domain=COOKIE_DOMAIN)
     asyncio.create_task(write_auth_audit("login_success", request, email=user.get("email", ""), user_id=user_id))
     return {"id": user["id"], "email": user["email"], "name": user.get("name"), "token": token}
 
 
 @router.post("/auth/logout")
-async def logout(response: Response):
+async def logout(request: Request, response: Response):
+    # Invalida a sessao do lado do servidor (sobe o token_version), tornando
+    # invalidos os JWT antigos em todos os dispositivos. Best-effort: se o token
+    # ja estiver invalido/expirado, limpa o cookie na mesma sem falhar.
+    token = request.cookies.get("access_token")
+    if not token:
+        auth = request.headers.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            token = auth[7:]
+    if token:
+        payload = decode_access_token_silent(token)
+        if payload and payload.get("sub"):
+            await invalidate_user_sessions(payload["sub"])
     response.delete_cookie("access_token", path="/", domain=COOKIE_DOMAIN)
     return {"ok": True}
 
@@ -314,6 +327,7 @@ async def forgot_password(payload: ForgotPasswordBody, request: Request):
 
 @router.post("/auth/reset-password")
 async def reset_password(payload: ResetPasswordBody, request: Request):
+    check_rate_limit(request, "reset-password", max_attempts=10, window_seconds=3600)
     token_hash = hashlib.sha256(payload.token.encode()).hexdigest()
     user = await db.users.find_one({"reset_token_hash": token_hash})
     if not user:
@@ -328,6 +342,7 @@ async def reset_password(payload: ResetPasswordBody, request: Request):
         {"id": user["id"]},
         {
             "$set": {"password_hash": hash_password(payload.new_password)},
+            "$inc": {"token_version": 1},
             "$unset": {"reset_token_hash": "", "reset_token_expires": ""},
         },
     )

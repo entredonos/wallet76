@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field, EmailStr
 
 class UserRegister(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=6)
+    password: str = Field(min_length=8, max_length=128)
     name: Optional[str] = None
     # Programa de referral (14 jul 2026) — código de convite opcional,
     # capturado do link "?ref=CODE" no registo (ver Register.jsx).
@@ -23,7 +23,7 @@ class ForgotPasswordBody(BaseModel):
 
 class ResetPasswordBody(BaseModel):
     token: str
-    new_password: str = Field(min_length=8)
+    new_password: str = Field(min_length=8, max_length=128)
 
 
 class TokenBody(BaseModel):
