@@ -97,14 +97,29 @@ def verify_password(pw: str, hashed: str) -> bool:
     return bcrypt.checkpw(pw.encode(), hashed.encode())
 
 
-def create_access_token(user_id: str, email: str) -> str:
+def create_access_token(user_id: str, email: str, token_version: int = 0) -> str:
     payload = {
         "sub": user_id,
         "email": email,
         "exp": datetime.now(timezone.utc) + timedelta(days=7),
         "type": "access",
+        "token_version": token_version,
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
+
+
+async def invalidate_user_sessions(user_id: str) -> None:
+    """Sobe o token_version do utilizador -> invalida todos os JWT emitidos
+    antes, em qualquer dispositivo. Usado no logout e no reset de password."""
+    await db.users.update_one({"id": user_id}, {"$inc": {"token_version": 1}})
+
+
+def decode_access_token_silent(token: str) -> dict | None:
+    """Descodifica um token sem levantar excecoes (best-effort, p/ o logout)."""
+    try:
+        return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO])
+    except Exception:
+        return None
 
 
 # 2FA (8 jul 2026) — token de curta duração emitido logo a seguir à
@@ -162,6 +177,12 @@ async def get_current_user(request: Request) -> dict:
     user = await db.users.find_one({"id": payload["sub"]})
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
+    # Invalidacao de sessoes (seg, 18 jul 2026): o token_version do JWT tem de
+    # bater certo com o do utilizador. Sobe no logout e no reset de password,
+    # tornando invalidos todos os tokens anteriores. Tokens/utilizadores sem o
+    # campo contam como 0 -> ninguem e deslogado ao ativar isto.
+    if payload.get("token_version", 0) != user.get("token_version", 0):
+        raise HTTPException(status_code=401, detail="Session expired")
     user.pop("password_hash", None)
     user.pop("_id", None)
 
