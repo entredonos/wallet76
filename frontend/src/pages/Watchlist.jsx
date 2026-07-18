@@ -286,6 +286,8 @@ export default function Watchlist({ currency = "USD" }) {
                     w={w}
                     onAlert={() => setAlertTarget(w)}
                     onDelete={() => setDeleteItemTarget(w)}
+                    currency={currency}
+                    fxRates={fxRates}
                   />
                 ))}
               </div>
@@ -502,7 +504,7 @@ export default function Watchlist({ currency = "USD" }) {
 // a row in the desktop <table>. Fixed field set (icon/label, price, 24h%,
 // sparkline) rather than the desktop's column-visibility config, which
 // doesn't translate to a card layout.
-function WatchCard({ w, onAlert, onDelete }) {
+function WatchCard({ w, onAlert, onDelete, currency = "USD", fxRates }) {
   const { t } = useI18n();
   const pos = (w.change_24h || 0) >= 0;
   const spark = (w.sparkline_24h || []).map((p, i) => ({ t: i, p }));
