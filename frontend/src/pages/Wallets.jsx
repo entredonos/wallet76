@@ -17,7 +17,7 @@ import { SkeletonCardGrid } from "../components/SkeletonRow";
 import UpgradeDialog from "../components/UpgradeDialog";
 import { usePlan } from "../hooks/usePlan";
 import { WALLET_COLOR_KEYS, WALLET_BORDER_CLASS, WALLET_TEXT_CLASS } from "../lib/walletColors";
-import Sparkline from "../components/Sparkline";
+import { aggregateByClass, ALLOCATION_CLASSES, ALLOCATION_CLASS_LABEL_KEY, ALLOCATION_CLASS_COLOR } from "../lib/allocation";
 import { requestSidebarRefresh } from "../lib/sidebarRefresh";
 import { fmtCurrency, fmtPct, convert } from "../lib/format";
 
@@ -37,7 +37,7 @@ export default function Wallets({ baseCurrency = "USD" }) {
   const [wallets, setWallets] = useState([]);
   const [holdings, setHoldings] = useState([]);
   const [fxRates, setFxRates] = useState({ USD: 1, EUR: 0.92 });
-  const [walletSparks, setWalletSparks] = useState({});
+  const [allocOverrides, setAllocOverrides] = useState({});
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -60,15 +60,13 @@ export default function Wallets({ baseCurrency = "USD" }) {
       // mostrar o P&L% por carteira pedido pelo utilizador. /portfolio já
       // enriquece cada holding com value_usd/cost_usd/pnl_pct (mesma fonte
       // usada no Dashboard e no AssetCard).
-      const [w, p] = await Promise.allSettled([
-        api.get("/wallets"), api.get("/portfolio"),
+      const [w, p, alloc] = await Promise.allSettled([
+        api.get("/wallets"), api.get("/portfolio"), api.get("/allocation"),
       ]);
       if (w.status === "fulfilled") setWallets(w.value.data || []);
       if (p.status === "fulfilled") setHoldings(p.value.data?.assets || []);
       if (p.status === "fulfilled") setFxRates(p.value.data?.summary?.fx_rates || { USD: 1, EUR: p.value.data?.summary?.eur_rate || 0.92, CHF: p.value.data?.summary?.chf_rate || 0.88, BRL: p.value.data?.summary?.brl_rate || 5.0 });
-      // Sparklines de 30 dias por carteira (best-effort) para a mini-linha
-      // de tendencia no rodape de cada cartao.
-      api.get("/wallets/sparklines").then((r) => setWalletSparks(r.data || {})).catch(() => {});
+      if (alloc.status === "fulfilled") setAllocOverrides(alloc.value.data?.overrides || {});
       if (w.status === "rejected" || p.status === "rejected") {
         toast.error(t("wallets.toast_load_failed"));
       }
@@ -242,8 +240,12 @@ export default function Wallets({ baseCurrency = "USD" }) {
             const wDayUsd = wValue - wPrevUsd;
             const wDayPct = wPrevUsd > 0 ? (wDayUsd / wPrevUsd) * 100 : 0;
             const b = (usd) => fmtCurrency(convert(usd, baseCurrency, fxRates), baseCurrency);
-            const wSpark = walletSparks[w.id] || [];
-            const wSparkUp = wSpark.length >= 2 ? wSpark[wSpark.length - 1] >= wSpark[0] : (wDayUsd >= 0);
+            const wAlloc = aggregateByClass(wAssets, allocOverrides);
+            const wAllocTotal = Object.values(wAlloc).reduce((sm, v) => sm + v, 0);
+            const wSegs = [...ALLOCATION_CLASSES, ...Object.keys(wAlloc).filter((c) => !ALLOCATION_CLASSES.includes(c))]
+              .map((cls) => ({ cls, v: wAlloc[cls] || 0 }))
+              .filter((x) => x.v > 0)
+              .map((x) => ({ cls: x.cls, pct: (x.v / wAllocTotal) * 100 }));
             return (
               <div key={w.id} className="bg-zinc-900/40 border border-zinc-800/50 hover:border-zinc-700/60 transition-colors rounded-xl p-5 flex flex-col" data-testid={`wallet-card-${w.id}`}>
                 {/* Cabecalho: icone + nome/corretora + acoes */}
@@ -293,7 +295,7 @@ export default function Wallets({ baseCurrency = "USD" }) {
                     ) : <div className="font-mono text-sm mt-0.5 text-zinc-600">—</div>}
                   </div>
                   <div className="rounded-lg border border-zinc-800/60 bg-black/20 px-3 py-2" data-testid={`wallet-pnl-${w.id}`}>
-                    <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500">{t("wallets.pnl")}</div>
+                    <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-500">{t("wallets.pnl")} {t("wallets.period_total")}</div>
                     {wHasPnl ? (
                       <>
                         <div className={`font-mono text-sm mt-0.5 ${wPnlUsd >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{fmtPct(wPnlPct)}</div>
@@ -303,10 +305,32 @@ export default function Wallets({ baseCurrency = "USD" }) {
                   </div>
                 </div>
 
-                {/* Rodape: alocacao + nº ativos */}
-                <div className="mt-4 pt-3 border-t border-zinc-800/50 flex items-center justify-between gap-3">
-                  <span className="text-xs font-mono text-zinc-400"><span className="text-zinc-200">{wAssets.length}</span> {t("wallets.assets_count")}</span>
-                  <Sparkline data={wSpark.map((v) => ({ p: v }))} positive={wSparkUp} width={92} height={26} />
+                {/* Rodape: barra de alocacao por tipo de ativo + nº ativos */}
+                <div className="mt-4 pt-3 border-t border-zinc-800/50">
+                  {wSegs.length > 0 ? (
+                    <div className="space-y-2.5">
+                      <div className="flex h-2 rounded-full overflow-hidden bg-zinc-800/40">
+                        {wSegs.map((sg) => (
+                          <div key={sg.cls} style={{ width: `${sg.pct}%`, background: ALLOCATION_CLASS_COLOR[sg.cls] || ALLOCATION_CLASS_COLOR.other }} title={`${t(ALLOCATION_CLASS_LABEL_KEY[sg.cls] || "common.other")} ${sg.pct.toFixed(0)}%`} />
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-x-3 gap-y-1 flex-wrap min-w-0">
+                          {wSegs.slice(0, 3).map((sg) => (
+                            <span key={sg.cls} className="inline-flex items-center gap-1 text-[10px] font-mono text-zinc-400 whitespace-nowrap">
+                              <span className="w-1.5 h-1.5 rounded-sm shrink-0" style={{ background: ALLOCATION_CLASS_COLOR[sg.cls] || ALLOCATION_CLASS_COLOR.other }} />
+                              {t(ALLOCATION_CLASS_LABEL_KEY[sg.cls] || "common.other")} {sg.pct.toFixed(0)}%
+                            </span>
+                          ))}
+                        </div>
+                        <span className="text-xs font-mono text-zinc-400 shrink-0"><span className="text-zinc-200">{wAssets.length}</span> {t("wallets.assets_count")}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-end">
+                      <span className="text-xs font-mono text-zinc-400"><span className="text-zinc-200">{wAssets.length}</span> {t("wallets.assets_count")}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             );
