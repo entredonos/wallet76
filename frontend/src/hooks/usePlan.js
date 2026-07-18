@@ -1,7 +1,5 @@
 import { useAuth } from "../context/AuthContext";
 
-const ADMIN_EMAILS = ["entredonos@gmail.com"];
-
 /**
  * Retorna informação sobre o plano do utilizador.
  * plan: "free" | "pro"
@@ -11,7 +9,7 @@ const ADMIN_EMAILS = ["entredonos@gmail.com"];
  */
 export function usePlan() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || ADMIN_EMAILS.includes(user?.email);
+  const isAdmin = !!user?.is_admin;
   const plan = user?.plan || "free";
   const sub = user?.subscription_status;
   const isPro = isAdmin || plan === "pro" || sub === "active" || sub === "trialing";

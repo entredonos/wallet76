@@ -471,7 +471,7 @@ export default function AdminFeedback() {
     }
   };
 
-  if (user?.email !== "entredonos@gmail.com") {
+  if (!user?.is_admin) {
     return (
       <div className="flex items-center justify-center h-64 text-zinc-500 font-mono text-sm">
         Acesso restrito.

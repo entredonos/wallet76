@@ -59,7 +59,7 @@ export default function Layout({ children, currency, setCurrency }) {
   // catches up immediately when it regains focus instead of waiting out
   // the rest of the interval.
   useEffect(() => {
-    if (user?.email !== "entredonos@gmail.com") return;
+    if (!user?.is_admin) return;
     const fetch = () => {
       if (document.visibilityState === "hidden") return;
       api.get("/feedback/unread-count").then(r => setUnreadFeedback(r.data?.count || 0)).catch(() => {});
@@ -376,7 +376,7 @@ export default function Layout({ children, currency, setCurrency }) {
           </select>
         </div>
 
-        {user?.email === "entredonos@gmail.com" && (
+        {user?.is_admin && (
           <NavLink
             to="/admin/feedback"
             onClick={() => {

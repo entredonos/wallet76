@@ -8,7 +8,6 @@ import { api } from "../lib/api";
 
 // Único email de admin da app — mesma condição usada em Layout.jsx para a
 // entrada "ADMIN · Feedback" da sidebar desktop.
-const ADMIN_EMAIL = "entredonos@gmail.com";
 
 // "Perfil" — 5º separador da barra de baixo no mobile (ver Layout.jsx).
 // Página nova, deliberadamente simples: é o resumo/atalhos que a versão
@@ -26,7 +25,7 @@ export default function Profile({ currency, setCurrency }) {
   const { user, logout } = useAuth();
   const { lang, setLang, t } = useI18n();
   const navigate = useNavigate();
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const isAdmin = !!user?.is_admin;
   const [unreadFeedback, setUnreadFeedback] = useState(0);
 
   // A sidebar desktop já faz polling contínuo disto (Layout.jsx); aqui
