@@ -95,9 +95,15 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (email, password, name, referralCode) => {
+    // Idioma escolhido antes de registar (landing/registo). Guardado nas
+    // preferencias da conta para (1) o email de verificacao ir neste idioma e
+    // (2) o idioma ser aplicado em qualquer login (ver PreferencesSync).
+    let language;
+    try { language = localStorage.getItem("folio-lang") || undefined; } catch { language = undefined; }
     const { data } = await api.post("/auth/register", {
       email, password, name,
       referral_code: referralCode || undefined,
+      language,
     });
     // Do NOT auto-login. User must verify email first.
     return data;

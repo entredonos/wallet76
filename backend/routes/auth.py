@@ -21,7 +21,7 @@ from core import (
     invalidate_user_sessions, decode_access_token_silent, ADMIN_EMAILS,
 )
 from broker_connectors.crypto import decrypt_totp_secret
-from email_utils import send_email, email_layout, _log_email_task_result
+from email_utils import send_email, email_layout, email_strings, _log_email_task_result
 from models import (
     UserRegister, UserLogin, ForgotPasswordBody, ResetPasswordBody, TokenBody,
     ResendVerificationBody, DeleteAccountBody, TwoFactorLoginVerifyBody,
@@ -82,13 +82,21 @@ async def register(payload: UserRegister, request: Request, response: Response):
         })
 
     verify_url = f"{APP_URL}/verify-email/{verify_token}"
-    html = email_layout(
-        title="Confirm your email",
-        body_html=f"Hi {doc['name']},<br><br>Welcome to Wallet76! Click the button below to confirm your email address. The link expires in 48 hours.",
-        cta_label="Confirm email",
-        cta_url=verify_url,
+    _lang = (payload.language or "en").lower()[:2]
+    await db.user_prefs.update_one(
+        {"user_id": doc["id"]},
+        {"$set": {"user_id": doc["id"], "language": _lang}},
+        upsert=True,
     )
-    asyncio.create_task(send_email(email, "Confirm your Wallet76 email", html)).add_done_callback(_log_email_task_result)
+    _es = email_strings(_lang)
+    html = email_layout(
+        title=_es["verify_title"],
+        body_html=_es["verify_body"].format(name=doc["name"]),
+        cta_label=_es["verify_cta"],
+        cta_url=verify_url,
+        link_hint=_es["link_hint"],
+    )
+    asyncio.create_task(send_email(email, _es["verify_subject"], html)).add_done_callback(_log_email_task_result)
 
     # Do NOT auto-login. User must verify email before signing in.
     return {"ok": True, "email": email, "email_verified": False, "verification_sent": True}
@@ -320,13 +328,16 @@ async def forgot_password(payload: ForgotPasswordBody, request: Request):
             {"$set": {"reset_token_hash": token_hash, "reset_token_expires": expires}},
         )
         reset_url = f"{APP_URL}/reset-password/{token}"
+        _prefs = await db.user_prefs.find_one({"user_id": user["id"]}, {"_id": 0, "language": 1})
+        _es = email_strings((_prefs or {}).get("language") or "en")
         html = email_layout(
-            title="Reset your password",
-            body_html=f"Hi {user.get('name') or email},<br><br>We received a request to reset your Wallet76 password. The link below expires in 1 hour.",
-            cta_label="Reset password",
+            title=_es["reset_title"],
+            body_html=_es["reset_body"].format(name=user.get('name') or email),
+            cta_label=_es["reset_cta"],
             cta_url=reset_url,
+            link_hint=_es["link_hint"],
         )
-        asyncio.create_task(send_email(email, "Reset your Wallet76 password", html)).add_done_callback(_log_email_task_result)
+        asyncio.create_task(send_email(email, _es["reset_subject"], html)).add_done_callback(_log_email_task_result)
     return {"ok": True}
 
 

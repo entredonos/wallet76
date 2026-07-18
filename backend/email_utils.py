@@ -33,14 +33,90 @@ async def send_email(to: str, subject: str, html: str) -> Optional[str]:
         return None
 
 
-def email_layout(title: str, body_html: str, cta_label: str = "", cta_url: str = "") -> str:
+EMAIL_I18N = {
+    "en": {
+        "verify_subject": "Confirm your Wallet76 email",
+        "verify_title": "Confirm your email",
+        "verify_body": "Hi {name},<br><br>Welcome to Wallet76! Click the button below to confirm your email address. The link expires in 48 hours.",
+        "verify_cta": "Confirm email",
+        "reset_subject": "Reset your Wallet76 password",
+        "reset_title": "Reset your password",
+        "reset_body": "Hi {name},<br><br>We received a request to reset your Wallet76 password. The link below expires in 1 hour.",
+        "reset_cta": "Reset password",
+        "link_hint": "If the button does not work, copy this link:",
+    },
+    "pt": {
+        "verify_subject": "Confirma o teu email Wallet76",
+        "verify_title": "Confirma o teu email",
+        "verify_body": "Olá {name},<br><br>Bem-vindo à Wallet76! Clica no botão abaixo para confirmar o teu email. O link expira em 48 horas.",
+        "verify_cta": "Confirmar email",
+        "reset_subject": "Repor a tua password Wallet76",
+        "reset_title": "Repor a tua password",
+        "reset_body": "Olá {name},<br><br>Recebemos um pedido para repor a tua password da Wallet76. O link abaixo expira em 1 hora.",
+        "reset_cta": "Repor password",
+        "link_hint": "Se o botão não funcionar, copia este link:",
+    },
+    "fr": {
+        "verify_subject": "Confirmez votre e-mail Wallet76",
+        "verify_title": "Confirmez votre e-mail",
+        "verify_body": "Bonjour {name},<br><br>Bienvenue sur Wallet76 ! Cliquez sur le bouton ci-dessous pour confirmer votre adresse e-mail. Le lien expire dans 48 heures.",
+        "verify_cta": "Confirmer l’e-mail",
+        "reset_subject": "Réinitialisez votre mot de passe Wallet76",
+        "reset_title": "Réinitialiser votre mot de passe",
+        "reset_body": "Bonjour {name},<br><br>Nous avons reçu une demande de réinitialisation de votre mot de passe Wallet76. Le lien ci-dessous expire dans 1 heure.",
+        "reset_cta": "Réinitialiser",
+        "link_hint": "Si le bouton ne fonctionne pas, copiez ce lien :",
+    },
+    "de": {
+        "verify_subject": "Bestätige deine Wallet76-E-Mail",
+        "verify_title": "E-Mail bestätigen",
+        "verify_body": "Hallo {name},<br><br>Willkommen bei Wallet76! Klicke auf die Schaltfläche unten, um deine E-Mail-Adresse zu bestätigen. Der Link läuft in 48 Stunden ab.",
+        "verify_cta": "E-Mail bestätigen",
+        "reset_subject": "Setze dein Wallet76-Passwort zurück",
+        "reset_title": "Passwort zurücksetzen",
+        "reset_body": "Hallo {name},<br><br>Wir haben eine Anfrage zum Zurücksetzen deines Wallet76-Passworts erhalten. Der Link unten läuft in 1 Stunde ab.",
+        "reset_cta": "Passwort zurücksetzen",
+        "link_hint": "Falls die Schaltfläche nicht funktioniert, kopiere diesen Link:",
+    },
+    "it": {
+        "verify_subject": "Conferma la tua email Wallet76",
+        "verify_title": "Conferma la tua email",
+        "verify_body": "Ciao {name},<br><br>Benvenuto su Wallet76! Clicca sul pulsante qui sotto per confermare il tuo indirizzo email. Il link scade tra 48 ore.",
+        "verify_cta": "Conferma email",
+        "reset_subject": "Reimposta la tua password Wallet76",
+        "reset_title": "Reimposta la password",
+        "reset_body": "Ciao {name},<br><br>Abbiamo ricevuto una richiesta di reimpostazione della password di Wallet76. Il link qui sotto scade tra 1 ora.",
+        "reset_cta": "Reimposta password",
+        "link_hint": "Se il pulsante non funziona, copia questo link:",
+    },
+    "es": {
+        "verify_subject": "Confirma tu correo de Wallet76",
+        "verify_title": "Confirma tu correo",
+        "verify_body": "Hola {name},<br><br>¡Bienvenido a Wallet76! Haz clic en el botón de abajo para confirmar tu correo electrónico. El enlace caduca en 48 horas.",
+        "verify_cta": "Confirmar correo",
+        "reset_subject": "Restablece tu contraseña de Wallet76",
+        "reset_title": "Restablece tu contraseña",
+        "reset_body": "Hola {name},<br><br>Recibimos una solicitud para restablecer tu contraseña de Wallet76. El enlace de abajo caduca en 1 hora.",
+        "reset_cta": "Restablecer contraseña",
+        "link_hint": "Si el botón no funciona, copia este enlace:",
+    },
+}
+
+
+def email_strings(lang):
+    """Textos de email no idioma do utilizador (fallback en)."""
+    code = (lang or "en").lower()[:2]
+    return EMAIL_I18N.get(code, EMAIL_I18N["en"])
+
+
+def email_layout(title: str, body_html: str, cta_label: str = "", cta_url: str = "", link_hint: str = "If the button does not work, copy this link:") -> str:
     cta_block = ""
     if cta_label and cta_url:
         cta_block = f"""
         <tr><td align="center" style="padding: 24px 0;">
           <a href="{cta_url}" style="display:inline-block;background:#3b82f6;color:#0a0a0a;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-family:Helvetica,Arial,sans-serif;font-size:15px;">{cta_label}</a>
         </td></tr>
-        <tr><td style="padding-bottom:8px;font-family:Helvetica,Arial,sans-serif;font-size:11px;color:#71717a;">If the button doesn't work, copy this link:</td></tr>
+        <tr><td style="padding-bottom:8px;font-family:Helvetica,Arial,sans-serif;font-size:11px;color:#71717a;">{link_hint}</td></tr>
         <tr><td style="padding-bottom:24px;font-family:'Courier New',monospace;font-size:11px;color:#a1a1aa;word-break:break-all;">{cta_url}</td></tr>
         """
     return f"""
