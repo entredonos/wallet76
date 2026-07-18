@@ -159,6 +159,7 @@ const AdminFeedback = lazy(() => import("./pages/AdminFeedback"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const Impressum = lazy(() => import("./pages/Impressum"));
+const Status = lazy(() => import("./pages/Status"));
 
 // Theme-matching fallback — visible while a route's chunk downloads
 // (typically instant on repeat visits, since the browser caches it after
@@ -306,6 +307,7 @@ function AppRoutes() {
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/impressum" element={<Impressum />} />
+        <Route path="/status" element={<Status />} />
       </Routes>
     </Suspense>
   );

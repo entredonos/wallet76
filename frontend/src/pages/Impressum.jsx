@@ -92,6 +92,7 @@ export default function Impressum() {
         <div className="mt-12 pt-8 border-t border-zinc-800 flex gap-6 text-xs text-zinc-600">
           <Link to="/privacy" className="hover:text-zinc-400 transition-colors">Privacy</Link>
           <Link to="/terms" className="hover:text-zinc-400 transition-colors">Terms</Link>
+          <Link to="/status" className="hover:text-zinc-400 transition-colors">Status</Link>
           <Link to="/" className="hover:text-zinc-400 transition-colors">Back to Wallet76</Link>
         </div>
       </div>
