@@ -17,11 +17,12 @@ import { useI18n } from "../context/I18nContext";
 import { SkeletonTableRow } from "../components/SkeletonRow";
 import ImportCsvDialog from "../components/ImportCsvDialog";
 import InlineWatchlistDialog from "../components/InlineWatchlistDialog";
+import { fmtCurrency, convert } from "../lib/format";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 const CURRENCY_SYMBOLS = { USD: "$", EUR: "€", CHF: "CHF ", BRL: "R$" };
 
-export default function Transactions() {
+export default function Transactions({ currency = "USD" }) {
   const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const prefillSymbol = searchParams.get("prefill");
@@ -38,6 +39,7 @@ export default function Transactions() {
   const [txns, setTxns] = useState([]);
   const [wallets, setWallets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fxRates, setFxRates] = useState({ USD: 1, EUR: 0.92 });
   const [open, setOpen] = useState(!!prefillSymbol);
   const [filterWallet, setFilterWallet] = useState(walletParam || "all");
   const [filterType, setFilterType] = useState("all");
@@ -69,6 +71,17 @@ export default function Transactions() {
   };
 
   useEffect(() => { load(); }, []);
+
+  // Cambios para mostrar os valores das transacoes na moeda-base do utilizador
+  // (a frente) com a moeda original por baixo. Vem do resumo do /portfolio.
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await api.get("/portfolio");
+        setFxRates(data?.summary?.fx_rates || { USD: 1, EUR: data?.summary?.eur_rate || 0.92, CHF: data?.summary?.chf_rate || 0.88, BRL: data?.summary?.brl_rate || 5.0 });
+      } catch { /* usa defaults */ }
+    })();
+  }, []);
 
   const filtered = useMemo(() => {
     return txns.filter((t) => {
@@ -181,6 +194,8 @@ export default function Transactions() {
               onEdit={() => setEditTxn(txn)}
               onWatch={() => setWatchAsset(txn)}
               onDelete={() => removeTxn(txn.id)}
+              currency={currency}
+              fxRates={fxRates}
             />
           ))}
         </div>
@@ -233,9 +248,15 @@ export default function Transactions() {
                     </td>
                     <td className="px-4 py-4 text-sm text-zinc-400">{walletName(txn.wallet_id)}</td>
                     <td className="px-4 py-4 text-right font-mono text-zinc-200">{Number(txn.quantity).toLocaleString("en-US", { maximumFractionDigits: 8 })}</td>
-                    <td className="px-4 py-4 text-right font-mono text-zinc-200">{sym}{Number(txn.price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</td>
-                    <td className="px-4 py-4 text-right font-mono text-zinc-400">{sym}{Number(txn.fee || 0).toFixed(2)}</td>
-                    <td className="px-4 py-4 text-right font-mono text-zinc-100">{sym}{total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-4 text-right font-mono text-zinc-200">
+                      {fmtCurrency(convert((txn.price || 0) * (txn.fx_to_usd || 1), currency, fxRates), currency, { max: 6 })}
+                      {txn.currency !== currency && <div className="text-[10px] text-zinc-500">{sym}{Number(txn.price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</div>}
+                    </td>
+                    <td className="px-4 py-4 text-right font-mono text-zinc-400">{fmtCurrency(convert((txn.fee || 0) * (txn.fx_to_usd || 1), currency, fxRates), currency)}</td>
+                    <td className="px-4 py-4 text-right font-mono text-zinc-100">
+                      {fmtCurrency(convert((total || 0) * (txn.fx_to_usd || 1), currency, fxRates), currency)}
+                      {txn.currency !== currency && <div className="text-[10px] text-zinc-500">{sym}{total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>}
+                    </td>
                     <td className="px-6 py-4 text-right">
                       <div className="inline-flex items-center gap-3">
                         {txn.asset_type !== "cash" && (
@@ -267,7 +288,7 @@ export default function Transactions() {
 // One transaction, stacked as a card — the mobile (< md) counterpart to a
 // row in the desktop <table>. Same fields, just laid out vertically instead
 // of 9 columns that only ever produced horizontal scroll on a phone.
-function TxCard({ txn, walletName, onEdit, onWatch, onDelete }) {
+function TxCard({ txn, walletName, onEdit, onWatch, onDelete, currency = "USD", fxRates }) {
   const { t } = useI18n();
   const sym = CURRENCY_SYMBOLS[txn.currency] || "";
   const total = txn.quantity * txn.price + (txn.type === "BUY" ? (txn.fee || 0) : -(txn.fee || 0));
@@ -297,11 +318,13 @@ function TxCard({ txn, walletName, onEdit, onWatch, onDelete }) {
         </div>
         <div>
           <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500 mb-0.5">{t("common.price")}</div>
-          <div className="text-zinc-200 truncate">{sym}{Number(txn.price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</div>
+          <div className="text-zinc-200 truncate">{fmtCurrency(convert((txn.price || 0) * (txn.fx_to_usd || 1), currency, fxRates), currency, { max: 6 })}</div>
+          {txn.currency !== currency && <div className="text-[10px] text-zinc-500 truncate">{sym}{Number(txn.price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</div>}
         </div>
         <div className="text-right">
           <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500 mb-0.5">{t("tx.total")}</div>
-          <div className="text-zinc-100 truncate">{sym}{total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+          <div className="text-zinc-100 truncate">{fmtCurrency(convert((total || 0) * (txn.fx_to_usd || 1), currency, fxRates), currency)}</div>
+          {txn.currency !== currency && <div className="text-[10px] text-zinc-500 truncate">{sym}{total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>}
         </div>
       </div>
 

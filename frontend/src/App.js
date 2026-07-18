@@ -284,7 +284,7 @@ function AppRoutes() {
             : <LandingPage />
         } />
         <Route path="/dashboard" element={wrap(<Dashboard currency={currency} />)} />
-        <Route path="/transactions" element={wrap(<Transactions />)} />
+        <Route path="/transactions" element={wrap(<Transactions currency={currency} />)} />
         <Route path="/alerts" element={wrap(<Alerts currency={currency} />)} />
         <Route path="/wallets" element={wrap(<Wallets />)} />
         <Route path="/watchlist"    element={wrap(<Watchlist currency={currency} />)} />

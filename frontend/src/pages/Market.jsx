@@ -250,7 +250,6 @@ function WatchPreview({ items, loading, t, currency = "USD", fxRates }) {
                 </div>
                 <div className="text-right">
                   <div className="font-mono text-zinc-100 text-sm">{w.price_usd ? fmtCurrency(convert(w.price_usd, currency, fxRates), currency) : "—"}</div>
-                  {w.price_usd && currency !== "USD" && <div className="text-[10px] font-mono text-zinc-500">{fmtCurrency(w.price_usd, "USD")}</div>}
                   <div className={`text-xs font-mono ${pos ? "text-emerald-400" : "text-rose-400"}`}>{fmtPct(w.change_24h || 0)}</div>
                 </div>
               </Link>
@@ -334,9 +333,6 @@ function MoversList({ kind, type, items, t, universeNote, onWatch, currency = "U
                 </div>
                 <div className="text-right">
                   <div className="font-mono text-zinc-100 text-sm">{it.price_usd ? fmtCurrency(convert(it.price_usd, currency, fxRates), currency) : "-"}</div>
-                  {it.price_usd && currency !== "USD" && (
-                    <div className="text-[10px] font-mono text-zinc-500">{fmtCurrency(it.price_usd, "USD")}</div>
-                  )}
                   {it.market_cap_usd && (
                     <div className="text-[10px] font-mono text-zinc-400">MC {fmtCompact(convert(it.market_cap_usd, currency, fxRates), currency)}</div>
                   )}
