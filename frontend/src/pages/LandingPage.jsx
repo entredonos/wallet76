@@ -1526,6 +1526,7 @@ export default function LandingPage() {
             <Link to="/pricing" className="hover:text-zinc-300 transition-colors">{c.footer_pricing}</Link>
             <Link to="/privacy" className="hover:text-zinc-300 transition-colors">{c.footer_privacy}</Link>
             <Link to="/terms" className="hover:text-zinc-300 transition-colors">{c.footer_terms}</Link>
+            <Link to="/impressum" className="hover:text-zinc-300 transition-colors">Impressum</Link>
           </div>
         </div>
       </footer>

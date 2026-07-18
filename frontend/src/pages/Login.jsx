@@ -239,6 +239,7 @@ export default function Login() {
         <div className="mt-4 flex gap-4 text-xs text-zinc-600">
           <Link to="/privacy" className="hover:text-zinc-400 transition-colors">{t("common.privacy_policy")}</Link>
           <Link to="/terms" className="hover:text-zinc-400 transition-colors">{t("common.terms_of_service")}</Link>
+          <Link to="/impressum" className="hover:text-zinc-400 transition-colors">Impressum</Link>
         </div>
         </>
         )}

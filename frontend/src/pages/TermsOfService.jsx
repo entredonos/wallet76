@@ -18,7 +18,7 @@ function getContent(lang) {
       { heading: "8. Propriedade Intelectual", body: "Todo o conteúdo, marcas e código do Wallet76 são da nossa propriedade ou licenciados para nós. Não pode reproduzir ou distribuir sem permissão escrita." },
       { heading: "9. Limitação de Responsabilidade", body: "Na máxima extensão permitida por lei, o Wallet76 não é responsável por quaisquer danos indiretos, incluindo perdas de investimento." },
       { heading: "10. Rescisão", body: "Reservamo-nos o direito de suspender ou encerrar a sua conta em caso de violação destes Termos. Pode eliminar a sua conta a qualquer momento nas Definições." },
-      { heading: "11. Lei Aplicável", body: "Estes Termos são regidos pelas leis da União Europeia." },
+      { heading: "11. Lei Aplicável", body: "Estes Termos são regidos pela lei suíça, com exclusão das suas regras de conflito de leis. O foro competente é Moudon, cantão de Vaud, Suíça. Se for um consumidor, beneficia igualmente das disposições imperativas de proteção do consumidor do seu país de residência." },
       { heading: "12. Alterações aos Termos", body: "Podemos modificar estes Termos com pelo menos 14 dias de aviso prévio para alterações materiais." },
       { heading: "13. Contacto", body: "Dúvidas? Contacte-nos em support@wallet76.com." },
     ],
@@ -37,7 +37,7 @@ function getContent(lang) {
       { heading: "8. Propriété Intellectuelle", body: "Tout le contenu et code de Wallet76 nous appartiennent ou nous sont licenciés. Toute reproduction est interdite sans permission écrite." },
       { heading: "9. Limitation de Responsabilité", body: "Dans toute la mesure permise par la loi, Wallet76 ne sera pas responsable des dommages indirects, y compris les pertes d'investissement." },
       { heading: "10. Résiliation", body: "Nous nous réservons le droit de résilier votre compte en cas de violation. Vous pouvez supprimer votre compte à tout moment dans les Paramètres." },
-      { heading: "11. Droit Applicable", body: "Ces Conditions sont régies par le droit de l'Union Européenne." },
+      { heading: "11. Droit Applicable", body: "Ces Conditions sont régies par le droit suisse, à l'exclusion de ses règles de conflit de lois. Le for compétent est Moudon, canton de Vaud, Suisse. Si vous êtes un consommateur, vous bénéficiez en outre des dispositions impératives de protection des consommateurs de votre pays de résidence." },
       { heading: "12. Modifications", body: "Nous pouvons modifier ces Conditions avec un préavis d'au moins 14 jours pour les modifications importantes." },
       { heading: "13. Contact", body: "Questions ? Contactez-nous à support@wallet76.com." },
     ],
@@ -56,7 +56,7 @@ function getContent(lang) {
       { heading: "8. Geistiges Eigentum", body: "Alle Inhalte und Codes von Wallet76 sind unser Eigentum oder uns lizenziert. Eine Vervielfältigung ohne schriftliche Genehmigung ist nicht gestattet." },
       { heading: "9. Haftungsbeschränkung", body: "Im gesetzlich zulässigen Umfang haftet Wallet76 nicht für indirekte Schäden, einschließlich Anlageverluste." },
       { heading: "10. Kündigung", body: "Wir behalten uns das Recht vor, Ihr Konto bei Verstößen zu sperren. Sie können Ihr Konto jederzeit in den Einstellungen löschen." },
-      { heading: "11. Anwendbares Recht", body: "Diese Bedingungen unterliegen dem Recht der Europäischen Union." },
+      { heading: "11. Anwendbares Recht", body: "Diese Bedingungen unterliegen dem schweizerischen Recht unter Ausschluss seiner Kollisionsnormen. Gerichtsstand ist Moudon, Kanton Waadt, Schweiz. Als Verbraucher genießen Sie zudem die zwingenden Verbraucherschutzbestimmungen Ihres Wohnsitzlandes." },
       { heading: "12. Änderungen", body: "Wir können diese Bedingungen mit mindestens 14 Tagen Vorankündigung bei wesentlichen Änderungen anpassen." },
       { heading: "13. Kontakt", body: "Fragen? Kontaktieren Sie uns unter support@wallet76.com." },
     ],
@@ -75,7 +75,7 @@ function getContent(lang) {
       { heading: "8. Proprietà Intellettuale", body: "Tutti i contenuti e il codice di Wallet76 sono di nostra proprietà o a noi concessi in licenza. La riproduzione senza permesso scritto è vietata." },
       { heading: "9. Limitazione di Responsabilità", body: "Nella misura massima consentita dalla legge, Wallet76 non sarà responsabile per danni indiretti, incluse le perdite di investimento." },
       { heading: "10. Risoluzione", body: "Ci riserviamo il diritto di sospendere il tuo account in caso di violazioni. Puoi eliminare il tuo account in qualsiasi momento dalle Impostazioni." },
-      { heading: "11. Legge Applicabile", body: "Questi Termini sono regolati dalla legge dell'Unione Europea." },
+      { heading: "11. Legge Applicabile", body: "Questi Termini sono regolati dal diritto svizzero, con esclusione delle sue norme sui conflitti di legge. Il foro competente è Moudon, Canton Vaud, Svizzera. Se sei un consumatore, benefici inoltre delle disposizioni imperative di tutela dei consumatori del tuo paese di residenza." },
       { heading: "12. Modifiche", body: "Potremmo modificare questi Termini con almeno 14 giorni di preavviso per modifiche sostanziali." },
       { heading: "13. Contatto", body: "Domande? Contattaci a support@wallet76.com." },
     ],
@@ -94,7 +94,7 @@ function getContent(lang) {
       { heading: "8. Propiedad Intelectual", body: "Todo el contenido, marcas y código de Wallet76 son de nuestra propiedad o nos han sido licenciados. No puedes reproducirlos ni distribuirlos sin permiso escrito." },
       { heading: "9. Limitación de Responsabilidad", body: "En la máxima medida permitida por la ley, Wallet76 no será responsable de daños indirectos, incluidas pérdidas de inversión." },
       { heading: "10. Resolución", body: "Nos reservamos el derecho de suspender o cancelar tu cuenta por incumplimiento de estos Términos. Puedes eliminar tu cuenta en cualquier momento desde Configuración." },
-      { heading: "11. Ley Aplicable", body: "Estos Términos se rigen por las leyes de la Unión Europea." },
+      { heading: "11. Ley Aplicable", body: "Estos Términos se rigen por el derecho suizo, con exclusión de sus normas de conflicto de leyes. El fuero competente es Moudon, cantón de Vaud, Suiza. Si eres un consumidor, disfrutas además de las disposiciones imperativas de protección al consumidor de tu país de residencia." },
       { heading: "12. Cambios en los Términos", body: "Podemos modificar estos Términos con al menos 14 días de aviso previo para cambios materiales." },
       { heading: "13. Contacto", body: "¿Preguntas sobre estos Términos? Contacta con nosotros en support@wallet76.com." },
     ],
@@ -113,7 +113,7 @@ function getContent(lang) {
       { heading: "8. Intellectual Property", body: "All content, trademarks, and code comprising Wallet76 are owned by or licensed to us. You may not reproduce or distribute without our written permission." },
       { heading: "9. Limitation of Liability", body: "To the maximum extent permitted by law, Wallet76 shall not be liable for any indirect, incidental, or consequential damages, including any investment losses." },
       { heading: "10. Termination", body: "We reserve the right to suspend or terminate your account for violations of these Terms. You may delete your account at any time from Settings." },
-      { heading: "11. Governing Law", body: "These Terms are governed by the laws of the European Union." },
+      { heading: "11. Governing Law", body: "These Terms are governed by Swiss law, excluding its conflict-of-law rules. The place of jurisdiction is Moudon, Canton of Vaud, Switzerland. If you are a consumer, you also benefit from the mandatory consumer-protection provisions of your country of residence." },
       { heading: "12. Changes to Terms", body: "We may modify these Terms at any time with at least 14 days notice of material changes via email or in-app notification." },
       { heading: "13. Contact", body: "Questions about these Terms? Contact us at support@wallet76.com." },
     ],
@@ -142,6 +142,7 @@ export default function TermsOfService() {
         </div>
         <div className="mt-12 pt-8 border-t border-zinc-800 flex gap-6 text-xs text-zinc-600">
           <Link to="/privacy" className="hover:text-zinc-400 transition-colors">Privacy Policy</Link>
+          <Link to="/impressum" className="hover:text-zinc-400 transition-colors">Impressum</Link>
           <Link to="/" className="hover:text-zinc-400 transition-colors">Back to Wallet76</Link>
         </div>
       </div>

@@ -124,6 +124,7 @@ export default function PrivacyPolicy() {
         </div>
         <div className="mt-12 pt-8 border-t border-zinc-800 flex gap-6 text-xs text-zinc-600">
           <Link to="/terms" className="hover:text-zinc-400 transition-colors">Terms of Service</Link>
+          <Link to="/impressum" className="hover:text-zinc-400 transition-colors">Impressum</Link>
           <Link to="/" className="hover:text-zinc-400 transition-colors">Back to Wallet76</Link>
         </div>
       </div>
