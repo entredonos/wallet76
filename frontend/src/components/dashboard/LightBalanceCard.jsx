@@ -42,17 +42,17 @@ export default function LightBalanceCard({
         )}
       </div>
 
-      <div className="flex items-center gap-2 mb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-5">
         <button
           onClick={onAdd}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-lg border border-zinc-700 text-zinc-200 text-sm font-medium hover:bg-zinc-800/60 transition-colors"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-lg border border-zinc-700 text-zinc-200 text-sm font-medium hover:bg-zinc-800/60 transition-colors whitespace-nowrap"
           data-testid="light-balance-add"
         >
           <Plus className="w-3.5 h-3.5" /> {t("common.add")}
         </button>
         <button
           onClick={onAdvanced}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-lg border border-amber-500/40 text-amber-300 text-sm font-medium hover:bg-amber-500/10 transition-colors"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-lg border border-amber-500/40 text-amber-300 text-sm font-medium hover:bg-amber-500/10 transition-colors whitespace-nowrap"
           data-testid="light-balance-advanced"
         >
           <Gauge className="w-3.5 h-3.5" /> {t("dash.view_advanced")}
