@@ -41,6 +41,26 @@ async def list_alerts(user=Depends(get_current_user)):
     return alerts
 
 
+@router.get("/alerts/quote")
+async def alert_quote(asset_type: str, symbol: str, coingecko_id: str | None = None,
+                      user=Depends(get_current_user)):
+    """Preco atual de UM unico ativo, para o dialogo de criar alerta quando o
+    ativo e escolhido pela pesquisa (a pesquisa de cripto nao devolve preco) e
+    nao pela carteira. Reutiliza as funcoes ja cacheadas (com fallback yfinance
+    para cripto), sem pedidos extra alem do que a app ja faz."""
+    symbol = (symbol or "").upper().strip()
+    if not symbol:
+        return {"usd": None}
+    if asset_type == "crypto":
+        cg = (coingecko_id or symbol).lower()
+        prices = await get_crypto_prices([cg], {cg: symbol})
+        price = (prices.get(cg) or {}).get("usd")
+    else:
+        prices = await get_stock_prices([symbol])
+        price = (prices.get(symbol) or {}).get("usd")
+    return {"usd": float(price) if price else None}
+
+
 @router.post("/alerts")
 async def create_alert(payload: AlertCreate, user=Depends(get_current_user)):
     if not is_pro_user(user):

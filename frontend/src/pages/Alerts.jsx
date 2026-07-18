@@ -284,11 +284,12 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
   const [target, setTarget] = useState("");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const [quotePrice, setQuotePrice] = useState(0);
 
   useEffect(() => {
     if (!open) {
       setPickedKey(""); setSearchPicked(null); setSearchTerm(""); setResults([]);
-      setCondition("above"); setTarget(""); setNote("");
+      setCondition("above"); setTarget(""); setNote(""); setQuotePrice(0);
     } else if (defaultSymbol) {
       // Pre-fill from asset page
       const at = defaultAssetType === "crypto" ? "crypto" : "stock";
@@ -326,7 +327,29 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
     return holdings.find((h) => h.asset_type === t && h.symbol === s);
   })();
 
-  const currentPrice = pickedAsset?.price_usd || pickedAsset?.price || 0;
+  const currentPrice = pickedAsset?.price_usd || pickedAsset?.price || quotePrice || 0;
+
+  // Preco atual para ativos escolhidos pela PESQUISA (17 jul 2026). A pesquisa
+  // de cripto (/search/crypto) nao devolve preco, por isso um ativo pesquisado
+  // (ex.: BTC pela pesquisa) ficava com "Preco atual —". Aqui, se o ativo
+  // escolhido nao traz preco, buscamos a cotacao ao backend (GET /alerts/quote).
+  // Ativos da carteira ou acoes pesquisadas ja trazem preco e nao disparam isto.
+  useEffect(() => {
+    const known = pickedAsset?.price_usd || pickedAsset?.price;
+    if (!pickedAsset || known) { setQuotePrice(0); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await api.get("/alerts/quote", { params: {
+          asset_type: pickedAsset.asset_type || (searchType === "crypto" ? "crypto" : "stock"),
+          symbol: pickedAsset.symbol,
+          coingecko_id: pickedAsset.coingecko_id || (pickedAsset.id && searchType === "crypto" ? pickedAsset.id : undefined),
+        }});
+        if (!cancelled && data?.usd) setQuotePrice(Number(data.usd));
+      } catch { /* silencioso: fica "—" se nao houver preco */ }
+    })();
+    return () => { cancelled = true; };
+  }, [searchPicked, pickedKey, searchType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const save = async () => {
     if (!pickedAsset) { toast.error(t("alert.pick_asset_error")); return; }
