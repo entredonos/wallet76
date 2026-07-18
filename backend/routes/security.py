@@ -23,6 +23,7 @@ from core import (
     b64url_decode, b64url_encode, detect_rp_id, origin_from_req, RP_NAME,
 )
 from models import LockModeBody, PinBody, TwoFactorConfirmBody, TwoFactorDisableBody
+from broker_connectors.crypto import encrypt_totp_secret, decrypt_totp_secret
 
 router = APIRouter()
 
@@ -51,9 +52,10 @@ async def security_status(user=Depends(get_current_user)):
 async def totp_setup(user=Depends(get_current_user)):
     secret = pyotp.random_base32()
     otpauth_url = pyotp.totp.TOTP(secret).provisioning_uri(name=user.get("email", "user"), issuer_name="Wallet76")
+    enc_pending = await encrypt_totp_secret(user["id"], secret)
     await db.user_security.update_one(
         {"user_id": user["id"]},
-        {"$set": {"totp_secret_pending": secret, "user_id": user["id"]}},
+        {"$set": {"totp_secret_pending": enc_pending, "user_id": user["id"]}},
         upsert=True,
     )
     return {"secret": secret, "otpauth_url": otpauth_url}
@@ -62,11 +64,13 @@ async def totp_setup(user=Depends(get_current_user)):
 @router.post("/security/2fa/confirm")
 async def totp_confirm(body: TwoFactorConfirmBody, user=Depends(get_current_user)):
     sec = await db.user_security.find_one({"user_id": user["id"]}, {"_id": 0}) or {}
-    secret = sec.get("totp_secret_pending")
-    if not secret:
+    stored_pending = sec.get("totp_secret_pending")
+    if not stored_pending:
         raise HTTPException(400, "No 2FA setup in progress")
+    secret = await decrypt_totp_secret(user["id"], stored_pending)
     if not pyotp.TOTP(secret).verify((body.code or "").strip(), valid_window=1):
         raise HTTPException(401, "Invalid code")
+    enc_secret = await encrypt_totp_secret(user["id"], secret)
     # Códigos de recuperação — 8, formato "xxxx-xxxx", mostrados UMA vez
     # aqui; guardamos só o hash (mesma função que já protege PIN/password),
     # nunca o texto simples, tal como o resto da app.
@@ -75,7 +79,7 @@ async def totp_confirm(body: TwoFactorConfirmBody, user=Depends(get_current_user
         {"user_id": user["id"]},
         {
             "$set": {
-                "totp_secret": secret,
+                "totp_secret": enc_secret,
                 "totp_enabled": True,
                 "totp_recovery_hashes": [hash_password(c) for c in recovery_codes],
             },

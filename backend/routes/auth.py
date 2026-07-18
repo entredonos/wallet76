@@ -20,6 +20,7 @@ from core import (
     create_2fa_pending_token, verify_2fa_pending_token,
     invalidate_user_sessions, decode_access_token_silent,
 )
+from broker_connectors.crypto import decrypt_totp_secret
 from email_utils import send_email, email_layout, _log_email_task_result
 from models import (
     UserRegister, UserLogin, ForgotPasswordBody, ResetPasswordBody, TokenBody,
@@ -136,7 +137,7 @@ async def two_factor_verify(payload: TwoFactorLoginVerifyBody, request: Request,
     if not user:
         raise HTTPException(status_code=401, detail="Invalid session")
     sec = await db.user_security.find_one({"user_id": user_id}, {"_id": 0}) or {}
-    secret = sec.get("totp_secret")
+    secret = await decrypt_totp_secret(user_id, sec.get("totp_secret"))
     code = (payload.code or "").strip()
     if not secret or not sec.get("totp_enabled"):
         raise HTTPException(status_code=400, detail="2FA not enabled")

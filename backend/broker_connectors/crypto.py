@@ -199,6 +199,24 @@ def decrypt_for_user_v3(token: str, user_key: bytes) -> str:
     return _aesgcm_decrypt_bytes(token, user_key).decode()
 
 
+async def encrypt_totp_secret(user_id: str, secret: str) -> str:
+    """Encripta um segredo TOTP em repouso (AES-256-GCM por-utilizador, v3)."""
+    user_key = await get_or_create_user_aes_key(user_id)
+    return encrypt_for_user_v3(secret, user_key)
+
+
+async def decrypt_totp_secret(user_id: str, stored: str) -> str:
+    """Desencripta um segredo TOTP. Fallback para plaintext: segredos legados
+    guardados antes desta encriptacao continuam a funcionar."""
+    if not stored:
+        return stored
+    try:
+        user_key = await get_or_create_user_aes_key(user_id)
+        return decrypt_for_user_v3(stored, user_key)
+    except Exception:
+        return stored
+
+
 # ---------------------------------------------------------------------------
 # Smart decrypt — handles v1, v2 and v3 transparently
 # ---------------------------------------------------------------------------
