@@ -17,7 +17,7 @@ import { SkeletonCardGrid } from "../components/SkeletonRow";
 import UpgradeDialog from "../components/UpgradeDialog";
 import { usePlan } from "../hooks/usePlan";
 import { WALLET_COLOR_KEYS, WALLET_BORDER_CLASS, WALLET_TEXT_CLASS } from "../lib/walletColors";
-import { ALLOCATION_CLASSES, ALLOCATION_CLASS_LABEL_KEY, ALLOCATION_CLASS_COLOR, aggregateByClass } from "../lib/allocation";
+import Sparkline from "../components/Sparkline";
 import { requestSidebarRefresh } from "../lib/sidebarRefresh";
 import { fmtCurrency, fmtPct, convert } from "../lib/format";
 
@@ -37,7 +37,7 @@ export default function Wallets({ baseCurrency = "USD" }) {
   const [wallets, setWallets] = useState([]);
   const [holdings, setHoldings] = useState([]);
   const [fxRates, setFxRates] = useState({ USD: 1, EUR: 0.92 });
-  const [allocOverrides, setAllocOverrides] = useState({});
+  const [walletSparks, setWalletSparks] = useState({});
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -60,13 +60,15 @@ export default function Wallets({ baseCurrency = "USD" }) {
       // mostrar o P&L% por carteira pedido pelo utilizador. /portfolio já
       // enriquece cada holding com value_usd/cost_usd/pnl_pct (mesma fonte
       // usada no Dashboard e no AssetCard).
-      const [w, p, alloc] = await Promise.allSettled([
-        api.get("/wallets"), api.get("/portfolio"), api.get("/allocation"),
+      const [w, p] = await Promise.allSettled([
+        api.get("/wallets"), api.get("/portfolio"),
       ]);
       if (w.status === "fulfilled") setWallets(w.value.data || []);
       if (p.status === "fulfilled") setHoldings(p.value.data?.assets || []);
       if (p.status === "fulfilled") setFxRates(p.value.data?.summary?.fx_rates || { USD: 1, EUR: p.value.data?.summary?.eur_rate || 0.92, CHF: p.value.data?.summary?.chf_rate || 0.88, BRL: p.value.data?.summary?.brl_rate || 5.0 });
-      if (alloc.status === "fulfilled") setAllocOverrides(alloc.value.data?.overrides || {});
+      // Sparklines de 30 dias por carteira (best-effort) para a mini-linha
+      // de tendencia no rodape de cada cartao.
+      api.get("/wallets/sparklines").then((r) => setWalletSparks(r.data || {})).catch(() => {});
       if (w.status === "rejected" || p.status === "rejected") {
         toast.error(t("wallets.toast_load_failed"));
       }
@@ -240,6 +242,8 @@ export default function Wallets({ baseCurrency = "USD" }) {
             const wDayUsd = wValue - wPrevUsd;
             const wDayPct = wPrevUsd > 0 ? (wDayUsd / wPrevUsd) * 100 : 0;
             const b = (usd) => fmtCurrency(convert(usd, baseCurrency, fxRates), baseCurrency);
+            const wSpark = walletSparks[w.id] || [];
+            const wSparkUp = wSpark.length >= 2 ? wSpark[wSpark.length - 1] >= wSpark[0] : (wDayUsd >= 0);
             return (
               <div key={w.id} className="bg-zinc-900/40 border border-zinc-800/50 hover:border-zinc-700/60 transition-colors rounded-xl p-5 flex flex-col" data-testid={`wallet-card-${w.id}`}>
                 {/* Cabecalho: icone + nome/corretora + acoes */}
@@ -301,8 +305,8 @@ export default function Wallets({ baseCurrency = "USD" }) {
 
                 {/* Rodape: alocacao + nº ativos */}
                 <div className="mt-4 pt-3 border-t border-zinc-800/50 flex items-center justify-between gap-3">
-                  <MiniAllocationDonut holdings={wAssets} overrides={allocOverrides} t={t} size={28} />
                   <span className="text-xs font-mono text-zinc-400"><span className="text-zinc-200">{wAssets.length}</span> {t("wallets.assets_count")}</span>
+                  <Sparkline data={wSpark.map((v) => ({ p: v }))} positive={wSparkUp} width={92} height={26} />
                 </div>
               </div>
             );
@@ -357,47 +361,6 @@ export default function Wallets({ baseCurrency = "USD" }) {
       </Dialog>
 
       <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} reason="wallet_limit" />
-    </div>
-  );
-}
-
-// "UPGRADE v1.0" (task #76) — small per-wallet class-distribution donut.
-// Deliberately informational only: no target comparison lives here (the
-// allocation target is always global — see Dashboard's Asset Allocation
-// widget), this is just "what does THIS wallet currently hold". Built with
-// a plain CSS conic-gradient instead of a Recharts <PieChart> since this
-// renders once per wallet card (could be many) and a conic-gradient is far
-// cheaper than N mounted chart instances.
-function MiniAllocationDonut({ holdings, overrides, t, size = 40 }) {
-  const totals = aggregateByClass(holdings, overrides);
-  const totalValue = Object.values(totals).reduce((s, v) => s + v, 0);
-  if (!totalValue) return null;
-
-  // Fixed class order (not by value) so the same class always occupies the
-  // same relative slice position across every wallet's donut.
-  const order = [...ALLOCATION_CLASSES, ...Object.keys(totals).filter((c) => !ALLOCATION_CLASSES.includes(c))];
-
-  let cum = 0;
-  const stops = [];
-  const legend = [];
-  order.forEach((cls) => {
-    const v = totals[cls];
-    if (!v) return;
-    const pct = (v / totalValue) * 100;
-    const color = ALLOCATION_CLASS_COLOR[cls] || ALLOCATION_CLASS_COLOR.other;
-    stops.push(`${color} ${cum}% ${cum + pct}%`);
-    legend.push(`${t(ALLOCATION_CLASS_LABEL_KEY[cls] || "common.other")} ${pct.toFixed(0)}%`);
-    cum += pct;
-  });
-
-  return (
-    <div
-      className="relative shrink-0 rounded-full"
-      style={{ width: size, height: size, background: `conic-gradient(${stops.join(", ")})` }}
-      title={`${t("alloc.wallet_distribution")}: ${legend.join(" · ")}`}
-      data-testid="wallet-mini-donut"
-    >
-      <div className="absolute rounded-full bg-zinc-900" style={{ inset: Math.round(size * 0.3) }} />
     </div>
   );
 }
