@@ -33,8 +33,9 @@ function bufToB64url(buf) {
 }
 
 export default function Settings() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const navigate = useNavigate();
+  const TG_PRO_MSG = { pt: "O Telegram é uma funcionalidade Pro.", en: "Telegram is a Pro feature.", fr: "Telegram est une fonctionnalité Pro.", de: "Telegram ist eine Pro-Funktion.", it: "Telegram è una funzionalità Pro.", es: "Telegram es una función Pro." };
   const { logout } = useAuth();
   const [status, setStatus] = useState({ lock_mode: "none", has_pin: false, biometric_count: 0, totp_enabled: false });
   const [pinDialog, setPinDialog] = useState(false);
@@ -242,8 +243,14 @@ export default function Settings() {
       const { data } = await api.post("/notifications/telegram/link-code");
       setTelegramLinkInfo(data);
       if (data.deepLink) window.open(data.deepLink, "_blank", "noopener,noreferrer");
-    } catch {
-      toast.error(t("common.error"));
+    } catch (e) {
+      if (e?.response?.status === 402) {
+        toast.error(TG_PRO_MSG[lang] || TG_PRO_MSG.en, {
+          action: { label: t("common.upgrade"), onClick: () => navigate("/pricing") },
+        });
+      } else {
+        toast.error(t("common.error"));
+      }
     } finally {
       setTelegramBusy(false);
     }

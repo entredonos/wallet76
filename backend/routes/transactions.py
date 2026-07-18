@@ -23,8 +23,8 @@ async def create_transaction(payload: TransactionCreate, user=Depends(get_curren
         holdings = compute_holdings_from_txns(txns)
         active_symbols = {h["symbol"] for h in holdings if h.get("quantity", 0) > 0}
         new_sym = payload.symbol.upper().strip()
-        if new_sym not in active_symbols and len(active_symbols) >= 10:
-            raise HTTPException(402, detail={"reason": "asset_limit", "limit": 10})
+        if new_sym not in active_symbols and len(active_symbols) >= 15:
+            raise HTTPException(402, detail={"reason": "asset_limit", "limit": 15})
     wallet = await db.wallets.find_one({"id": payload.wallet_id, "user_id": user["id"]})
     if not wallet:
         raise HTTPException(404, "Wallet not found")
@@ -129,6 +129,12 @@ async def import_transactions(payload: dict, user=Depends(get_current_user)):
     if not wallet:
         raise HTTPException(404, "Wallet not found")
     wallet_currency = wallet.get("currency") or "USD"
+    if not is_pro_user(user):
+        _existing = await db.transactions.find({"user_id": user["id"]}, {"_id": 0}).to_list(5000)
+        _existing_syms = {h["symbol"] for h in compute_holdings_from_txns(_existing) if h.get("quantity", 0) > 0}
+        _new_syms = {(r.get("symbol") or "").upper().strip() for r in rows if (r.get("symbol") or "").strip()}
+        if len(_existing_syms | _new_syms) > 15:
+            raise HTTPException(402, detail={"reason": "asset_limit", "limit": 15})
     fx_rates = await get_fx_rates()
 
     docs = []

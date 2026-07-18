@@ -271,7 +271,12 @@ export default function ImportCsvDialog({ wallets = [], onSaved, defaultWalletId
       setParsed(null); setRawText(""); setError("");
       onSaved?.();
     } catch (e) {
-      setError(formatApiErrorDetail(e.response?.data?.detail) || t("csvimport.failed"));
+      const _d = e.response?.data?.detail;
+      if (e.response?.status === 402 && _d?.reason === "asset_limit") {
+        setError(t("tx.asset_limit_msg"));
+      } else {
+        setError(formatApiErrorDetail(_d) || t("csvimport.failed"));
+      }
     } finally { setUploading(false); }
   };
 

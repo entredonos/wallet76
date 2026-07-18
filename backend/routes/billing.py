@@ -15,13 +15,28 @@ PRICE_MONTHLY = os.environ.get("STRIPE_PRICE_MONTHLY")
 PRICE_YEARLY = os.environ.get("STRIPE_PRICE_YEARLY")
 WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
 
+# Multi-moeda (18 jul 2026). O utilizador escolhe a moeda na p\u00e1gina de pre\u00e7os.
+# Cada moeda precisa dos seus pr\u00f3prios Price IDs no Stripe; enquanto n\u00e3o
+# estiverem configurados (env vars ..._CHF/_USD/_BRL), recuamos para EUR para
+# n\u00e3o partir o checkout.
+def _price_id_for(plan: str, currency: str) -> str | None:
+    currency = (currency or "eur").lower()
+    table = {
+        "eur": {"monthly": PRICE_MONTHLY, "yearly": PRICE_YEARLY},
+        "chf": {"monthly": os.environ.get("STRIPE_PRICE_MONTHLY_CHF"), "yearly": os.environ.get("STRIPE_PRICE_YEARLY_CHF")},
+        "usd": {"monthly": os.environ.get("STRIPE_PRICE_MONTHLY_USD"), "yearly": os.environ.get("STRIPE_PRICE_YEARLY_USD")},
+        "brl": {"monthly": os.environ.get("STRIPE_PRICE_MONTHLY_BRL"), "yearly": os.environ.get("STRIPE_PRICE_YEARLY_BRL")},
+    }
+    chosen = table.get(currency, table["eur"])
+    return chosen.get(plan) or table["eur"].get(plan)
+
 
 @router.post("/billing/create-checkout-session/{plan}")
-async def create_checkout_session(plan: str, user=Depends(get_current_user)):
+async def create_checkout_session(plan: str, currency: str = "eur", user=Depends(get_current_user)):
     if plan not in ["monthly", "yearly"]:
         raise HTTPException(status_code=400, detail="Plano inválido")
 
-    price_id = PRICE_MONTHLY if plan == "monthly" else PRICE_YEARLY
+    price_id = _price_id_for(plan, currency)
 
     if not price_id:
         raise HTTPException(status_code=500, detail="Preço Stripe não configurado")

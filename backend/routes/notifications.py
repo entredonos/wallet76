@@ -10,7 +10,7 @@ from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, HTTPException, Depends, Request, Header
 
-from core import db, get_current_user, logger, VAPID_PUBLIC_KEY, TELEGRAM_WEBHOOK_SECRET, TELEGRAM_BOT_USERNAME
+from core import db, get_current_user, is_pro_user, logger, VAPID_PUBLIC_KEY, TELEGRAM_WEBHOOK_SECRET, TELEGRAM_BOT_USERNAME
 from models import PushSubscriptionIn
 from push_utils import fcm_configured
 from telegram_utils import (
@@ -103,6 +103,8 @@ async def fcm_unregister(payload: dict, user=Depends(get_current_user)):
 
 @router.post("/notifications/telegram/link-code")
 async def telegram_link_code(user=Depends(get_current_user)):
+    if not is_pro_user(user):
+        raise HTTPException(402, detail={"reason": "pro_feature", "feature": "telegram"})
     if not telegram_configured():
         raise HTTPException(503, "Telegram not configured")
     code = new_link_code()
