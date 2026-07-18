@@ -17,13 +17,27 @@ import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { toast } from "sonner";
 import { Bell, Plus, Trash2, Pencil, ArrowUp, ArrowDown, BellRing, Check } from "lucide-react";
 import AssetIcon from "../components/AssetIcon";
-import { fmtCurrency, fmtPct } from "../lib/format";
+import { fmtCurrency, fmtPct, convert } from "../lib/format";
 import { useI18n } from "../context/I18nContext";
 import { SkeletonTableRow } from "../components/SkeletonRow";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { requestSidebarRefresh } from "../lib/sidebarRefresh";
 
-export default function Alerts() {
+// Preco na moeda-base do utilizador (grande) + USD por baixo (pequeno) quando
+// a base nao e USD. O alerta continua ancorado em USD por baixo; isto e so
+// apresentacao (17 jul 2026, a pedido: "carteira em euros mas mostra dolares").
+function Price({ usd, currency = "USD", fxRates, align = "right", muted = false }) {
+  if (!usd) return <span className="text-zinc-500">—</span>;
+  const base = fmtCurrency(convert(usd, currency, fxRates), currency);
+  return (
+    <span className={`inline-flex flex-col ${align === "right" ? "items-end" : "items-start"}`}>
+      <span className={muted ? "text-zinc-300" : "text-zinc-100"}>{base}</span>
+      {currency !== "USD" && <span className="text-[10px] text-zinc-500">{fmtCurrency(usd, "USD")}</span>}
+    </span>
+  );
+}
+
+export default function Alerts({ currency = "USD" }) {
   const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const prefillSymbol = searchParams.get("prefill");
@@ -33,6 +47,7 @@ export default function Alerts() {
   const [alerts, setAlerts] = useState([]);
   const [holdings, setHoldings] = useState([]);
   const [livePrices, setLivePrices] = useState({});
+  const [fxRates, setFxRates] = useState({ USD: 1, EUR: 0.92 });
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(!!prefillSymbol);
   const [notifPerm, setNotifPerm] = useState(typeof Notification !== "undefined" ? Notification.permission : "denied");
@@ -48,6 +63,7 @@ export default function Alerts() {
       setAlerts(a.data || []);
       const enriched = (p.data?.assets || []).filter((x) => x.quantity > 0);
       setHoldings(enriched);
+      setFxRates(p.data?.summary?.fx_rates || { USD: 1, EUR: p.data?.summary?.eur_rate || 0.92, CHF: p.data?.summary?.chf_rate || 0.88, BRL: p.data?.summary?.brl_rate || 5.0 });
       const priceMap = {};
       enriched.forEach((e) => {
         priceMap[`${e.asset_type}:${e.symbol.toUpperCase()}`] = e.price_usd;
@@ -126,6 +142,8 @@ export default function Alerts() {
             defaultSymbol={prefillSymbol}
             defaultAssetType={prefillType}
             defaultPrice={prefillPrice}
+            currency={currency}
+            fxRates={fxRates}
           />
         </div>
       </div>
@@ -169,6 +187,8 @@ export default function Alerts() {
                 onToggle={() => toggleAlert(a)}
                 onEdit={() => setEditAlert(a)}
                 onDelete={() => setConfirmDelete(a)}
+                currency={currency}
+                fxRates={fxRates}
               />
             );
           })}
@@ -217,8 +237,8 @@ export default function Alerts() {
                         {isAbove ? t("alert.above") : t("alert.below")}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-right font-mono text-zinc-100">{fmtCurrency(a.target_price_usd, "USD")}</td>
-                    <td className="px-4 py-4 text-right font-mono text-zinc-300">{current ? fmtCurrency(current, "USD") : "—"}</td>
+                    <td className="px-4 py-4 text-right font-mono"><Price usd={a.target_price_usd} currency={currency} fxRates={fxRates} /></td>
+                    <td className="px-4 py-4 text-right font-mono"><Price usd={current} currency={currency} fxRates={fxRates} muted /></td>
                     <td className={`px-4 py-4 text-right font-mono text-sm ${distance >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{current ? fmtPct(distance) : "—"}</td>
                     <td className="px-4 py-4">
                       <button onClick={() => toggleAlert(a)} className="text-left" data-testid={`alert-toggle-${a.id}`}>
@@ -256,7 +276,7 @@ export default function Alerts() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("alert.confirm_delete")}</AlertDialogTitle>
             <AlertDialogDescription className="font-mono text-zinc-400">
-              {confirmDelete ? `${confirmDelete.symbol} · ${confirmDelete.condition === "above" ? t("alert.above") : t("alert.below")} ${fmtCurrency(confirmDelete.target_price_usd, "USD")}` : ""}
+              {confirmDelete ? `${confirmDelete.symbol} · ${confirmDelete.condition === "above" ? t("alert.above") : t("alert.below")} ${fmtCurrency(convert(confirmDelete.target_price_usd, currency, fxRates), currency)}` : ""}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -266,12 +286,12 @@ export default function Alerts() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <EditAlertDialog alert={editAlert} onClose={() => setEditAlert(null)} onSaved={load} />
+      <EditAlertDialog alert={editAlert} onClose={() => setEditAlert(null)} onSaved={load} currency={currency} fxRates={fxRates} />
     </div>
   );
 }
 
-function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defaultAssetType, defaultPrice }) {
+function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defaultAssetType, defaultPrice, currency = "USD", fxRates }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const [pickedKey, setPickedKey] = useState("");
@@ -449,7 +469,7 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
               </div>
               <div className="text-right">
                 <div className="text-xs font-mono text-zinc-400">{t("alert.current_price")}</div>
-                <div className="font-mono text-zinc-200">{currentPrice ? fmtCurrency(currentPrice, "USD") : "—"}</div>
+                <div className="font-mono"><Price usd={currentPrice} currency={currency} fxRates={fxRates} muted /></div>
               </div>
           </div>
           )}
@@ -473,6 +493,9 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
                 <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("alert.target")} (USD)</Label>
                 <Input type="number" step="any" value={target} onChange={(e) => setTarget(e.target.value)}
                   placeholder="50000" className="mt-2 bg-zinc-900/50 border-zinc-800" data-testid="alert-target-input"/>
+                {currency !== "USD" && target && !isNaN(parseFloat(target)) && (
+                  <div className="mt-1 text-[11px] font-mono text-zinc-500">≈ {fmtCurrency(convert(parseFloat(target), currency, fxRates), currency)}</div>
+                )}
               </div>
               <div>
                 <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("alert.note")}</Label>
@@ -493,7 +516,7 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
 // One alert, stacked as a card — the mobile (< md) counterpart to a row in
 // the desktop <table>. Same fields, just laid out vertically instead of in
 // 7 columns that only ever produced horizontal scroll on a phone.
-function AlertCard({ a, current, distance, onToggle, onEdit, onDelete }) {
+function AlertCard({ a, current, distance, onToggle, onEdit, onDelete, currency = "USD", fxRates }) {
   const { t } = useI18n();
   const isAbove = a.condition === "above";
   return (
@@ -517,11 +540,11 @@ function AlertCard({ a, current, distance, onToggle, onEdit, onDelete }) {
       <div className="flex items-center justify-between font-mono text-sm">
         <div>
           <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-400">{t("alert.target")}</div>
-          <div className="text-zinc-100">{fmtCurrency(a.target_price_usd, "USD")}</div>
+          <div><Price usd={a.target_price_usd} currency={currency} fxRates={fxRates} align="left" /></div>
         </div>
         <div className="text-right">
           <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-400">{t("alert.current")}</div>
-          <div className="text-zinc-300">{current ? fmtCurrency(current, "USD") : "—"}</div>
+          <div><Price usd={current} currency={currency} fxRates={fxRates} align="left" muted /></div>
         </div>
         <div className="text-right">
           <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-400">{t("alert.distance")}</div>
@@ -558,7 +581,7 @@ function AlertCard({ a, current, distance, onToggle, onEdit, onDelete }) {
 // PATCH /alerts/{id} (condition, target_price_usd, note) — só faltava o UI.
 // O ativo não se muda numa edição (é fixo); alteram-se condição, preço-alvo
 // e nota. Diálogo controlado por `alert` (aberto quando != null).
-function EditAlertDialog({ alert, onClose, onSaved }) {
+function EditAlertDialog({ alert, onClose, onSaved, currency = "USD", fxRates }) {
   const { t } = useI18n();
   const [condition, setCondition] = useState("above");
   const [target, setTarget] = useState("");
@@ -616,7 +639,7 @@ function EditAlertDialog({ alert, onClose, onSaved }) {
               </div>
               <div className="text-right shrink-0">
                 <div className="text-xs font-mono text-zinc-400">{t("alert.current_price")}</div>
-                <div className="font-mono text-zinc-200">{current ? fmtCurrency(current, "USD") : "—"}</div>
+                <div className="font-mono"><Price usd={current} currency={currency} fxRates={fxRates} muted /></div>
               </div>
             </div>
 
@@ -637,6 +660,9 @@ function EditAlertDialog({ alert, onClose, onSaved }) {
               <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("alert.target")} (USD)</Label>
               <Input type="number" step="any" value={target} onChange={(e) => setTarget(e.target.value)}
                 placeholder="50000" className="mt-2 bg-zinc-900/50 border-zinc-800" data-testid="alert-edit-target-input"/>
+              {currency !== "USD" && target && !isNaN(parseFloat(target)) && (
+                <div className="mt-1 text-[11px] font-mono text-zinc-500">≈ {fmtCurrency(convert(parseFloat(target), currency, fxRates), currency)}</div>
+              )}
             </div>
             <div>
               <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("alert.note")}</Label>
