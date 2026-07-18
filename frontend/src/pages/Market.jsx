@@ -6,7 +6,8 @@ import {
   Star, Newspaper, ExternalLink, Plus,
 } from "lucide-react";
 import AssetIcon from "../components/AssetIcon";
-import { fmtCurrency, fmtPct, fmtCompact } from "../lib/format";
+import { fmtCurrency, fmtPct, fmtCompact, convert } from "../lib/format";
+import InlineWatchlistDialog from "../components/InlineWatchlistDialog";
 import { useI18n } from "../context/I18nContext";
 import { SkeletonMoversList } from "../components/SkeletonRow";
 import { Popover, PopoverTrigger, PopoverContent } from "../components/ui/popover";
@@ -18,12 +19,14 @@ import { Popover, PopoverTrigger, PopoverContent } from "../components/ui/popove
 // yfinance rate limits after the 3 jul 2026 incident).
 const MARKET_REFRESH_MINUTES = 15;
 
-export default function Market() {
+export default function Market({ currency = "USD" }) {
   const { t } = useI18n();
   const [tab, setTab] = useState("crypto"); // "crypto" | "stocks" | "watch"
   const [crypto, setCrypto] = useState({ gainers: [], losers: [] });
   const [stocks, setStocks] = useState({ gainers: [], losers: [] });
   const [loading, setLoading] = useState(true);
+  const [watchAsset, setWatchAsset] = useState(null);
+  const [fxRates, setFxRates] = useState({ USD: 1, EUR: 0.92 });
 
   // Compact news preview per tab — reuses the same /market/latest-news feed
   // already fetched whole on the News page, just sliced down to 3 items
@@ -72,6 +75,13 @@ export default function Market() {
         setWatchItems(flat);
       } catch { /* noop */ }
       setWatchLoading(false);
+    })();
+
+    (async () => {
+      try {
+        const { data } = await api.get("/portfolio");
+        setFxRates(data?.summary?.fx_rates || { USD: 1, EUR: data?.summary?.eur_rate || 0.92, CHF: data?.summary?.chf_rate || 0.88, BRL: data?.summary?.brl_rate || 5.0 });
+      } catch { /* usa defaults se /portfolio falhar */ }
     })();
   }, []);
 
@@ -126,8 +136,8 @@ export default function Market() {
                 </>
               ) : (
                 <>
-                  <MoversList kind="crypto" type="gainers" items={crypto.gainers} t={t} universeNote={t("market.crypto_universe_note")}/>
-                  <MoversList kind="crypto" type="losers" items={crypto.losers} t={t} universeNote={t("market.crypto_universe_note")}/>
+                  <MoversList kind="crypto" type="gainers" items={crypto.gainers} t={t} onWatch={setWatchAsset} currency={currency} fxRates={fxRates} universeNote={t("market.crypto_universe_note")}/>
+                  <MoversList kind="crypto" type="losers" items={crypto.losers} t={t} onWatch={setWatchAsset} currency={currency} fxRates={fxRates} universeNote={t("market.crypto_universe_note")}/>
                 </>
               )}
             </div>
@@ -152,8 +162,8 @@ export default function Market() {
                 </>
               ) : (
                 <>
-                  <MoversList kind="stock" type="gainers" items={stocks.gainers} t={t} universeNote={t("market.stocks_universe_note")}/>
-                  <MoversList kind="stock" type="losers" items={stocks.losers} t={t} universeNote={t("market.stocks_universe_note")}/>
+                  <MoversList kind="stock" type="gainers" items={stocks.gainers} t={t} onWatch={setWatchAsset} currency={currency} fxRates={fxRates} universeNote={t("market.stocks_universe_note")}/>
+                  <MoversList kind="stock" type="losers" items={stocks.losers} t={t} onWatch={setWatchAsset} currency={currency} fxRates={fxRates} universeNote={t("market.stocks_universe_note")}/>
                 </>
               )}
             </div>
@@ -163,9 +173,10 @@ export default function Market() {
       )}
 
       {tab === "watch" && (
-        <WatchPreview items={watchItems} loading={watchLoading} t={t}/>
+        <WatchPreview items={watchItems} loading={watchLoading} t={t} currency={currency} fxRates={fxRates}/>
       )}
 
+      <InlineWatchlistDialog asset={watchAsset} open={!!watchAsset} onOpenChange={(v) => { if (!v) setWatchAsset(null); }} />
     </div>
   );
 }
@@ -215,7 +226,7 @@ function NewsPreview({ items, loading, title }) {
 // Flattened watchlist preview — full group/column/alert management stays on
 // the dedicated /watchlist page (linked at the bottom); this is just a
 // glance from Mercado, per the approved mobile mockup.
-function WatchPreview({ items, loading, t }) {
+function WatchPreview({ items, loading, t, currency = "USD", fxRates }) {
   if (loading) return <SkeletonMoversList/>;
   return (
     <section className="space-y-3" data-testid="market-watch-preview">
@@ -238,7 +249,8 @@ function WatchPreview({ items, loading, t }) {
                   <div className="text-xs text-zinc-400 truncate">{w.name}</div>
                 </div>
                 <div className="text-right">
-                  <div className="font-mono text-zinc-100 text-sm">{w.price_usd ? fmtCurrency(w.price_usd, "USD") : "—"}</div>
+                  <div className="font-mono text-zinc-100 text-sm">{w.price_usd ? fmtCurrency(convert(w.price_usd, currency, fxRates), currency) : "—"}</div>
+                  {w.price_usd && currency !== "USD" && <div className="text-[10px] font-mono text-zinc-500">{fmtCurrency(w.price_usd, "USD")}</div>}
                   <div className={`text-xs font-mono ${pos ? "text-emerald-400" : "text-rose-400"}`}>{fmtPct(w.change_24h || 0)}</div>
                 </div>
               </Link>
@@ -260,7 +272,7 @@ function WatchPreview({ items, loading, t }) {
   );
 }
 
-function MoversList({ kind, type, items, t, universeNote }) {
+function MoversList({ kind, type, items, t, universeNote, onWatch, currency = "USD", fxRates }) {
   const isGain = type === "gainers";
   return (
     <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl overflow-hidden" data-testid={`movers-${kind}-${type}`}>
@@ -321,9 +333,12 @@ function MoversList({ kind, type, items, t, universeNote }) {
                   <div className="text-xs text-zinc-400 truncate">{it.name}</div>
                 </div>
                 <div className="text-right">
-                  <div className="font-mono text-zinc-100 text-sm">{it.price_usd ? fmtCurrency(it.price_usd, "USD") : "-"}</div>
+                  <div className="font-mono text-zinc-100 text-sm">{it.price_usd ? fmtCurrency(convert(it.price_usd, currency, fxRates), currency) : "-"}</div>
+                  {it.price_usd && currency !== "USD" && (
+                    <div className="text-[10px] font-mono text-zinc-500">{fmtCurrency(it.price_usd, "USD")}</div>
+                  )}
                   {it.market_cap_usd && (
-                    <div className="text-[10px] font-mono text-zinc-400">MC {fmtCompact(it.market_cap_usd, "USD")}</div>
+                    <div className="text-[10px] font-mono text-zinc-400">MC {fmtCompact(convert(it.market_cap_usd, currency, fxRates), currency)}</div>
                   )}
                 </div>
                 <div className={`text-right min-w-[64px] ${pos ? "text-emerald-400" : "text-rose-400"} font-mono text-sm`}>
@@ -332,6 +347,14 @@ function MoversList({ kind, type, items, t, universeNote }) {
                     {fmtPct(it.change_24h || 0)}
                   </span>
                 </div>
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onWatch?.(asset); }}
+                  className="text-zinc-600 hover:text-amber-400 transition-colors shrink-0"
+                  title={t("watch.add")}
+                  data-testid={`mover-watch-${kind}-${type}-${it.symbol}`}
+                >
+                  <Star className="w-4 h-4"/>
+                </button>
               </Link>
             );
           })}

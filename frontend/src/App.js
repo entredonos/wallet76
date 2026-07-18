@@ -287,9 +287,9 @@ function AppRoutes() {
         <Route path="/transactions" element={wrap(<Transactions />)} />
         <Route path="/alerts" element={wrap(<Alerts currency={currency} />)} />
         <Route path="/wallets" element={wrap(<Wallets />)} />
-        <Route path="/watchlist" element={wrap(<Watchlist />)} />
+        <Route path="/watchlist"    element={wrap(<Watchlist currency={currency} />)} />
         <Route path="/news" element={wrap(<News />)} />
-        <Route path="/market" element={wrap(<Market />)} />
+        <Route path="/market"       element={wrap(<Market currency={currency} />)} />
         <Route path="/settings" element={wrap(<Settings />)} />
         <Route path="/profile" element={wrap(<Profile currency={currency} setCurrency={setCurrency} />)} />
         <Route path="/more" element={wrap(<More />)} />

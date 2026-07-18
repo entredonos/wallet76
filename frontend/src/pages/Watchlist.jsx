@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import AssetIcon from "../components/AssetIcon";
 import Sparkline from "../components/Sparkline";
 import InlineAlertDialog from "../components/InlineAlertDialog";
-import { fmtCurrency, fmtPct, fmtCompact } from "../lib/format";
+import { fmtCurrency, fmtPct, fmtCompact, convert } from "../lib/format";
 import { useI18n } from "../context/I18nContext";
 import { requestSidebarRefresh } from "../lib/sidebarRefresh";
 
@@ -37,7 +37,7 @@ const WATCH_COLUMNS = [
 ];
 const DEFAULT_WATCH_COLS = ["price","change","pct_7d","mcap","vol","spark"];
 
-export default function Watchlist() {
+export default function Watchlist({ currency = "USD" }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { isPro } = usePlan();
@@ -45,6 +45,7 @@ export default function Watchlist() {
   const MAX_PER_GROUP = isPro ? MAX_PER_GROUP_PRO : MAX_PER_GROUP_FREE;
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fxRates, setFxRates] = useState({ USD: 1, EUR: 0.92 });
   const [addOpen, setAddOpen] = useState(false);
   const [newGroupOpen, setNewGroupOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
@@ -80,6 +81,17 @@ export default function Watchlist() {
   };
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+
+  // Cambios para mostrar os precos na moeda-base do utilizador (EUR grande,
+  // USD por baixo). Vem do resumo do /portfolio, tal como no Painel/Alertas.
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await api.get("/portfolio");
+        setFxRates(data?.summary?.fx_rates || { USD: 1, EUR: data?.summary?.eur_rate || 0.92, CHF: data?.summary?.chf_rate || 0.88, BRL: data?.summary?.brl_rate || 5.0 });
+      } catch { /* usa defaults */ }
+    })();
+  }, []);
 
   const submitNewGroup = async () => {
     const name = newGroupName.trim();
@@ -323,7 +335,10 @@ export default function Watchlist() {
                           </td>
                           {colVisible("price") && (
                             <td className="px-4 py-4 text-right font-mono text-zinc-100">
-                              {w.price_usd ? fmtCurrency(w.price_usd, "USD") : "—"}
+                              {w.price_usd ? fmtCurrency(convert(w.price_usd, currency, fxRates), currency) : "—"}
+                              {w.price_usd && currency !== "USD" && (
+                                <div className="text-[10px] text-zinc-500">{fmtCurrency(w.price_usd, "USD")}</div>
+                              )}
                             </td>
                           )}
                           {colVisible("change") && (
@@ -341,20 +356,20 @@ export default function Watchlist() {
                           )}
                           {colVisible("mcap") && (
                             <td className="px-4 py-4 text-right font-mono text-zinc-300">
-                              {w.market_cap_usd ? fmtCompact(w.market_cap_usd, "USD") : "—"}
+                              {w.market_cap_usd ? fmtCompact(convert(w.market_cap_usd, currency, fxRates), currency) : "—"}
                             </td>
                           )}
                           {colVisible("vol") && (
                             <td className="px-4 py-4 text-right font-mono text-zinc-300">
-                              {w.volume_24h_usd ? fmtCompact(w.volume_24h_usd, "USD") : "—"}
+                              {w.volume_24h_usd ? fmtCompact(convert(w.volume_24h_usd, currency, fxRates), currency) : "—"}
                             </td>
                           )}
                           {colVisible("high_low") && (
                             <td className="px-4 py-4 text-right font-mono text-xs text-zinc-400">
                               {w.high_24h_usd ? (
                                 <>
-                                  <div className="text-emerald-400">H {fmtCurrency(w.high_24h_usd, "USD")}</div>
-                                  <div className="text-rose-400">L {fmtCurrency(w.low_24h_usd || 0, "USD")}</div>
+                                  <div className="text-emerald-400">H {fmtCurrency(convert(w.high_24h_usd, currency, fxRates), currency)}</div>
+                                  <div className="text-rose-400">L {fmtCurrency(convert(w.low_24h_usd || 0, currency, fxRates), currency)}</div>
                                 </>
                               ) : "—"}
                             </td>
@@ -504,7 +519,8 @@ function WatchCard({ w, onAlert, onDelete }) {
           </div>
         </Link>
         <div className="text-right shrink-0">
-          <div className="font-mono text-zinc-100">{w.price_usd ? fmtCurrency(w.price_usd, "USD") : "—"}</div>
+          <div className="font-mono text-zinc-100">{w.price_usd ? fmtCurrency(convert(w.price_usd, currency, fxRates), currency) : "—"}</div>
+          {w.price_usd && currency !== "USD" && <div className="text-[10px] font-mono text-zinc-500">{fmtCurrency(w.price_usd, "USD")}</div>}
           <div className={`text-xs font-mono inline-flex items-center gap-0.5 ${pos ? "text-emerald-400" : "text-rose-400"}`}>
             {pos ? <ArrowUpRight className="w-3 h-3"/> : <ArrowDownRight className="w-3 h-3"/>}
             {fmtPct(w.change_24h || 0)}

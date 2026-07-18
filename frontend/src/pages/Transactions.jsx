@@ -10,12 +10,13 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "../components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Plus, Trash2, ArrowDownLeft, ArrowUpRight, Upload, Pencil } from "lucide-react";
+import { Plus, Trash2, Star, ArrowDownLeft, ArrowUpRight, Upload, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import AssetIcon from "../components/AssetIcon";
 import { useI18n } from "../context/I18nContext";
 import { SkeletonTableRow } from "../components/SkeletonRow";
 import ImportCsvDialog from "../components/ImportCsvDialog";
+import InlineWatchlistDialog from "../components/InlineWatchlistDialog";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 const CURRENCY_SYMBOLS = { USD: "$", EUR: "€", CHF: "CHF ", BRL: "R$" };
@@ -41,6 +42,7 @@ export default function Transactions() {
   const [filterWallet, setFilterWallet] = useState(walletParam || "all");
   const [filterType, setFilterType] = useState("all");
   const [editTxn, setEditTxn] = useState(null);
+  const [watchAsset, setWatchAsset] = useState(null);
 
   // Auto-open when navigated with ?prefill= (autocomplete de Notícias/Mercado)
   // ou ?open=1 (ex.: assistente de configuração inicial, ver OnboardingWizard.jsx,
@@ -177,6 +179,7 @@ export default function Transactions() {
               txn={txn}
               walletName={walletName(txn.wallet_id)}
               onEdit={() => setEditTxn(txn)}
+              onWatch={() => setWatchAsset(txn)}
               onDelete={() => removeTxn(txn.id)}
             />
           ))}
@@ -235,6 +238,11 @@ export default function Transactions() {
                     <td className="px-4 py-4 text-right font-mono text-zinc-100">{sym}{total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td className="px-6 py-4 text-right">
                       <div className="inline-flex items-center gap-3">
+                        {txn.asset_type !== "cash" && (
+                          <button onClick={() => setWatchAsset(txn)} className="text-zinc-600 hover:text-amber-400 transition-colors" data-testid={`tx-watch-${txn.id}`} aria-label={t("watch.add")} title={t("watch.add")}>
+                            <Star className="w-4 h-4"/>
+                          </button>
+                        )}
                         <button onClick={() => setEditTxn(txn)} className="text-zinc-600 hover:text-blue-400 transition-colors" data-testid={`tx-edit-${txn.id}`} aria-label={t("common.edit")}>
                           <Pencil className="w-4 h-4"/>
                         </button>
@@ -251,6 +259,7 @@ export default function Transactions() {
         </div>
       </div>
       <EditTransactionDialog txn={editTxn} wallets={wallets} onClose={() => setEditTxn(null)} onSaved={load} />
+      <InlineWatchlistDialog asset={watchAsset} open={!!watchAsset} onOpenChange={(v) => { if (!v) setWatchAsset(null); }} />
     </div>
   );
 }
@@ -258,7 +267,7 @@ export default function Transactions() {
 // One transaction, stacked as a card — the mobile (< md) counterpart to a
 // row in the desktop <table>. Same fields, just laid out vertically instead
 // of 9 columns that only ever produced horizontal scroll on a phone.
-function TxCard({ txn, walletName, onEdit, onDelete }) {
+function TxCard({ txn, walletName, onEdit, onWatch, onDelete }) {
   const { t } = useI18n();
   const sym = CURRENCY_SYMBOLS[txn.currency] || "";
   const total = txn.quantity * txn.price + (txn.type === "BUY" ? (txn.fee || 0) : -(txn.fee || 0));
@@ -297,6 +306,11 @@ function TxCard({ txn, walletName, onEdit, onDelete }) {
       </div>
 
       <div className="flex items-center justify-end gap-4 pt-0.5">
+        {txn.asset_type !== "cash" && (
+          <button onClick={onWatch} className="text-zinc-500 hover:text-amber-400 transition-colors" data-testid={`tx-watch-card-${txn.id}`} aria-label={t("watch.add")} title={t("watch.add")}>
+            <Star className="w-4 h-4"/>
+          </button>
+        )}
         <button onClick={onEdit} className="text-zinc-500 hover:text-blue-400 transition-colors" data-testid={`tx-edit-card-${txn.id}`} aria-label={t("common.edit")}>
           <Pencil className="w-4 h-4"/>
         </button>
