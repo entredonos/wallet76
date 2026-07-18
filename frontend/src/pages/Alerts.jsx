@@ -15,7 +15,7 @@ import {
 } from "../components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { toast } from "sonner";
-import { Bell, Plus, Trash2, ArrowUp, ArrowDown, BellRing, Check } from "lucide-react";
+import { Bell, Plus, Trash2, Pencil, ArrowUp, ArrowDown, BellRing, Check } from "lucide-react";
 import AssetIcon from "../components/AssetIcon";
 import { fmtCurrency, fmtPct } from "../lib/format";
 import { useI18n } from "../context/I18nContext";
@@ -37,6 +37,7 @@ export default function Alerts() {
   const [open, setOpen] = useState(!!prefillSymbol);
   const [notifPerm, setNotifPerm] = useState(typeof Notification !== "undefined" ? Notification.permission : "denied");
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [editAlert, setEditAlert] = useState(null);
 
   useEffect(() => { if (prefillSymbol) setOpen(true); }, [prefillSymbol]);
 
@@ -166,6 +167,7 @@ export default function Alerts() {
                 current={current}
                 distance={distance}
                 onToggle={() => toggleAlert(a)}
+                onEdit={() => setEditAlert(a)}
                 onDelete={() => setConfirmDelete(a)}
               />
             );
@@ -232,9 +234,14 @@ export default function Alerts() {
                       </button>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button onClick={() => setConfirmDelete(a)} className="text-zinc-600 hover:text-rose-400 transition-colors" data-testid={`alert-delete-${a.id}`}>
-                        <Trash2 className="w-4 h-4"/>
-                      </button>
+                      <div className="flex items-center justify-end gap-3">
+                        <button onClick={() => setEditAlert(a)} className="text-zinc-600 hover:text-zinc-200 transition-colors" title={t("alert.edit")} data-testid={`alert-edit-${a.id}`}>
+                          <Pencil className="w-4 h-4"/>
+                        </button>
+                        <button onClick={() => setConfirmDelete(a)} className="text-zinc-600 hover:text-rose-400 transition-colors" data-testid={`alert-delete-${a.id}`}>
+                          <Trash2 className="w-4 h-4"/>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -258,6 +265,8 @@ export default function Alerts() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <EditAlertDialog alert={editAlert} onClose={() => setEditAlert(null)} onSaved={load} />
     </div>
   );
 }
@@ -461,7 +470,7 @@ function NewAlertDialog({ open, setOpen, holdings, onSaved, defaultSymbol, defau
 // One alert, stacked as a card — the mobile (< md) counterpart to a row in
 // the desktop <table>. Same fields, just laid out vertically instead of in
 // 7 columns that only ever produced horizontal scroll on a phone.
-function AlertCard({ a, current, distance, onToggle, onDelete }) {
+function AlertCard({ a, current, distance, onToggle, onEdit, onDelete }) {
   const { t } = useI18n();
   const isAbove = a.condition === "above";
   return (
@@ -509,10 +518,114 @@ function AlertCard({ a, current, distance, onToggle, onDelete }) {
             </span>
           )}
         </button>
-        <button onClick={onDelete} className="text-zinc-600 hover:text-rose-400 transition-colors" data-testid={`alert-delete-card-${a.id}`}>
-          <Trash2 className="w-4 h-4"/>
-        </button>
+        <div className="flex items-center gap-4">
+          <button onClick={onEdit} className="text-zinc-600 hover:text-zinc-200 transition-colors" title={t("alert.edit")} data-testid={`alert-edit-card-${a.id}`}>
+            <Pencil className="w-4 h-4"/>
+          </button>
+          <button onClick={onDelete} className="text-zinc-600 hover:text-rose-400 transition-colors" data-testid={`alert-delete-card-${a.id}`}>
+            <Trash2 className="w-4 h-4"/>
+          </button>
+        </div>
       </div>
     </div>
+  );
+}
+
+// Editar um alerta existente (17 jul 2026). O backend já suportava via
+// PATCH /alerts/{id} (condition, target_price_usd, note) — só faltava o UI.
+// O ativo não se muda numa edição (é fixo); alteram-se condição, preço-alvo
+// e nota. Diálogo controlado por `alert` (aberto quando != null).
+function EditAlertDialog({ alert, onClose, onSaved }) {
+  const { t } = useI18n();
+  const [condition, setCondition] = useState("above");
+  const [target, setTarget] = useState("");
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (alert) {
+      setCondition(alert.condition || "above");
+      setTarget(alert.target_price_usd != null ? String(alert.target_price_usd) : "");
+      setNote(alert.note || "");
+    }
+  }, [alert]);
+
+  const current = alert?.current_price_usd || 0;
+
+  const save = async () => {
+    if (!target) { toast.error(t("alert.target_required")); return; }
+    setSaving(true);
+    try {
+      await api.patch(`/alerts/${alert.id}`, {
+        condition,
+        target_price_usd: parseFloat(target),
+        note,
+      });
+      toast.success(t("alert.updated"));
+      onClose?.();
+      onSaved?.();
+      requestSidebarRefresh();
+    } catch (e) {
+      toast.error(formatApiErrorDetail(e.response?.data?.detail) || t("common.error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={!!alert} onOpenChange={(v) => { if (!v) onClose?.(); }}>
+      <DialogContent className="bg-zinc-950 border-zinc-800 max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-display font-light text-2xl">{t("alert.edit_title")}</DialogTitle>
+          <DialogDescription className="text-zinc-400 text-sm font-mono">
+            {alert ? `${alert.symbol} · ${alert.name || ""}` : ""}
+          </DialogDescription>
+        </DialogHeader>
+        {alert && (
+          <div className="space-y-4">
+            <div className="border border-zinc-800 rounded-md p-3 bg-zinc-900/30 flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                <AssetIcon asset={alert} size={26}/>
+                <div className="min-w-0">
+                  <div className="font-mono text-zinc-100 truncate">{alert.symbol}</div>
+                  <div className="text-xs text-zinc-400 truncate">{alert.name}</div>
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="text-xs font-mono text-zinc-400">{t("alert.current_price")}</div>
+                <div className="font-mono text-zinc-200">{current ? fmtCurrency(current, "USD") : "—"}</div>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("alert.condition")}</Label>
+              <Tabs value={condition} onValueChange={setCondition}>
+                <TabsList className="mt-2 w-full bg-zinc-900/50 border border-zinc-800">
+                  <TabsTrigger value="above" className="flex-1 data-[state=active]:bg-emerald-500/90 data-[state=active]:text-zinc-950" data-testid="alert-edit-condition-above">
+                    <ArrowUp className="w-3.5 h-3.5 mr-1"/> {t("alert.above")}
+                  </TabsTrigger>
+                  <TabsTrigger value="below" className="flex-1 data-[state=active]:bg-rose-500/90 data-[state=active]:text-zinc-950" data-testid="alert-edit-condition-below">
+                    <ArrowDown className="w-3.5 h-3.5 mr-1"/> {t("alert.below")}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+            <div>
+              <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("alert.target")} (USD)</Label>
+              <Input type="number" step="any" value={target} onChange={(e) => setTarget(e.target.value)}
+                placeholder="50000" className="mt-2 bg-zinc-900/50 border-zinc-800" data-testid="alert-edit-target-input"/>
+            </div>
+            <div>
+              <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("alert.note")}</Label>
+              <Input value={note} onChange={(e) => setNote(e.target.value)}
+                placeholder={t("alert.note_placeholder")} className="mt-2 bg-zinc-900/50 border-zinc-800" data-testid="alert-edit-note-input"/>
+            </div>
+            <Button onClick={save} disabled={saving} className="w-full bg-zinc-100 text-zinc-950 hover:bg-white font-medium" data-testid="alert-edit-submit">
+              {saving ? t("common.saving") : t("common.save")}
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
