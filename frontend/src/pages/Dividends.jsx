@@ -11,12 +11,12 @@ const FREQ_PER_YEAR = { monthly: 12, quarterly: 4, "semi-annual": 2, annual: 1 }
 const LOCALE = { pt: "pt-PT", en: "en-GB", fr: "fr-FR", de: "de-DE", it: "it-IT", es: "es-ES" };
 
 const COPY = {
-  pt: { title: "Calendário de Dividendos", subtitle: "Próximos pagamentos das tuas posições.", next30: "Próximos 30 dias", est12: "Estimativa 12 meses", received: "Recebido este ano", avg: "Média mensal", yieldLbl: "yield da carteira", chartTitle: "Rendimento por mês", chartNote: "Estimado, na tua moeda base.", agendaTitle: "Próximos pagamentos", perShare: "por ação", est: "Estimado", emptyTitle: "Sem dividendos a caminho", emptyDesc: "Nenhuma das tuas posições atuais paga dividendos, ou ainda não há histórico suficiente.", clear: "Limpar", legendPay: "Dia de pagamento", loading: "A carregar…", freq: { monthly: "Mensal", quarterly: "Trimestral", "semi-annual": "Semestral", annual: "Anual" } },
-  en: { title: "Dividend Calendar", subtitle: "Upcoming payments from your holdings.", next30: "Next 30 days", est12: "12-month estimate", received: "Received this year", avg: "Monthly average", yieldLbl: "portfolio yield", chartTitle: "Income by month", chartNote: "Estimated, in your base currency.", agendaTitle: "Upcoming payments", perShare: "per share", est: "Estimated", emptyTitle: "No dividends coming up", emptyDesc: "None of your current holdings pay dividends, or there isn't enough history yet.", clear: "Clear", legendPay: "Payment day", loading: "Loading…", freq: { monthly: "Monthly", quarterly: "Quarterly", "semi-annual": "Semi-annual", annual: "Annual" } },
-  fr: { title: "Calendrier des Dividendes", subtitle: "Prochains versements de vos positions.", next30: "30 prochains jours", est12: "Estimation 12 mois", received: "Reçu cette année", avg: "Moyenne mensuelle", yieldLbl: "rendement du portefeuille", chartTitle: "Revenu par mois", chartNote: "Estimé, dans votre devise de base.", agendaTitle: "Prochains versements", perShare: "par action", est: "Estimé", emptyTitle: "Aucun dividende à venir", emptyDesc: "Aucune de vos positions actuelles ne verse de dividendes, ou l'historique est insuffisant.", clear: "Effacer", legendPay: "Jour de versement", loading: "Chargement…", freq: { monthly: "Mensuel", quarterly: "Trimestriel", "semi-annual": "Semestriel", annual: "Annuel" } },
-  de: { title: "Dividendenkalender", subtitle: "Anstehende Zahlungen aus Ihren Positionen.", next30: "Nächste 30 Tage", est12: "12-Monats-Schätzung", received: "Dieses Jahr erhalten", avg: "Monatsdurchschnitt", yieldLbl: "Portfolio-Rendite", chartTitle: "Ertrag pro Monat", chartNote: "Geschätzt, in Ihrer Basiswährung.", agendaTitle: "Anstehende Zahlungen", perShare: "pro Aktie", est: "Geschätzt", emptyTitle: "Keine Dividenden in Sicht", emptyDesc: "Keine Ihrer aktuellen Positionen zahlt Dividenden, oder es gibt noch nicht genug Historie.", clear: "Löschen", legendPay: "Zahltag", loading: "Wird geladen…", freq: { monthly: "Monatlich", quarterly: "Vierteljährlich", "semi-annual": "Halbjährlich", annual: "Jährlich" } },
-  it: { title: "Calendario Dividendi", subtitle: "Prossimi pagamenti dalle tue posizioni.", next30: "Prossimi 30 giorni", est12: "Stima 12 mesi", received: "Ricevuto quest'anno", avg: "Media mensile", yieldLbl: "rendimento del portafoglio", chartTitle: "Reddito per mese", chartNote: "Stimato, nella tua valuta base.", agendaTitle: "Prossimi pagamenti", perShare: "per azione", est: "Stimato", emptyTitle: "Nessun dividendo in arrivo", emptyDesc: "Nessuna delle tue posizioni attuali paga dividendi, o non c'è ancora storico sufficiente.", clear: "Cancella", legendPay: "Giorno di pagamento", loading: "Caricamento…", freq: { monthly: "Mensile", quarterly: "Trimestrale", "semi-annual": "Semestrale", annual: "Annuale" } },
-  es: { title: "Calendario de Dividendos", subtitle: "Próximos pagos de tus posiciones.", next30: "Próximos 30 días", est12: "Estimación 12 meses", received: "Recibido este año", avg: "Media mensual", yieldLbl: "rendimiento de la cartera", chartTitle: "Ingresos por mes", chartNote: "Estimado, en tu moneda base.", agendaTitle: "Próximos pagos", perShare: "por acción", est: "Estimado", emptyTitle: "Sin dividendos próximos", emptyDesc: "Ninguna de tus posiciones actuales paga dividendos, o aún no hay historial suficiente.", clear: "Limpiar", legendPay: "Día de pago", loading: "Cargando…", freq: { monthly: "Mensual", quarterly: "Trimestral", "semi-annual": "Semestral", annual: "Anual" } },
+  pt: { title: "Calendário de Dividendos", subtitle: "Próximos pagamentos das tuas posições.", next30: "Próximos 30 dias", est12: "Estimativa 12 meses", received: "Recebido este ano", avg: "Média mensal", yieldLbl: "yield da carteira", chartTitle: "Rendimento por mês", chartNote: "Estimado, na tua moeda base.", agendaTitle: "Próximos pagamentos", perShare: "por ação", est: "Estimado", emptyTitle: "Sem dividendos a caminho", emptyDesc: "Nenhuma das tuas posições atuais paga dividendos, ou ainda não há histórico suficiente.", clear: "Limpar", legendPay: "Dia de pagamento", loading: "A carregar…", monthEmpty: "Sem pagamentos neste mês.", freq: { monthly: "Mensal", quarterly: "Trimestral", "semi-annual": "Semestral", annual: "Anual" } },
+  en: { title: "Dividend Calendar", subtitle: "Upcoming payments from your holdings.", next30: "Next 30 days", est12: "12-month estimate", received: "Received this year", avg: "Monthly average", yieldLbl: "portfolio yield", chartTitle: "Income by month", chartNote: "Estimated, in your base currency.", agendaTitle: "Upcoming payments", perShare: "per share", est: "Estimated", emptyTitle: "No dividends coming up", emptyDesc: "None of your current holdings pay dividends, or there isn't enough history yet.", clear: "Clear", legendPay: "Payment day", loading: "Loading…", monthEmpty: "No payments this month.", freq: { monthly: "Monthly", quarterly: "Quarterly", "semi-annual": "Semi-annual", annual: "Annual" } },
+  fr: { title: "Calendrier des Dividendes", subtitle: "Prochains versements de vos positions.", next30: "30 prochains jours", est12: "Estimation 12 mois", received: "Reçu cette année", avg: "Moyenne mensuelle", yieldLbl: "rendement du portefeuille", chartTitle: "Revenu par mois", chartNote: "Estimé, dans votre devise de base.", agendaTitle: "Prochains versements", perShare: "par action", est: "Estimé", emptyTitle: "Aucun dividende à venir", emptyDesc: "Aucune de vos positions actuelles ne verse de dividendes, ou l'historique est insuffisant.", clear: "Effacer", legendPay: "Jour de versement", loading: "Chargement…", monthEmpty: "Aucun versement ce mois.", freq: { monthly: "Mensuel", quarterly: "Trimestriel", "semi-annual": "Semestriel", annual: "Annuel" } },
+  de: { title: "Dividendenkalender", subtitle: "Anstehende Zahlungen aus Ihren Positionen.", next30: "Nächste 30 Tage", est12: "12-Monats-Schätzung", received: "Dieses Jahr erhalten", avg: "Monatsdurchschnitt", yieldLbl: "Portfolio-Rendite", chartTitle: "Ertrag pro Monat", chartNote: "Geschätzt, in Ihrer Basiswährung.", agendaTitle: "Anstehende Zahlungen", perShare: "pro Aktie", est: "Geschätzt", emptyTitle: "Keine Dividenden in Sicht", emptyDesc: "Keine Ihrer aktuellen Positionen zahlt Dividenden, oder es gibt noch nicht genug Historie.", clear: "Löschen", legendPay: "Zahltag", loading: "Wird geladen…", monthEmpty: "Keine Zahlungen in diesem Monat.", freq: { monthly: "Monatlich", quarterly: "Vierteljährlich", "semi-annual": "Halbjährlich", annual: "Jährlich" } },
+  it: { title: "Calendario Dividendi", subtitle: "Prossimi pagamenti dalle tue posizioni.", next30: "Prossimi 30 giorni", est12: "Stima 12 mesi", received: "Ricevuto quest'anno", avg: "Media mensile", yieldLbl: "rendimento del portafoglio", chartTitle: "Reddito per mese", chartNote: "Stimato, nella tua valuta base.", agendaTitle: "Prossimi pagamenti", perShare: "per azione", est: "Stimato", emptyTitle: "Nessun dividendo in arrivo", emptyDesc: "Nessuna delle tue posizioni attuali paga dividendi, o non c'è ancora storico sufficiente.", clear: "Cancella", legendPay: "Giorno di pagamento", loading: "Caricamento…", monthEmpty: "Nessun pagamento questo mese.", freq: { monthly: "Mensile", quarterly: "Trimestrale", "semi-annual": "Semestrale", annual: "Annuale" } },
+  es: { title: "Calendario de Dividendos", subtitle: "Próximos pagos de tus posiciones.", next30: "Próximos 30 días", est12: "Estimación 12 meses", received: "Recibido este año", avg: "Media mensual", yieldLbl: "rendimiento de la cartera", chartTitle: "Ingresos por mes", chartNote: "Estimado, en tu moneda base.", agendaTitle: "Próximos pagos", perShare: "por acción", est: "Estimado", emptyTitle: "Sin dividendos próximos", emptyDesc: "Ninguna de tus posiciones actuales paga dividendos, o aún no hay historial suficiente.", clear: "Limpiar", legendPay: "Día de pago", loading: "Cargando…", monthEmpty: "Sin pagos este mes.", freq: { monthly: "Mensual", quarterly: "Trimestral", "semi-annual": "Semestral", annual: "Anual" } },
 };
 
 const BADGE_COLORS = ["#60a5fa", "#34d399", "#f87171", "#fbbf24", "#a78bfa", "#22d3ee", "#fb923c", "#f472b6"];
@@ -42,6 +42,8 @@ export default function Dividends({ currency = "USD" }) {
   const [portfolioUsd, setPortfolioUsd] = useState(0);
   const [nameMap, setNameMap] = useState({});
   const [selectedDay, setSelectedDay] = useState(null);
+  const [hoverMonth, setHoverMonth] = useState(null);
+  const [pinMonth, setPinMonth] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,6 +117,12 @@ export default function Dividends({ currency = "USD" }) {
   }, [projected, fx, currency]);
   const monthMax = Math.max(...monthly, 1);
   const monthLabels = useMemo(() => [...Array(12)].map((_, m) => new Intl.DateTimeFormat(loc, { month: "narrow" }).format(new Date(2026, m, 1))), [loc]);
+  const monthCurrencies = useMemo(() => {
+    const arr = Array.from({ length: 12 }, () => ({}));
+    projected.forEach((p) => { const b = arr[p.date.getMonth()]; b[p.currency] = (b[p.currency] || 0) + p.amount; });
+    return arr;
+  }, [projected]);
+  const activeMonth = hoverMonth != null ? hoverMonth : pinMonth;
 
   // Current-month calendar
   const now = new Date();
@@ -213,18 +221,47 @@ export default function Dividends({ currency = "USD" }) {
 
               {/* Monthly chart */}
               <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+                <style>{`@keyframes divRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
                 <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-zinc-200">
                   <TrendingUp className="w-4 h-4 text-zinc-400" /> {c.chartTitle}
                 </div>
                 <div className="flex items-end gap-1.5 h-36">
-                  {monthly.map((v, m) => (
-                    <div key={m} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end" title={fmtCurrency(v, currency)}>
-                      <div className={`w-full rounded-t ${m === month ? "bg-gradient-to-t from-emerald-600 to-emerald-400" : "bg-zinc-700"}`} style={{ height: `${Math.max(4, (v / monthMax) * 100)}%` }} />
-                      <div className="text-[9px] text-zinc-600">{monthLabels[m]}</div>
-                    </div>
-                  ))}
+                  {monthly.map((v, m) => {
+                    const active = activeMonth === m;
+                    const dim = activeMonth != null && !active;
+                    return (
+                      <div key={m}
+                        onMouseEnter={() => setHoverMonth(m)} onMouseLeave={() => setHoverMonth(null)}
+                        onClick={() => setPinMonth((pm) => (pm === m ? null : m))}
+                        className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end cursor-pointer group">
+                        <div className={`w-full rounded-t transition-all duration-200 ${active || m === month ? "bg-gradient-to-t from-emerald-600 to-emerald-400" : "bg-zinc-700 group-hover:bg-zinc-600"} ${dim ? "opacity-40" : "opacity-100"}`}
+                          style={{ height: `${Math.max(4, (v / monthMax) * 100)}%` }} />
+                        <div className={`text-[9px] transition-colors ${active ? "text-emerald-400 font-semibold" : "text-zinc-600"}`}>{monthLabels[m]}</div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="text-[11px] text-zinc-600 mt-3">{c.chartNote}</div>
+                {activeMonth != null ? (
+                  <div key={activeMonth} style={{ animation: "divRise .28s ease" }} className="mt-4 pt-3 border-t border-zinc-800">
+                    <div className="text-xs font-semibold text-zinc-300 mb-2 capitalize">
+                      {new Intl.DateTimeFormat(loc, { month: "long" }).format(new Date(2026, activeMonth, 1))}
+                    </div>
+                    {Object.keys(monthCurrencies[activeMonth]).length === 0 ? (
+                      <div className="text-[11px] text-zinc-600">{c.monthEmpty}</div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(monthCurrencies[activeMonth]).sort((a, b) => b[1] - a[1]).map(([cur, amt]) => (
+                          <span key={cur} className="inline-flex items-center gap-1.5 bg-zinc-800/70 border border-zinc-700 rounded-full px-2.5 py-1 text-xs">
+                            <span className="text-zinc-500 font-mono">{cur}</span>
+                            <span className="text-zinc-100 font-semibold">{fmtCurrency(amt, cur)}</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-[11px] text-zinc-600 mt-3">{c.chartNote}</div>
+                )}
               </div>
             </div>
 
