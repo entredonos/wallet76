@@ -614,6 +614,7 @@ async def get_dividends(
                 "pay_months":       pay_months,
                 "pay_month_days":   pay_month_days,
                 "years_paying":     years_paying,
+                "currency":         (info.get("currency") or "USD").upper(),
             }
         except Exception as exc:
             logger.warning(f"Dividend fetch failed for {sym}: {exc}")

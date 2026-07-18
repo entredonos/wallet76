@@ -1,0 +1,277 @@
+import React, { useState, useEffect, useMemo } from "react";
+import { api } from "../lib/api";
+import { useI18n } from "../context/I18nContext";
+import { usePlan } from "../hooks/usePlan";
+import UpgradeOverlay from "../components/UpgradeOverlay";
+import { fmtCurrency, convert } from "../lib/format";
+import { Coins, CalendarDays, TrendingUp, X } from "lucide-react";
+
+const FREQ_DAYS = { monthly: 30, quarterly: 91, "semi-annual": 182, annual: 365 };
+const FREQ_PER_YEAR = { monthly: 12, quarterly: 4, "semi-annual": 2, annual: 1 };
+const LOCALE = { pt: "pt-PT", en: "en-GB", fr: "fr-FR", de: "de-DE", it: "it-IT", es: "es-ES" };
+
+const COPY = {
+  pt: { title: "Calendário de Dividendos", subtitle: "Próximos pagamentos das tuas posições.", next30: "Próximos 30 dias", est12: "Estimativa 12 meses", received: "Recebido este ano", avg: "Média mensal", yieldLbl: "yield da carteira", chartTitle: "Rendimento por mês", chartNote: "Estimado, na tua moeda base.", agendaTitle: "Próximos pagamentos", perShare: "por ação", est: "Estimado", emptyTitle: "Sem dividendos a caminho", emptyDesc: "Nenhuma das tuas posições atuais paga dividendos, ou ainda não há histórico suficiente.", clear: "Limpar", legendPay: "Dia de pagamento", loading: "A carregar…", freq: { monthly: "Mensal", quarterly: "Trimestral", "semi-annual": "Semestral", annual: "Anual" } },
+  en: { title: "Dividend Calendar", subtitle: "Upcoming payments from your holdings.", next30: "Next 30 days", est12: "12-month estimate", received: "Received this year", avg: "Monthly average", yieldLbl: "portfolio yield", chartTitle: "Income by month", chartNote: "Estimated, in your base currency.", agendaTitle: "Upcoming payments", perShare: "per share", est: "Estimated", emptyTitle: "No dividends coming up", emptyDesc: "None of your current holdings pay dividends, or there isn't enough history yet.", clear: "Clear", legendPay: "Payment day", loading: "Loading…", freq: { monthly: "Monthly", quarterly: "Quarterly", "semi-annual": "Semi-annual", annual: "Annual" } },
+  fr: { title: "Calendrier des Dividendes", subtitle: "Prochains versements de vos positions.", next30: "30 prochains jours", est12: "Estimation 12 mois", received: "Reçu cette année", avg: "Moyenne mensuelle", yieldLbl: "rendement du portefeuille", chartTitle: "Revenu par mois", chartNote: "Estimé, dans votre devise de base.", agendaTitle: "Prochains versements", perShare: "par action", est: "Estimé", emptyTitle: "Aucun dividende à venir", emptyDesc: "Aucune de vos positions actuelles ne verse de dividendes, ou l'historique est insuffisant.", clear: "Effacer", legendPay: "Jour de versement", loading: "Chargement…", freq: { monthly: "Mensuel", quarterly: "Trimestriel", "semi-annual": "Semestriel", annual: "Annuel" } },
+  de: { title: "Dividendenkalender", subtitle: "Anstehende Zahlungen aus Ihren Positionen.", next30: "Nächste 30 Tage", est12: "12-Monats-Schätzung", received: "Dieses Jahr erhalten", avg: "Monatsdurchschnitt", yieldLbl: "Portfolio-Rendite", chartTitle: "Ertrag pro Monat", chartNote: "Geschätzt, in Ihrer Basiswährung.", agendaTitle: "Anstehende Zahlungen", perShare: "pro Aktie", est: "Geschätzt", emptyTitle: "Keine Dividenden in Sicht", emptyDesc: "Keine Ihrer aktuellen Positionen zahlt Dividenden, oder es gibt noch nicht genug Historie.", clear: "Löschen", legendPay: "Zahltag", loading: "Wird geladen…", freq: { monthly: "Monatlich", quarterly: "Vierteljährlich", "semi-annual": "Halbjährlich", annual: "Jährlich" } },
+  it: { title: "Calendario Dividendi", subtitle: "Prossimi pagamenti dalle tue posizioni.", next30: "Prossimi 30 giorni", est12: "Stima 12 mesi", received: "Ricevuto quest'anno", avg: "Media mensile", yieldLbl: "rendimento del portafoglio", chartTitle: "Reddito per mese", chartNote: "Stimato, nella tua valuta base.", agendaTitle: "Prossimi pagamenti", perShare: "per azione", est: "Stimato", emptyTitle: "Nessun dividendo in arrivo", emptyDesc: "Nessuna delle tue posizioni attuali paga dividendi, o non c'è ancora storico sufficiente.", clear: "Cancella", legendPay: "Giorno di pagamento", loading: "Caricamento…", freq: { monthly: "Mensile", quarterly: "Trimestrale", "semi-annual": "Semestrale", annual: "Annuale" } },
+  es: { title: "Calendario de Dividendos", subtitle: "Próximos pagos de tus posiciones.", next30: "Próximos 30 días", est12: "Estimación 12 meses", received: "Recibido este año", avg: "Media mensual", yieldLbl: "rendimiento de la cartera", chartTitle: "Ingresos por mes", chartNote: "Estimado, en tu moneda base.", agendaTitle: "Próximos pagos", perShare: "por acción", est: "Estimado", emptyTitle: "Sin dividendos próximos", emptyDesc: "Ninguna de tus posiciones actuales paga dividendos, o aún no hay historial suficiente.", clear: "Limpiar", legendPay: "Día de pago", loading: "Cargando…", freq: { monthly: "Mensual", quarterly: "Trimestral", "semi-annual": "Semestral", annual: "Anual" } },
+};
+
+const BADGE_COLORS = ["#60a5fa", "#34d399", "#f87171", "#fbbf24", "#a78bfa", "#22d3ee", "#fb923c", "#f472b6"];
+function badgeColor(sym) { let h = 0; for (let i = 0; i < sym.length; i++) h = (h * 31 + sym.charCodeAt(i)) % BADGE_COLORS.length; return BADGE_COLORS[h]; }
+function pad(n) { return String(n).padStart(2, "0"); }
+function isoDay(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+
+function nativeToBase(amount, native, base, fx) {
+  const rN = native === "USD" ? 1 : (fx?.[native] || 1);
+  const usd = (amount || 0) / (rN || 1);
+  return convert(usd, base, fx);
+}
+
+export default function Dividends({ currency = "USD" }) {
+  const { lang } = useI18n();
+  const { isPro } = usePlan();
+  const c = COPY[lang] || COPY.en;
+  const loc = LOCALE[lang] || "en-GB";
+
+  const [loading, setLoading] = useState(true);
+  const [divs, setDivs] = useState([]);
+  const [fx, setFx] = useState({ USD: 1, EUR: 0.92, CHF: 0.88, BRL: 5.0 });
+  const [portfolioUsd, setPortfolioUsd] = useState(0);
+  const [nameMap, setNameMap] = useState({});
+  const [selectedDay, setSelectedDay] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [dRes, pRes] = await Promise.allSettled([
+          api.get("/analytics/dividends"),
+          api.get("/portfolio"),
+        ]);
+        if (cancelled) return;
+        if (dRes.status === "fulfilled") setDivs(dRes.value.data?.dividends || []);
+        if (pRes.status === "fulfilled") {
+          const sum = pRes.value.data?.summary || {};
+          setFx(sum.fx_rates || { USD: 1, EUR: sum.eur_rate || 0.92, CHF: sum.chf_rate || 0.88, BRL: sum.brl_rate || 5.0 });
+          setPortfolioUsd(sum.total_usd || 0);
+          const map = {};
+          (pRes.value.data?.assets || []).forEach((a) => { if (a.symbol) map[a.symbol.toUpperCase()] = a.name || a.symbol; });
+          setNameMap(map);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Project payments over a window (days) from each asset's next_est_date + frequency.
+  const projected = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const end = new Date(today); end.setDate(end.getDate() + 365);
+    const out = [];
+    for (const d of divs) {
+      if (!d.next_est_date || !d.frequency) continue;
+      const step = FREQ_DAYS[d.frequency] || 91;
+      const fpy = FREQ_PER_YEAR[d.frequency] || 4;
+      const perPay = (d.annual_income || 0) / fpy;
+      let dt = new Date(d.next_est_date + "T00:00:00");
+      if (isNaN(dt.getTime())) continue;
+      let g = 0;
+      while (dt < today && g < 60) { dt.setDate(dt.getDate() + step); g++; }
+      g = 0;
+      while (dt <= end && g < 60) {
+        out.push({ symbol: d.symbol, date: new Date(dt), amount: perPay, currency: d.currency || "USD", frequency: d.frequency, rate: d.rate_per_payment });
+        dt.setDate(dt.getDate() + step); g++;
+      }
+    }
+    out.sort((a, b) => a.date - b.date);
+    return out;
+  }, [divs]);
+
+  const kpis = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const in30 = new Date(today); in30.setDate(in30.getDate() + 30);
+    let next30 = 0;
+    projected.forEach((p) => { if (p.date >= today && p.date <= in30) next30 += nativeToBase(p.amount, p.currency, currency, fx); });
+    let est12 = 0, received = 0;
+    divs.forEach((d) => {
+      est12 += nativeToBase(d.annual_income || 0, d.currency || "USD", currency, fx);
+      received += nativeToBase(d.total_received || 0, d.currency || "USD", currency, fx);
+    });
+    const portBase = convert(portfolioUsd, currency, fx);
+    const yld = portBase > 0 ? (est12 / portBase) * 100 : null;
+    return { next30, est12, received, avg: est12 / 12, yld };
+  }, [projected, divs, fx, currency, portfolioUsd]);
+
+  // Monthly buckets (calendar month 0-11) for the chart, from a full year of projections.
+  const monthly = useMemo(() => {
+    const buckets = Array(12).fill(0);
+    projected.forEach((p) => { buckets[p.date.getMonth()] += nativeToBase(p.amount, p.currency, currency, fx); });
+    return buckets;
+  }, [projected, fx, currency]);
+  const monthMax = Math.max(...monthly, 1);
+  const monthLabels = useMemo(() => [...Array(12)].map((_, m) => new Intl.DateTimeFormat(loc, { month: "narrow" }).format(new Date(2026, m, 1))), [loc]);
+
+  // Current-month calendar
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startIdx = (new Date(year, month, 1).getDay() + 6) % 7; // Monday-first
+  const payDays = useMemo(() => {
+    const set = new Set();
+    projected.forEach((p) => { if (p.date.getFullYear() === year && p.date.getMonth() === month) set.add(p.date.getDate()); });
+    return set;
+  }, [projected, year, month]);
+  const weekdays = useMemo(() => {
+    const monday = new Date(2024, 0, 1);
+    return [...Array(7)].map((_, i) => { const d = new Date(monday); d.setDate(d.getDate() + i); return new Intl.DateTimeFormat(loc, { weekday: "narrow" }).format(d); });
+  }, [loc]);
+
+  const agendaItems = selectedDay ? projected.filter((p) => isoDay(p.date) === selectedDay) : projected.slice(0, 40);
+  const groups = useMemo(() => {
+    const g = {};
+    agendaItems.forEach((p) => { const k = `${p.date.getFullYear()}-${pad(p.date.getMonth() + 1)}`; (g[k] = g[k] || []).push(p); });
+    return g;
+  }, [agendaItems]);
+
+  const fmtGroup = (key) => { const [y, m] = key.split("-"); return new Intl.DateTimeFormat(loc, { month: "long", year: "numeric" }).format(new Date(+y, +m - 1, 1)); };
+  const fmtD = (d) => new Intl.DateTimeFormat(loc, { day: "2-digit", month: "short" }).format(d);
+
+  return (
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
+      <div className="flex items-center gap-3 mb-1">
+        <Coins className="w-6 h-6 text-emerald-400" />
+        <h1 className="text-2xl font-bold text-zinc-100">{c.title}</h1>
+      </div>
+      <p className="text-sm text-zinc-500 mb-6">{c.subtitle}</p>
+
+      <div className="relative">
+        {loading ? (
+          <div className="text-zinc-500 text-sm py-20 text-center">{c.loading}</div>
+        ) : divs.length === 0 ? (
+          <div className="border border-zinc-800 rounded-2xl p-10 text-center bg-zinc-900/50">
+            <Coins className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
+            <p className="text-zinc-200 font-semibold mb-1">{c.emptyTitle}</p>
+            <p className="text-sm text-zinc-500 max-w-md mx-auto">{c.emptyDesc}</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                <div className="text-[11px] uppercase tracking-wide text-zinc-500 mb-1.5">{c.next30}</div>
+                <div className="text-2xl font-bold text-zinc-100">{fmtCurrency(kpis.next30, currency)}</div>
+              </div>
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                <div className="text-[11px] uppercase tracking-wide text-zinc-500 mb-1.5">{c.est12}</div>
+                <div className="text-2xl font-bold text-zinc-100">{fmtCurrency(kpis.est12, currency)}</div>
+                {kpis.yld != null && <div className="text-xs text-emerald-400 mt-0.5">≈ {kpis.yld.toFixed(2)}% {c.yieldLbl}</div>}
+              </div>
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                <div className="text-[11px] uppercase tracking-wide text-zinc-500 mb-1.5">{c.received}</div>
+                <div className="text-2xl font-bold text-zinc-100">{fmtCurrency(kpis.received, currency)}</div>
+              </div>
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                <div className="text-[11px] uppercase tracking-wide text-zinc-500 mb-1.5">{c.avg}</div>
+                <div className="text-2xl font-bold text-zinc-100">{fmtCurrency(kpis.avg, currency)}</div>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-3 mb-6">
+              {/* Calendar */}
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-zinc-200">
+                  <CalendarDays className="w-4 h-4 text-zinc-400" />
+                  {new Intl.DateTimeFormat(loc, { month: "long", year: "numeric" }).format(now)}
+                </div>
+                <div className="grid grid-cols-7 gap-1.5">
+                  {weekdays.map((w, i) => <div key={i} className="text-[10px] text-zinc-600 text-center uppercase">{w}</div>)}
+                  {[...Array(startIdx)].map((_, i) => <div key={"e" + i} />)}
+                  {[...Array(daysInMonth)].map((_, i) => {
+                    const day = i + 1;
+                    const iso = `${year}-${pad(month + 1)}-${pad(day)}`;
+                    const hasPay = payDays.has(day);
+                    const isToday = day === now.getDate();
+                    const isSel = selectedDay === iso;
+                    return (
+                      <button key={day} disabled={!hasPay}
+                        onClick={() => setSelectedDay(isSel ? null : iso)}
+                        className={`aspect-square rounded-lg text-xs flex items-center justify-center relative transition-colors ${hasPay ? "cursor-pointer" : "cursor-default"} ${isSel ? "bg-emerald-500/20 border border-emerald-400 text-white" : isToday ? "border border-zinc-600 text-zinc-200" : "bg-zinc-950/40 text-zinc-500"} ${hasPay && !isSel ? "hover:border-emerald-500/50 border border-transparent" : ""}`}>
+                        {day}
+                        {hasPay && <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center gap-1.5 mt-4 text-[11px] text-zinc-600">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" /> {c.legendPay}
+                </div>
+              </div>
+
+              {/* Monthly chart */}
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-zinc-200">
+                  <TrendingUp className="w-4 h-4 text-zinc-400" /> {c.chartTitle}
+                </div>
+                <div className="flex items-end gap-1.5 h-36">
+                  {monthly.map((v, m) => (
+                    <div key={m} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end" title={fmtCurrency(v, currency)}>
+                      <div className={`w-full rounded-t ${m === month ? "bg-gradient-to-t from-emerald-600 to-emerald-400" : "bg-zinc-700"}`} style={{ height: `${Math.max(4, (v / monthMax) * 100)}%` }} />
+                      <div className="text-[9px] text-zinc-600">{monthLabels[m]}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-[11px] text-zinc-600 mt-3">{c.chartNote}</div>
+              </div>
+            </div>
+
+            {/* Agenda */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-semibold text-zinc-200">{c.agendaTitle}</div>
+                {selectedDay && (
+                  <button onClick={() => setSelectedDay(null)} className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300">
+                    <X className="w-3.5 h-3.5" /> {c.clear} · {fmtD(new Date(selectedDay + "T00:00:00"))}
+                  </button>
+                )}
+              </div>
+              {Object.keys(groups).length === 0 ? (
+                <div className="text-sm text-zinc-600 py-6 text-center">—</div>
+              ) : Object.entries(groups).map(([key, items]) => (
+                <div key={key}>
+                  <div className="text-xs font-bold text-zinc-500 uppercase tracking-wide mt-4 mb-1">{fmtGroup(key)}</div>
+                  {items.map((p, idx) => {
+                    const sym = p.symbol.toUpperCase();
+                    const nm = nameMap[sym] || sym;
+                    const baseAmt = nativeToBase(p.amount, p.currency, currency, fx);
+                    const showBase = p.currency !== currency;
+                    return (
+                      <div key={key + idx} className="flex items-center gap-3 py-2.5 border-b border-zinc-800/60">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-extrabold text-zinc-950 shrink-0" style={{ background: badgeColor(sym) }}>
+                          {sym.slice(0, 2)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-semibold text-zinc-100 truncate">{nm}</div>
+                          <div className="text-[11px] text-zinc-500">{c.freq[p.frequency] || p.frequency}{p.rate ? ` · ${fmtCurrency(p.rate, p.currency)} ${c.perShare}` : ""}</div>
+                        </div>
+                        <div className="text-xs text-zinc-400 shrink-0 w-16 text-right">{fmtD(p.date)}</div>
+                        <div className="text-right shrink-0 w-24">
+                          <div className="text-sm font-bold text-emerald-400">{fmtCurrency(p.amount, p.currency)}</div>
+                          {showBase && <div className="text-[10px] text-zinc-600">≈ {fmtCurrency(baseAmt, currency)}</div>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+        {!isPro && !loading && <UpgradeOverlay feature={c.title} />}
+      </div>
+    </div>
+  );
+}

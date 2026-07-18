@@ -23,7 +23,8 @@ const TYPE_ICON = { broker: Briefcase, exchange: Coins, wallet: WalletIcon };
 // Routes collapsed under the "Portfólio" sidebar group (see REGRA de UX
 // discutida com o utilizador em jul/2026: agrupar as páginas de "gerir o
 // que tenho" para reduzir o nº de linhas visíveis na sidebar).
-const PORTFOLIO_GROUP_ROUTES = ["/wallets", "/transactions", "/watchlist", "/alerts", "/analytics"];
+const NAV_DIV = { pt: "Dividendos", en: "Dividends", fr: "Dividendes", de: "Dividenden", it: "Dividendi", es: "Dividendos" };
+const PORTFOLIO_GROUP_ROUTES = ["/wallets", "/transactions", "/watchlist", "/alerts", "/analytics", "/dividends"];
 
 export default function Layout({ children, currency, setCurrency }) {
   const { user, logout } = useAuth();
@@ -226,6 +227,9 @@ export default function Layout({ children, currency, setCurrency }) {
             </NavLink>
             <NavLink to="/analytics" className={linkCls} data-testid="nav-analytics" onClick={() => setOpen(false)}>
               <BarChart2 className="w-4 h-4" /> {t("nav.analytics")}
+            </NavLink>
+            <NavLink to="/dividends" className={linkCls} data-testid="nav-dividends" onClick={() => setOpen(false)}>
+              <Coins className="w-4 h-4" /> {NAV_DIV[lang] || NAV_DIV.en}
             </NavLink>
           </div>
         )}

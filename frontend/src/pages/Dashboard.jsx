@@ -23,6 +23,7 @@ import EvolutionChart from "../components/dashboard/EvolutionChart";
 import AllocationWidget from "../components/dashboard/AllocationWidget";
 import AllocationTargetDialog from "../components/dashboard/AllocationTargetDialog";
 import AssetsTable from "../components/dashboard/AssetsTable";
+import DividendsCard from "../components/dashboard/DividendsCard";
 import MonthlyReturnsPreview from "../components/dashboard/MonthlyReturnsPreview";
 import LiquidityCard from "../components/dashboard/LiquidityCard";
 import {
@@ -1453,6 +1454,9 @@ const worstPerformer = useMemo(() => {
           load={load}
         />
       </div>
+
+      {/* Dividends preview (Pro; renders null for free users or no dividends) */}
+      <DividendsCard currency={currency} fxRates={fxRates} />
       </>
       )}
     </div>
