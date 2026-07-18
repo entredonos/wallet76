@@ -18,7 +18,7 @@ from core import (
     db, hash_password, verify_password, create_access_token, get_current_user,
     APP_URL, COOKIE_DOMAIN, check_rate_limit, logger, delete_all_user_data, write_auth_audit,
     create_2fa_pending_token, verify_2fa_pending_token,
-    invalidate_user_sessions, decode_access_token_silent,
+    invalidate_user_sessions, decode_access_token_silent, ADMIN_EMAILS,
 )
 from broker_connectors.crypto import decrypt_totp_secret
 from email_utils import send_email, email_layout, _log_email_task_result
@@ -198,6 +198,10 @@ async def me(user=Depends(get_current_user)):
     sub_status = full.get("subscription_status", "none")
     if sub_status in ("active", "trialing"):
         full["plan"] = "pro"
+    # is_admin exposto ao frontend (18 jul 2026) para deixar de haver o email de
+    # admin escrito no codigo publico. A seguranca real continua no backend
+    # (require_admin); isto so controla a visibilidade da UI de admin.
+    full["is_admin"] = full.get("email") in ADMIN_EMAILS or full.get("role") == "admin"
     return full
 
 
