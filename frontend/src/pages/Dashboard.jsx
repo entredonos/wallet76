@@ -24,7 +24,6 @@ import AllocationWidget from "../components/dashboard/AllocationWidget";
 import AllocationTargetDialog from "../components/dashboard/AllocationTargetDialog";
 import AssetsTable from "../components/dashboard/AssetsTable";
 import DividendsCard from "../components/dashboard/DividendsCard";
-import MonthlyReturnsPreview from "../components/dashboard/MonthlyReturnsPreview";
 import LiquidityCard from "../components/dashboard/LiquidityCard";
 import {
   SORT_OPTIONS, DEFAULT_VISIBLE_COLS, WIDGET_DEFS, DEFAULT_WIDGETS,
@@ -95,12 +94,17 @@ export default function Dashboard({ currency }) {
   // Widget config — persisted in localStorage
   const [widgetConfig, setWidgetConfig] = useState(() => {
     try {
-      const raw = localStorage.getItem("w76-dash-widgets");
+      // Chave "-v2" (19 jul 2026): a ordem por omissão foi reorganizada, por
+      // isso reiniciamos a config guardada uma vez para toda a gente ver a
+      // nova ordem (podem voltar a reordenar no editor de widgets).
+      const raw = localStorage.getItem("w76-dash-widgets-v2");
       if (raw) {
         const saved = JSON.parse(raw);
         const ids = new Set(saved.map((w) => w.id));
-        // Add any new widgets not yet in saved config
-        const merged = [...saved, ...WIDGET_DEFS.filter((d) => !ids.has(d.id)).map((d) => ({ id: d.id, enabled: true }))];
+        // Junta widgets novos e DESCARTA ids que já não existem (ex.: o
+        // antigo "monthly_returns", agora só na Análise).
+        const merged = [...saved, ...WIDGET_DEFS.filter((d) => !ids.has(d.id)).map((d) => ({ id: d.id, enabled: true }))]
+          .filter((w) => WIDGET_DEFS.some((d) => d.id === w.id));
         return merged;
       }
     } catch { /* noop */ }
@@ -127,7 +131,7 @@ export default function Dashboard({ currency }) {
   const pillVisible = (type) => !hiddenTypePills.includes(type);
   const walletPillVisible = (id) => !hiddenWalletPills.includes(id);
   useEffect(() => {
-    try { localStorage.setItem("w76-dash-widgets", JSON.stringify(widgetConfig)); } catch { /* noop */ }
+    try { localStorage.setItem("w76-dash-widgets-v2", JSON.stringify(widgetConfig)); } catch { /* noop */ }
   }, [widgetConfig]);
 
   // Widget helpers — defined AFTER widgetConfig state to avoid TDZ
@@ -1429,13 +1433,6 @@ const worstPerformer = useMemo(() => {
           onSaved={(targets) => setAllocTargets(targets)}
         />
       )}
-
-      {/* Retornos Mensais — prévia (6 jul 2026), link para a página Análise
-          completa. Pro-only (ver MonthlyReturnsPreview.jsx). */}
-      <div style={{ order: wOrder("monthly_returns"), display: wVisible("monthly_returns") ? undefined : "none" }}
-           data-testid="monthly-returns-widget">
-        <MonthlyReturnsPreview walletId={filterWallet} />
-      </div>
 
       {/* "Ativos e Liquidez" (7 jul 2026) — ver comentário em
           dashboardConstants.js (WIDGET_DEFS, id "liquidity") e

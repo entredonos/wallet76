@@ -101,26 +101,18 @@ export const DEFAULT_VISIBLE_COLS = ["type","price","qty","value","avg_cost","pn
 
 // ── Widget system ────────────────────────────────────────────────────────────
 export const WIDGET_DEFS = [
-  { id: "summary",         labelKey: "dash.widget_summary" },
-  // 7 jul 2026: "Ativos e Liquidez" — quanto da carteira é líquido (ações/
-  // ETFs/cripto/dinheiro, vendável quase de imediato) vs. menos líquido
-  // (fundos/obrigações/REITs, resgates mais lentos). Calculado a partir dos
-  // holdings já carregados (asset_type + value_usd), sem novo endpoint nem
-  // entrada manual de ativos — REITs já cobre exposição a imobiliário sem
-  // precisar de um tipo de ativo novo.
-  { id: "liquidity",       labelKey: "dash.widget_liquidity" },
-  { id: "top_movers",      labelKey: "dash.widget_top_movers" },
-  { id: "performers",      labelKey: "dash.widget_performers" },  // sub-row inside top_movers
-  { id: "evolution",       labelKey: "dash.widget_evolution" },
-  { id: "allocation",      labelKey: "dash.widget_allocation" },
-  // 6 jul 2026: prévia (últimos 12 meses + melhor/pior mês) do gráfico de
-  // Retornos Mensais que já existe na página Análise — pedido pelo
-  // utilizador para não ter de sair do Painel para ver isto. Reutiliza o
-  // mesmo endpoint /analytics; é Pro-only, tal como a página Análise em si
-  // (ver MonthlyReturnsPreview.jsx).
-  { id: "monthly_returns", labelKey: "dash.widget_monthly_returns" },
-  { id: "assets",          labelKey: "dash.widget_assets" },
-];
+  // Ordem por omissão (19 jul 2026) — pirâmide invertida: números -> tendência
+  // + composição (a dupla central) -> o que mexeu -> secundários -> detalhe.
+  { id: "summary",    labelKey: "dash.widget_summary" },
+  { id: "evolution",  labelKey: "dash.widget_evolution" },
+  { id: "allocation", labelKey: "dash.widget_allocation" },
+  { id: "top_movers", labelKey: "dash.widget_top_movers" },
+  { id: "performers", labelKey: "dash.widget_performers" }, // sub-linha dentro de top_movers
+  { id: "liquidity",  labelKey: "dash.widget_liquidity" },
+  { id: "assets",     labelKey: "dash.widget_assets" },
+  // "monthly_returns" removido do painel (19 jul 2026) — era uma prévia
+  // duplicada do gráfico que já vive na página Análise; fica só lá.
+]
 export const DEFAULT_WIDGETS = WIDGET_DEFS.map((d) => ({ id: d.id, enabled: true }));
 
 export const TINT_CLASSES = {
