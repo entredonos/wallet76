@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "../context/I18nContext";
-import { Receipt, Eye, BarChart2, Newspaper, Link2, Settings, ChevronRight } from "lucide-react";
+import { Receipt, Eye, BarChart2, Coins, Newspaper, Link2, Settings, ChevronRight } from "lucide-react";
 
 // "Mais" — 6º separador da bottom nav mobile (8 jul 2026). Antes disto, as
 // únicas formas de chegar a Transações/Watchlist/Análise/Notícias/Contas
@@ -16,6 +16,7 @@ const ITEMS = [
   { to: "/transactions", icon: Receipt, labelKey: "nav.transactions", color: "text-blue-400" },
   { to: "/watchlist", icon: Eye, labelKey: "nav.watchlist", color: "text-violet-400" },
   { to: "/analytics", icon: BarChart2, labelKey: "nav.analytics", color: "text-emerald-400" },
+  { to: "/dividends", icon: Coins, labelKey: "nav.dividends", color: "text-emerald-400" },
   { to: "/news", icon: Newspaper, labelKey: "nav.news", color: "text-amber-400" },
   { to: "/connected-accounts", icon: Link2, labelKey: "nav.brokers", color: "text-cyan-400" },
   { to: "/settings", icon: Settings, labelKey: "nav.settings", color: "text-zinc-400" },
