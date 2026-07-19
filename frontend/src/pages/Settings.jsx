@@ -36,8 +36,22 @@ export default function Settings() {
   const { t, lang } = useI18n();
   const navigate = useNavigate();
   const TG_PRO_MSG = { pt: "O Telegram é uma funcionalidade Pro.", en: "Telegram is a Pro feature.", fr: "Telegram est une fonctionnalité Pro.", de: "Telegram ist eine Pro-Funktion.", it: "Telegram è una funzionalità Pro.", es: "Telegram es una función Pro." };
+  const AUTOLOCK = {
+    pt: { title: "Bloqueio automático", inactivity: "Bloquear após inatividade", never: "Nunca", min: "min", bg: "Bloquear ao sair da app ou desligar o ecrã", hint: "Configura um PIN ou biometria acima para ativar o bloqueio automático." },
+    en: { title: "Auto-lock", inactivity: "Lock after inactivity", never: "Never", min: "min", bg: "Lock when leaving the app or the screen turns off", hint: "Set a PIN or biometric above to enable auto-lock." },
+    fr: { title: "Verrouillage auto", inactivity: "Verrouiller après inactivité", never: "Jamais", min: "min", bg: "Verrouiller en quittant l'app ou écran éteint", hint: "Configurez un PIN ou la biométrie ci-dessus pour activer le verrouillage auto." },
+    de: { title: "Automatische Sperre", inactivity: "Nach Inaktivität sperren", never: "Nie", min: "Min", bg: "Beim Verlassen der App oder Bildschirm aus sperren", hint: "Richten Sie oben eine PIN oder Biometrie ein, um die automatische Sperre zu aktivieren." },
+    it: { title: "Blocco automatico", inactivity: "Blocca dopo inattività", never: "Mai", min: "min", bg: "Blocca uscendo dall'app o a schermo spento", hint: "Imposta un PIN o la biometria sopra per attivare il blocco automatico." },
+    es: { title: "Bloqueo automático", inactivity: "Bloquear tras inactividad", never: "Nunca", min: "min", bg: "Bloquear al salir de la app o apagar la pantalla", hint: "Configura un PIN o biometría arriba para activar el bloqueo automático." },
+  };
+  const AL = AUTOLOCK[lang] || AUTOLOCK.en;
+  const [autolockMins, setAutolockMins] = useState(() => { try { const v = parseInt(localStorage.getItem("w76-autolock-mins"), 10); return Number.isNaN(v) ? 5 : v; } catch { return 5; } });
+  const [autolockBg, setAutolockBg] = useState(() => { try { return localStorage.getItem("w76-autolock-bg") !== "false"; } catch { return true; } });
+  const changeAutolockMins = (v) => { setAutolockMins(v); try { localStorage.setItem("w76-autolock-mins", String(v)); } catch { /* noop */ } };
+  const changeAutolockBg = (v) => { setAutolockBg(v); try { localStorage.setItem("w76-autolock-bg", v ? "true" : "false"); } catch { /* noop */ } };
   const { logout } = useAuth();
   const [status, setStatus] = useState({ lock_mode: "none", has_pin: false, biometric_count: 0, totp_enabled: false });
+  useEffect(() => { try { localStorage.setItem("w76-lock-mode", status.lock_mode || "none"); } catch { /* noop */ } }, [status.lock_mode]);
   const [pinDialog, setPinDialog] = useState(false);
   const [pin, setPin] = useState("");
   const [pinConfirm, setPinConfirm] = useState("");
@@ -522,6 +536,29 @@ export default function Settings() {
             </Button>
           )}
         </div>
+
+        {status.lock_mode !== "none" ? (
+          <div className="mt-6 pt-5 border-t border-zinc-800/60">
+            <div className="text-sm font-semibold text-zinc-200 mb-3">{AL.title}</div>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <label className="text-sm text-zinc-400">{AL.inactivity}</label>
+              <select value={autolockMins} onChange={(e) => changeAutolockMins(parseInt(e.target.value, 10))}
+                className="bg-zinc-900/60 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-200">
+                <option value={0}>{AL.never}</option>
+                <option value={1}>1 {AL.min}</option>
+                <option value={5}>5 {AL.min}</option>
+                <option value={15}>15 {AL.min}</option>
+                <option value={30}>30 {AL.min}</option>
+              </select>
+            </div>
+            <label className="flex items-center justify-between gap-3 cursor-pointer">
+              <span className="text-sm text-zinc-400">{AL.bg}</span>
+              <input type="checkbox" checked={autolockBg} onChange={(e) => changeAutolockBg(e.target.checked)} className="w-4 h-4 accent-emerald-500" />
+            </label>
+          </div>
+        ) : (
+          <div className="mt-6 pt-5 border-t border-zinc-800/60 text-xs text-zinc-500">{AL.hint}</div>
+        )}
       </div>
 
       {/* 2FA / TOTP (8 jul 2026) — cartão separado do de PIN/biometria: são

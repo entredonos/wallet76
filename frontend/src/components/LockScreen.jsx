@@ -48,10 +48,12 @@ export default function LockScreen({ onUnlock }) {
     try {
       const { data } = await api.get("/security/status");
       if (data.lock_mode === "none" || (data.lock_mode === "biometric" && isDesktopWeb)) {
+        try { localStorage.setItem("w76-lock-mode", "none"); } catch { /* noop */ }
         onUnlock?.();
         setStatus({ lock_mode: "none" });
         return;
       }
+      try { localStorage.setItem("w76-lock-mode", data.lock_mode); } catch { /* noop */ }
       setStatus(data);
       if (data.lock_mode === "biometric") {
         // auto-trigger biometric prompt (só chega aqui em telemóvel/nativo — ver isDesktopWeb acima)

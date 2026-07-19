@@ -117,6 +117,7 @@ import { I18nProvider } from "./context/I18nContext";
 import { PrivacyProvider } from "./context/PrivacyContext";
 import Layout from "./components/Layout";
 import LockScreen from "./components/LockScreen";
+import { useAutoLock } from "./hooks/useAutoLock";
 import WhatsNewModal from "./components/WhatsNewModal";
 import OnboardingWizard from "./components/OnboardingWizard";
 import ApkUpdateBanner from "./components/ApkUpdateBanner";
@@ -241,6 +242,7 @@ function PublicOnly({ children }) {
 function AppRoutes() {
   const [currency, setCurrency] = useState("USD");
   const [unlocked, setUnlocked] = useState(false);
+  useAutoLock(unlocked, setUnlocked);
   const wrap = (node) => (
     <Protected currency={currency} setCurrency={setCurrency} unlocked={unlocked} setUnlocked={setUnlocked}>{node}</Protected>
   );
