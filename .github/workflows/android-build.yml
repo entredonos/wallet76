@@ -162,6 +162,14 @@ jobs:
   # primeiro upload à Play Console é sempre manual (a Google só liberta a
   # Play Developer API depois de a app já existir na consola).
   build-release:
+    # Desligado por omissão (19 jul 2026) — este job só faz sentido quando
+    # se vai publicar na Play Store e exige os 4 Secrets de assinatura
+    # (ANDROID_RELEASE_*). Sem eles falhava a CADA push, enchendo o histórico
+    # do Actions de X vermelhos. Agora só corre quando existir a variável de
+    # repositório ANDROID_RELEASE_ENABLED = "true" (Settings -> Secrets and
+    # variables -> Actions -> Variables). Enquanto estiver desligado, aparece
+    # como "skipped" (cinzento) e o build-debug continua a gerar o APK normal.
+    if: ${{ vars.ANDROID_RELEASE_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     defaults:
       run:
