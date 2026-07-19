@@ -1,10 +1,9 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import {
   ComposedChart, Area, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 import { RefreshCw, ShieldAlert } from "lucide-react";
 import { renderDayBoundaries, renderWeekendBands } from "../ChartAnnotations";
-import { AreaTooltip } from "../CandlestickBar";
 import { CHART_RANGES, CHART_RANGES_SHOW_DATE } from "../../constants/chartRanges";
 import { fmtCurrency, curSymbol } from "../../lib/format";
 import { useI18n } from "../../context/I18nContext";
@@ -19,6 +18,16 @@ const RANGES = CHART_RANGES;
 // flag) is computed in Dashboard.jsx from `history`/`filtered`, since those
 // computations feed other widgets too (e.g. chartIsPositive is also used
 // by the summary cards' sparkline color).
+// Captura o ponto ativo do gráfico (hover/scrub) e reporta-o para cima, em
+// vez de desenhar uma caixa flutuante que tapa o gráfico (19 jul 2026). O
+// valor passa a aparecer no canto superior esquerdo (ver overlay abaixo).
+function EvoTipCapture({ active, payload, label, onChange }) {
+  React.useEffect(() => {
+    onChange(active && payload && payload.length ? { point: payload[0].payload, label } : null);
+  }, [active, payload, label, onChange]);
+  return null;
+}
+
 export default function EvolutionChart({
   filterType, usedSafetyNet, range, setRange, candleData, chartLoading,
   chartIsPositive, lineWeekendBands, lineDayBoundaries, candleYDomain,
@@ -26,6 +35,26 @@ export default function EvolutionChart({
   chartClasses = [], hiddenClasses, toggleClassLine,
 }) {
   const { t } = useI18n();
+
+  // Scrub-overlay (19 jul 2026): valor no canto do gráfico que segue o dedo.
+  const [active, setActive] = useState(null);
+  const onTip = useCallback((p) => setActive(p), []);
+  const firstC = candleData[0]?.c;
+  const lastCandle = candleData[candleData.length - 1];
+  const shownPoint = active?.point || lastCandle;
+  const shownLabel = active?.label ?? lastCandle?.t;
+  const shownVal = shownPoint?.c;
+  const chg = (shownVal != null && firstC != null) ? shownVal - firstC : 0;
+  const chgPct = firstC ? (chg / firstC) * 100 : 0;
+  const chgPos = chg >= 0;
+  const fmtWhen = (v) => {
+    try {
+      const d = new Date(v);
+      if (CHART_RANGES_SHOW_DATE.has(range)) return d.toLocaleDateString([], { day: "numeric", month: "short", year: "2-digit" });
+      return d.toLocaleString([], { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+    } catch { return ""; }
+  };
+
   return (
     <>
       <div className="flex items-center justify-between mb-4">
@@ -66,16 +95,21 @@ export default function EvolutionChart({
         </div>
       </div>
 
-      <div className="h-64 sm:h-72" data-testid="allocation-chart">
+      <div className="relative h-64 sm:h-72 [&_*]:outline-none" style={{ WebkitTapHighlightColor: "transparent" }} data-testid="allocation-chart">
         {candleData.length > 1 ? (
-          // minWidth/minHeight: sem isto, o Recharts por vezes mede o
-          // contentor com width(-1)/height(-1) mesmo antes do layout da
-          // grid assentar (mais notório ao trocar de carteira/tempo,
-          // que remonta este ResponsiveContainer do zero) e não desenha
-          // nada — mesmo com dados corretos. Garante sempre um tamanho
-          // válido para o primeiro render.
-          <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={180}>
-            <ComposedChart data={candleData} margin={{ top: 8, right: 14, left: 0, bottom: 4 }}>
+          <>
+            {shownVal != null && (
+              <div className="absolute top-2 left-2 z-10 pointer-events-none">
+                <div className="text-[10px] font-mono text-zinc-500">{fmtWhen(shownLabel)}</div>
+                <div className="text-lg font-bold text-zinc-100 leading-tight">{hideValues ? "•••••" : fmtCurrency(shownVal, currency)}</div>
+                <div className={`text-xs font-mono ${chgPos ? "text-emerald-400" : "text-red-400"}`}>
+                  {chgPos ? "▲" : "▼"} {hideValues ? "•••" : `${chgPos ? "+" : ""}${fmtCurrency(chg, currency)} · ${chgPos ? "+" : ""}${chgPct.toFixed(2)}%`}
+                </div>
+              </div>
+            )}
+            {/* minWidth/minHeight garante tamanho válido no 1.º render (recharts às vezes mede -1). */}
+            <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={180}>
+            <ComposedChart data={candleData} margin={{ top: 8, right: 14, left: 0, bottom: 4 }} onMouseLeave={() => setActive(null)}>
               <defs>
                 <linearGradient id="evoAreaFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={chartIsPositive ? "#10b981" : "#ef4444"} stopOpacity={0.35} />
@@ -152,7 +186,7 @@ export default function EvolutionChart({
                 <YAxis key={cls} yAxisId={cls} hide domain={["dataMin", "dataMax"]} />
               ))}
 
-              <Tooltip content={<AreaTooltip formatValue={(v) => (hideValues ? "•••••" : fmtCurrency(v, currency))} positive={chartIsPositive} chartClasses={chartClasses} hiddenClasses={hiddenClasses} />} />
+              <Tooltip cursor={{ stroke: "#52525b", strokeWidth: 1 }} content={<EvoTipCapture onChange={onTip} />} />
 
               {renderWeekendBands(lineWeekendBands)}
               {renderDayBoundaries(lineDayBoundaries)}
@@ -194,7 +228,8 @@ export default function EvolutionChart({
                 />
               ))}
             </ComposedChart>
-          </ResponsiveContainer>
+            </ResponsiveContainer>
+          </>
         ) : chartLoading ? (
           // Estado de carregamento distinto do "sem dados" — sem isto o
           // gráfico ficava indistinguível de vazio/partido enquanto o
