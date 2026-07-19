@@ -18,18 +18,22 @@ import GlobalSearch from "./GlobalSearch";
 import Sparkline from "./Sparkline";
 import FeedbackWidget from "./FeedbackWidget";
 import { onSidebarRefreshRequested } from "../lib/sidebarRefresh";
+import { usePlan } from "../hooks/usePlan";
 
 const TYPE_ICON = { broker: Briefcase, exchange: Coins, wallet: WalletIcon };
 // Routes collapsed under the "Portfólio" sidebar group (see REGRA de UX
 // discutida com o utilizador em jul/2026: agrupar as páginas de "gerir o
 // que tenho" para reduzir o nº de linhas visíveis na sidebar).
 const NAV_DIV = { pt: "Dividendos", en: "Dividends", fr: "Dividendes", de: "Dividenden", it: "Dividendi", es: "Dividendos" };
+const PREVIEW_MSG = { pt: "Pré-visualização de plano:", en: "Plan preview:", fr: "Aperçu du plan :", de: "Plan-Vorschau:", it: "Anteprima piano:", es: "Vista previa de plan:" };
+const PREVIEW_BACK = { pt: "voltar ao normal", en: "back to normal", fr: "revenir à la normale", de: "zurück zum Normalzustand", it: "torna al normale", es: "volver a lo normal" };
 const PORTFOLIO_GROUP_ROUTES = ["/wallets", "/transactions", "/watchlist", "/alerts", "/analytics", "/dividends"];
 
 export default function Layout({ children, currency, setCurrency }) {
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const { lang, setLang, t } = useI18n();
+  const { previewPlan } = usePlan();
   const nav = useNavigate();
   const loc = useLocation();
   const [wallets, setWallets] = useState([]);
@@ -475,6 +479,12 @@ export default function Layout({ children, currency, setCurrency }) {
           </button>
         </header>
 
+        {previewPlan && (
+          <div className="bg-amber-500/10 border-b border-amber-500/30 text-amber-300 text-xs px-4 py-2 flex items-center justify-center gap-3">
+            <span>{PREVIEW_MSG[lang] || PREVIEW_MSG.en} <b className="uppercase">{previewPlan}</b></span>
+            <a href="?plan=reset" className="underline hover:text-amber-200">{PREVIEW_BACK[lang] || PREVIEW_BACK.en}</a>
+          </div>
+        )}
         {/* Main content */}
         <main className="px-4 sm:px-6 lg:px-10 py-6 lg:py-8 pb-24 md:pb-8 max-w-[1600px] mx-auto">{children}</main>
       </div>
