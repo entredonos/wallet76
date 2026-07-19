@@ -18,16 +18,6 @@ const RANGES = CHART_RANGES;
 // flag) is computed in Dashboard.jsx from `history`/`filtered`, since those
 // computations feed other widgets too (e.g. chartIsPositive is also used
 // by the summary cards' sparkline color).
-// Captura o ponto ativo do gráfico (hover/scrub) e reporta-o para cima, em
-// vez de desenhar uma caixa flutuante que tapa o gráfico (19 jul 2026). O
-// valor passa a aparecer no canto superior esquerdo (ver overlay abaixo).
-function EvoTipCapture({ active, payload, label, onChange }) {
-  React.useEffect(() => {
-    onChange(active && payload && payload.length ? { point: payload[0].payload, label } : null);
-  }, [active, payload, label, onChange]);
-  return null;
-}
-
 export default function EvolutionChart({
   filterType, usedSafetyNet, range, setRange, candleData, chartLoading,
   chartIsPositive, lineWeekendBands, lineDayBoundaries, candleYDomain,
@@ -50,6 +40,16 @@ export default function EvolutionChart({
       return p;
     });
   }, []);
+  // Lê o ponto ativo a partir do EVENTO do gráfico (não de um efeito no
+  // conteúdo do tooltip) — assim nunca há re-render em ciclo. Funciona com
+  // rato e com toque.
+  const onMove = useCallback((st) => {
+    if (st && st.isTooltipActive && st.activePayload && st.activePayload.length) {
+      onTip({ point: st.activePayload[0].payload, label: st.activeLabel });
+    } else {
+      onTip(null);
+    }
+  }, [onTip]);
   const firstC = candleData[0]?.c;
   const lastCandle = candleData[candleData.length - 1];
   const shownPoint = active?.point || lastCandle;
@@ -120,7 +120,7 @@ export default function EvolutionChart({
             )}
             {/* minWidth/minHeight garante tamanho válido no 1.º render (recharts às vezes mede -1). */}
             <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={180}>
-            <ComposedChart data={candleData} margin={{ top: 8, right: 14, left: 0, bottom: 4 }} onMouseLeave={() => setActive(null)}>
+            <ComposedChart data={candleData} margin={{ top: 8, right: 14, left: 0, bottom: 4 }} onMouseMove={onMove} onTouchMove={onMove} onMouseLeave={() => onTip(null)}>
               <defs>
                 <linearGradient id="evoAreaFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={chartIsPositive ? "#10b981" : "#ef4444"} stopOpacity={0.35} />
@@ -197,7 +197,7 @@ export default function EvolutionChart({
                 <YAxis key={cls} yAxisId={cls} hide domain={["dataMin", "dataMax"]} />
               ))}
 
-              <Tooltip cursor={{ stroke: "#52525b", strokeWidth: 1 }} content={<EvoTipCapture onChange={onTip} />} />
+              <Tooltip cursor={{ stroke: "#52525b", strokeWidth: 1 }} content={() => null} />
 
               {renderWeekendBands(lineWeekendBands)}
               {renderDayBoundaries(lineDayBoundaries)}

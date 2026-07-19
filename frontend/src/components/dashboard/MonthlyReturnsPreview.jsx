@@ -114,7 +114,7 @@ export default function MonthlyReturnsPreview({ walletId }) {
         <>
           <div className="h-36">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={recent} margin={{ top: 12, right: 4, left: 4, bottom: 12 }}>
+              <BarChart data={recent} margin={{ top: 12, right: 4, left: 4, bottom: 22 }}>
                 <XAxis dataKey="month" hide />
                 <YAxis hide domain={[(min) => min - 4, (max) => max + 4]} />
                 <Bar dataKey="pct" radius={[2, 2, 0, 0]} isAnimationActive={false}>
