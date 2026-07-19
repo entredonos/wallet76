@@ -1455,8 +1455,12 @@ const worstPerformer = useMemo(() => {
         />
       </div>
 
-      {/* Dividends preview (Pro; renders null for free users or no dividends) */}
-      <DividendsCard currency={currency} fxRates={fxRates} />
+      {/* Dividends preview (Pro; renders null for free users or no dividends).
+          Shares the Liquidity widget's flex order so it sits right below
+          "Ativos e Liquidez" and follows it if the user reorders widgets. */}
+      <div style={{ order: wOrder("liquidity") }}>
+        <DividendsCard currency={currency} fxRates={fxRates} />
+      </div>
       </>
       )}
     </div>
