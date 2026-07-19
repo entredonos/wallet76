@@ -601,6 +601,15 @@ async def get_dividends(
             except Exception:
                 years_paying = 0
 
+            def _ts_to_iso(ts):
+                # Yahoo devolve exDividendDate/dividendDate como timestamp UNIX
+                # (segundos). Convertemos para "YYYY-MM-DD"; None quando ausente
+                # (nem todos os ativos expõem a data de pagamento).
+                try:
+                    return datetime.utcfromtimestamp(int(ts)).strftime("%Y-%m-%d") if ts else None
+                except Exception:
+                    return None
+
             return {
                 "symbol":           sym,
                 "frequency":        freq,
@@ -615,6 +624,8 @@ async def get_dividends(
                 "pay_month_days":   pay_month_days,
                 "years_paying":     years_paying,
                 "currency":         (info.get("currency") or "USD").upper(),
+                "ex_dividend_date": _ts_to_iso(info.get("exDividendDate")),
+                "pay_date":         _ts_to_iso(info.get("dividendDate")),
             }
         except Exception as exc:
             logger.warning(f"Dividend fetch failed for {sym}: {exc}")
