@@ -4,7 +4,7 @@ import { useI18n } from "../context/I18nContext";
 import { usePlan } from "../hooks/usePlan";
 import UpgradeOverlay from "../components/UpgradeOverlay";
 import { fmtCurrency, convert } from "../lib/format";
-import { Coins, CalendarDays, TrendingUp, X } from "lucide-react";
+import { Coins, CalendarDays, TrendingUp, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 const FREQ_DAYS = { monthly: 30, quarterly: 91, "semi-annual": 182, annual: 365 };
 const FREQ_PER_YEAR = { monthly: 12, quarterly: 4, "semi-annual": 2, annual: 1 };
@@ -44,6 +44,8 @@ export default function Dividends({ currency = "USD" }) {
   const [selectedDay, setSelectedDay] = useState(null);
   const [hoverMonth, setHoverMonth] = useState(null);
   const [pinMonth, setPinMonth] = useState(null);
+  const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
+  const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
 
   useEffect(() => {
     let cancelled = false;
@@ -135,9 +137,11 @@ export default function Dividends({ currency = "USD" }) {
   const activeMonth = hoverMonth != null ? hoverMonth : pinMonth;
 
   const now = new Date();
-  const year = now.getFullYear(), month = now.getMonth();
+  const year = viewYear, month = viewMonth;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startIdx = (new Date(year, month, 1).getDay() + 6) % 7;
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
+  const shiftMonth = (delta) => { const d = new Date(viewYear, viewMonth + delta, 1); setViewYear(d.getFullYear()); setViewMonth(d.getMonth()); setSelectedDay(null); };
   const { exDays, payDays } = useMemo(() => {
     const ex = new Set(), pay = new Set();
     projected.forEach((p) => {
@@ -205,9 +209,15 @@ export default function Dividends({ currency = "USD" }) {
             <div className="grid md:grid-cols-2 gap-3 mb-6">
               {/* Calendar */}
               <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-zinc-200 capitalize">
-                  <CalendarDays className="w-4 h-4 text-zinc-400" />
-                  {new Intl.DateTimeFormat(loc, { month: "long", year: "numeric" }).format(now)}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-zinc-200 capitalize">
+                    <CalendarDays className="w-4 h-4 text-zinc-400" />
+                    {new Intl.DateTimeFormat(loc, { month: "long", year: "numeric" }).format(new Date(year, month, 1))}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => shiftMonth(-1)} aria-label="prev" className="p-1 rounded-md hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                    <button onClick={() => shiftMonth(1)} aria-label="next" className="p-1 rounded-md hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors"><ChevronRight className="w-4 h-4" /></button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-7 gap-1.5">
                   {weekdays.map((w, i) => <div key={i} className="text-[10px] text-zinc-600 text-center uppercase">{w}</div>)}
@@ -217,7 +227,7 @@ export default function Dividends({ currency = "USD" }) {
                     const iso = `${year}-${pad(month + 1)}-${pad(day)}`;
                     const hasEx = exDays.has(day), hasPay = payDays.has(day);
                     const clickable = hasEx || hasPay;
-                    const isToday = day === now.getDate();
+                    const isToday = isCurrentMonth && day === now.getDate();
                     const isSel = selectedDay === iso;
                     return (
                       <button key={day} disabled={!clickable}
