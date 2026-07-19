@@ -68,27 +68,47 @@ export default function EvolutionChart({
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="text-sm font-medium text-zinc-300">{t("dash.evolution")}</div>
-          {filterType !== "all" && (
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-zinc-700 text-zinc-400 bg-zinc-800/60">
-              {TYPE_LABELS[filterType] ? t(TYPE_LABELS[filterType]) : filterType}
-            </span>
-          )}
-          {usedSafetyNet && (
-            <span
-              className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded border border-amber-500/30 text-amber-400 bg-amber-500/10"
-              title={t("dash.safety_net_tooltip")}
-              data-testid="safety-net-badge"
-            >
-              <ShieldAlert className="w-3 h-3"/>
-              {t("dash.safety_net_badge")}
-            </span>
+      <div className="flex items-start justify-between mb-4 gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-medium text-zinc-300">{t("dash.evolution")}</div>
+            {filterType !== "all" && (
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-zinc-700 text-zinc-400 bg-zinc-800/60">
+                {TYPE_LABELS[filterType] ? t(TYPE_LABELS[filterType]) : filterType}
+              </span>
+            )}
+            {usedSafetyNet && (
+              <span
+                className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded border border-amber-500/30 text-amber-400 bg-amber-500/10"
+                title={t("dash.safety_net_tooltip")}
+                data-testid="safety-net-badge"
+              >
+                <ShieldAlert className="w-3 h-3"/>
+                {t("dash.safety_net_badge")}
+              </span>
+            )}
+          </div>
+          {shownVal != null && (
+            <div className="mt-1.5" data-testid="evolution-header-value">
+              <div className="text-2xl font-bold text-zinc-100 leading-none">{hideValues ? "•••••" : fmtCurrency(shownVal, currency)}</div>
+              <div className="flex items-center gap-x-3 gap-y-1 mt-1.5 text-xs flex-wrap">
+                <span className={`font-mono ${chgPos ? "text-emerald-400" : "text-red-400"}`}>
+                  {chgPos ? "▲" : "▼"} {hideValues ? "•••" : `${chgPos ? "+" : ""}${fmtCurrency(chg, currency)} · ${chgPos ? "+" : ""}${chgPct.toFixed(2)}%`}
+                </span>
+                <span className="text-zinc-600 font-mono">{fmtWhen(shownLabel)}</span>
+                {chartClasses.filter((cls) => !hiddenClasses?.has(cls) && shownPoint && shownPoint[cls] != null).map((cls) => (
+                  <span key={cls} className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: ALLOCATION_CLASS_COLOR[cls] || ALLOCATION_CLASS_COLOR.other }} />
+                    <span className="text-zinc-500">{t(ALLOCATION_CLASS_LABEL_KEY[cls] || cls)}</span>
+                    <span className="text-zinc-300 font-mono">{hideValues ? "•••" : fmtCurrency(shownPoint[cls], currency)}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 
-        <div className="flex border border-zinc-800 rounded-md overflow-hidden" data-testid="range-selector">
+        <div className="flex border border-zinc-800 rounded-md overflow-hidden shrink-0" data-testid="range-selector">
           {RANGES.map((r) => (
             <button
               key={r.value}
@@ -108,28 +128,6 @@ export default function EvolutionChart({
 
       <div className="relative h-64 sm:h-72 [&_*]:outline-none" style={{ WebkitTapHighlightColor: "transparent" }} data-testid="allocation-chart">
         {candleData.length > 1 ? (
-          <>
-            {shownVal != null && (
-              <div className="absolute top-2 left-2 z-10 pointer-events-none bg-zinc-950/55 backdrop-blur-md rounded-lg px-2.5 py-1.5 border border-white/5 min-w-[140px]">
-                <div className="text-[10px] font-mono text-zinc-500">{fmtWhen(shownLabel)}</div>
-                <div className="text-lg font-bold text-zinc-100 leading-tight">{hideValues ? "•••••" : fmtCurrency(shownVal, currency)}</div>
-                <div className={`text-xs font-mono ${chgPos ? "text-emerald-400" : "text-red-400"}`}>
-                  {chgPos ? "▲" : "▼"} {hideValues ? "•••" : `${chgPos ? "+" : ""}${fmtCurrency(chg, currency)} · ${chgPos ? "+" : ""}${chgPct.toFixed(2)}%`}
-                </div>
-                {chartClasses.filter((cls) => !hiddenClasses?.has(cls) && shownPoint && shownPoint[cls] != null).length > 0 && (
-                  <div className="mt-1 pt-1 border-t border-white/5 space-y-0.5">
-                    {chartClasses.filter((cls) => !hiddenClasses?.has(cls) && shownPoint && shownPoint[cls] != null).map((cls) => (
-                      <div key={cls} className="flex items-center gap-1.5 text-[11px]">
-                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: ALLOCATION_CLASS_COLOR[cls] || ALLOCATION_CLASS_COLOR.other }} />
-                        <span className="text-zinc-400">{t(ALLOCATION_CLASS_LABEL_KEY[cls] || cls)}</span>
-                        <span className="text-zinc-200 font-mono ml-auto pl-3">{hideValues ? "•••" : fmtCurrency(shownPoint[cls], currency)}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-            {/* minWidth/minHeight garante tamanho válido no 1.º render (recharts às vezes mede -1). */}
             <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={180}>
             <ComposedChart data={candleData} margin={{ top: 8, right: 14, left: 0, bottom: 4 }} onMouseLeave={() => onTip(null)}>
               <defs>
@@ -251,7 +249,6 @@ export default function EvolutionChart({
               ))}
             </ComposedChart>
             </ResponsiveContainer>
-          </>
         ) : chartLoading ? (
           // Estado de carregamento distinto do "sem dados" — sem isto o
           // gráfico ficava indistinguível de vazio/partido enquanto o
