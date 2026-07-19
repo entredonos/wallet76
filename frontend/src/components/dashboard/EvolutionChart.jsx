@@ -38,7 +38,18 @@ export default function EvolutionChart({
 
   // Scrub-overlay (19 jul 2026): valor no canto do gráfico que segue o dedo.
   const [active, setActive] = useState(null);
-  const onTip = useCallback((p) => setActive(p), []);
+  // Guarda contra ciclo infinito: o recharts recria payload/label a cada
+  // render, por isso o efeito do EvoTipCapture dispara sempre; só atualizamos
+  // o estado quando o ponto (label) muda de facto — caso contrário devolvemos
+  // o mesmo objeto e o React não re-renderiza.
+  const onTip = useCallback((p) => {
+    setActive((prev) => {
+      const pl = prev?.label ?? null;
+      const nl = p?.label ?? null;
+      if (pl === nl) return prev;
+      return p;
+    });
+  }, []);
   const firstC = candleData[0]?.c;
   const lastCandle = candleData[candleData.length - 1];
   const shownPoint = active?.point || lastCandle;
