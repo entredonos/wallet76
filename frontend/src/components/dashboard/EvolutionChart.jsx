@@ -110,7 +110,7 @@ export default function EvolutionChart({
         {candleData.length > 1 ? (
           <>
             {shownVal != null && (
-              <div className="absolute top-2 left-2 z-10 pointer-events-none">
+              <div className="absolute top-2 left-2 z-10 pointer-events-none bg-zinc-950/55 backdrop-blur-md rounded-lg px-2.5 py-1.5 border border-white/5">
                 <div className="text-[10px] font-mono text-zinc-500">{fmtWhen(shownLabel)}</div>
                 <div className="text-lg font-bold text-zinc-100 leading-tight">{hideValues ? "•••••" : fmtCurrency(shownVal, currency)}</div>
                 <div className={`text-xs font-mono ${chgPos ? "text-emerald-400" : "text-red-400"}`}>

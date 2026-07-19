@@ -31,18 +31,31 @@ function PctLabel(props) {
   if (value === undefined || value === null) return null;
   const positive = value >= 0;
   const cx = x + width / 2;
-  const cy = positive ? y - 3 : y - 9;
+  // Linha do zero (topo do rect) calculada de forma robusta: em barras
+  // negativas o recharts nem sempre põe `y` na baseline, por isso usamos o
+  // menor entre y e y+height (= topo do rect = zero). As negativas ficam
+  // numa linha fixa acima do zero, na zona preta; fundo escuro por trás para
+  // se lerem sempre. (19 jul 2026)
+  const baseline = Math.min(y, y + height);
+  const cy = positive ? y - 3 : baseline - 12;
+  const txt = `${positive ? "+" : ""}${value.toFixed(1)}%`;
+  const chipW = txt.length * 5.4 + 6;
   return (
-    <text
-      x={cx}
-      y={cy}
-      textAnchor="middle"
-      fontSize={9}
-      fontFamily="ui-monospace, monospace"
-      fill={positive ? "#10b981" : "#ef4444"}
-    >
-      {`${positive ? "+" : ""}${value.toFixed(1)}%`}
-    </text>
+    <g>
+      {!positive && (
+        <rect x={cx - chipW / 2} y={cy - 9} width={chipW} height={12} rx={3} fill="#09090b" opacity={0.65} />
+      )}
+      <text
+        x={cx}
+        y={cy}
+        textAnchor="middle"
+        fontSize={9}
+        fontFamily="ui-monospace, monospace"
+        fill={positive ? "#10b981" : "#ef4444"}
+      >
+        {txt}
+      </text>
+    </g>
   );
 }
 
