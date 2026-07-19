@@ -37,7 +37,7 @@ function PctLabel(props) {
   // numa linha fixa acima do zero, na zona preta; fundo escuro por trás para
   // se lerem sempre. (19 jul 2026)
   const baseline = Math.min(y, y + height);
-  const cy = positive ? y - 3 : baseline - 12;
+  const cy = positive ? y - 3 : baseline - 6;
   const txt = `${positive ? "+" : ""}${value.toFixed(1)}%`;
   const chipW = txt.length * 5.4 + 6;
   return (

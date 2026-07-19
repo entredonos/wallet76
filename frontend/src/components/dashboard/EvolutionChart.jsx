@@ -110,12 +110,23 @@ export default function EvolutionChart({
         {candleData.length > 1 ? (
           <>
             {shownVal != null && (
-              <div className="absolute top-2 left-2 z-10 pointer-events-none bg-zinc-950/55 backdrop-blur-md rounded-lg px-2.5 py-1.5 border border-white/5">
+              <div className="absolute top-2 left-2 z-10 pointer-events-none bg-zinc-950/55 backdrop-blur-md rounded-lg px-2.5 py-1.5 border border-white/5 min-w-[140px]">
                 <div className="text-[10px] font-mono text-zinc-500">{fmtWhen(shownLabel)}</div>
                 <div className="text-lg font-bold text-zinc-100 leading-tight">{hideValues ? "•••••" : fmtCurrency(shownVal, currency)}</div>
                 <div className={`text-xs font-mono ${chgPos ? "text-emerald-400" : "text-red-400"}`}>
                   {chgPos ? "▲" : "▼"} {hideValues ? "•••" : `${chgPos ? "+" : ""}${fmtCurrency(chg, currency)} · ${chgPos ? "+" : ""}${chgPct.toFixed(2)}%`}
                 </div>
+                {chartClasses.filter((cls) => !hiddenClasses?.has(cls) && shownPoint && shownPoint[cls] != null).length > 0 && (
+                  <div className="mt-1 pt-1 border-t border-white/5 space-y-0.5">
+                    {chartClasses.filter((cls) => !hiddenClasses?.has(cls) && shownPoint && shownPoint[cls] != null).map((cls) => (
+                      <div key={cls} className="flex items-center gap-1.5 text-[11px]">
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: ALLOCATION_CLASS_COLOR[cls] || ALLOCATION_CLASS_COLOR.other }} />
+                        <span className="text-zinc-400">{t(ALLOCATION_CLASS_LABEL_KEY[cls] || cls)}</span>
+                        <span className="text-zinc-200 font-mono ml-auto pl-3">{hideValues ? "•••" : fmtCurrency(shownPoint[cls], currency)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
             {/* minWidth/minHeight garante tamanho válido no 1.º render (recharts às vezes mede -1). */}
