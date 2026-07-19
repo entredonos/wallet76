@@ -508,7 +508,25 @@ export default function Dashboard({ currency }) {
   // podem levar vários segundos) parecer um gráfico partido.
   useEffect(() => { setHistory([]); setChartLoading(true); }, [range, filterType, filterWallet]);
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [range, filterWallet, filterType]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [filterWallet, filterType]);
+  // Mudança de TEMPO (range) recarrega só o histórico do gráfico — não o
+  // portefólio/sparklines inteiros — para não parecer um "reload" de tudo
+  // (19 jul 2026). O primeiro mount é tratado pelo load() acima.
+  const rangeDidMountRef = useRef(true);
+  useEffect(() => {
+    if (rangeDidMountRef.current) { rangeDidMountRef.current = false; return; }
+    const myReqId = ++historyReqIdRef.current;
+    (async () => {
+      try {
+        const h = await api.get(`/history?range=${range}${filterWallet !== "all" ? `&wallet_id=${filterWallet}` : ""}${filterType !== "all" ? `&asset_type=${filterType}` : ""}`);
+        if (historyReqIdRef.current === myReqId) { setHistory(h.data || []); setChartLoading(false); writeCache("history", h.data || []); }
+      } catch (e) {
+        if (historyReqIdRef.current === myReqId) setChartLoading(false);
+        if (e?.response?.status === 401) toast.error(t("common.session_expired"), { id: "session-expired", duration: 15000 });
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range]);
   // Full reload every 5 minutes (history + sparklines + portfolio)
   useEffect(() => {
     const t = setInterval(() => { load(true); }, 300_000);

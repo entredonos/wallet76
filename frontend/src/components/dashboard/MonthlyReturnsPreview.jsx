@@ -19,16 +19,19 @@ function fmtMonthLabel(ym) {
 // mostre as percentagens"). Custom em vez do `position` nativo do LabelList
 // porque numa barra negativa o "top" do rect está na própria baseline (0) —
 // ficaria colado à barra do mês ao lado.
-// Positivas: por cima da barra. Negativas: por BAIXO da barra (19 jul 2026)
-// — antes ficavam junto à baseline (y - 5), vermelhas sobre/coladas à barra
-// vermelha e ilegíveis; agora vão para baixo do fundo do rect (y + height),
-// bem separadas e legíveis.
+// Positivas: por cima da barra. Negativas: numa LINHA FIXA logo acima da
+// baseline (zero), na zona preta/positiva — 19 jul 2026, pedido do
+// utilizador: "sempre ali, na parte dos positivos, independentemente dos
+// valores". Numa barra negativa `y` é a própria baseline (topo do rect), que
+// é a MESMA para todas as colunas, por isso `y - 9` alinha todas na mesma
+// linha; e como uma coluna negativa não tem barra positiva, esse espaço
+// acima do zero está vazio (preto) e a percentagem vermelha lê-se bem.
 function PctLabel(props) {
   const { x, y, width, height, value } = props;
   if (value === undefined || value === null) return null;
   const positive = value >= 0;
   const cx = x + width / 2;
-  const cy = positive ? y - 3 : y + height + 11;
+  const cy = positive ? y - 3 : y - 9;
   return (
     <text
       x={cx}
@@ -114,7 +117,7 @@ export default function MonthlyReturnsPreview({ walletId }) {
         <>
           <div className="h-36">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={recent} margin={{ top: 12, right: 4, left: 4, bottom: 22 }}>
+              <BarChart data={recent} margin={{ top: 12, right: 4, left: 4, bottom: 12 }}>
                 <XAxis dataKey="month" hide />
                 <YAxis hide domain={[(min) => min - 4, (max) => max + 4]} />
                 <Bar dataKey="pct" radius={[2, 2, 0, 0]} isAnimationActive={false}>
