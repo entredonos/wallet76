@@ -66,7 +66,7 @@ export default function AssetCard({
           <div className="text-zinc-100">{mask(fmtCurrency(convert(a.value_usd, currency, fxRates), currency))}</div>
         </div>
         <div className="text-right">
-          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-400">{t("dash.pnl")}</div>
+          <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-400 cursor-help" title={t("dash.pnl")}>{t("dash.pnl_short")}</div>
           <div className={pos ? "text-emerald-400" : "text-rose-400"}>
             {mask(fmtCurrency(convert(a.pnl_usd, currency, fxRates), currency))} <span className="text-xs">({fmtPct(a.pnl_pct)})</span>
           </div>
