@@ -51,7 +51,7 @@ export default function TopMoversWidget({ filtered, sorted, wallets, nav, curren
           (TopMoverRow), 2 colunas ficavam demasiado estreitas para o nome
           ser legível (truncava quase tudo); a largura total dá espaço a
           "SÍMBOLO · Nome" sem cortar logo a seguir ao símbolo. */}
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <ArrowUpRight className="w-4 h-4 text-emerald-400"/>
