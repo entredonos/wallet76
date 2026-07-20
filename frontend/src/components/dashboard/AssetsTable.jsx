@@ -73,28 +73,34 @@ export default function AssetsTable({
       </div>
 
       {/* Mobile — stacked cards */}
-      <div className="md:hidden divide-y divide-zinc-800/30">
+      <div className="md:hidden">
         {sorted.length === 0 && (
           <div className="text-center text-zinc-600 py-12 text-sm font-mono" data-testid="no-assets-mobile">
             {t("dash.no_assets")}
           </div>
         )}
-        {sorted.map((a) => (
-          <AssetCard
+        {/* Zebra por ativo (20 jul 2026) — fundo alternado para distinguir
+            cada cartão de relance, em vez de só uma linha divisória. */}
+        {sorted.map((a, i) => (
+          <div
             key={`${a.symbol}-${a.wallet_id}-${a.asset_type}`}
-            a={a}
-            wallets={wallets}
-            currency={currency}
-            fxRates={fxRates}
-            mask={mask}
-            hideValues={hideValues}
-            allocOverrides={allocOverrides}
-            reclassifyOpenKey={reclassifyOpenKey}
-            setReclassifyOpenKey={setReclassifyOpenKey}
-            saveOverride={saveOverride}
-            nav={nav}
-            load={load}
-          />
+            className={i % 2 === 1 ? "bg-zinc-800/25" : "bg-transparent"}
+          >
+            <AssetCard
+              a={a}
+              wallets={wallets}
+              currency={currency}
+              fxRates={fxRates}
+              mask={mask}
+              hideValues={hideValues}
+              allocOverrides={allocOverrides}
+              reclassifyOpenKey={reclassifyOpenKey}
+              setReclassifyOpenKey={setReclassifyOpenKey}
+              saveOverride={saveOverride}
+              nav={nav}
+              load={load}
+            />
+          </div>
         ))}
       </div>
 

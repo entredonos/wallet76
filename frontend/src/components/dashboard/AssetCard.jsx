@@ -32,7 +32,7 @@ export default function AssetCard({
   const overrideCls = allocOverrides[(a.symbol || "").toUpperCase()];
 
   return (
-    <div className="p-4 space-y-3" data-testid={`asset-card-${a.symbol}-${a.wallet_id}`}>
+    <div className="px-4 py-2.5 space-y-2" data-testid={`asset-card-${a.symbol}-${a.wallet_id}`}>
       <div className="flex items-start justify-between gap-3">
         <button
           type="button"

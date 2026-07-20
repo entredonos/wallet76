@@ -5,7 +5,7 @@ import {
 import { RefreshCw, ShieldAlert } from "lucide-react";
 import { renderDayBoundaries, renderWeekendBands } from "../ChartAnnotations";
 import { CHART_RANGES, CHART_RANGES_SHOW_DATE } from "../../constants/chartRanges";
-import { fmtCurrency, curSymbol } from "../../lib/format";
+import { fmtCurrency } from "../../lib/format";
 import { useI18n } from "../../context/I18nContext";
 import { TYPE_LABELS } from "../../constants/dashboardConstants";
 import { ALLOCATION_CLASS_LABEL_KEY, ALLOCATION_CLASS_COLOR } from "../../lib/allocation";
@@ -129,7 +129,7 @@ export default function EvolutionChart({
       <div className="relative h-64 sm:h-72 [&_*]:outline-none" style={{ WebkitTapHighlightColor: "transparent" }} data-testid="allocation-chart">
         {candleData.length > 1 ? (
             <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={180}>
-            <ComposedChart data={candleData} margin={{ top: 8, right: 12, left: -6, bottom: 4 }} onMouseLeave={() => onTip(null)}>
+            <ComposedChart data={candleData} margin={{ top: 8, right: 10, left: 6, bottom: 4 }} onMouseLeave={() => onTip(null)}>
               <defs>
                 <linearGradient id="evoAreaFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={chartIsPositive ? "#10b981" : "#ef4444"} stopOpacity={0.35} />
@@ -179,23 +179,10 @@ export default function EvolutionChart({
                 }}
               />
 
-              <YAxis
-                yAxisId="total"
-                stroke="#a1a1aa"
-                fontSize={11}
-                tickLine={false}
-                axisLine={false}
-                type="number"
-                width={40}
-                tickCount={4}
-                tick={{ fill: "#71717a", fontSize: 10 }}
-                domain={candleYDomain}
-                tickFormatter={(v) =>
-                  hideValues
-                    ? "•••"
-                    : `${curSymbol(currency)}${(v / 1000).toFixed(1)}K`
-                }
-              />
+              {/* Eixo Y escondido (20 jul 2026, pedido do utilizador) — o valor
+                  vive no cabeçalho (Opção 2) e no arrastar; o eixo só reservava
+                  espaço preto vazio à esquerda. Continua a definir a escala. */}
+              <YAxis yAxisId="total" hide domain={candleYDomain} />
 
               {/* Um eixo Y escondido POR CATEGORIA (7 jul 2026) — cada linha
                   fica com o seu próprio domain "dataMin"/"dataMax" em vez de
