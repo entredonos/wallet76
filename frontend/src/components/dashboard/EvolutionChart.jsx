@@ -129,7 +129,7 @@ export default function EvolutionChart({
       <div className="relative h-64 sm:h-72 [&_*]:outline-none" style={{ WebkitTapHighlightColor: "transparent" }} data-testid="allocation-chart">
         {candleData.length > 1 ? (
             <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={180}>
-            <ComposedChart data={candleData} margin={{ top: 8, right: 14, left: 0, bottom: 4 }} onMouseLeave={() => onTip(null)}>
+            <ComposedChart data={candleData} margin={{ top: 8, right: 12, left: -6, bottom: 4 }} onMouseLeave={() => onTip(null)}>
               <defs>
                 <linearGradient id="evoAreaFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={chartIsPositive ? "#10b981" : "#ef4444"} stopOpacity={0.35} />
@@ -185,8 +185,10 @@ export default function EvolutionChart({
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
-                width={52}
-                tickCount={5}
+                type="number"
+                width={40}
+                tickCount={4}
+                tick={{ fill: "#71717a", fontSize: 10 }}
                 domain={candleYDomain}
                 tickFormatter={(v) =>
                   hideValues
