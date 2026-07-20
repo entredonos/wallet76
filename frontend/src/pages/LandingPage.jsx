@@ -7,6 +7,7 @@ import {
   Lock, Server, FileText, RefreshCw, Newspaper, PieChart, Zap,
   Users, Star, ChevronRight, BarChart2, Activity, Check, X, BarChart3,
   Download, Share, SquarePlus, Eye, Smartphone, Baby, Heart, Bitcoin, Mail, Send, Gift,
+  Coins,
 } from "lucide-react";
 import {
   detectPlatform, isInstalled, canPromptInstall,
@@ -755,6 +756,15 @@ function BrowserFrame({ children }) {
 
 function getCopy(lang) { return COPY[lang] || COPY.en; }
 
+const DIV_COPY = {
+  pt: { badge: "Dividendos", title: "Sabe quanto e quando vais receber", sub: "Um calendário e uma agenda com todos os próximos dividendos das tuas posições — datas ex-dividendo e de pagamento, rendimento estimado por mês e totais na tua moeda.", next30: "Próximos 30 dias", est12: "Estimativa 12 meses", confirmed: "Confirmado", estimated: "Estimado", pay: "pag" },
+  en: { badge: "Dividends", title: "Know how much and when you'll get paid", sub: "A calendar and agenda of every upcoming dividend from your holdings — ex-dividend and payment dates, estimated monthly income and totals in your currency.", next30: "Next 30 days", est12: "12-month estimate", confirmed: "Confirmed", estimated: "Estimated", pay: "pay" },
+  fr: { badge: "Dividendes", title: "Sachez combien et quand vous serez payé", sub: "Un calendrier et une liste de tous les dividendes à venir de vos positions — dates ex-dividende et de versement, revenu mensuel estimé et totaux dans votre devise.", next30: "30 prochains jours", est12: "Estimation 12 mois", confirmed: "Confirmé", estimated: "Estimé", pay: "vers." },
+  de: { badge: "Dividenden", title: "Wissen Sie, wie viel und wann Sie ausgezahlt werden", sub: "Ein Kalender und eine Agenda aller anstehenden Dividenden Ihrer Positionen — Ex-Tag und Zahltag, geschätzter monatlicher Ertrag und Summen in Ihrer Währung.", next30: "Nächste 30 Tage", est12: "12-Monats-Schätzung", confirmed: "Bestätigt", estimated: "Geschätzt", pay: "Zahlg." },
+  it: { badge: "Dividendi", title: "Scopri quanto e quando verrai pagato", sub: "Un calendario e un'agenda di tutti i prossimi dividendi delle tue posizioni — date ex-dividendo e di pagamento, reddito mensile stimato e totali nella tua valuta.", next30: "Prossimi 30 giorni", est12: "Stima 12 mesi", confirmed: "Confermato", estimated: "Stimato", pay: "pag." },
+  es: { badge: "Dividendos", title: "Sabe cuánto y cuándo vas a cobrar", sub: "Un calendario y una agenda de todos los próximos dividendos de tus posiciones — fechas ex-dividendo y de pago, ingresos mensuales estimados y totales en tu moneda.", next30: "Próximos 30 días", est12: "Estimación 12 meses", confirmed: "Confirmado", estimated: "Estimado", pay: "pago" },
+};
+
 const FEAT_ICONS = [PieChart, Bell, Activity, Wallet, RefreshCw, Newspaper, BarChart3, Globe2, MonitorSmartphone, Users, Star, FileText];
 const FEAT_COLORS = [
   "text-blue-400 bg-blue-500/10 border-blue-500/20",
@@ -863,6 +873,7 @@ function MockDashboard({ c }) {
 
 export default function LandingPage() {
   const { lang, setLang } = useI18n();
+  const D = DIV_COPY[lang] || DIV_COPY.en;
   const c = getCopy(lang);
   const langs = LANGS_LIST[lang] || LANGS_LIST.en;
   const navigate = useNavigate();
@@ -1274,6 +1285,52 @@ export default function LandingPage() {
                 <span key={label} className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-300 border border-zinc-800 bg-zinc-900/60 rounded-full px-3 py-1.5">
                   <Icon className="w-3.5 h-3.5 text-amber-400" /> {label}
                 </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* DIVIDENDS SHOWCASE — 20 jul 2026: destaca o calendário de dividendos
+          (mockup à direita), mesmo estilo das outras secções ilustradas. */}
+      <section className="py-24 border-t border-zinc-800/60 bg-zinc-900/20">
+        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-xs text-emerald-300">
+              <Coins className="w-3.5 h-3.5" /> {D.badge}
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold mb-5 tracking-tight">{D.title}</h2>
+            <p className="text-zinc-400 text-lg leading-relaxed">{D.sub}</p>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-emerald-500/10">
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-3">
+                <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">{D.next30}</div>
+                <div className="text-lg font-mono font-bold text-zinc-100">€61,30</div>
+              </div>
+              <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-3">
+                <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">{D.est12}</div>
+                <div className="text-lg font-mono font-bold text-zinc-100">€742</div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {[
+                { sym: "O",  name: "Realty Income", color: "#60a5fa", ex: "01/08", pay: "15/08", amt: "€9,72",  conf: true },
+                { sym: "KO", name: "Coca-Cola",     color: "#ef4444", ex: "14/08", pay: "01/09", amt: "€13,39", conf: true },
+                { sym: "MS", name: "Microsoft",     color: "#22d3ee", ex: "20/08", pay: "11/09", amt: "€7,64",  conf: false },
+              ].map((d) => (
+                <div key={d.sym + d.pay} className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/50 rounded-xl px-3 py-2.5">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-extrabold text-zinc-950 shrink-0" style={{ background: d.color }}>{d.sym}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm text-zinc-100 truncate">{d.name}</div>
+                    <div className="text-[11px] font-mono text-zinc-500">ex {d.ex} · {D.pay} {d.pay}</div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-sm font-mono font-bold text-emerald-400">{d.amt}</div>
+                    <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full border ${d.conf ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10" : "border-amber-500/30 text-amber-400 bg-amber-500/10"}`}>{d.conf ? D.confirmed : D.estimated}</span>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
