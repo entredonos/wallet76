@@ -7,12 +7,12 @@ import { useAuth } from "../context/AuthContext";
  * isFree: boolean
  * isAdmin: boolean
  *
- * Pré-visualização (só admins): permite ver a app como se fosse de outro
- * plano, SEM mexer na conta. Ativa-se pelo URL e fica guardado até desligar:
- *   ?plan=free   → ver como plano Gratuito (limites + overlays de upgrade)
- *   ?plan=pro    → ver como Pro
- *   ?plan=reset  → voltar ao normal (a tua conta real)
- * Só afeta o que é MOSTRADO; o backend continua a aplicar os limites reais.
+ * Pré-visualização (só admins): ver a app como outro plano, SEM mexer na
+ * conta. Lida APENAS do URL e NÃO persiste (20 jul 2026 — antes ficava
+ * guardada e prendia o admin no modo grátis, inclusive na app Windows sem
+ * barra de endereço). Acrescenta ?plan=free (ou ?plan=pro) ao endereço de
+ * uma página; ao navegar/reabrir volta sozinho ao normal.
+ * Só afeta o que é MOSTRADO; o backend aplica sempre os limites reais.
  */
 export function usePlan() {
   const { user } = useAuth();
@@ -24,12 +24,11 @@ export function usePlan() {
 
   try {
     if (isAdmin && typeof window !== "undefined") {
+      // Limpa qualquer flag persistido de versões antigas (auto-desbloqueio).
+      try { localStorage.removeItem("w76-preview-plan"); } catch { /* noop */ }
       const q = new URLSearchParams(window.location.search).get("plan");
-      if (q === "free" || q === "pro") localStorage.setItem("w76-preview-plan", q);
-      else if (q === "reset" || q === "off" || q === "real") localStorage.removeItem("w76-preview-plan");
-      preview = localStorage.getItem("w76-preview-plan");
-      if (preview === "free") isPro = false;
-      else if (preview === "pro") isPro = true;
+      if (q === "free") { isPro = false; preview = "free"; }
+      else if (q === "pro") { isPro = true; preview = "pro"; }
     }
   } catch { /* ignore */ }
 
