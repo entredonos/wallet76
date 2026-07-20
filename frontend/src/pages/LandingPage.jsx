@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useI18n } from "../context/I18nContext";
 import logo from "../assets/wallet76-logo.png";
+import dividendsShot from "../assets/dividends-shot.png";
 import {
   Bell, Globe2, Wallet, ShieldCheck, MonitorSmartphone,
   Lock, Server, FileText, RefreshCw, Newspaper, PieChart, Zap,
@@ -1303,36 +1304,8 @@ export default function LandingPage() {
             <p className="text-zinc-400 text-lg leading-relaxed">{D.sub}</p>
           </div>
 
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-emerald-500/10">
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-3">
-                <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">{D.next30}</div>
-                <div className="text-lg font-mono font-bold text-zinc-100">€61,30</div>
-              </div>
-              <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-3">
-                <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">{D.est12}</div>
-                <div className="text-lg font-mono font-bold text-zinc-100">€742</div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              {[
-                { sym: "O",  name: "Realty Income", color: "#60a5fa", ex: "01/08", pay: "15/08", amt: "€9,72",  conf: true },
-                { sym: "KO", name: "Coca-Cola",     color: "#ef4444", ex: "14/08", pay: "01/09", amt: "€13,39", conf: true },
-                { sym: "MS", name: "Microsoft",     color: "#22d3ee", ex: "20/08", pay: "11/09", amt: "€7,64",  conf: false },
-              ].map((d) => (
-                <div key={d.sym + d.pay} className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/50 rounded-xl px-3 py-2.5">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-extrabold text-zinc-950 shrink-0" style={{ background: d.color }}>{d.sym}</div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm text-zinc-100 truncate">{d.name}</div>
-                    <div className="text-[11px] font-mono text-zinc-500">ex {d.ex} · {D.pay} {d.pay}</div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-sm font-mono font-bold text-emerald-400">{d.amt}</div>
-                    <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full border ${d.conf ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10" : "border-amber-500/30 text-amber-400 bg-amber-500/10"}`}>{d.conf ? D.confirmed : D.estimated}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-2 shadow-2xl shadow-emerald-500/10 overflow-hidden">
+            <img src={dividendsShot} alt={D.title} className="w-full rounded-xl" loading="lazy" />
           </div>
         </div>
       </section>
