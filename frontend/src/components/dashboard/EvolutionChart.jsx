@@ -68,7 +68,7 @@ export default function EvolutionChart({
 
   return (
     <>
-      <div className="flex items-start justify-between mb-4 gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <div className="text-sm font-medium text-zinc-300">{t("dash.evolution")}</div>
@@ -95,7 +95,7 @@ export default function EvolutionChart({
                 <span className={`font-mono ${chgPos ? "text-emerald-400" : "text-red-400"}`}>
                   {chgPos ? "▲" : "▼"} {hideValues ? "•••" : `${chgPos ? "+" : ""}${fmtCurrency(chg, currency)} · ${chgPos ? "+" : ""}${chgPct.toFixed(2)}%`}
                 </span>
-                <span className="text-zinc-600 font-mono">{fmtWhen(shownLabel)}</span>
+                <span className="text-zinc-600 font-mono whitespace-nowrap">{fmtWhen(shownLabel)}</span>
                 {chartClasses.filter((cls) => !hiddenClasses?.has(cls) && shownPoint && shownPoint[cls] != null).map((cls) => (
                   <span key={cls} className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: ALLOCATION_CLASS_COLOR[cls] || ALLOCATION_CLASS_COLOR.other }} />
@@ -108,7 +108,7 @@ export default function EvolutionChart({
           )}
         </div>
 
-        <div className="flex border border-zinc-800 rounded-md overflow-hidden shrink-0" data-testid="range-selector">
+        <div className="flex self-start border border-zinc-800 rounded-md overflow-x-auto no-scrollbar shrink-0 max-w-full" data-testid="range-selector">
           {RANGES.map((r) => (
             <button
               key={r.value}
@@ -185,7 +185,8 @@ export default function EvolutionChart({
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
-                width={58}
+                width={52}
+                tickCount={5}
                 domain={candleYDomain}
                 tickFormatter={(v) =>
                   hideValues
