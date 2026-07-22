@@ -57,3 +57,19 @@ tmp/
 .tmp/
 _backup_*/
 _backup_*/
+
+# --- Segredos / credenciais (NUNCA commitar) ---
+# Chave privada da service account do Firebase (Admin SDK) e afins
+*-firebase-adminsdk-*.json
+*serviceAccount*.json
+*service-account*.json
+*service_account*.json
+# Chaves e certificados
+*.pem
+*.p12
+*.pfx
+*.keystore
+*.jks
+# Pastas de segredos
+secrets/
+**/APP pass/
