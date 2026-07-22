@@ -550,7 +550,16 @@ export default function ConnectedAccounts() {
       <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-5 space-y-4">
         <div className="text-sm font-medium text-zinc-200">{t("brokers.add_title")}</div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {Object.entries(BROKERS).map(([key, meta]) => (
+          {Object.entries(BROKERS)
+            .sort(([ka, a], [kb, b]) => {
+              // "Manual / Outra" fica sempre no fim; o resto por ordem
+              // alfabética do nome (case-insensitive), para a lista crescer
+              // arrumada à medida que se adicionam corretoras/exchanges.
+              if (ka === "manual") return 1;
+              if (kb === "manual") return -1;
+              return (a.name || "").localeCompare(b.name || "");
+            })
+            .map(([key, meta]) => (
             <button
               key={key}
               onClick={() => setAddingBroker(addingBroker === key ? null : key)}
