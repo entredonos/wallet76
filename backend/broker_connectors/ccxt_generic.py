@@ -33,13 +33,46 @@ class CcxtError(Exception):
     pass
 
 
+def _ccxt():
+    try:
+        import ccxt.async_support as ccxt  # lazy — see module docstring
+        return ccxt
+    except ImportError as e:
+        raise CcxtError("ccxt library is not installed on the server") from e
+
+
 def _resolve_class(candidate_ids):
     """Return the first ccxt.async_support exchange class that exists."""
-    import ccxt.async_support as ccxt  # lazy — see module docstring
+    ccxt = _ccxt()
     for eid in candidate_ids:
         if hasattr(ccxt, eid):
             return getattr(ccxt, eid), eid
     raise CcxtError(f"No ccxt exchange found for ids {candidate_ids}")
+
+
+async def _try_balance(client):
+    """fetch_balance tolerante ao tipo de conta.
+
+    Algumas exchanges (sobretudo a Bybit, com conta UNIFIED/UTA) rejeitam o
+    fetch_balance por omissão e exigem o tipo de conta certo. Tentamos os
+    tipos comuns por ordem; um erro de AUTENTICAÇÃO é reenviado de imediato
+    (chave inválida de facto), os restantes fazem avançar para o tipo
+    seguinte, para não rejeitar uma chave válida só por causa do tipo de
+    conta.
+    """
+    ccxt = _ccxt()
+    last_err = None
+    for params in ({}, {"type": "unified"}, {"type": "spot"}, {"type": "funding"}, {"type": "swap"}):
+        try:
+            return await client.fetch_balance(params)
+        except ccxt.AuthenticationError:
+            raise
+        except Exception as e:  # noqa: BLE001
+            last_err = e
+            continue
+    if last_err:
+        raise last_err
+    raise CcxtError("fetch_balance failed for all account types")
 
 
 def _make_client(candidate_ids, api_key, api_secret, password=None):
@@ -51,13 +84,21 @@ def _make_client(candidate_ids, api_key, api_secret, password=None):
 
 
 async def validate_credentials(candidate_ids, api_key, api_secret, password=None) -> bool:
-    """Return True if the read-only credentials authenticate."""
+    """True se a chave autentica. Só rejeitamos num erro de AUTENTICAÇÃO real
+    (chave/assinatura inválida). Se autenticar mas o saldo falhar por outro
+    motivo (tipo de conta Bybit UNIFIED, permissão parcial), aceitamos — a
+    sincronização trata do resto, em vez de bloquear uma chave válida logo à
+    entrada com um "Invalid key" enganador.
+    """
+    ccxt = _ccxt()
     client, _eid = _make_client(candidate_ids, api_key, api_secret, password)
     try:
-        await client.fetch_balance()
+        await _try_balance(client)
         return True
-    except Exception:
+    except ccxt.AuthenticationError:
         return False
+    except Exception:
+        return True
     finally:
         try:
             await client.close()
@@ -120,7 +161,7 @@ async def fetch_transactions(candidate_ids, api_key, api_secret, password=None) 
 
         await client.load_markets()
 
-        balance = await client.fetch_balance()
+        balance = await _try_balance(client)
         totals = balance.get("total") or {}
         held = {
             c for c, amt in totals.items()
