@@ -136,6 +136,7 @@ export default function Transactions({ currency = "USD" }) {
             defaultSymbol={prefillSymbol}
             defaultAssetType={prefillType}
             defaultPrice={prefillPrice}
+            defaultWalletId={walletParam}
           />
         </div>
       </div>
@@ -444,7 +445,7 @@ function EditTransactionDialog({ txn, wallets, onClose, onSaved }) {
   );
 }
 
-function NewTransactionDialog({ open, setOpen, wallets, onSaved, defaultSymbol, defaultAssetType, defaultPrice }) {
+function NewTransactionDialog({ open, setOpen, wallets, onSaved, defaultSymbol, defaultAssetType, defaultPrice, defaultWalletId }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const [type, setType] = useState("BUY");
@@ -479,6 +480,18 @@ function NewTransactionDialog({ open, setOpen, wallets, onSaved, defaultSymbol, 
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   // Note: assetType tab change already resets picked/search inline (onValueChange handler)
+
+  // Pré-selecionar a carteira quando o formulário é aberto a partir de um
+  // atalho "+ Adicionar" de uma carteira específica (Dashboard passa
+  // ?wallet=<id>&open=1). Efeito próprio — e não dentro do de cima — porque
+  // as carteiras carregam de forma assíncrona: quando chegam, se o diálogo
+  // já estiver aberto e ainda sem carteira escolhida, escolhemos a certa.
+  // O guarda !walletId evita sobrepor uma escolha manual do utilizador.
+  useEffect(() => {
+    if (open && defaultWalletId && !walletId && wallets.some((w) => w.id === defaultWalletId)) {
+      setWalletId(defaultWalletId);
+    }
+  }, [open, wallets, defaultWalletId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (assetType === "cash") { setResults([]); return; }

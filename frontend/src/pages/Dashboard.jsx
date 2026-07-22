@@ -1161,7 +1161,7 @@ const worstPerformer = useMemo(() => {
               <Bell className="w-4 h-4 sm:mr-2"/> <span className="hidden sm:inline">{t("common.alerts")}</span>
             </Button>
           </Link>
-          <Link to="/transactions">
+          <Link to={selectedWallet ? `/transactions?wallet=${selectedWallet.id}&open=1` : "/transactions?open=1"}>
             <Button size="sm" className="bg-blue-500 hover:bg-blue-400 text-zinc-950 font-medium px-2.5 sm:px-3" title={t("common.add")} data-testid="goto-tx-btn">
               <Receipt className="w-4 h-4 sm:mr-2"/> <span className="hidden sm:inline">+ {t("common.add")}</span>
             </Button>
@@ -1289,7 +1289,7 @@ const worstPerformer = useMemo(() => {
                 changeLabel={fmtPct(summary.cost > 0 ? ((summary.total - summary.cost) / summary.cost) * 100 : 0)}
                 positive={(summary.total - summary.cost) >= 0}
                 sparkline={<Sparkline data={summarySparkData} positive={chartIsPositive} width={70} height={22} />}
-                onAdd={() => nav("/transactions")}
+                onAdd={() => nav(selectedWallet ? `/transactions?wallet=${selectedWallet.id}&open=1` : "/transactions?open=1")}
                 onAdvanced={() => setDashMode("advanced")}
                 loading={loading}
                 wallets={walletBreakdown.map((w) => ({
