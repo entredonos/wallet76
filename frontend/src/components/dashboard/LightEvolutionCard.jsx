@@ -69,21 +69,28 @@ export default function LightEvolutionCard({ title, points, changePct, loading, 
   // ponto com valor real dessa classe (pode faltar nalguns, ver
   // connectNulls removido) em vez de assumir sempre points[0].
   const displayClassPcts = useMemo(() => {
-    if (hoverIndex === null || !points.length) return null;
+    if (!points.length) return null;
+    // Sempre presente: quando não há hover, mostra a variação do período
+    // todo (endIdx = último ponto), igual ao badge principal; ao passar o
+    // rato/dedo, mostra a variação do início até ao ponto sob o cursor.
+    // Inclui as classes ocultas (para poderem voltar a ser ligadas no toggle).
+    const endIdx = hoverIndex === null ? points.length - 1 : hoverIndex;
     const result = {};
     for (const cls of chartClasses) {
-      if (hiddenClasses?.has(cls)) continue;
-      const cur = points[hoverIndex]?.[cls];
+      let cur = null;
+      for (let i = endIdx; i >= 0; i--) {
+        if (points[i]?.[cls] != null) { cur = points[i][cls]; break; }
+      }
       if (cur == null) continue;
       let first = null;
-      for (let i = 0; i <= hoverIndex; i++) {
+      for (let i = 0; i <= endIdx; i++) {
         if (points[i]?.[cls] != null) { first = points[i][cls]; break; }
       }
       if (first == null || first === 0) continue;
       result[cls] = ((cur - first) / first) * 100;
     }
     return result;
-  }, [hoverIndex, points, chartClasses, hiddenClasses]);
+  }, [hoverIndex, points, chartClasses]);
 
   return (
     <div
@@ -125,15 +132,36 @@ export default function LightEvolutionCard({ title, points, changePct, loading, 
           dedo/rato em cima do gráfico, mesma lógica do popup do painel
           avançado, adaptada ao estilo "badge" deste cartão (sem popup
           flutuante próprio). */}
-      {displayClassPcts && Object.keys(displayClassPcts).length > 0 && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-3 -mt-1" data-testid="light-evolution-hover-class-pcts">
-          {Object.entries(displayClassPcts).map(([cls, pct]) => (
-            <span key={cls} className="flex items-center gap-1 text-[10px] font-mono">
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: ALLOCATION_CLASS_COLOR[cls] || ALLOCATION_CLASS_COLOR.other }} />
-              <span className="text-zinc-400">{t(ALLOCATION_CLASS_LABEL_KEY[cls] || `common.${cls}`)}</span>
-              <span className={pct >= 0 ? "text-emerald-400" : "text-rose-400"}>{pct >= 0 ? "+" : ""}{pct.toFixed(1)}%</span>
-            </span>
-          ))}
+      {/* Linha de classes SEMPRE presente (7 jul -> 22 jul 2026): mostra a
+          variação por classe (período todo quando idle, até ao cursor ao
+          arrastar) e serve também de legenda com toggle. Antes só aparecia
+          em hover, o que empurrava o gráfico "uma linha para baixo" a cada
+          toque/clique. É também a legenda (clicar liga/desliga a linha),
+          por isso a legenda separada em baixo foi removida. */}
+      {chartClasses.length > 1 && displayClassPcts && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-3 -mt-1" data-testid="light-evolution-class-pcts">
+          {chartClasses.map((cls) => {
+            const isHidden = hiddenClasses?.has(cls);
+            const pct = displayClassPcts[cls];
+            const color = ALLOCATION_CLASS_COLOR[cls] || ALLOCATION_CLASS_COLOR.other;
+            return (
+              <button
+                key={cls}
+                type="button"
+                onClick={() => toggleClassLine?.(cls)}
+                className={`flex items-center gap-1 text-[10px] font-mono transition-opacity ${isHidden ? "opacity-40" : "opacity-100"}`}
+                data-testid={`light-evolution-class-legend-${cls}`}
+              >
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                <span className={isHidden ? "text-zinc-500 line-through" : "text-zinc-400"}>
+                  {t(ALLOCATION_CLASS_LABEL_KEY[cls] || `common.${cls}`)}
+                </span>
+                {pct != null && !isHidden && (
+                  <span className={pct >= 0 ? "text-emerald-400" : "text-rose-400"}>{pct >= 0 ? "+" : ""}{pct.toFixed(1)}%</span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -143,7 +171,7 @@ export default function LightEvolutionCard({ title, points, changePct, loading, 
           mais alto; um alvo de toque tão baixo torna o arrastar mais
           difícil de controlar com o dedo. Mais altura = mais espaço físico
           para deslizar com precisão. */}
-      <div className="h-[190px]" ref={chartAreaRef}>
+      <div className="h-[190px] [&_*]:outline-none select-none" ref={chartAreaRef} style={{ WebkitTapHighlightColor: "transparent" }}>
         {loading ? (
           <div className="h-full flex items-center justify-center text-zinc-600 text-sm font-mono">
             {t("dash.chart_loading")}
@@ -261,31 +289,7 @@ export default function LightEvolutionCard({ title, points, changePct, loading, 
         )}
       </div>
 
-      {/* Legenda compacta com toggle (7 jul 2026) — mesmo padrão do painel
-          avançado, mas mais apertada (gap menor, sem borda superior) para
-          caber num cartão pensado para ser pequeno. */}
-      {chartClasses.length > 1 && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2" data-testid="light-evolution-class-legend">
-          {chartClasses.map((cls) => {
-            const isHidden = hiddenClasses?.has(cls);
-            const color = ALLOCATION_CLASS_COLOR[cls] || ALLOCATION_CLASS_COLOR.other;
-            return (
-              <button
-                key={cls}
-                type="button"
-                onClick={() => toggleClassLine?.(cls)}
-                className={`flex items-center gap-1 text-[10px] font-mono transition-opacity ${isHidden ? "opacity-40" : "opacity-100"}`}
-                data-testid={`light-evolution-class-legend-${cls}`}
-              >
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                <span className={isHidden ? "text-zinc-500 line-through" : "text-zinc-300"}>
-                  {t(ALLOCATION_CLASS_LABEL_KEY[cls] || `common.${cls}`)}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+
     </div>
   );
 }
