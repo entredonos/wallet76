@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import { useI18n } from "../context/I18nContext";
 import { toast } from "sonner";
-import { RefreshCw, Trash2, Plus, CheckCircle, AlertCircle, Clock, ChevronDown, ChevronUp, ExternalLink, FileUp } from "lucide-react";
+import { RefreshCw, Trash2, Plus, CheckCircle, AlertCircle, Clock, ChevronDown, ChevronUp, ExternalLink, FileUp, Pencil } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -31,6 +31,7 @@ const BROKER_LOGOS = {
   cryptocom:  { color: "#2563EB", short: "CR" },
   gateio:     { color: "#E85C5C", short: "GA" },
   htx:        { color: "#3AA6FF", short: "HT" },
+  xtb:        { color: "#EC1C24", short: "XTB" },
 };
 
 const LOGO_EXT = ["svg", "png", "webp"];
@@ -46,6 +47,13 @@ function BrokerLogo({ brokerKey, meta, size = 32 }) {
     brand.short ||
     (meta?.name || "?").replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase();
   const box = { width: size, height: size, minWidth: size };
+  if (brokerKey === "manual") {
+    return (
+      <div style={box} className="rounded-lg flex items-center justify-center bg-zinc-800 text-zinc-300">
+        <Pencil style={{ width: size * 0.5, height: size * 0.5 }} />
+      </div>
+    );
+  }
   if (extIdx < LOGO_EXT.length) {
     return (
       <img
@@ -141,6 +149,18 @@ const getBROKERS = (t) => ({
     labelDefault: "Kraken",
     endpoint: "/brokers/kraken",
     security: [t("brokers.kraken.security.0"), t("brokers.kraken.security.1")],
+  },
+  xtb: {
+    name: "XTB",
+    logo: "📊",
+    description: t("brokers.xtb.description"),
+    fields: [
+      { key: "user_id",  label: t("brokers.xtb.field.user_id"), type: "text",     placeholder: "ex: 1234567" },
+      { key: "password", label: t("brokers.field.password"),    type: "password", placeholder: "xStation" },
+    ],
+    labelDefault: "XTB",
+    endpoint: "/brokers/xtb",
+    security: [t("brokers.xtb.security.0"), t("brokers.xtb.security.1")],
   },
   bybit: {
     name: "Bybit",

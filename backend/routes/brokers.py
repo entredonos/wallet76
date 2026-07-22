@@ -21,7 +21,7 @@ from broker_connectors.crypto import (
     encrypt_for_user_v3, decrypt_for_user_v3,
     get_or_create_user_aes_key, migrate_conn_to_v3,
 )
-from broker_connectors import degiro, ibkr, trading212, binance, coinbase, kraken, ccxt_generic
+from broker_connectors import degiro, ibkr, trading212, binance, coinbase, kraken, ccxt_generic, xtb
 from prices import get_fx_rates, resolve_asset_types_bulk
 
 router = APIRouter()
@@ -139,6 +139,12 @@ class AddCcxt(BaseModel):
     api_secret: str
     passphrase: Optional[str] = ""
     label: str = ""
+
+class AddXTB(BaseModel):
+    user_id: str
+    password: str
+    is_demo: bool = False
+    label: str = "XTB"
 
 
 # ---------------------------------------------------------------------------
@@ -349,6 +355,8 @@ async def _do_sync(conn_id: str, user_id: str, wallet_id: str | None, ip: str = 
             txns = await coinbase.fetch_transactions(dec("api_key"), dec("api_secret"), pp)
         elif broker == "kraken":
             txns = await kraken.fetch_transactions(dec("api_key"), dec("api_secret"))
+        elif broker == "xtb":
+            txns = await xtb.fetch_transactions(dec("user_id"), dec("password"), conn.get("is_demo", False))
         elif broker in CCXT_BROKERS:
             spec = CCXT_BROKERS[broker]
             pw = dec("passphrase") if creds_enc.get("passphrase") else None
@@ -541,3 +549,15 @@ async def add_ccxt_exchange(exchange_key: str, payload: AddCcxt, user=Depends(re
     if pw:
         raw["passphrase"] = pw
     return await _add_conn(user["id"], exchange_key, payload.label or spec["name"], raw)
+
+
+@router.post("/brokers/xtb")
+async def add_xtb(payload: AddXTB, user=Depends(require_active_subscription)):
+    """XTB (xStation API) — SÓ LEITURA. Autentica com userId + password; nunca
+    envia ordens. Ver broker_connectors/xtb.py."""
+    valid = await xtb.validate_credentials(payload.user_id, payload.password, payload.is_demo)
+    if not valid:
+        raise HTTPException(400, "Could not connect to XTB. Check your account number and xStation password.")
+    return await _add_conn(user["id"], "xtb", payload.label,
+                           {"user_id": payload.user_id, "password": payload.password},
+                           extra={"is_demo": payload.is_demo})
