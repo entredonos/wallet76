@@ -1,0 +1,230 @@
+name: Android build
+
+# Compila a app Android (Capacitor) sem precisares do Android Studio.
+#
+# Corre automaticamente sempre que algo em frontend/ muda no branch main, e
+# também pode ser disparado manualmente a qualquer momento (botão "Run
+# workflow" no separador Actions do GitHub) — útil para testar sem esperar
+# por um push.
+#
+# Por agora só gera um APK de DEBUG (não assinado para a Play Store, mas
+# perfeitamente instalável para testar num telemóvel Android via
+# "Instalar de fontes desconhecidas") — fica disponível para download como
+# "artifact" no final de cada execução, sem precisar de conta na Play
+# Console nem de keystore de assinatura.
+#
+# 12 jul 2026 — job "build-release" adicionado: compila um .aab de PRODUÇÃO
+# assinado com o keystore real (nunca comitado — vem de GitHub Secrets, ver
+# frontend/android/app/build.gradle). Este ficheiro é o que se sobe
+# manualmente à Play Console; este workflow NÃO publica automaticamente na
+# Play Store (isso exigiria uma service account própria da Play Console,
+# passo seguinte só depois do primeiro upload manual). Corre sempre que
+# build-debug corre, mas falha isoladamente sem afetar o build de debug se
+# os Secrets ainda não estiverem configurados.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/android-build.yml"
+  workflow_dispatch: {}
+
+# "contents: write" (8 jul 2026) — precisa para o passo abaixo que publica o
+# APK como GitHub Release em vez de só artifact: os artifacts do Actions só
+# são descarregáveis por quem tem sessão iniciada no GitHub e expiram ao fim
+# de 30 dias, por isso o banner "nova versão disponível" (ApkUpdateBanner.jsx)
+# dentro da app aponta antes para releases/latest, que é um link estável.
+permissions:
+  contents: write
+
+jobs:
+  build-debug:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      # Java 21 (não 17) — o próprio Capacitor gera capacitor.build.gradle
+      # com sourceCompatibility/targetCompatibility = VERSION_21; com JDK 17
+      # o javac falhava com "invalid source release: 21".
+      - name: Java (necessário para o Gradle/Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      # Cache das dependências do Gradle — sem isto, cada build descarrega
+      # de novo dezenas/centenas de MB de bibliotecas Android. Com cache,
+      # builds seguintes ficam bem mais rápidos.
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('frontend/android/gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: Instalar dependências do frontend
+        run: npm ci
+
+      # CI=false (8 jul 2026) — o GitHub define CI=true automaticamente, e o
+      # Create React App (react-scripts/craco) trata então os avisos do
+      # ESLint como erros fatais e para a build. Estes avisos já existiam
+      # antes desta pipeline (hooks com dependências em falta em várias
+      # páginas) e não impedem a app de funcionar — localmente e no deploy
+      # da Vercel isto passa sempre como aviso, não erro. Corrigi-los a
+      # sério é trabalho à parte; para já só repõe o mesmo comportamento
+      # não-fatal que já temos noutros sítios.
+      # REACT_APP_BACKEND_URL="" (9 jul 2026) — força explicitamente pedidos
+      # a caminhos relativos ("/api/...", apanhados pelo rewrite same-origin
+      # em vercel.json) neste build, para nunca ir direto a
+      # wallet76-1cvt.onrender.com independentemente de qualquer valor
+      # ambiente do runner. Descoberto via chrome://inspect que os pedidos da
+      # app estavam cross-site (não same-origin), o que fazia o WebView
+      # tratar o cookie de sessão como de terceiros e falhar a guardá-lo a
+      # tempo do pedido seguinte ("Sessão expirada" logo após o login).
+      - name: Build da web app
+        run: npm run build
+        env:
+          CI: false
+          REACT_APP_BACKEND_URL: ""
+
+      # Garante que a pasta android/ tem sempre a versão mais recente do
+      # build web (o android/ commitado pode estar uns commits atrás do
+      # build feito agora mesmo neste job).
+      - name: Sincronizar Capacitor
+        run: npx cap sync android
+
+      - name: Dar permissão de execução ao gradlew
+        run: chmod +x android/gradlew
+
+      - name: Compilar APK de debug
+        working-directory: frontend/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Publicar o APK como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wallet76-debug-apk
+          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      # 10 jul 2026 — apagar a release anterior ANTES de publicar a nova.
+      # Confirmado por hash (Get-FileHash no PowerShell) que o passo
+      # softprops/action-gh-release@v2 seguinte, ao "atualizar" uma release
+      # já existente com o mesmo tag_name, nem sempre substitui de facto o
+      # asset app-debug.apk anexado — o link releases/latest/download/...
+      # continuava a servir um ficheiro de um build bem mais antigo, mesmo
+      # com o job a reportar sucesso. Apagar a release por completo e deixar
+      # o passo seguinte criar uma nova do zero elimina essa ambiguidade.
+      # "|| true" porque na primeira vez que este workflow corre a release
+      # ainda não existe (gh release delete falhava e parava o job).
+      - name: Apagar release "android-latest" anterior (garante asset sempre atualizado)
+        run: gh release delete android-latest --yes --cleanup-tag || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Release com tag fixa "android-latest" (8 jul 2026) — sempre que este
+      # workflow corre, substitui o APK anexado à mesma release em vez de
+      # criar uma nova; dá um URL estável (releases/latest/download/...) que
+      # o ApkUpdateBanner.jsx da app usa para o link de download, e que ao
+      # contrário do artifact acima não expira nem exige login no GitHub
+      # (desde que o repositório seja público).
+      - name: Publicar o APK como GitHub Release (URL estável)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: "Wallet76 Android (debug)"
+          body: "APK de debug gerado automaticamente a partir do último commit em main. Não assinado para a Play Store — instala via \"permitir fontes desconhecidas\" no Android."
+          files: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 12 jul 2026 — .aab de produção para a Play Store. Precisa de 4 Secrets
+  # no repositório (Settings -> Secrets and variables -> Actions):
+  #   ANDROID_RELEASE_KEYSTORE_BASE64, ANDROID_RELEASE_STORE_PASSWORD,
+  #   ANDROID_RELEASE_KEY_ALIAS, ANDROID_RELEASE_KEY_PASSWORD
+  # Sem eles este job falha sozinho (o build-debug acima não é afetado —
+  # são jobs independentes). Produz só o .aab como artifact do Actions; o
+  # primeiro upload à Play Console é sempre manual (a Google só liberta a
+  # Play Developer API depois de a app já existir na consola).
+  build-release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Java (necessário para o Gradle/Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-release-${{ hashFiles('frontend/android/gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: Instalar dependências do frontend
+        run: npm ci
+
+      - name: Build da web app
+        run: npm run build
+        env:
+          CI: false
+          REACT_APP_BACKEND_URL: ""
+
+      - name: Sincronizar Capacitor
+        run: npx cap sync android
+
+      - name: Dar permissão de execução ao gradlew
+        run: chmod +x android/gradlew
+
+      # Reconstrói o keystore de produção a partir do Secret (nunca fica em
+      # texto no repositório, só existe neste runner efémero durante o job).
+      - name: Restaurar keystore de produção
+        working-directory: frontend/android/app
+        run: echo "${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+
+      - name: Compilar AAB de produção (assinado)
+        working-directory: frontend/android
+        run: ./gradlew bundleRelease --no-daemon
+        env:
+          WALLET76_RELEASE_STORE_FILE: release.keystore
+          WALLET76_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
+          WALLET76_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+          WALLET76_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+
+      - name: Publicar o AAB como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wallet76-release-aab
+          path: frontend/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 90

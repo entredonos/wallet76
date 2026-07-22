@@ -84,14 +84,25 @@ export function detectColumns(header) {
   const h = header.map((x) => (x || "").toString().toLowerCase().trim());
   const find = (...names) => h.findIndex((c) => names.some((n) => c === n.toLowerCase() || c.includes(n.toLowerCase())));
   return {
-    date:       find("open time", "date", "data", "datetime", "tradedate", "utc_time"),
-    type:       find("type", "side", "operation", "tipo", "buy/sell"),
-    symbol:     find("symbol", "ticker", "asset", "coin", "ativo"),
-    quantity:   find("volume", "quantity", "qty", "amount", "size", "quantidade", "change"),
-    price:      find("open price", "price", "preço", "preco", "rate", "avg"),
-    fee:        find("commission", "fee", "taxa", "fees"),
-    currency:   find("currency", "moeda", "fee currency", "ccy"),
-    asset_type: find("asset_type", "category", "instrument", "class"),
+    // Sinónimos alargados para reconhecer extratos de várias corretoras
+    // (PT/BR/US/UK/EU): XP, Nu, Inter, DEGIRO, IBKR, Fidelity, etc.
+    date:       find("open time", "trade date", "settlement date", "date/time", "datetime",
+                     "data do negócio", "data operação", "data pregão", "data negociação",
+                     "data", "fecha", "datum", "tradedate", "utc_time", "execução"),
+    type:       find("type", "side", "operation", "operação", "action", "transaction type",
+                     "movimentação", "natureza", "buy/sell", "compra/venda", "sentido", "tipo"),
+    symbol:     find("symbol", "ticker symbol", "ticker", "asset", "coin",
+                     "instrument", "product", "produto", "papel", "código", "codigo",
+                     "ativo", "activo", "valeur", "wertpapier"),
+    quantity:   find("volume", "quantity", "qty", "qtde", "qtd", "amount", "size",
+                     "shares", "units", "unidades", "quantidade", "cantidad", "menge", "change"),
+    price:      find("open price", "unit price", "price per share", "execution price", "price",
+                     "preço unitário", "preço médio", "preço", "preco", "cotação", "cotacao",
+                     "valor unitário", "rate", "avg", "prezzo", "precio", "kurs"),
+    fee:        find("commission", "corretagem", "emolumentos", "fee", "fees", "taxa", "taxas",
+                     "custos", "comissão", "comision", "gebühr", "frais"),
+    currency:   find("currency", "moeda", "divisa", "fee currency", "ccy", "währung", "devise"),
+    asset_type: find("asset_type", "instrument type", "tipo de ativo", "category", "classe", "class"),
     // Optional — lets a CSV pin the exact CoinGecko id per row (e.g.
     // "bitcoin", "ethereum") instead of relying on the backend's fallback
     // of lowercasing the symbol, which only coincidentally matches
@@ -125,6 +136,33 @@ export function extractXTBSections(allRows) {
   return sections;
 }
 
+// Converte números de vários formatos regionais para float. Trata o caso
+// europeu/brasileiro (vírgula decimal, ponto de milhares — ex. "1.234,56")
+// e o anglo-saxónico ("1,234.56"), que o simples strip de vírgulas antes
+// interpretava mal (transformava "1.234,56" em 1.234). Símbolos de moeda e
+// espaços são ignorados.
+export function parseNum(v) {
+  if (v == null) return NaN;
+  let s = v.toString().trim();
+  if (!s) return NaN;
+  const neg = /^\(.*\)$/.test(s) || s.trim().startsWith("-"); // (123) ou -123
+  s = s.replace(/[^\d.,]/g, "");
+  if (!s) return NaN;
+  const lastComma = s.lastIndexOf(",");
+  const lastDot = s.lastIndexOf(".");
+  if (lastComma > -1 && lastDot > -1) {
+    if (lastComma > lastDot) s = s.replace(/\./g, "").replace(",", ".");  // 1.234,56 -> 1234.56
+    else s = s.replace(/,/g, "");                                          // 1,234.56 -> 1234.56
+  } else if (lastComma > -1) {
+    // só vírgula: uma vírgula = separador decimal (convenção EU/BR);
+    // várias vírgulas = milhares -> remover.
+    s = (s.split(",").length - 1) === 1 ? s.replace(",", ".") : s.replace(/,/g, "");
+  }
+  const n = parseFloat(s);
+  if (Number.isNaN(n)) return NaN;
+  return neg ? -Math.abs(n) : n;
+}
+
 export function processRows(rows, defaultAssetType = "crypto") {
   if (!rows || rows.length < 2) return { items: [], skipped: [], error: "CSV/HTML is empty or invalid" };
   const header = rows[0];
@@ -140,19 +178,28 @@ export function processRows(rows, defaultAssetType = "crypto") {
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
     if (!r || r.length < 2) continue;
-    const rawType = (cols.type >= 0 ? r[cols.type] : "BUY").toString().toUpperCase();
+    const rawType = (cols.type >= 0 ? r[cols.type] : "BUY").toString().toUpperCase().trim();
+    // Normalização de compra/venda multi-idioma: EN buy/sell/purchase/sale,
+    // PT/BR compra/venda (C/V), ES venta, FR achat/vente, DE kauf/verkauf,
+    // IT acquisto/vendita, além de sinais +/-.
     let type = "BUY";
-    if (rawType.includes("SELL") || rawType.includes("VEND") || rawType === "S") type = "SELL";
-    else if (rawType.includes("BUY") || rawType.includes("COMPR") || rawType === "B") type = "BUY";
-    let qty = parseFloat((r[cols.quantity] || "").toString().replace(/[^\d.\-+e]/g, ""));
-    if (rawType.includes("SELL") && qty > 0) qty = Math.abs(qty);
+    const isSell = rawType.includes("SELL") || rawType.includes("SOLD") || rawType.includes("SALE")
+      || rawType.includes("VEND") || rawType.includes("VENT") || rawType.includes("VERKAUF")
+      || rawType === "S" || rawType === "V";
+    const isBuy = rawType.includes("BUY") || rawType.includes("BOUGHT") || rawType.includes("PURCHAS")
+      || rawType.includes("COMPR") || rawType.includes("ACHAT") || rawType.includes("KAUF")
+      || rawType.includes("ACQUIST") || rawType === "B" || rawType === "C";
+    if (isSell) type = "SELL";
+    else if (isBuy) type = "BUY";
+    let qty = parseNum(r[cols.quantity]);
+    if (type === "SELL" && qty > 0) qty = Math.abs(qty);
     if (Number.isNaN(qty) || qty === 0) { skipped.push({ row: i + 1, reason: "invalid quantity" }); continue; }
     if (qty < 0) { type = "SELL"; qty = Math.abs(qty); }
     const symbol = (r[cols.symbol] || "").toString().toUpperCase().trim()
       .replace(/\.US$/, "").replace(/\.UK$/, ".L").replace(/\.DE$/, ".DE").replace(/\.PL$/, ".WA");
     if (!symbol) { skipped.push({ row: i + 1, reason: "missing symbol" }); continue; }
-    const price = cols.price >= 0 ? parseFloat((r[cols.price] || "0").toString().replace(/[^\d.\-+e]/g, "")) : 0;
-    const fee   = cols.fee  >= 0 ? Math.abs(parseFloat((r[cols.fee]  || "0").toString().replace(/[^\d.\-+e]/g, "")) || 0) : 0;
+    const price = cols.price >= 0 ? (parseNum(r[cols.price]) || 0) : 0;
+    const fee   = cols.fee  >= 0 ? Math.abs(parseNum(r[cols.fee]) || 0) : 0;
     const currency = (cols.currency >= 0 ? (r[cols.currency] || "").toString().toUpperCase().trim() : "") || null;
     const dateRaw = cols.date >= 0 ? (r[cols.date] || "").toString().trim() : "";
     let date = new Date().toISOString().slice(0, 10);

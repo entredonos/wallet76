@@ -21,12 +21,26 @@ from broker_connectors.crypto import (
     encrypt_for_user_v3, decrypt_for_user_v3,
     get_or_create_user_aes_key, migrate_conn_to_v3,
 )
-from broker_connectors import degiro, ibkr, trading212, binance, coinbase, kraken
+from broker_connectors import degiro, ibkr, trading212, binance, coinbase, kraken, ccxt_generic
 from prices import get_fx_rates, resolve_asset_types_bulk
 
 router = APIRouter()
 
 BrokerType = Literal["degiro", "ibkr", "trading212", "binance", "coinbase", "kraken"]
+
+# Crypto exchanges handled generically via ccxt (broker_connectors/ccxt_generic.py).
+# Adding a new exchange = one entry here + one entry in the frontend broker list.
+# key -> {candidate ccxt ids, needs a passphrase, display name}
+CCXT_BROKERS: dict[str, dict] = {
+    "bybit":     {"ids": ["bybit"],          "password": False, "name": "Bybit"},
+    "okx":       {"ids": ["okx"],            "password": True,  "name": "OKX"},
+    "kucoin":    {"ids": ["kucoin"],         "password": True,  "name": "KuCoin"},
+    "bitget":    {"ids": ["bitget"],         "password": True,  "name": "Bitget"},
+    "mexc":      {"ids": ["mexc", "mexc3"],  "password": False, "name": "MEXC"},
+    "cryptocom": {"ids": ["cryptocom"],      "password": False, "name": "Crypto.com"},
+    "gateio":    {"ids": ["gate", "gateio"], "password": False, "name": "Gate.io"},
+    "htx":       {"ids": ["htx", "huobi"],   "password": False, "name": "HTX"},
+}
 
 
 # ---------------------------------------------------------------------------
@@ -119,6 +133,12 @@ class AddKraken(BaseModel):
     api_key: str
     api_secret: str
     label: str = "Kraken"
+
+class AddCcxt(BaseModel):
+    api_key: str
+    api_secret: str
+    passphrase: Optional[str] = ""
+    label: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -329,6 +349,12 @@ async def _do_sync(conn_id: str, user_id: str, wallet_id: str | None, ip: str = 
             txns = await coinbase.fetch_transactions(dec("api_key"), dec("api_secret"), pp)
         elif broker == "kraken":
             txns = await kraken.fetch_transactions(dec("api_key"), dec("api_secret"))
+        elif broker in CCXT_BROKERS:
+            spec = CCXT_BROKERS[broker]
+            pw = dec("passphrase") if creds_enc.get("passphrase") else None
+            txns = await ccxt_generic.fetch_transactions(
+                spec["ids"], dec("api_key"), dec("api_secret"), pw,
+            )
         else:
             return {"error": f"Unknown broker: {broker}"}
 
@@ -497,3 +523,21 @@ async def add_kraken(payload: AddKraken, user=Depends(require_active_subscriptio
         raise HTTPException(400, "Invalid Kraken API key or secret. Needs 'Query Funds' + 'Query Trades' permissions.")
     return await _add_conn(user["id"], "kraken", payload.label,
                            {"api_key": payload.api_key, "api_secret": payload.api_secret})
+
+
+@router.post("/brokers/ccxt/{exchange_key}")
+async def add_ccxt_exchange(exchange_key: str, payload: AddCcxt, user=Depends(require_active_subscription)):
+    """Generic add-endpoint for any ccxt-supported crypto exchange in CCXT_BROKERS."""
+    spec = CCXT_BROKERS.get(exchange_key)
+    if not spec:
+        raise HTTPException(404, f"Unsupported exchange: {exchange_key}")
+    pw = payload.passphrase or None
+    if spec["password"] and not pw:
+        raise HTTPException(400, f"{spec['name']} requires an API passphrase.")
+    valid = await ccxt_generic.validate_credentials(spec["ids"], payload.api_key, payload.api_secret, pw)
+    if not valid:
+        raise HTTPException(400, f"Invalid {spec['name']} API key/secret. Use a read-only key.")
+    raw = {"api_key": payload.api_key, "api_secret": payload.api_secret}
+    if pw:
+        raw["passphrase"] = pw
+    return await _add_conn(user["id"], exchange_key, payload.label or spec["name"], raw)

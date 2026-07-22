@@ -2,13 +2,11 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useI18n } from "../context/I18nContext";
 import logo from "../assets/wallet76-logo.png";
-import dividendsShot from "../assets/dividends-shot.png";
 import {
   Bell, Globe2, Wallet, ShieldCheck, MonitorSmartphone,
   Lock, Server, FileText, RefreshCw, Newspaper, PieChart, Zap,
   Users, Star, ChevronRight, BarChart2, Activity, Check, X, BarChart3,
   Download, Share, SquarePlus, Eye, Smartphone, Baby, Heart, Bitcoin, Mail, Send, Gift,
-  Coins,
 } from "lucide-react";
 import {
   detectPlatform, isInstalled, canPromptInstall,
@@ -51,7 +49,7 @@ const COPY = {
       { title: "Real-Time Price Alerts", body: "Set price targets with above/below conditions and get notified by email the instant an asset crosses your threshold. Never miss a buy or sell opportunity again." },
       { title: "Advanced Analytics", body: "Measure true performance with CAGR, Sharpe ratio, maximum drawdown, volatility and benchmark comparison vs S&P 500, BTC and more." },
       { title: "Multi-Wallet Organisation", body: "Separate investments into distinct portfolios — retirement, growth, crypto, speculation. Switch instantly and see consolidated or individual views." },
-      { title: "Broker & Exchange Sync", body: "Connect DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase, Kraken, Bybit, OKX, KuCoin, Bitget, MEXC, Crypto.com and Gate.io directly. Or import from any other broker via CSV or XLSX — we support all major export formats." },
+      { title: "Broker & Exchange Sync", body: "Connect DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase and Kraken directly. Or import from any other broker via CSV or XLSX — we support all major export formats." },
       { title: "Market Intelligence", body: "Live market movers, top gainers and losers, and curated financial news personalised to your holdings — all in one feed." },
       { title: "Deep Asset Research", body: "Click any asset to see analyst consensus, price targets, key metrics (P/E, EPS, Beta, 52W range, dividend yield) plus interactive charts across 11 time ranges." },
       { title: "6 Languages & 4 Currencies", body: "Full interface in English, Portuguese, French, German, Italian and Spanish. Display values in USD, EUR, CHF or BRL. The app adapts to you." },
@@ -63,7 +61,6 @@ const COPY = {
       { title: "Tax Report", body: "Realized gains and losses grouped by calendar year and asset, ready to export — a starting point for tax season." },
       { title: "Fee Transparency", body: "See how much you've paid in fees this year and in total, and what share that is of your current portfolio value." },
       { title: "Assets & Liquidity", body: "See at a glance how much of your portfolio you could sell this week vs. what's tied up in funds, bonds or REITs." },
-      { title: "Dividend Calendar", body: "See every upcoming dividend from your holdings on a calendar and agenda — ex-dividend and payment dates, estimated income per month, and totals in your base currency." },
     ],
     integrations_label: "Direct integrations",
     integrations_or: "or import from any broker via",
@@ -77,7 +74,7 @@ const COPY = {
     ],
     stats: [
       { value: "11", label: "Chart time ranges" },
-      { value: "14+", label: "Broker integrations" },
+      { value: "6+", label: "Broker integrations" },
       { value: "6",  label: "Languages" },
       { value: "4",  label: "Currencies (USD · EUR · CHF · BRL)" },
     ],
@@ -88,9 +85,9 @@ const COPY = {
     annual_label: "Pro Annual", annual_price: "€4.99", annual_period: "/ month", annual_desc: "Best value — billed €59.99/year.",
     annual_save: "Save 28%",
     pro_trial: "30-day free trial · Cancel anytime",
-    free_features: ["1 portfolio wallet","Up to 15 assets","3 price alerts (email)","Real-time price tracking","Transaction history","6 languages & 4 currencies","Basic dashboard"],
-    free_limits: ["No broker sync","No analytics","No watchlist","No portfolio sharing"],
-    pro_features: ["Unlimited wallets","Unlimited assets","Unlimited alerts (email, Telegram & push)","14 broker & exchange integrations","Advanced analytics (CAGR, Sharpe, drawdown)","Watchlist & market movers","Deep asset research & analyst data","Portfolio sharing link","CSV / XLSX import","Market news feed","Priority support","30-day free trial"],
+    free_features: ["1 portfolio wallet","Up to 10 assets","Real-time price tracking","Transaction history","6 languages & 4 currencies","Basic dashboard"],
+    free_limits: ["No price alerts","No broker sync","No analytics","No watchlist","No portfolio sharing"],
+    pro_features: ["Unlimited wallets","Unlimited assets","Price alerts via email","6 broker & exchange integrations","Advanced analytics (CAGR, Sharpe, drawdown)","Watchlist & market movers","Deep asset research & analyst data","Portfolio sharing link","CSV / XLSX import","Market news feed","Priority support","30-day free trial"],
     btn_free: "Get started free", btn_monthly: "Start free trial", btn_annual: "Start free trial",
     cta2_title: "Take control of your financial future.",
     cta2_sub: "Join investors who track smarter with Wallet76. Free to start, powerful to grow.",
@@ -140,7 +137,7 @@ const COPY = {
     alerts_status_triggered: "Triggered", alerts_status_active: "Active",
     sync_badge: "Set up once, stay in sync",
     sync_title: "Your brokers, automatically up to date.",
-    sync_sub: "Connect DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase, Kraken, Bybit, OKX, KuCoin, Bitget, MEXC, Crypto.com or Gate.io once — every new trade shows up on its own. Anything else imports from CSV or XLSX in seconds.",
+    sync_sub: "Connect DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase or Kraken once — every new trade shows up on its own. Anything else imports from CSV or XLSX in seconds.",
     sync_status: "Synced 3 min ago",
     screens_title: "See the real app, not a mockup",
     screens_sub: "Every screen below is an actual screenshot from Wallet76 — this is exactly what you'll see after signing up.",
@@ -167,7 +164,7 @@ const COPY = {
       { title: "Alertas de Preço em Tempo Real", body: "Defina alvos de preço com condições acima/abaixo e receba notificações por email assim que um ativo cruza o seu limiar. Nunca perca uma oportunidade de compra ou venda." },
       { title: "Análises Avançadas", body: "Meça o seu desempenho real com CAGR, rácio de Sharpe, drawdown máximo, volatilidade e comparação com benchmarks como S&P 500 e BTC." },
       { title: "Organização Multi-Carteira", body: "Separe os investimentos em carteiras distintas — reforma, crescimento, crypto, especulação. Alterne instantaneamente e veja vistas consolidadas ou individuais." },
-      { title: "Sincronização com Brokers", body: "Ligue diretamente o DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase, Kraken, Bybit, OKX, KuCoin, Bitget, MEXC, Crypto.com e Gate.io. Ou importe de qualquer outro broker via CSV ou XLSX — suportamos todos os formatos de exportação principais." },
+      { title: "Sincronização com Brokers", body: "Ligue diretamente o DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase e Kraken. Ou importe de qualquer outro broker via CSV ou XLSX — suportamos todos os formatos de exportação principais." },
       { title: "Inteligência de Mercado", body: "Movers de mercado ao vivo, maiores subidas e descidas, e notícias financeiras personalizadas para as suas posições — tudo num feed." },
       { title: "Pesquisa de Ativos em Profundidade", body: "Clique em qualquer ativo para ver consenso de analistas, alvos de preço, métricas-chave (P/E, EPS, Beta, range 52S, yield de dividendo) e gráficos históricos." },
       { title: "6 Línguas e 4 Moedas", body: "Interface completa em inglês, português, francês, alemão, italiano e espanhol. Valores em USD, EUR, CHF ou BRL. A app adapta-se a si." },
@@ -179,7 +176,6 @@ const COPY = {
       { title: "Relatório Fiscal", body: "Ganhos e perdas realizados agrupados por ano e por ativo, prontos a exportar — um ponto de partida para a época de impostos." },
       { title: "Transparência de Comissões", body: "Veja quanto pagou em comissões este ano e no total, e que peso isso tem no valor da sua carteira." },
       { title: "Ativos e Liquidez", body: "Veja num relance quanto da sua carteira pode vender esta semana vs. o que está em fundos, obrigações ou REITs." },
-      { title: "Calendário de Dividendos", body: "Veja todos os próximos dividendos das suas posições em calendário e agenda — datas ex-dividendo e de pagamento, rendimento estimado por mês e totais na sua moeda base." },
     ],
     integrations_label: "Integrações diretas",
     integrations_or: "ou importe de qualquer broker via",
@@ -193,7 +189,7 @@ const COPY = {
     ],
     stats: [
       { value: "11", label: "Intervalos de gráfico" },
-      { value: "14+", label: "Integrações de brokers" },
+      { value: "6+", label: "Integrações de brokers" },
       { value: "6",  label: "Línguas" },
       { value: "4",  label: "Moedas (USD · EUR · CHF · BRL)" },
     ],
@@ -204,9 +200,9 @@ const COPY = {
     annual_label: "Pro Anual", annual_price: "4,99€", annual_period: "/ mês", annual_desc: "Melhor valor — faturado 59,99€/ano.",
     annual_save: "Poupe 28%",
     pro_trial: "30 dias de teste grátis · Cancele a qualquer momento",
-    free_features: ["1 carteira","Até 15 ativos","3 alertas de preço (email)","Preços em tempo real","Histórico de transações","6 línguas e 4 moedas","Dashboard básico"],
-    free_limits: ["Sem sincronização com brokers","Sem análises avançadas","Sem watchlist","Sem partilha de carteira"],
-    pro_features: ["Carteiras ilimitadas","Ativos ilimitados","Alertas ilimitados (email, Telegram e push)","14 integrações de brokers/exchanges","Análises avançadas (CAGR, Sharpe, drawdown)","Watchlist e movers de mercado","Pesquisa de ativos e dados de analistas","Link de partilha de carteira","Importação CSV / XLSX","Feed de notícias financeiras","Suporte prioritário","30 dias de teste grátis"],
+    free_features: ["1 carteira","Até 10 ativos","Preços em tempo real","Histórico de transações","6 línguas e 4 moedas","Dashboard básico"],
+    free_limits: ["Sem alertas de preço","Sem sincronização com brokers","Sem análises avançadas","Sem watchlist","Sem partilha de carteira"],
+    pro_features: ["Carteiras ilimitadas","Ativos ilimitados","Alertas de preço por email","6 integrações de brokers/exchanges","Análises avançadas (CAGR, Sharpe, drawdown)","Watchlist e movers de mercado","Pesquisa de ativos e dados de analistas","Link de partilha de carteira","Importação CSV / XLSX","Feed de notícias financeiras","Suporte prioritário","30 dias de teste grátis"],
     btn_free: "Criar conta grátis", btn_monthly: "Iniciar teste grátis", btn_annual: "Iniciar teste grátis",
     cta2_title: "Tome o controlo do seu futuro financeiro.",
     cta2_sub: "Junte-se aos investidores que acompanham de forma mais inteligente com o Wallet76. Grátis para começar, poderoso para crescer.",
@@ -256,7 +252,7 @@ const COPY = {
     alerts_status_triggered: "Acionado", alerts_status_active: "Ativo",
     sync_badge: "Configura uma vez, fica sempre sincronizado",
     sync_title: "Os teus brokers, sempre atualizados sozinhos.",
-    sync_sub: "Liga o DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase, Kraken, Bybit, OKX, KuCoin, Bitget, MEXC, Crypto.com ou Gate.io uma vez — cada nova transação aparece sozinha. O resto importa-se por CSV ou XLSX em segundos.",
+    sync_sub: "Liga o DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase ou Kraken uma vez — cada nova transação aparece sozinha. O resto importa-se por CSV ou XLSX em segundos.",
     sync_status: "Sincronizado há 3 min",
     screens_title: "A app real, sem mockups",
     screens_sub: "Cada ecrã abaixo é uma captura real do Wallet76 — é exatamente isto que vai ver depois de se registar.",
@@ -283,7 +279,7 @@ const COPY = {
       { title: "Alertes de Prix en Temps Réel", body: "Définissez des cibles avec conditions au-dessus/en-dessous et recevez une notification par email dès qu'un actif franchit votre seuil." },
       { title: "Analyses Avancées", body: "Mesurez vos vraies performances avec CAGR, ratio de Sharpe, drawdown maximum, volatilité et comparaison avec des benchmarks comme le S&P 500 et BTC." },
       { title: "Organisation Multi-Portefeuille", body: "Séparez vos investissements en portefeuilles distincts — retraite, croissance, crypto, spéculation. Basculez instantanément entre vues consolidées ou individuelles." },
-      { title: "Synchronisation Courtiers", body: "Connectez directement DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase, Kraken, Bybit, OKX, KuCoin, Bitget, MEXC, Crypto.com et Gate.io. Ou importez depuis tout autre courtier via CSV ou XLSX." },
+      { title: "Synchronisation Courtiers", body: "Connectez directement DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase et Kraken. Ou importez depuis tout autre courtier via CSV ou XLSX." },
       { title: "Intelligence de Marché", body: "Movers de marché en direct, meilleures hausses et baisses, et actualités financières personnalisées selon vos positions." },
       { title: "Recherche d'Actifs en Profondeur", body: "Cliquez sur un actif pour voir le consensus des analystes, les cibles de prix, les métriques clés (P/E, EPS, Bêta, plage 52S, rendement du dividende) et des graphiques interactifs." },
       { title: "6 Langues et 4 Devises", body: "Interface complète en anglais, portugais, français, allemand, italien et espagnol. Valeurs en USD, EUR, CHF ou BRL. L'application s'adapte à vous." },
@@ -295,7 +291,6 @@ const COPY = {
       { title: "Rapport Fiscal", body: "Plus-values et moins-values réalisées regroupées par année civile et par actif, prêtes à exporter — un point de départ pour la période fiscale." },
       { title: "Transparence des Frais", body: "Voyez combien vous avez payé en frais cette année et au total, et quelle part cela représente de la valeur actuelle de votre portefeuille." },
       { title: "Actifs et Liquidité", body: "Voyez en un coup d'œil combien de votre portefeuille est vendable cette semaine vs. ce qui est immobilisé en fonds, obligations ou REIT." },
-      { title: "Calendrier des Dividendes", body: "Visualisez tous les dividendes à venir de vos positions dans un calendrier et une liste — dates ex-dividende et de versement, revenu estimé par mois et totaux dans votre devise de base." },
     ],
     integrations_label: "Intégrations directes",
     integrations_or: "ou importez depuis tout courtier via",
@@ -309,7 +304,7 @@ const COPY = {
     ],
     stats: [
       { value: "11", label: "Plages de graphique" },
-      { value: "14+", label: "Intégrations de courtiers" },
+      { value: "6+", label: "Intégrations de courtiers" },
       { value: "6",  label: "Langues" },
       { value: "4",  label: "Devises (USD · EUR · CHF · BRL)" },
     ],
@@ -320,9 +315,9 @@ const COPY = {
     annual_label: "Pro Annuel", annual_price: "4,99€", annual_period: "/ mois", annual_desc: "Meilleure valeur — facturé 59,99€/an.",
     annual_save: "Économisez 28%",
     pro_trial: "30 jours d'essai gratuit · Annulez à tout moment",
-    free_features: ["1 portefeuille","Jusqu'à 15 actifs","3 alertes de prix (e-mail)","Suivi des prix en temps réel","Historique des transactions","6 langues et 4 devises","Tableau de bord de base"],
-    free_limits: ["Sans synchro courtiers","Sans analyses avancées","Sans watchlist","Sans partage de portefeuille"],
-    pro_features: ["Portefeuilles illimités","Actifs illimités","Alertes illimitées (e-mail, Telegram et push)","14 intégrations courtiers/exchanges","Analyses avancées (CAGR, Sharpe, drawdown)","Watchlist et movers de marché","Recherche d'actifs et données analystes","Lien de partage de portefeuille","Import CSV / XLSX","Fil d'actualités financières","Support prioritaire","30 jours d'essai gratuit"],
+    free_features: ["1 portefeuille","Jusqu'à 10 actifs","Suivi des prix en temps réel","Historique des transactions","6 langues et 4 devises","Tableau de bord de base"],
+    free_limits: ["Sans alertes de prix","Sans synchro courtiers","Sans analyses avancées","Sans watchlist","Sans partage de portefeuille"],
+    pro_features: ["Portefeuilles illimités","Actifs illimités","Alertes de prix par email","6 intégrations courtiers/exchanges","Analyses avancées (CAGR, Sharpe, drawdown)","Watchlist et movers de marché","Recherche d'actifs et données analystes","Lien de partage de portefeuille","Import CSV / XLSX","Fil d'actualités financières","Support prioritaire","30 jours d'essai gratuit"],
     btn_free: "Créer un compte gratuit", btn_monthly: "Démarrer l'essai gratuit", btn_annual: "Démarrer l'essai gratuit",
     cta2_title: "Prenez le contrôle de votre avenir financier.",
     cta2_sub: "Rejoignez les investisseurs qui suivent plus intelligemment avec Wallet76. Gratuit pour commencer, puissant pour grandir.",
@@ -372,7 +367,7 @@ const COPY = {
     alerts_status_triggered: "Déclenché", alerts_status_active: "Actif",
     sync_badge: "Configurez une fois, restez synchronisé",
     sync_title: "Vos courtiers, toujours à jour automatiquement.",
-    sync_sub: "Connectez DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase, Kraken, Bybit, OKX, KuCoin, Bitget, MEXC, Crypto.com ou Gate.io une fois — chaque nouvelle transaction apparaît toute seule. Le reste s'importe via CSV ou XLSX en quelques secondes.",
+    sync_sub: "Connectez DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase ou Kraken une fois — chaque nouvelle transaction apparaît toute seule. Le reste s'importe via CSV ou XLSX en quelques secondes.",
     sync_status: "Synchronisé il y a 3 min",
     screens_title: "La vraie app, pas une maquette",
     screens_sub: "Chaque écran ci-dessous est une capture réelle de Wallet76 — c'est exactement ce que vous verrez après inscription.",
@@ -399,7 +394,7 @@ const COPY = {
       { title: "Echtzeit-Preisalarme", body: "Legen Sie Preisziele mit Über-/Unterkonditionen fest und erhalten Sie per E-Mail eine Benachrichtigung, sobald ein Asset Ihre Schwelle überschreitet." },
       { title: "Fortgeschrittene Analysen", body: "Messen Sie Ihre wahre Performance mit CAGR, Sharpe-Ratio, maximalem Drawdown, Volatilität und Benchmarkvergleich gegenüber S&P 500, BTC und mehr." },
       { title: "Multi-Depot-Organisation", body: "Trennen Sie Investitionen in verschiedene Portfolios — Rente, Wachstum, Krypto, Spekulation. Wechseln Sie sofort und sehen Sie konsolidierte oder individuelle Ansichten." },
-      { title: "Broker- und Exchange-Synchronisierung", body: "Verbinden Sie DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase, Kraken, Bybit, OKX, KuCoin, Bitget, MEXC, Crypto.com und Gate.io direkt. Oder importieren Sie von jedem anderen Broker per CSV oder XLSX." },
+      { title: "Broker- und Exchange-Synchronisierung", body: "Verbinden Sie DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase und Kraken direkt. Oder importieren Sie von jedem anderen Broker per CSV oder XLSX." },
       { title: "Marktintelligenz", body: "Live-Marktbewegungen, Top-Gewinner und -Verlierer sowie personalisierte Finanznachrichten für Ihre Positionen — alles in einem Feed." },
       { title: "Tiefe Asset-Recherche", body: "Klicken Sie auf ein Asset für Analystenempfehlungen, Kursziele, Kennzahlen (KGV, EPS, Beta, 52-Wochen-Spanne, Dividendenrendite) und interaktive Charts." },
       { title: "6 Sprachen und 4 Währungen", body: "Vollständige Oberfläche auf Englisch, Portugiesisch, Französisch, Deutsch, Italienisch und Spanisch. Werte in USD, EUR, CHF oder BRL. Die App passt sich Ihnen an." },
@@ -411,7 +406,6 @@ const COPY = {
       { title: "Steuerbericht", body: "Realisierte Gewinne und Verluste automatisch nach Jahr und Anlageklasse gruppiert — bereit für Ihre Steuererklärung." },
       { title: "Gebührentransparenz", body: "Sehen Sie, wie viel Sie dieses Jahr und insgesamt an Gebühren gezahlt haben, und welchen Anteil das an Ihrem Portfolio ausmacht." },
       { title: "Vermögen und Liquidität", body: "Sehen Sie auf einen Blick, welcher Teil Ihres Vermögens sofort verfügbar ist und welcher Teil weniger liquide ist." },
-      { title: "Dividendenkalender", body: "Sehen Sie alle anstehenden Dividenden Ihrer Positionen in Kalender und Agenda — Ex-Tag und Zahltag, geschätzter Ertrag pro Monat und Summen in Ihrer Basiswährung." },
     ],
     integrations_label: "Direkte Integrationen",
     integrations_or: "oder von jedem Broker importieren via",
@@ -425,7 +419,7 @@ const COPY = {
     ],
     stats: [
       { value: "11", label: "Chart-Zeitrahmen" },
-      { value: "14+", label: "Broker-Integrationen" },
+      { value: "6+", label: "Broker-Integrationen" },
       { value: "6",  label: "Sprachen" },
       { value: "4",  label: "Währungen (USD · EUR · CHF · BRL)" },
     ],
@@ -436,9 +430,9 @@ const COPY = {
     annual_label: "Pro Jährlich", annual_price: "4,99€", annual_period: "/ Monat", annual_desc: "Bestes Preis-Leistungs-Verhältnis — 59,99€/Jahr.",
     annual_save: "28% sparen",
     pro_trial: "30 Tage kostenlose Testversion · Jederzeit kündigen",
-    free_features: ["1 Portfolio-Depot","Bis zu 15 Assets","3 Preisalarme (E-Mail)","Echtzeit-Preisverfolgung","Transaktionshistorie","6 Sprachen und 4 Währungen","Basis-Dashboard"],
-    free_limits: ["Keine Broker-Synchronisierung","Keine Analysen","Keine Watchlist","Keine Portfolio-Freigabe"],
-    pro_features: ["Unbegrenzte Depots","Unbegrenzte Assets","Unbegrenzte Alarme (E-Mail, Telegram und Push)","14 Broker/Exchange-Integrationen","Fortgeschrittene Analysen (CAGR, Sharpe, Drawdown)","Watchlist und Marktbewegungen","Asset-Recherche und Analystendaten","Portfolio-Freigabelink","CSV/XLSX-Import","Finanznachrichten-Feed","Prioritäts-Support","30 Tage kostenlose Testversion"],
+    free_features: ["1 Portfolio-Depot","Bis zu 10 Assets","Echtzeit-Preisverfolgung","Transaktionshistorie","6 Sprachen und 4 Währungen","Basis-Dashboard"],
+    free_limits: ["Keine Preisalarme","Keine Broker-Synchronisierung","Keine Analysen","Keine Watchlist","Keine Portfolio-Freigabe"],
+    pro_features: ["Unbegrenzte Depots","Unbegrenzte Assets","Preisalarme per E-Mail","6 Broker/Exchange-Integrationen","Fortgeschrittene Analysen (CAGR, Sharpe, Drawdown)","Watchlist und Marktbewegungen","Asset-Recherche und Analystendaten","Portfolio-Freigabelink","CSV/XLSX-Import","Finanznachrichten-Feed","Prioritäts-Support","30 Tage kostenlose Testversion"],
     btn_free: "Kostenlos starten", btn_monthly: "Testversion starten", btn_annual: "Testversion starten",
     cta2_title: "Übernehmen Sie die Kontrolle über Ihre finanzielle Zukunft.",
     cta2_sub: "Schließen Sie sich Investoren an, die mit Wallet76 intelligenter verfolgen. Kostenlos zum Starten, leistungsstark zum Wachsen.",
@@ -488,7 +482,7 @@ const COPY = {
     alerts_status_triggered: "Ausgelöst", alerts_status_active: "Aktiv",
     sync_badge: "Einmal einrichten, immer synchron",
     sync_title: "Ihre Broker, automatisch immer aktuell.",
-    sync_sub: "Verbinden Sie DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase, Kraken, Bybit, OKX, KuCoin, Bitget, MEXC, Crypto.com oder Gate.io einmal — jeder neue Trade erscheint von selbst. Alles andere importieren Sie in Sekunden per CSV oder XLSX.",
+    sync_sub: "Verbinden Sie DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase oder Kraken einmal — jeder neue Trade erscheint von selbst. Alles andere importieren Sie in Sekunden per CSV oder XLSX.",
     sync_status: "Vor 3 Min. synchronisiert",
     screens_title: "Die echte App, kein Mockup",
     screens_sub: "Jeder Bildschirm unten ist ein echter Screenshot von Wallet76 — genau das sehen Sie nach der Anmeldung.",
@@ -515,7 +509,7 @@ const COPY = {
       { title: "Alert di Prezzo in Tempo Reale", body: "Imposta target di prezzo con condizioni sopra/sotto e ricevi notifiche via email nel momento in cui un asset supera la tua soglia." },
       { title: "Analisi Avanzate", body: "Misura le tue vere performance con CAGR, indice di Sharpe, drawdown massimo, volatilità e confronto con benchmark come S&P 500 e BTC." },
       { title: "Organizzazione Multi-Portafoglio", body: "Separa gli investimenti in portafogli distinti — pensione, crescita, crypto, speculazione. Passa istantaneamente tra viste consolidate o individuali." },
-      { title: "Sincronizzazione Broker ed Exchange", body: "Connetti direttamente DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase, Kraken, Bybit, OKX, KuCoin, Bitget, MEXC, Crypto.com e Gate.io. O importa da qualsiasi altro broker tramite CSV o XLSX." },
+      { title: "Sincronizzazione Broker ed Exchange", body: "Connetti direttamente DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase e Kraken. O importa da qualsiasi altro broker tramite CSV o XLSX." },
       { title: "Intelligence di Mercato", body: "Movers di mercato in tempo reale, migliori rialzi e ribassi e notizie finanziarie personalizzate per le tue posizioni — tutto in un feed." },
       { title: "Ricerca Approfondita degli Asset", body: "Clicca su qualsiasi asset per vedere il consenso degli analisti, i target di prezzo, le metriche chiave (P/E, EPS, Beta, range 52S, rendimento dividendo) e grafici interattivi." },
       { title: "6 Lingue e 4 Valute", body: "Interfaccia completa in inglese, portoghese, francese, tedesco, italiano e spagnolo. Valori in USD, EUR, CHF o BRL. L'app si adatta a te." },
@@ -527,7 +521,6 @@ const COPY = {
       { title: "Rapporto Fiscale", body: "Plusvalenze e minusvalenze realizzate raggruppate automaticamente per anno e classe di asset — pronte per la tua dichiarazione dei redditi." },
       { title: "Trasparenza delle Commissioni", body: "Vedi quanto hai pagato in commissioni quest'anno e in totale, e quale percentuale rappresentano sul tuo portafoglio." },
       { title: "Asset e Liquidità", body: "Vedi a colpo d'occhio quale parte del tuo patrimonio è immediatamente disponibile e quale parte è meno liquida." },
-      { title: "Calendario Dividendi", body: "Visualizza tutti i prossimi dividendi delle tue posizioni in calendario e agenda — date ex-dividendo e di pagamento, reddito stimato per mese e totali nella tua valuta base." },
     ],
     integrations_label: "Integrazioni dirette",
     integrations_or: "o importa da qualsiasi broker tramite",
@@ -541,7 +534,7 @@ const COPY = {
     ],
     stats: [
       { value: "11", label: "Intervalli di grafico" },
-      { value: "14+", label: "Integrazioni broker" },
+      { value: "6+", label: "Integrazioni broker" },
       { value: "6",  label: "Lingue" },
       { value: "4",  label: "Valute (USD · EUR · CHF · BRL)" },
     ],
@@ -552,9 +545,9 @@ const COPY = {
     annual_label: "Pro Annuale", annual_price: "4,99€", annual_period: "/ mese", annual_desc: "Miglior valore — fatturato 59,99€/anno.",
     annual_save: "Risparmia 28%",
     pro_trial: "30 giorni di prova gratuita · Cancella in qualsiasi momento",
-    free_features: ["1 portafoglio","Fino a 15 asset","3 avvisi di prezzo (email)","Tracciamento prezzi in tempo reale","Storico transazioni","6 lingue e 4 valute","Dashboard di base"],
-    free_limits: ["Nessuna sincronizzazione broker","Nessuna analisi avanzata","Nessuna watchlist","Nessuna condivisione portafoglio"],
-    pro_features: ["Portafogli illimitati","Asset illimitati","Avvisi illimitati (email, Telegram e push)","14 integrazioni broker/exchange","Analisi avanzate (CAGR, Sharpe, drawdown)","Watchlist e movers di mercato","Ricerca asset e dati analisti","Link di condivisione portafoglio","Import CSV / XLSX","Feed notizie finanziarie","Supporto prioritario","30 giorni di prova gratuita"],
+    free_features: ["1 portafoglio","Fino a 10 asset","Tracciamento prezzi in tempo reale","Storico transazioni","6 lingue e 4 valute","Dashboard di base"],
+    free_limits: ["Nessun alert di prezzo","Nessuna sincronizzazione broker","Nessuna analisi avanzata","Nessuna watchlist","Nessuna condivisione portafoglio"],
+    pro_features: ["Portafogli illimitati","Asset illimitati","Alert di prezzo via email","6 integrazioni broker/exchange","Analisi avanzate (CAGR, Sharpe, drawdown)","Watchlist e movers di mercato","Ricerca asset e dati analisti","Link di condivisione portafoglio","Import CSV / XLSX","Feed notizie finanziarie","Supporto prioritario","30 giorni di prova gratuita"],
     btn_free: "Crea account gratuito", btn_monthly: "Inizia la prova gratuita", btn_annual: "Inizia la prova gratuita",
     cta2_title: "Prendi il controllo del tuo futuro finanziario.",
     cta2_sub: "Unisciti agli investitori che monitorano in modo più intelligente con Wallet76. Gratis per iniziare, potente per crescere.",
@@ -604,7 +597,7 @@ const COPY = {
     alerts_status_triggered: "Attivato", alerts_status_active: "Attivo",
     sync_badge: "Configura una volta, resta sincronizzato",
     sync_title: "I tuoi broker, sempre aggiornati automaticamente.",
-    sync_sub: "Collega DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase, Kraken, Bybit, OKX, KuCoin, Bitget, MEXC, Crypto.com o Gate.io una volta — ogni nuova operazione appare da sola. Il resto si importa via CSV o XLSX in pochi secondi.",
+    sync_sub: "Collega DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase o Kraken una volta — ogni nuova operazione appare da sola. Il resto si importa via CSV o XLSX in pochi secondi.",
     sync_status: "Sincronizzato 3 min fa",
     screens_title: "L'app reale, non un mockup",
     screens_sub: "Ogni schermata qui sotto è una vera schermata di Wallet76 — è esattamente ciò che vedrai dopo la registrazione.",
@@ -631,7 +624,7 @@ const COPY = {
       { title: "Alertas de Precio en Tiempo Real", body: "Define objetivos de precio con condiciones por encima/por debajo y recibe notificaciones por email en cuanto un activo cruza tu umbral. Nunca pierdas una oportunidad de compra o venta." },
       { title: "Análisis Avanzados", body: "Mide tu rendimiento real con CAGR, ratio de Sharpe, drawdown máximo, volatilidad y comparación con benchmarks como el S&P 500 y BTC." },
       { title: "Organización Multi-Cartera", body: "Separa tus inversiones en carteras distintas — pensión, crecimiento, cripto, especulación. Cambia al instante y ve vistas consolidadas o individuales." },
-      { title: "Sincronización con Brokers", body: "Conecta directamente DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase, Kraken, Bybit, OKX, KuCoin, Bitget, MEXC, Crypto.com y Gate.io. O importa desde cualquier otro broker mediante CSV o XLSX — soportamos todos los formatos de exportación principales." },
+      { title: "Sincronización con Brokers", body: "Conecta directamente DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase y Kraken. O importa desde cualquier otro broker mediante CSV o XLSX — soportamos todos los formatos de exportación principales." },
       { title: "Inteligencia de Mercado", body: "Movers de mercado en tiempo real, mayores subidas y bajadas, y noticias financieras personalizadas para tus posiciones — todo en un feed." },
       { title: "Investigación Profunda de Activos", body: "Haz clic en cualquier activo para ver el consenso de analistas, precios objetivo, métricas clave (P/E, EPS, Beta, rango 52S, rendimiento de dividendo) y gráficos interactivos." },
       { title: "6 Idiomas y 4 Divisas", body: "Interfaz completa en inglés, portugués, francés, alemán, italiano y español. Valores en USD, EUR, CHF o BRL. La app se adapta a ti." },
@@ -643,7 +636,6 @@ const COPY = {
       { title: "Informe Fiscal", body: "Ganancias y pérdidas realizadas agrupadas automáticamente por año y clase de activo — listas para tu declaración de la renta." },
       { title: "Transparencia de Comisiones", body: "Ve cuánto has pagado en comisiones este año y en total, y qué porcentaje representan sobre tu cartera." },
       { title: "Activos y Liquidez", body: "Ve de un vistazo qué parte de tu patrimonio está disponible de inmediato y qué parte es menos líquida." },
-      { title: "Calendario de Dividendos", body: "Ve todos los próximos dividendos de tus posiciones en calendario y agenda — fechas ex-dividendo y de pago, ingresos estimados por mes y totales en tu moneda base." },
     ],
     integrations_label: "Integraciones directas",
     integrations_or: "o importa desde cualquier broker via",
@@ -657,7 +649,7 @@ const COPY = {
     ],
     stats: [
       { value: "11", label: "Intervalos de gráfico" },
-      { value: "14+", label: "Integraciones de brokers" },
+      { value: "6+", label: "Integraciones de brokers" },
       { value: "6",  label: "Idiomas" },
       { value: "4",  label: "Divisas (USD · EUR · CHF · BRL)" },
     ],
@@ -668,9 +660,9 @@ const COPY = {
     annual_label: "Pro Anual", annual_price: "4,99€", annual_period: "/ mes", annual_desc: "Mejor valor — facturado 59,99€/año.",
     annual_save: "Ahorra 28%",
     pro_trial: "30 días de prueba gratuita · Cancela cuando quieras",
-    free_features: ["1 cartera","Hasta 15 activos","3 alertas de precio (correo)","Seguimiento de precios en tiempo real","Historial de transacciones","6 idiomas y 4 divisas","Dashboard básico"],
-    free_limits: ["Sin sincronización con brokers","Sin análisis avanzados","Sin watchlist","Sin compartir portafolio"],
-    pro_features: ["Carteras ilimitadas","Activos ilimitados","Alertas ilimitadas (correo, Telegram y push)","14 integraciones brokers/exchanges","Análisis avanzados (CAGR, Sharpe, drawdown)","Watchlist y movers de mercado","Investigación de activos y datos de analistas","Enlace de compartir portafolio","Importación CSV / XLSX","Feed de noticias financieras","Soporte prioritario","30 días de prueba gratuita"],
+    free_features: ["1 cartera","Hasta 10 activos","Seguimiento de precios en tiempo real","Historial de transacciones","6 idiomas y 4 divisas","Dashboard básico"],
+    free_limits: ["Sin alertas de precio","Sin sincronización con brokers","Sin análisis avanzados","Sin watchlist","Sin compartir portafolio"],
+    pro_features: ["Carteras ilimitadas","Activos ilimitados","Alertas de precio por email","6 integraciones brokers/exchanges","Análisis avanzados (CAGR, Sharpe, drawdown)","Watchlist y movers de mercado","Investigación de activos y datos de analistas","Enlace de compartir portafolio","Importación CSV / XLSX","Feed de noticias financieras","Soporte prioritario","30 días de prueba gratuita"],
     btn_free: "Crear cuenta gratis", btn_monthly: "Iniciar prueba gratuita", btn_annual: "Iniciar prueba gratuita",
     cta2_title: "Toma el control de tu futuro financiero.",
     cta2_sub: "Únete a los inversores que siguen de forma más inteligente con Wallet76. Gratis para empezar, potente para crecer.",
@@ -720,7 +712,7 @@ const COPY = {
     alerts_status_triggered: "Activada", alerts_status_active: "Activa",
     sync_badge: "Configúralo una vez, mantente sincronizado",
     sync_title: "Tus brokers, siempre actualizados automáticamente.",
-    sync_sub: "Conecta DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase, Kraken, Bybit, OKX, KuCoin, Bitget, MEXC, Crypto.com o Gate.io una vez — cada nueva operación aparece sola. Todo lo demás se importa por CSV o XLSX en segundos.",
+    sync_sub: "Conecta DEGIRO, Interactive Brokers, Trading 212, Binance, Coinbase o Kraken una vez — cada nueva operación aparece sola. Todo lo demás se importa por CSV o XLSX en segundos.",
     sync_status: "Sincronizado hace 3 min",
     screens_title: "La app real, no una maqueta",
     screens_sub: "Cada pantalla de abajo es una captura real de Wallet76 — es exactamente lo que verás después de registrarte.",
@@ -756,15 +748,6 @@ function BrowserFrame({ children }) {
 }
 
 function getCopy(lang) { return COPY[lang] || COPY.en; }
-
-const DIV_COPY = {
-  pt: { badge: "Dividendos", title: "Sabe quanto e quando vais receber", sub: "Um calendário e uma agenda com todos os próximos dividendos das tuas posições — datas ex-dividendo e de pagamento, rendimento estimado por mês e totais na tua moeda.", next30: "Próximos 30 dias", est12: "Estimativa 12 meses", confirmed: "Confirmado", estimated: "Estimado", pay: "pag" },
-  en: { badge: "Dividends", title: "Know how much and when you'll get paid", sub: "A calendar and agenda of every upcoming dividend from your holdings — ex-dividend and payment dates, estimated monthly income and totals in your currency.", next30: "Next 30 days", est12: "12-month estimate", confirmed: "Confirmed", estimated: "Estimated", pay: "pay" },
-  fr: { badge: "Dividendes", title: "Sachez combien et quand vous serez payé", sub: "Un calendrier et une liste de tous les dividendes à venir de vos positions — dates ex-dividende et de versement, revenu mensuel estimé et totaux dans votre devise.", next30: "30 prochains jours", est12: "Estimation 12 mois", confirmed: "Confirmé", estimated: "Estimé", pay: "vers." },
-  de: { badge: "Dividenden", title: "Wissen Sie, wie viel und wann Sie ausgezahlt werden", sub: "Ein Kalender und eine Agenda aller anstehenden Dividenden Ihrer Positionen — Ex-Tag und Zahltag, geschätzter monatlicher Ertrag und Summen in Ihrer Währung.", next30: "Nächste 30 Tage", est12: "12-Monats-Schätzung", confirmed: "Bestätigt", estimated: "Geschätzt", pay: "Zahlg." },
-  it: { badge: "Dividendi", title: "Scopri quanto e quando verrai pagato", sub: "Un calendario e un'agenda di tutti i prossimi dividendi delle tue posizioni — date ex-dividendo e di pagamento, reddito mensile stimato e totali nella tua valuta.", next30: "Prossimi 30 giorni", est12: "Stima 12 mesi", confirmed: "Confermato", estimated: "Stimato", pay: "pag." },
-  es: { badge: "Dividendos", title: "Sabe cuánto y cuándo vas a cobrar", sub: "Un calendario y una agenda de todos los próximos dividendos de tus posiciones — fechas ex-dividendo y de pago, ingresos mensuales estimados y totales en tu moneda.", next30: "Próximos 30 días", est12: "Estimación 12 meses", confirmed: "Confirmado", estimated: "Estimado", pay: "pago" },
-};
 
 const FEAT_ICONS = [PieChart, Bell, Activity, Wallet, RefreshCw, Newspaper, BarChart3, Globe2, MonitorSmartphone, Users, Star, FileText];
 const FEAT_COLORS = [
@@ -874,7 +857,6 @@ function MockDashboard({ c }) {
 
 export default function LandingPage() {
   const { lang, setLang } = useI18n();
-  const D = DIV_COPY[lang] || DIV_COPY.en;
   const c = getCopy(lang);
   const langs = LANGS_LIST[lang] || LANGS_LIST.en;
   const navigate = useNavigate();
@@ -1292,24 +1274,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* DIVIDENDS SHOWCASE — 20 jul 2026: destaca o calendário de dividendos
-          (mockup à direita), mesmo estilo das outras secções ilustradas. */}
-      <section className="py-24 border-t border-zinc-800/60 bg-zinc-900/20">
-        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-xs text-emerald-300">
-              <Coins className="w-3.5 h-3.5" /> {D.badge}
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-5 tracking-tight">{D.title}</h2>
-            <p className="text-zinc-400 text-lg leading-relaxed">{D.sub}</p>
-          </div>
-
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-2 shadow-2xl shadow-emerald-500/10 overflow-hidden">
-            <img src={dividendsShot} alt={D.title} className="w-full rounded-xl" loading="lazy" />
-          </div>
-        </div>
-      </section>
-
       {/* BROKER SYNC SHOWCASE */}
       <section className="py-24 max-w-7xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -1563,7 +1527,6 @@ export default function LandingPage() {
             <Link to="/privacy" className="hover:text-zinc-300 transition-colors">{c.footer_privacy}</Link>
             <Link to="/terms" className="hover:text-zinc-300 transition-colors">{c.footer_terms}</Link>
             <Link to="/impressum" className="hover:text-zinc-300 transition-colors">Impressum</Link>
-            <Link to="/status" className="hover:text-zinc-300 transition-colors">Status</Link>
           </div>
         </div>
       </footer>
