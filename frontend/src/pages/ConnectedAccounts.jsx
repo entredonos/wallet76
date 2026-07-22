@@ -11,6 +11,62 @@ import ImportCsvDialog from "../components/ImportCsvDialog";
 import { usePlan } from "../hooks/usePlan";
 import UpgradeOverlay from "../components/UpgradeOverlay";
 
+// -- Broker/exchange brand marks ---------------------------------------------
+// Cor + iniciais de cada corretora/exchange, usadas como "selo" quando não há
+// um ficheiro de logótipo oficial. Para mostrar o logótipo real, basta colocar
+// um ficheiro em public/broker-logos/<chave>.svg (ou .png) — ex.:
+// public/broker-logos/binance.svg — que o <BrokerLogo> passa a usar sozinho.
+const BROKER_LOGOS = {
+  degiro:     { color: "#2F6DB3", short: "DG" },
+  ibkr:       { color: "#D5233B", short: "IB" },
+  trading212: { color: "#00AAE4", short: "212" },
+  binance:    { color: "#F0B90B", short: "BN" },
+  coinbase:   { color: "#3B82F6", short: "CB" },
+  kraken:     { color: "#8B7BFF", short: "KR" },
+  bybit:      { color: "#F7A600", short: "BY" },
+  okx:        { color: "#E5E7EB", short: "OKX" },
+  kucoin:     { color: "#22C39A", short: "KC" },
+  bitget:     { color: "#22D3C5", short: "BG" },
+  mexc:       { color: "#3B82F6", short: "MX" },
+  cryptocom:  { color: "#2563EB", short: "CR" },
+  gateio:     { color: "#E85C5C", short: "GA" },
+  htx:        { color: "#3AA6FF", short: "HT" },
+};
+
+const LOGO_EXT = ["svg", "png", "webp"];
+
+// Mostra o logótipo real (public/broker-logos/<chave>.svg|png|webp) e, se não
+// existir, cai para um selo com a cor e as iniciais da marca. Assim é só
+// largar o ficheiro na pasta que o logótipo aparece — sem mexer no código.
+function BrokerLogo({ brokerKey, meta, size = 32 }) {
+  const [extIdx, setExtIdx] = React.useState(0);
+  const brand = BROKER_LOGOS[brokerKey] || {};
+  const color = brand.color || "#a1a1aa";
+  const short =
+    brand.short ||
+    (meta?.name || "?").replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase();
+  const box = { width: size, height: size, minWidth: size };
+  if (extIdx < LOGO_EXT.length) {
+    return (
+      <img
+        src={`/broker-logos/${brokerKey}.${LOGO_EXT[extIdx]}`}
+        alt={meta?.name || brokerKey}
+        onError={() => setExtIdx((i) => i + 1)}
+        style={box}
+        className="rounded-lg object-contain bg-white/5 p-0.5"
+      />
+    );
+  }
+  return (
+    <div
+      style={{ ...box, backgroundColor: color + "26", color }}
+      className="rounded-lg flex items-center justify-center font-bold leading-none"
+    >
+      <span style={{ fontSize: short.length >= 3 ? size * 0.3 : size * 0.38 }}>{short}</span>
+    </div>
+  );
+}
+
 // -- Broker metadata ----------------------------------------------------------
 const getBROKERS = (t) => ({
   degiro: {
@@ -399,7 +455,7 @@ function ConnectionCard({ conn, wallets, onDelete, onSynced }) {
     <div className="border border-zinc-800 rounded-xl p-4 space-y-3 bg-zinc-900/40">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">{meta.logo || "🏦"}</span>
+          <BrokerLogo brokerKey={conn.broker} meta={meta} size={38} />
           <div>
             <div className="text-sm font-medium text-zinc-200">{conn.label}</div>
             <div className="text-xs text-zinc-500">{meta.name}</div>
@@ -572,7 +628,7 @@ export default function ConnectedAccounts() {
               }`}
               disabled={connected.has(key)}
             >
-              <span className="text-2xl">{meta.logo}</span>
+              <BrokerLogo brokerKey={key} meta={meta} size={34} />
               <span className="text-xs font-medium text-center leading-tight">{meta.name}</span>
               {connected.has(key) && <span className="text-xs text-emerald-400">{t("brokers.connected") || "Ligado"}</span>}
             </button>
