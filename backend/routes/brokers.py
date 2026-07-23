@@ -543,13 +543,13 @@ async def add_ccxt_exchange(exchange_key: str, payload: AddCcxt, user=Depends(re
     if spec["password"] and not pw:
         raise HTTPException(400, f"{spec['name']} requires an API passphrase.")
     try:
-        valid = await ccxt_generic.validate_credentials(spec["ids"], payload.api_key, payload.api_secret, pw)
+        err = await ccxt_generic.validate_credentials(spec["ids"], payload.api_key, payload.api_secret, pw)
     except Exception as e:
-        # Erro técnico (ex.: ccxt em falta no servidor, rede) — mensagem clara
-        # em vez de um "Invalid key" enganador.
+        # Erro técnico (ex.: ccxt em falta no servidor, rede) — mensagem clara.
         raise HTTPException(400, f"Could not connect to {spec['name']}: {str(e)[:160]}")
-    if not valid:
-        raise HTTPException(400, f"Invalid {spec['name']} API key or secret. Use a read-only key and remove any IP restriction.")
+    if err:
+        # Mensagem REAL da exchange (código de erro, IP, permissões, relógio…).
+        raise HTTPException(400, f"{spec['name']}: {err}")
     raw = {"api_key": payload.api_key, "api_secret": payload.api_secret}
     if pw:
         raw["passphrase"] = pw

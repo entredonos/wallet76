@@ -77,10 +77,30 @@ async def _try_balance(client):
 
 def _make_client(candidate_ids, api_key, api_secret, password=None):
     klass, eid = _resolve_class(candidate_ids)
-    cfg = {"apiKey": api_key, "secret": api_secret, "enableRateLimit": True}
+    cfg = {
+        "apiKey": api_key,
+        "secret": api_secret,
+        "enableRateLimit": True,
+        # recvWindow maior + ajuste de relógio: a Bybit (e outras) recusam a
+        # assinatura se o timestamp do servidor divergir alguns segundos.
+        "options": {"recvWindow": 15000, "adjustForTimeDifference": True},
+    }
     if password:
         cfg["password"] = password
     return klass(cfg), eid
+
+
+def _short(e) -> str:
+    msg = str(e).strip().replace("\n", " ")
+    return (msg[:180] + "…") if len(msg) > 180 else (msg or "erro desconhecido")
+
+
+async def _sync_clock(client):
+    try:
+        if getattr(client, "load_time_difference", None):
+            await client.load_time_difference()
+    except Exception:
+        pass
 
 
 # Pistas de que um erro (mesmo não tipado como AuthenticationError pela ccxt)
@@ -96,27 +116,25 @@ _AUTH_HINTS = (
 )
 
 
-async def validate_credentials(candidate_ids, api_key, api_secret, password=None) -> bool:
-    """True se a chave autentica. Só rejeitamos num erro de AUTENTICAÇÃO real
-    (chave/assinatura inválida). Se autenticar mas o saldo falhar por outro
-    motivo (tipo de conta Bybit UNIFIED, permissão parcial), aceitamos — a
-    sincronização trata do resto, em vez de bloquear uma chave válida logo à
-    entrada com um "Invalid key" enganador.
+async def validate_credentials(candidate_ids, api_key, api_secret, password=None) -> str:
+    """Devolve "" se a chave é válida, ou a MENSAGEM REAL do erro (da exchange)
+    para o utilizador perceber a causa (chave, assinatura, IP, permissões,
+    relógio). Só um erro claramente não-auth (ex.: tipo de conta que não
+    usamos) é tratado como válido — a sincronização trata do resto.
     """
     ccxt = _ccxt()
     client, _eid = _make_client(candidate_ids, api_key, api_secret, password)
     try:
-        await _try_balance(client)
-        return True
-    except ccxt.AuthenticationError:
-        return False
-    except Exception as e:
-        # Erro não tipado como auth pela ccxt: se a mensagem cheira a
-        # credenciais/permissões/IP, rejeita (chave má); caso contrário
-        # (ex.: só um tipo de conta que não usamos) aceita.
-        if any(h in str(e).lower() for h in _AUTH_HINTS):
-            return False
-        return True
+        await _sync_clock(client)
+        try:
+            await _try_balance(client)
+            return ""
+        except ccxt.AuthenticationError as e:
+            return _short(e)
+        except Exception as e:
+            if any(h in str(e).lower() for h in _AUTH_HINTS):
+                return _short(e)
+            return ""
     finally:
         try:
             await client.close()
@@ -174,6 +192,7 @@ async def fetch_transactions(candidate_ids, api_key, api_secret, password=None) 
     client, eid = _make_client(candidate_ids, api_key, api_secret, password)
     results: list[dict] = []
     try:
+        await _sync_clock(client)
         if not client.has.get("fetchMyTrades"):
             raise CcxtError(f"{eid} does not expose trade history via API")
 

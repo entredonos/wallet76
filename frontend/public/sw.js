@@ -24,7 +24,7 @@
 // controlling the page indefinitely. Also added explicit no-cache headers
 // (frontend/vercel.json) and updateViaCache: "none" (serviceWorkerRegistration.js)
 // so this doesn't need a manual bump every time going forward.
-const CACHE_NAME = "wallet76-v4";
+const CACHE_NAME = "wallet76-v5";
 const OFFLINE_URL = "/";
 
 // Assets to pre-cache on install
