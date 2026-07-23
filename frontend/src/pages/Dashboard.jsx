@@ -8,7 +8,7 @@ import { CHART_RANGE_BUCKET_MS, CHART_RANGES_DAY_MARKERS, CHART_RANGES_WEEKEND_S
 import {
   ArrowUpRight, Receipt, Bell,
   DollarSign, BarChart3, Activity, TrendingDown, Eye, EyeOff,
-  Share2, LayoutDashboard, Gauge,
+  Share2, LayoutDashboard, Gauge, Plus, ChevronLeft,
 } from "lucide-react";
 import DashboardWidgetDrawer from "../components/DashboardWidgetDrawer";
 import DashboardSkeleton from "../components/DashboardSkeleton";
@@ -1123,7 +1123,16 @@ const worstPerformer = useMemo(() => {
                 as carteiras" não fazem sentido (não há um único wallet_id
                 para passar). */}
             {selectedWallet && (
-              <div className="flex items-center gap-2 mt-2.5" data-testid="wallet-quicklinks">
+              <div className="flex flex-wrap items-center gap-2 mt-2.5" data-testid="wallet-quicklinks">
+                {/* Voltar a "Todas as carteiras" + os 5 atalhos desta carteira,
+                    todos na mesma linha (envolve no telemóvel). */}
+                <Link
+                  to="/dashboard"
+                  className="flex items-center gap-1 text-[11px] font-mono px-2.5 py-1 rounded-md border border-zinc-700 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500 transition-colors"
+                  data-testid="wallet-quicklink-back"
+                >
+                  <ChevronLeft className="w-3 h-3" /> {t("tx.all_wallets")}
+                </Link>
                 <Link
                   to={`/transactions?wallet=${selectedWallet.id}`}
                   className="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-md border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition-colors"
@@ -1137,6 +1146,28 @@ const worstPerformer = useMemo(() => {
                   data-testid="wallet-quicklink-analytics"
                 >
                   <BarChart3 className="w-3 h-3" /> {t("nav.analytics")}
+                </Link>
+                <Link
+                  to="/alerts"
+                  className="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-md border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition-colors"
+                  data-testid="wallet-quicklink-alerts"
+                >
+                  <Bell className="w-3 h-3" /> {t("common.alerts")}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setDashMode("advanced")}
+                  className="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-md border border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200 transition-colors"
+                  data-testid="wallet-quicklink-advanced"
+                >
+                  <Gauge className="w-3 h-3" /> {t("dash.view_advanced")}
+                </button>
+                <Link
+                  to={`/transactions?wallet=${selectedWallet.id}&open=1`}
+                  className="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-md border border-blue-500/40 text-blue-300 hover:bg-blue-500/10 hover:text-blue-200 transition-colors"
+                  data-testid="wallet-quicklink-add"
+                >
+                  <Plus className="w-3 h-3" /> {t("common.add")}
                 </Link>
               </div>
             )}

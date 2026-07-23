@@ -11,7 +11,7 @@ from core import db, get_current_user, _cache_get, _cache_set, logger
 from prices import (
     compute_holdings_from_txns, migrate_legacy_assets,
     get_crypto_prices, get_stock_prices, get_fx_rates, get_crypto_images,
-    detect_and_fix_equity_types, backfill_holding_names,
+    detect_and_fix_equity_types, backfill_holding_names, fix_exchange_asset_types,
 )
 from routes.news import _fetch_yf, _fetch_crypto_ohlc
 
@@ -291,7 +291,8 @@ async def get_portfolio(user=Depends(get_current_user)):
     # Auto-detect and fix ETF/Fund asset types — run in background, never block portfolio load
     async def _fix_types_bg():
         try:
-            await detect_and_fix_equity_types(user["id"])
+            await fix_exchange_asset_types(user["id"])   # cripto/caixa das exchanges
+            await detect_and_fix_equity_types(user["id"])  # ETF/fundo das ações
         except Exception as e:
             logger.warning(f"fix_asset_types bg error: {e}")
     asyncio.create_task(_fix_types_bg())

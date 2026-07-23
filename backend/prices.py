@@ -689,6 +689,39 @@ async def detect_and_fix_equity_types(user_id: str) -> dict:
     return {"updated": total_updated, "changes": updates}
 
 
+async def fix_exchange_asset_types(user_id: str) -> dict:
+    """Auto-cura da classificação em transações importadas de EXCHANGES de
+    cripto: stablecoins/fiat -> caixa (cash/liquidez), tudo o resto -> cripto.
+    Corre ao carregar o portfólio (cache 1h) para não depender de uma nova
+    sincronização manual. Não toca em corretoras de ações (DEGIRO/IBKR/T212/
+    XTB) nem no manual — só nos brokers de cripto."""
+    cache_key = f"fix_exch_types:{user_id}"
+    if _cache_get(cache_key, ttl=3600):
+        return {"updated": 0, "cached": True}
+
+    crypto_exchanges = ["bybit", "okx", "kucoin", "bitget", "mexc", "cryptocom",
+                        "gateio", "htx", "binance", "coinbase", "kraken"]
+    stable_fiat = ["USDT", "USDC", "USD", "DAI", "TUSD", "FDUSD", "BUSD", "USDP",
+                   "PYUSD", "EUR", "GBP", "CHF", "JPY", "BRL", "CAD", "AUD"]
+
+    updated = 0
+    r1 = await db.transactions.update_many(
+        {"user_id": user_id, "_broker": {"$in": crypto_exchanges},
+         "asset_type": {"$ne": "cash"}, "symbol": {"$in": stable_fiat}},
+        {"$set": {"asset_type": "cash"}},
+    )
+    r2 = await db.transactions.update_many(
+        {"user_id": user_id, "_broker": {"$in": crypto_exchanges},
+         "asset_type": {"$ne": "crypto"}, "symbol": {"$nin": stable_fiat}},
+        {"$set": {"asset_type": "crypto"}},
+    )
+    updated = (r1.modified_count or 0) + (r2.modified_count or 0)
+    _cache_set(cache_key, True)
+    if updated:
+        logger.info(f"fix_exchange_asset_types user={user_id}: {updated} txns")
+    return {"updated": updated}
+
+
 async def migrate_legacy_assets(user_id: str):
     """One-time migration: convert legacy `assets` rows into BUY transactions."""
     import uuid
