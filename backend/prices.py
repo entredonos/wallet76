@@ -98,16 +98,34 @@ async def get_crypto_prices(coingecko_ids: List[str], symbol_map: dict | None = 
 
 
 # --- Stock prices (yfinance) ---
+# Empresas que mudaram de ticker — o Yahoo já só reconhece o novo. Consultamos
+# pelo novo, mas mantemos o símbolo original do utilizador na carteira. Juntar
+# aqui novos casos à medida que aparecem nos logs/Sentry.
+_TICKER_ALIASES = {
+    "SQ": "XYZ",     # Block, Inc. — SQ -> XYZ (jan 2025)
+    "PARA": "PSKY",  # Paramount -> Paramount Skydance (PSKY) (ago 2025)
+}
+
+
+def yf_query_symbol(symbol: str) -> str:
+    """Símbolo a usar na consulta ao Yahoo (aplica mudanças de ticker)."""
+    return _TICKER_ALIASES.get((symbol or "").upper(), symbol)
+
+
 def _yf_fetch(symbols: List[str]) -> dict:
     """Sync yfinance fetch (run in thread). Returns { symbol: { usd, prev_close, change_pct } }"""
     out = {}
     if not symbols:
         return out
+    # Mapeia símbolos com ticker mudado para o atual (SQ->XYZ, PARA->PSKY),
+    # mas guarda o resultado com o símbolo ORIGINAL do utilizador.
+    query_map = {s: yf_query_symbol(s) for s in symbols}
     try:
-        tickers = yf.Tickers(" ".join(symbols))
+        tickers = yf.Tickers(" ".join(query_map.values()))
         for sym in symbols:
+            q = query_map[sym]
             try:
-                t = tickers.tickers.get(sym) or yf.Ticker(sym)
+                t = tickers.tickers.get(q) or yf.Ticker(q)
                 fast = getattr(t, "fast_info", None) or {}
                 price = None
                 prev = None

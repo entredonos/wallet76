@@ -7,7 +7,7 @@ Puro: recebe uma lista de dicts e devolve uma lista de dicts. Sem rede/DB.
 """
 import pytest
 
-from prices import compute_holdings_from_txns
+from prices import compute_holdings_from_txns, yf_query_symbol
 
 
 def _tx(**kw):
@@ -111,3 +111,16 @@ class TestEdgeCases:
                   _tx(type="BUY", quantity=10, price=100, date="2026-01-01")])
         assert h["quantity"] == 5
         assert h["realized_pnl_usd"] == 500   # (200-100)*5
+
+
+class TestTickerAlias:
+    def test_changed_tickers_remapped(self):
+        assert yf_query_symbol("SQ") == "XYZ"      # Block
+        assert yf_query_symbol("PARA") == "PSKY"   # Paramount Skydance
+
+    def test_case_insensitive(self):
+        assert yf_query_symbol("sq") == "XYZ"
+
+    def test_unchanged_passthrough(self):
+        assert yf_query_symbol("AAPL") == "AAPL"
+        assert yf_query_symbol("VWCE.DE") == "VWCE.DE"
