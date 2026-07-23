@@ -38,14 +38,17 @@ const RANGES = [
 const MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 const ANALYTICS_WIDGET_DEFS = [
-  { id: "metrics",   labelKey: "analytics.widget_metrics"   },
-  { id: "pnl",       labelKey: "analytics.widget_pnl"       },
-  { id: "chart",     labelKey: "analytics.widget_chart"     },
-  { id: "returns",   labelKey: "analytics.widget_returns"   },
-  { id: "heatmap",   labelKey: "analytics.widget_heatmap"   },
-  { id: "histogram", labelKey: "analytics.widget_histogram" },
+  // Ordem por omissão = ordem visual real (23 jul 2026). O corpo passa a
+  // respeitar a posição escolhida no Personalizar (aOrder abaixo) — antes o
+  // drawer tinha arrastar mas a página ignorava-o.
+  { id: "metrics",       labelKey: "analytics.widget_metrics"   },
+  { id: "pnl",           labelKey: "analytics.widget_pnl"       },
+  { id: "chart",         labelKey: "analytics.widget_chart"     },
   { id: "class_returns", labelKey: "analytics.widget_class_returns" },
   { id: "fees",          labelKey: "analytics.widget_fees" },
+  { id: "returns",       labelKey: "analytics.widget_returns"   },
+  { id: "heatmap",       labelKey: "analytics.widget_heatmap"   },
+  { id: "histogram",     labelKey: "analytics.widget_histogram" },
   { id: "dividends",     labelKey: "analytics.widget_dividends" },
   { id: "tax_report",    labelKey: "analytics.widget_tax_report" },
 ];
@@ -174,7 +177,7 @@ export default function Analytics({ currency }) {
   // Analytics widget config — persisted in localStorage
   const [widgetConfig, setWidgetConfig] = useState(() => {
     try {
-      const raw = localStorage.getItem("w76-analytics-widgets");
+      const raw = localStorage.getItem("w76-analytics-widgets-v2");
       if (raw) {
         const saved = JSON.parse(raw);
         const ids = new Set(saved.map((w) => w.id));
@@ -191,10 +194,17 @@ export default function Analytics({ currency }) {
   });
   const [widgetDrawer, setWidgetDrawer] = useState(false);
   const wVisible = (id) => widgetConfig.find((w) => w.id === id)?.enabled !== false;
+  // Ordem no corpo conforme a posição no Personalizar — arrastar reordena de
+  // verdade (23 jul 2026). idx*10+20, igual ao painel. Sem isto o drawer
+  // reordenava a lista mas a página renderizava sempre na mesma ordem fixa.
+  const aOrder = (id) => {
+    const idx = widgetConfig.findIndex((w) => w.id === id);
+    return idx >= 0 ? idx * 10 + 20 : 990;
+  };
 
   // Persist widget config
   React.useEffect(() => {
-    try { localStorage.setItem("w76-analytics-widgets", JSON.stringify(widgetConfig)); } catch { /* noop */ }
+    try { localStorage.setItem("w76-analytics-widgets-v2", JSON.stringify(widgetConfig)); } catch { /* noop */ }
   }, [widgetConfig]);
 
   useEffect(() => {
@@ -380,7 +390,7 @@ export default function Analytics({ currency }) {
   );
 
   return (
-    <div className="relative space-y-8 fade-in">
+    <div className="relative flex flex-col gap-8 fade-in">
       {!isPro && <UpgradeOverlay feature="Analytics" />}
       {header}
 
@@ -395,7 +405,7 @@ export default function Analytics({ currency }) {
       )}
 
       {wVisible("metrics") && (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div style={{ order: aOrder("metrics") }} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           label={t("analytics.total_return") || "Total Return"}
           value={fmtPct(totalReturn)}
@@ -436,7 +446,7 @@ export default function Analytics({ currency }) {
       )}
 
       {wVisible("pnl") && (
-      <div className="grid grid-cols-2 gap-4">
+      <div style={{ order: aOrder("pnl") }} className="grid grid-cols-2 gap-4">
         <MetricCard
           label={t("analytics.unrealized") || "Unrealized P&L"}
           value={fmtVal(data.unrealized_pnl_usd)}
@@ -457,7 +467,7 @@ export default function Analytics({ currency }) {
       )}
 
       {wVisible("chart") && (
-      <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl overflow-hidden">
+      <div style={{ order: aOrder("chart") }} className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-zinc-800/50 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-1.5">
             <span className="text-sm font-medium text-zinc-200">{t("analytics.chart_title") || "Portfolio vs Cost Basis"}</span>
@@ -535,7 +545,7 @@ export default function Analytics({ currency }) {
           continuam empilhados (grid-cols-1). */}
       {((wVisible("class_returns") && data.class_returns && Object.keys(data.class_returns).length > 0) ||
         (wVisible("fees") && (data.fees_all_time_usd ?? 0) > 0)) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div style={{ order: Math.min(aOrder("class_returns"), aOrder("fees")) }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {wVisible("class_returns") && data.class_returns && Object.keys(data.class_returns).length > 0 && (
             <ClassReturnsCard
               classReturns={data.class_returns}
@@ -559,19 +569,33 @@ export default function Analytics({ currency }) {
       )}
 
       {wVisible("returns") && (m.months?.length > 0 || m.weeks?.length > 0 || m.years?.length > 0) && (
-        <ReturnsBarchart m={m} t={t} currency={currency} benchmarkMetrics={data.benchmark_metrics || {}} />
+        <div style={{ order: aOrder("returns") }}>
+          <ReturnsBarchart m={m} t={t} currency={currency} benchmarkMetrics={data.benchmark_metrics || {}} />
+        </div>
       )}
 
       {wVisible("heatmap") && m.months?.length > 1 && (
-        <HeatmapChart months={m.months} t={t} />
+        <div style={{ order: aOrder("heatmap") }}>
+          <HeatmapChart months={m.months} t={t} />
+        </div>
       )}
 
       {wVisible("histogram") && m.months?.length > 3 && (
-        <HistogramChart m={m} t={t} />
+        <div style={{ order: aOrder("histogram") }}>
+          <HistogramChart m={m} t={t} />
+        </div>
       )}
 
-      {wVisible("dividends") && <DividendsSection walletId={walletId} currency={currency} t={t} />}
-      {wVisible("tax_report") && <TaxReportSection walletId={walletId} currency={currency} t={t} />}
+      {wVisible("dividends") && (
+        <div style={{ order: aOrder("dividends") }}>
+          <DividendsSection walletId={walletId} currency={currency} t={t} />
+        </div>
+      )}
+      {wVisible("tax_report") && (
+        <div style={{ order: aOrder("tax_report") }}>
+          <TaxReportSection walletId={walletId} currency={currency} t={t} />
+        </div>
+      )}
       <AnalyticsWidgetDrawer
         open={widgetDrawer}
         onClose={() => setWidgetDrawer(false)}

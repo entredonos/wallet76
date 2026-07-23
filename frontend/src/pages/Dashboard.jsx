@@ -1341,9 +1341,11 @@ const worstPerformer = useMemo(() => {
       </div>
 
       {/* Sentimento do mercado (manómetro cripto+ações) — widget "sentiment".
-          Filho direto do painel, nos DOIS modos, com o seu próprio order:
-          ligável e reordenável no Personalizar como qualquer widget. */}
-      {wVisible("sentiment") && (
+          Só no painel AVANÇADO (23 jul 2026): fora do arranque leve para o
+          ecrã inicial abrir rápido e focado no dinheiro do utilizador. O
+          sentimento (contexto de mercado) fica no avançado + na página
+          Mercado. Ligável/reordenável no Personalizar do modo avançado. */}
+      {dashMode === "advanced" && wVisible("sentiment") && (
         <div style={{ order: wOrder("sentiment") }}>
           <MarketSentimentCard compact />
         </div>

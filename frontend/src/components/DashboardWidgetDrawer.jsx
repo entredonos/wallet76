@@ -121,7 +121,7 @@ export default function DashboardWidgetDrawer({ open, onClose, widgetConfig, set
             mostrar toggles sem efeito. */}
         <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 space-y-2">
           {widgetConfig
-            .filter((w) => dashMode !== "light" || ["summary", "sentiment", "filter_pills", "balance", "evolution"].includes(w.id))
+            .filter((w) => dashMode !== "light" || ["summary", "filter_pills", "balance", "evolution"].includes(w.id))
             .map((w) => {
             const def = widgetDefs.find((d) => d.id === w.id);
             if (!def) return null;
