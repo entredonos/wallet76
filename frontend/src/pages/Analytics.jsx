@@ -384,6 +384,16 @@ export default function Analytics({ currency }) {
       {!isPro && <UpgradeOverlay feature="Analytics" />}
       {header}
 
+      {/* Histórico insuficiente: numa carteira nova (ex.: acabada de importar de
+          uma exchange, com posições datadas de hoje) não há tempo decorrido, por
+          isso retorno/CAGR/drawdown ficam ~0. Avisamos em vez de deixar parecer
+          um bug. Preenche-se sozinho com os snapshots diários. */}
+      {(m.history_days ?? 0) < 2 && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200/90">
+          {t("analytics.insufficient_history") || "Histórico insuficiente ainda — esta carteira é recente, por isso os retornos aparecem perto de 0%. A análise vai preenchendo à medida que passam os dias."}
+        </div>
+      )}
+
       {wVisible("metrics") && (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard

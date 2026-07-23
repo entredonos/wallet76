@@ -3,9 +3,11 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+import httpx
 import yfinance as yf
 
 from core import db, get_current_user, _cache_get, _cache_set, logger
+from prices import resolve_crypto_ids_bulk
 from fastapi import APIRouter, Depends, Query
 
 router = APIRouter()
@@ -36,6 +38,31 @@ def _fetch_closes_sync(yf_sym: str, period: str = "max") -> dict:
         logger.warning(f"closes {yf_sym}: {e}")
         _cache_set(ck, {})
         return {}
+
+
+async def _fetch_crypto_closes(coingecko_id: str, days: int) -> dict:
+    """Fechos diários de cripto via CoinGecko (mesma fonte do Painel) — o Yahoo
+    não tem muitas moedas recentes, davam preço 0 e retorno errado na Análise.
+    Devolve {date_iso: price} (último preço de cada dia). Cache 1h por id."""
+    ck = f"analy_cg_closes:{coingecko_id}:{days}"
+    cached = _cache_get(ck, ttl=3600)
+    if cached is not None:
+        return cached
+    out = {}
+    try:
+        async with httpx.AsyncClient(timeout=20) as ch:
+            r = await ch.get(
+                f"https://api.coingecko.com/api/v3/coins/{coingecko_id}/market_chart",
+                params={"vs_currency": "usd", "days": days},
+            )
+            if r.status_code == 200:
+                for ts_ms, price in (r.json().get("prices") or []):
+                    d = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).date().isoformat()
+                    out[d] = float(price)  # preços vêm ascendentes -> fica o último do dia
+    except Exception as e:
+        logger.warning(f"cg closes {coingecko_id}: {e}")
+    _cache_set(ck, out)
+    return out
 
 
 def _compute_metrics(series: list[dict]) -> dict:
@@ -260,13 +287,39 @@ async def get_analytics(
     # fx_to_usd da própria transação (ver loop de replay abaixo).
     asset_keys = list({(t["asset_type"], t["symbol"].upper()) for t in txns})
     non_cash_keys = [k for k in asset_keys if k[0] != "cash"]
-    yf_syms = [f"{k[1]}-USD" if k[0] == "crypto" else k[1] for k in non_cash_keys]
+    crypto_keys = [k for k in non_cash_keys if k[0] == "crypto"]
+    equity_keys = [k for k in non_cash_keys if k[0] != "crypto"]
 
-    closes_list, spy_closes = await asyncio.gather(
-        asyncio.gather(*[asyncio.to_thread(_fetch_closes_sync, s) for s in yf_syms]),
+    # Cripto -> CoinGecko (id das transações; fallback resolve por símbolo);
+    # ações/ETF -> Yahoo. Assim as moedas recentes que o Yahoo não tem passam
+    # a contar e a Análise bate certo com o Painel.
+    cg_by_symbol = {}
+    for t in txns:
+        if t.get("asset_type") == "crypto" and t.get("coingecko_id"):
+            cg_by_symbol[t["symbol"].upper()] = t["coingecko_id"]
+    missing_syms = [k[1] for k in crypto_keys if k[1] not in cg_by_symbol]
+    if missing_syms:
+        try:
+            cg_by_symbol.update(await resolve_crypto_ids_bulk(missing_syms))
+        except Exception as e:
+            logger.warning(f"analytics resolve cg ids: {e}")
+    cg_days = min(max((end - start).days + 3, 2), 365)
+
+    async def _crypto_closes_for(k):
+        cid = cg_by_symbol.get(k[1])
+        return await _fetch_crypto_closes(cid, cg_days) if cid else {}
+
+    equity_syms = [k[1] for k in equity_keys]
+    equity_closes, crypto_closes, spy_closes = await asyncio.gather(
+        asyncio.gather(*[asyncio.to_thread(_fetch_closes_sync, s) for s in equity_syms]),
+        asyncio.gather(*[_crypto_closes_for(k) for k in crypto_keys]),
         asyncio.to_thread(_fetch_closes_sync, benchmark_sym),
     )
-    closes_map = {k: c for k, c in zip(non_cash_keys, closes_list)}
+    closes_map = {}
+    for k, c in zip(equity_keys, equity_closes):
+        closes_map[k] = c
+    for k, c in zip(crypto_keys, crypto_closes):
+        closes_map[k] = c
 
     # ── 3. replay transactions day by day ────────────────────────────────────
     qty  = {k: 0.0 for k in asset_keys}
