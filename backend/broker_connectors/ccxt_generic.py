@@ -61,14 +61,28 @@ async def _try_balance(client):
     conta.
     """
     ccxt = _ccxt()
+    # Junta TODAS as contas distintas da exchange — o saldo pode estar em
+    # qualquer uma (unified, spot, funding, trading, main, margin, earn,
+    # contract…), e o utilizador não tem de saber onde. Deduplicamos por
+    # assinatura do resultado, para não somar duas vezes quando um tipo é
+    # alias de outro (ex.: {} == unified na Bybit; main == funding na KuCoin).
+    account_params = (
+        {},
+        {"type": "unified"},
+        {"type": "funding"},
+        {"type": "spot"},
+        {"type": "trading"},
+        {"type": "main"},
+        {"type": "margin"},
+        {"type": "earn"},
+        {"type": "contract"},
+        {"type": "swap"},
+    )
     merged = {}
+    seen_sigs = set()
     ok = False
     auth_err = None
-    # JUNTA a conta por omissão (unified/spot/main) com a conta FUNDING: a Bybit
-    # (e outras) guardam o saldo numa conta de Funding SEPARADA da de trading —
-    # se o dinheiro está todo em Funding e a Unified está vazia, ler só a por
-    # omissão dava saldo ~0. São contas distintas, por isso somar não duplica.
-    for params in ({}, {"type": "funding"}):
+    for params in account_params:
         try:
             bal = await client.fetch_balance(params)
         except ccxt.AuthenticationError as e:
@@ -77,13 +91,22 @@ async def _try_balance(client):
         except Exception:
             continue
         ok = True
+        clean = {}
         for cur, amt in (bal.get("total") or {}).items():
             try:
                 a = float(amt or 0)
             except (TypeError, ValueError):
                 a = 0
             if a > 0:
-                merged[cur] = merged.get(cur, 0) + a
+                clean[cur] = a
+        if not clean:
+            continue
+        sig = frozenset((cur, round(a, 8)) for cur, a in clean.items())
+        if sig in seen_sigs:
+            continue  # conta repetida (alias) — já contada
+        seen_sigs.add(sig)
+        for cur, a in clean.items():
+            merged[cur] = merged.get(cur, 0) + a
     if not ok:
         if auth_err is not None:
             raise auth_err
