@@ -712,6 +712,31 @@ export default function Dashboard({ currency }) {
       .sort((a, b) => b.value - a.value);
   }, [allHoldings, wallets]);
 
+  // Opção A (23 jul 2026): dentro de uma carteira específica, o cartão de saldo
+  // mostra os ATIVOS dessa carteira (valor + variação), em vez da lista das
+  // outras carteiras — que não fazia sentido estando já dentro de uma. Em
+  // "Todas as carteiras" (selectedWallet indefinido) volta à lista de carteiras.
+  const walletAssets = selectedWallet
+    ? holdingsInWalletScope
+        .slice()
+        .sort((a, b) => (b.value_usd || 0) - (a.value_usd || 0))
+        .map((a) => ({
+          symbol: a.symbol,
+          name: a.name || a.symbol,
+          asset_type: a.asset_type,
+          valueLabel: mask(fmtCurrency(convert(a.value_usd, currency, fxRates), currency)),
+          changeLabel: fmtPct(a.pnl_pct),
+          positive: (a.pnl_pct || 0) >= 0,
+        }))
+    : null;
+
+  // Dividendos com scope à carteira: numa carteira específica só contam os
+  // símbolos dela — uma carteira só de cripto (sem símbolos que pagam
+  // dividendos) esconde o card. Em "Todas as carteiras" mostra tudo (null).
+  const divScopeSymbols = selectedWallet
+    ? holdingsInWalletScope.map((a) => (a.symbol || "").toUpperCase())
+    : null;
+
   const performance = useMemo(() => {
     if (!history || history.length < 2) {
       return { selected: 0 };
@@ -1299,6 +1324,7 @@ const worstPerformer = useMemo(() => {
                   positive: w.pnlPct >= 0,
                   sparkData: (walletSparks[w.id] || []).map((p) => ({ p })),
                 }))}
+                assets={walletAssets}
               />
             </div>
           )}
@@ -1474,7 +1500,7 @@ const worstPerformer = useMemo(() => {
           Shares the Liquidity widget's flex order so it sits right below
           "Ativos e Liquidez" and follows it if the user reorders widgets. */}
       <div style={{ order: wOrder("liquidity") }}>
-        <DividendsCard currency={currency} fxRates={fxRates} />
+        <DividendsCard currency={currency} fxRates={fxRates} scopeSymbols={divScopeSymbols} />
       </div>
       </>
       )}

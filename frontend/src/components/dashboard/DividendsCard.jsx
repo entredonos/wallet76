@@ -21,7 +21,7 @@ const COLORS = ["#60a5fa", "#34d399", "#f87171", "#fbbf24", "#a78bfa", "#22d3ee"
 function color(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % COLORS.length; return COLORS[h]; }
 function nativeToBase(a, native, base, fx) { const r = native === "USD" ? 1 : (fx?.[native] || 1); return convert((a || 0) / (r || 1), base, fx); }
 
-export default function DividendsCard({ currency = "USD", fxRates = {} }) {
+export default function DividendsCard({ currency = "USD", fxRates = {}, scopeSymbols = null }) {
   const { lang } = useI18n();
   const { isPro } = usePlan();
   const c = COPY[lang] || COPY.en;
@@ -40,7 +40,14 @@ export default function DividendsCard({ currency = "USD", fxRates = {} }) {
     const in30 = new Date(today); in30.setDate(in30.getDate() + 30);
     const end = new Date(today); end.setDate(end.getDate() + 120);
     const out = [];
+    // Scope à carteira: numa carteira específica só entram os símbolos dela.
+    // Uma carteira de cripto (sem símbolos de dividendos) -> upcoming vazio ->
+    // o card esconde-se (ver o return null abaixo).
+    const scope = scopeSymbols
+      ? new Set(scopeSymbols.map((x) => (x || "").toUpperCase()))
+      : null;
     for (const d of divs) {
+      if (scope && !scope.has((d.symbol || "").toUpperCase())) continue;
       if (!d.next_est_date || !d.frequency) continue;
       const step = FREQ_DAYS[d.frequency] || 91;
       const perPay = (d.annual_income || 0) / (FREQ_PER_YEAR[d.frequency] || 4);
@@ -52,7 +59,7 @@ export default function DividendsCard({ currency = "USD", fxRates = {} }) {
     out.sort((a, b) => a.date - b.date);
     let t30 = 0; out.forEach((p) => { if (p.date >= today && p.date <= in30) t30 += nativeToBase(p.amount, p.currency, currency, fxRates); });
     return { upcoming: out.slice(0, 3), total30: t30 };
-  }, [divs, currency, fxRates]);
+  }, [divs, currency, fxRates, scopeSymbols]);
 
   if (!isPro || divs.length === 0 || upcoming.length === 0) return null;
   const fmtD = (d) => new Intl.DateTimeFormat(loc, { day: "2-digit", month: "short" }).format(d);

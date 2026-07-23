@@ -20,6 +20,7 @@ export default function LightBalanceCard({
   onAdd,
   onAdvanced,
   wallets,
+  assets,
   loading,
 }) {
   const { t } = useI18n();
@@ -59,37 +60,77 @@ export default function LightBalanceCard({
         </button>
       </div>
 
-      <div className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-400 mb-3">{t("dash.your_wallets")}</div>
-
-      {loading ? (
-        <div className="text-sm text-zinc-400 font-mono py-2">{t("dash.chart_loading")}</div>
-      ) : wallets.length === 0 ? (
-        <div className="text-sm text-zinc-400 font-mono py-2">{t("nav.no_wallets")}</div>
-      ) : (
-        <div className="space-y-2">
-          {/* Cada carteira é agora um link direto para o seu filtro no
-              Painel (?wallet=id) — antes a linha não era clicável (5 jul
-              2026). Mostra só a % (sem o valor em euros/dólares) + um
-              gráfico de 24h por carteira, em vez do valor absoluto. */}
-          {wallets.map((w) => (
-            <Link
-              key={w.id}
-              to={`/dashboard?wallet=${w.id}`}
-              className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg bg-zinc-950/40 border border-zinc-800/40 hover:border-zinc-700 hover:bg-zinc-950/70 transition-colors"
-              data-testid={`light-balance-wallet-${w.id}`}
-            >
-              <span className="text-sm text-zinc-300 truncate">{w.name}</span>
-              <span className="flex items-center gap-2 shrink-0">
-                <Sparkline data={w.sparkData} positive={w.positive} width={48} height={20} />
-                {w.changeLabel && (
-                  <span className={`text-xs font-mono w-12 text-right ${w.positive ? "text-emerald-400" : "text-rose-400"}`}>
-                    {w.changeLabel}
-                  </span>
-                )}
-              </span>
+      {/* Opção A: dentro de uma carteira específica (assets != null) mostra os
+          ATIVOS dessa carteira; caso contrário, a lista das carteiras. */}
+      {assets ? (
+        <>
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-400">{t("dash.assets")}</div>
+            <Link to="/dashboard" className="text-[11px] font-mono text-zinc-400 hover:text-zinc-200 transition-colors" data-testid="light-balance-back-all">
+              ‹ {t("tx.all_wallets")}
             </Link>
-          ))}
-        </div>
+          </div>
+          {loading ? (
+            <div className="text-sm text-zinc-400 font-mono py-2">{t("dash.chart_loading")}</div>
+          ) : assets.length === 0 ? (
+            <div className="text-sm text-zinc-400 font-mono py-2">{t("dash.no_assets") || t("dash.chart_empty")}</div>
+          ) : (
+            <div className="space-y-1.5">
+              {assets.map((a) => (
+                <Link
+                  key={a.symbol + a.asset_type}
+                  to={`/asset/${encodeURIComponent(a.symbol)}?type=${a.asset_type}`}
+                  className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-zinc-950/40 border border-zinc-800/40 hover:border-zinc-700 hover:bg-zinc-950/70 transition-colors"
+                  data-testid={`light-balance-asset-${a.symbol}`}
+                >
+                  <span className="min-w-0">
+                    <span className="text-sm text-zinc-200 font-medium">{a.symbol}</span>
+                    <span className="text-[11px] text-zinc-500 ml-2 truncate">{a.name}</span>
+                  </span>
+                  <span className="flex items-center gap-3 shrink-0">
+                    <span className="text-sm font-mono text-zinc-300">{a.valueLabel}</span>
+                    {a.changeLabel && (
+                      <span className={`text-xs font-mono w-14 text-right ${a.positive ? "text-emerald-400" : "text-rose-400"}`}>
+                        {a.changeLabel}
+                      </span>
+                    )}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-400 mb-3">{t("dash.your_wallets")}</div>
+
+          {loading ? (
+            <div className="text-sm text-zinc-400 font-mono py-2">{t("dash.chart_loading")}</div>
+          ) : wallets.length === 0 ? (
+            <div className="text-sm text-zinc-400 font-mono py-2">{t("nav.no_wallets")}</div>
+          ) : (
+            <div className="space-y-2">
+              {wallets.map((w) => (
+                <Link
+                  key={w.id}
+                  to={`/dashboard?wallet=${w.id}`}
+                  className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg bg-zinc-950/40 border border-zinc-800/40 hover:border-zinc-700 hover:bg-zinc-950/70 transition-colors"
+                  data-testid={`light-balance-wallet-${w.id}`}
+                >
+                  <span className="text-sm text-zinc-300 truncate">{w.name}</span>
+                  <span className="flex items-center gap-2 shrink-0">
+                    <Sparkline data={w.sparkData} positive={w.positive} width={48} height={20} />
+                    {w.changeLabel && (
+                      <span className={`text-xs font-mono w-12 text-right ${w.positive ? "text-emerald-400" : "text-rose-400"}`}>
+                        {w.changeLabel}
+                      </span>
+                    )}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
