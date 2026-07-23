@@ -28,6 +28,30 @@ STABLES = {
     "DAI", "TUSD", "FDUSD", "BUSD", "USDP", "PYUSD",
 }
 
+# Regra CAIXA vs CRIPTO para saldos SEM histórico de trades (ver
+# fetch_transactions). Stablecoins pareados ao dólar e fiat contam como
+# liquidez ("cash"); tudo o resto é cripto real (preço resolvido depois).
+# Extraído para função pura para ser testável isoladamente (tests/
+# test_unit_connectors.py) — é a regra que já causou o bug "DOGE apareceu
+# como Ações" e "carteira Bybit a 0%", por isso vale a pena fixá-la em teste.
+_USD_STABLES = {"USDT", "USDC", "USD", "DAI", "TUSD", "FDUSD", "BUSD", "USDP", "PYUSD"}
+_FIAT = {"EUR", "GBP", "CHF", "JPY", "BRL", "CAD", "AUD"}
+
+
+def classify_balance_currency(base: str):
+    """(asset_type, price_usd, price_currency) para uma moeda de saldo.
+
+    Stablecoin -> ("cash", 1.0, "USD"); fiat -> ("cash", 1.0, <moeda>);
+    qualquer outra -> ("crypto", None, "USD") (o preço é resolvido via ticker
+    a jusante). price_usd=None sinaliza "ainda por cotar".
+    """
+    b = (base or "").upper()
+    if b in _USD_STABLES:
+        return "cash", 1.0, "USD"
+    if b in _FIAT:
+        return "cash", 1.0, b
+    return "crypto", None, "USD"
+
 
 class CcxtError(Exception):
     pass
@@ -282,8 +306,6 @@ async def fetch_transactions(candidate_ids, api_key, api_secret, password=None) 
         # Todos os ativos com saldo que NÃO tiveram trades reais — inclui
         # stablecoins (USDT, USDC…), que valem ~1 USD e são muitas vezes a
         # maior fatia do saldo (antes eram ignoradas, dando carteira a 0).
-        _USD_STABLES = {"USDT", "USDC", "USD", "DAI", "TUSD", "FDUSD", "BUSD", "USDP", "PYUSD"}
-        _FIAT = {"EUR", "GBP", "CHF", "JPY", "BRL", "CAD", "AUD"}
         all_bal = {}
         for cur, amt0 in totals.items():
             try:
@@ -297,16 +319,11 @@ async def fetch_transactions(candidate_ids, api_key, api_secret, password=None) 
             if amt <= 0:
                 continue
             b = base.upper()
-            if b in _USD_STABLES:
-                # Stablecoin -> CAIXA (liquidez), valorizada ao par (1 USD).
-                asset_type, price_usd, price_cur = "cash", 1.0, "USD"
-            elif b in _FIAT:
-                # Fiat na exchange -> CAIXA na sua moeda (o portfólio converte
-                # via FX; price_usd=1 na própria moeda vira o valor em USD).
-                asset_type, price_usd, price_cur = "cash", 1.0, b
-            else:
-                # Cripto real -> preço de mercado.
-                asset_type, price_cur = "crypto", "USD"
+            # Regra caixa/cripto centralizada (testável) — ver
+            # classify_balance_currency acima.
+            asset_type, price_usd, price_cur = classify_balance_currency(base)
+            if asset_type == "crypto":
+                # Cripto real -> preço de mercado (ticker).
                 price_usd = None
                 for quote in ("USDT", "USDC", "USD"):
                     sym = f"{base}/{quote}"

@@ -1,0 +1,32 @@
+# Testes unitários puros do backend (sem rede, sem DB, sem servidor).
+# Corre automaticamente em cada push/PR que toque em backend/. NÃO corre os
+# testes de integração (tests/backend_test.py, tests/test_iter*.py) — esses
+# precisam de um servidor + MongoDB a correr e de REACT_APP_BACKEND_URL.
+name: Backend unit tests
+
+on:
+  push:
+    paths: ["backend/**", ".github/workflows/backend-tests.yml"]
+  pull_request:
+    paths: ["backend/**", ".github/workflows/backend-tests.yml"]
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run pure unit tests
+        env:
+          MONGO_URL: mongodb://localhost:27017
+          DB_NAME: wallet76_ci
+          JWT_SECRET: ci-placeholder-not-used
+        run: python -m pytest tests/test_unit_connectors.py tests/test_unit_sentiment.py -q
