@@ -355,6 +355,108 @@ async def market_portfolio_news(user=Depends(get_current_user)):
 # / "Stocks · Today" on the Mercado page ("Atualizado a cada 15 min" —
 # market.updated_every in I18nContext.jsx). If you change this value, update
 # that translated copy too, in all 6 languages.
+# ---------------------------------------------------------------------------
+# Sentimento do mercado (manómetro / needle gauge) — cripto + ações.
+# Cripto: alternative.me Crypto Fear & Greed Index (gratuito, sem chave,
+#   atualiza 1x/dia). Ações: CNN Fear & Greed Index (endpoint de dados
+#   nao-oficial usado pelo widget do site da CNN; requer User-Agent de
+#   browser). Ambos degradam com graciosidade — se uma fonte falhar,
+#   servimos o ultimo valor em cache (stale) e, se nem isso houver,
+#   available=false para o front esconder/assinalar esse mostrador em vez
+#   de rebentar. TTL 30 min: os indices so mudam de hora a hora / diariamente,
+#   portanto nao ha vantagem em bater as APIs com mais frequencia.
+# ---------------------------------------------------------------------------
+SENTIMENT_TTL = 1800  # 30 min
+
+
+def _classify_sentiment(score: int) -> str:
+    """Normaliza um score 0-100 numa das 5 classificacoes canonicas usadas
+    por ambos os indices (Extreme Fear ... Extreme Greed). O front traduz
+    estas chaves; nao mostrar texto em ingles diretamente."""
+    if score <= 24:
+        return "extreme_fear"
+    if score <= 44:
+        return "fear"
+    if score <= 55:
+        return "neutral"
+    if score <= 74:
+        return "greed"
+    return "extreme_greed"
+
+
+async def _fetch_sentiment_crypto():
+    """Crypto Fear & Greed via alternative.me. Devolve dict ou None."""
+    try:
+        async with httpx.AsyncClient(timeout=12) as ch:
+            r = await ch.get("https://api.alternative.me/fng/", params={"limit": 1})
+            r.raise_for_status()
+            data = (r.json() or {}).get("data") or []
+            if not data:
+                return None
+            score = int(float(data[0].get("value")))
+            score = max(0, min(100, score))
+            return {"score": score, "classification": _classify_sentiment(score),
+                    "available": True}
+    except Exception as e:
+        logger.warning(f"Crypto sentiment fetch failed: {e}")
+        return None
+
+
+async def _fetch_sentiment_stocks():
+    """Stock Fear & Greed via CNN (endpoint de dados nao-oficial). Devolve
+    dict ou None. Precisa de um User-Agent de browser ou a CNN devolve 418."""
+    try:
+        headers = {
+            "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                           "AppleWebKit/537.36 (KHTML, like Gecko) "
+                           "Chrome/125.0 Safari/537.36"),
+            "Accept": "application/json, text/plain, */*",
+        }
+        async with httpx.AsyncClient(timeout=12, headers=headers) as ch:
+            r = await ch.get(
+                "https://production.dataviz.cnn.io/index/fearandgreed/graphdata")
+            r.raise_for_status()
+            fg = (r.json() or {}).get("fear_and_greed") or {}
+            if fg.get("score") is None:
+                return None
+            score = max(0, min(100, int(round(float(fg.get("score"))))))
+            return {"score": score, "classification": _classify_sentiment(score),
+                    "available": True}
+    except Exception as e:
+        logger.warning(f"Stocks sentiment fetch failed: {e}")
+        return None
+
+
+async def _fetch_sentiment():
+    """Junta cripto + acoes com cache e fallback stale por-mostrador."""
+    cache_key = "market_sentiment"
+    crypto, stocks = await asyncio.gather(
+        _fetch_sentiment_crypto(), _fetch_sentiment_stocks())
+    prev = _cache_get_stale(cache_key) or {}
+    if crypto is None:
+        crypto = {**(prev.get("crypto") or {"score": None, "classification": None}),
+                  "available": False}
+    if stocks is None:
+        stocks = {**(prev.get("stocks") or {"score": None, "classification": None}),
+                  "available": False}
+    out = {"crypto": crypto, "stocks": stocks}
+    # So gravamos em cache "fresca" se pelo menos uma fonte respondeu ao vivo,
+    # para nao carimbar dados stale como frescos e esconder falhas persistentes.
+    if crypto.get("available") or stocks.get("available"):
+        _cache_set(cache_key, out)
+    return out
+
+
+@router.get("/market/sentiment")
+async def market_sentiment():
+    """Manometro de sentimento: cripto (alternative.me) + acoes (CNN)."""
+    cache_key = "market_sentiment"
+    cached = _cache_get(cache_key, ttl=SENTIMENT_TTL)
+    if cached:
+        return cached
+    return await _fetch_sentiment()
+
+
 MARKET_REFRESH_INTERVAL_SECONDS = 900
 
 
@@ -387,5 +489,9 @@ async def run_market_movers_refresher() -> None:
                 await _fetch_latest_news()
             except Exception as e:
                 logger.warning(f"Market movers refresher (news) failed: {e}")
+            try:
+                await _fetch_sentiment()
+            except Exception as e:
+                logger.warning(f"Market movers refresher (sentiment) failed: {e}")
         tick += 1
         await asyncio.sleep(MARKET_REFRESH_INTERVAL_SECONDS)

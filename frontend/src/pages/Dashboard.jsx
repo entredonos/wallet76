@@ -18,6 +18,7 @@ import LightEvolutionCard from "../components/dashboard/LightEvolutionCard";
 import LightBalanceCard from "../components/dashboard/LightBalanceCard";
 import SharePanel from "../components/dashboard/SharePanel";
 import FilterPillsRow from "../components/dashboard/FilterPillsRow";
+import MarketSentimentCard from "../components/dashboard/MarketSentimentCard";
 import TopMoversWidget from "../components/dashboard/TopMoversWidget";
 import EvolutionChart from "../components/dashboard/EvolutionChart";
 import AllocationWidget from "../components/dashboard/AllocationWidget";
@@ -1124,50 +1125,53 @@ const worstPerformer = useMemo(() => {
                 para passar). */}
             {selectedWallet && (
               <div className="flex flex-wrap items-center gap-2 mt-2.5" data-testid="wallet-quicklinks">
-                {/* Voltar a "Todas as carteiras" + os 5 atalhos desta carteira,
-                    todos na mesma linha (envolve no telemóvel). */}
+                {/* Voltar + os atalhos desta carteira, todos na mesma linha
+                    (do tamanho dos botões do resumo). O "Painel avançado" é
+                    toggle (↔ Resumo). Substitui a antiga 2ª linha
+                    Resumo/Alertas/Adicionar, que deixou de fazer sentido
+                    dentro de uma carteira. */}
                 <Link
                   to="/dashboard"
-                  className="flex items-center gap-1 text-[11px] font-mono px-2.5 py-1 rounded-md border border-zinc-700 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-zinc-700 bg-zinc-900/50 text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
                   data-testid="wallet-quicklink-back"
                 >
-                  <ChevronLeft className="w-3 h-3" /> {t("tx.all_wallets")}
+                  <ChevronLeft className="w-4 h-4" /> {t("tx.all_wallets")}
                 </Link>
                 <Link
                   to={`/transactions?wallet=${selectedWallet.id}`}
-                  className="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-md border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-zinc-800 bg-zinc-900/50 text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
                   data-testid="wallet-quicklink-transactions"
                 >
-                  <Receipt className="w-3 h-3" /> {t("nav.transactions")}
+                  <Receipt className="w-4 h-4" /> {t("nav.transactions")}
                 </Link>
                 <Link
                   to={`/analytics?wallet=${selectedWallet.id}`}
-                  className="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-md border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-zinc-800 bg-zinc-900/50 text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
                   data-testid="wallet-quicklink-analytics"
                 >
-                  <BarChart3 className="w-3 h-3" /> {t("nav.analytics")}
+                  <BarChart3 className="w-4 h-4" /> {t("nav.analytics")}
                 </Link>
                 <Link
                   to="/alerts"
-                  className="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-md border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-zinc-800 bg-zinc-900/50 text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
                   data-testid="wallet-quicklink-alerts"
                 >
-                  <Bell className="w-3 h-3" /> {t("common.alerts")}
+                  <Bell className="w-4 h-4" /> {t("common.alerts")}
                 </Link>
                 <button
                   type="button"
-                  onClick={() => setDashMode("advanced")}
-                  className="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-md border border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200 transition-colors"
+                  onClick={() => setDashMode((m) => (m === "light" ? "advanced" : "light"))}
+                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-amber-500/40 bg-zinc-900/50 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200 transition-colors"
                   data-testid="wallet-quicklink-advanced"
                 >
-                  <Gauge className="w-3 h-3" /> {t("dash.view_advanced")}
+                  <Gauge className="w-4 h-4" /> {dashMode === "light" ? t("dash.view_advanced") : t("dash.view_summary")}
                 </button>
                 <Link
                   to={`/transactions?wallet=${selectedWallet.id}&open=1`}
-                  className="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-md border border-blue-500/40 text-blue-300 hover:bg-blue-500/10 hover:text-blue-200 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-blue-500 text-zinc-950 font-medium hover:bg-blue-400 transition-colors"
                   data-testid="wallet-quicklink-add"
                 >
-                  <Plus className="w-3 h-3" /> {t("common.add")}
+                  <Plus className="w-4 h-4" /> {t("common.add")}
                 </Link>
               </div>
             )}
@@ -1207,7 +1211,7 @@ const worstPerformer = useMemo(() => {
           escondido abaixo de sm (só ícone + title/tooltip nesse breakpoint),
           igual ao tratamento já usado nos 3 ícones acima — cabem sempre
           numa linha só, com o texto completo a voltar a partir de sm. */}
-      {dashMode === "advanced" && (
+      {dashMode === "advanced" && !selectedWallet && (
         <div className="flex flex-nowrap items-center justify-end gap-2 -mt-2">
           <Button
             variant="outline"
@@ -1246,6 +1250,29 @@ const worstPerformer = useMemo(() => {
           onCopy={copyShareLink}
         />
       )}
+
+      {/* Filter pills — badges de tipo (Global/Cripto/Ações/ETFs/Liquidez) +
+          carteiras. Renderizam-se ACIMA dos cartões em AMBOS os modos
+          (avançado e leve/Painel), conforme pedido (23 jul 2026: "passar as
+          carteiras ... para cima dos 4 badges" + "por estas badges no painel
+          de quando se abre a app em cima"). order = wOrder("summary") - 1
+          coloca-as logo acima da grelha de cartões (order wOrder("summary"))
+          e do container do modo leve (order wOrder("summary") + 1), mas ainda
+          abaixo do cabeçalho (order 0). */}
+      <div style={{ order: wOrder("summary") - 1 }} className="flex flex-wrap items-center gap-2">
+        <FilterPillsRow
+          pillVisible={pillVisible}
+          filterType={filterType}
+          filterWallet={filterWallet}
+          setFilterType={setFilterType}
+          setFilterWallet={setFilterWallet}
+          nav={nav}
+          globalAssetTypes={globalAssetTypes}
+          presentAssetTypes={presentAssetTypes}
+          wallets={wallets}
+          walletPillVisible={walletPillVisible}
+        />
+      </div>
 
       {/* Summary cards — "advanced" only. "light" mode shows LightBalanceCard
           instead (single consolidated Saldo Total + wallets list, below),
@@ -1336,6 +1363,14 @@ const worstPerformer = useMemo(() => {
         // 5 jul 2026 from a live screenshot: "Evolução do Portfólio" was
         // the very first thing on the page, saldo cards below it).
         <div className="flex flex-col gap-6" style={{ order: wOrder("summary") + 1 }}>
+          {/* Manómetro de sentimento (Opção 1 aprovada 23 jul 2026) — topo do
+              Painel leve, o primeiro ecrã ao abrir a app. Cripto + Ações lado
+              a lado. */}
+          {wVisible("sentiment") && (
+            <div style={{ order: wOrder("summary") - 1 }}>
+              <MarketSentimentCard compact />
+            </div>
+          )}
           {/* wVisible/wOrder wiring added 5 jul 2026: these two used to
               render unconditionally in light mode regardless of what the
               widget drawer said, so toggling "Saldo"/"Evolução" off there
@@ -1406,22 +1441,6 @@ const worstPerformer = useMemo(() => {
 
       {dashMode === "advanced" && (
       <>
-      {/* Filter pills — always visible, anchored just after summary. */}
-      <div style={{ order: wOrder("summary") + 1 }} className="flex flex-wrap items-center gap-2">
-        <FilterPillsRow
-          pillVisible={pillVisible}
-          filterType={filterType}
-          filterWallet={filterWallet}
-          setFilterType={setFilterType}
-          setFilterWallet={setFilterWallet}
-          nav={nav}
-          globalAssetTypes={globalAssetTypes}
-          presentAssetTypes={presentAssetTypes}
-          wallets={wallets}
-          walletPillVisible={walletPillVisible}
-        />
-      </div>
-
       {/* Top movers (my portfolio) + Best/Worst performers */}
       <div style={{ order: wOrder("top_movers"), display: wVisible("top_movers") ? undefined : "none" }}
            className="space-y-3" data-testid="top-movers-widget">

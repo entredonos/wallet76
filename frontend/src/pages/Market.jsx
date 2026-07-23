@@ -6,6 +6,7 @@ import {
   Star, Newspaper, ExternalLink, Plus,
 } from "lucide-react";
 import AssetIcon from "../components/AssetIcon";
+import MarketSentimentCard from "../components/dashboard/MarketSentimentCard";
 import { fmtCurrency, fmtPct, fmtCompact, convert } from "../lib/format";
 import InlineWatchlistDialog from "../components/InlineWatchlistDialog";
 import { useI18n } from "../context/I18nContext";
@@ -94,6 +95,10 @@ export default function Market({ currency = "USD" }) {
         <h1 className="font-display text-4xl sm:text-5xl font-light tracking-tight mt-2">{t("market.title")}</h1>
         <p className="text-zinc-400 mt-2">{t("market.subtitle")}</p>
       </div>
+
+      {/* Manómetro de sentimento do mercado (Cripto + Ações) no topo da
+          Mercado — mesma visualização de agulha usada no Painel. */}
+      <MarketSentimentCard />
 
       {/* Segmented control — Crypto / Stocks / Watching. Replaces the old
           "always show both stacked" layout: one tab at a time reads better
