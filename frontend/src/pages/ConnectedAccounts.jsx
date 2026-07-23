@@ -701,6 +701,7 @@ export default function ConnectedAccounts() {
 
         {addingBroker && (
           <AddBrokerForm
+            key={addingBroker}
             brokerKey={addingBroker}
             onAdded={onAdded}
             onCancel={() => setAddingBroker(null)}
