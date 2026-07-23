@@ -61,12 +61,14 @@ async def _try_balance(client):
     conta.
     """
     ccxt = _ccxt()
-    last_ok = None
+    merged = {}
+    ok = False
     auth_err = None
-    # Ordem: unified primeiro (é onde a Bybit UTA guarda o saldo). Devolvemos a
-    # PRIMEIRA conta que tenha saldo real — antes devolvíamos a primeira que
-    # respondesse, que podia ser uma conta vazia, escondendo o saldo verdadeiro.
-    for params in ({"type": "unified"}, {}, {"type": "spot"}, {"type": "funding"}, {"type": "swap"}):
+    # JUNTA a conta por omissão (unified/spot/main) com a conta FUNDING: a Bybit
+    # (e outras) guardam o saldo numa conta de Funding SEPARADA da de trading —
+    # se o dinheiro está todo em Funding e a Unified está vazia, ler só a por
+    # omissão dava saldo ~0. São contas distintas, por isso somar não duplica.
+    for params in ({}, {"type": "funding"}):
         try:
             bal = await client.fetch_balance(params)
         except ccxt.AuthenticationError as e:
@@ -74,23 +76,19 @@ async def _try_balance(client):
             continue
         except Exception:
             continue
-        totals = bal.get("total") or {}
-        has_holdings = False
-        for v in totals.values():
+        ok = True
+        for cur, amt in (bal.get("total") or {}).items():
             try:
-                if float(v or 0) > 0:
-                    has_holdings = True
-                    break
+                a = float(amt or 0)
             except (TypeError, ValueError):
-                continue
-        if has_holdings:
-            return bal
-        last_ok = bal  # sucesso mas vazio — fica como fallback
-    if last_ok is not None:
-        return last_ok
-    if auth_err is not None:
-        raise auth_err
-    raise CcxtError("fetch_balance failed for all account types")
+                a = 0
+            if a > 0:
+                merged[cur] = merged.get(cur, 0) + a
+    if not ok:
+        if auth_err is not None:
+            raise auth_err
+        raise CcxtError("fetch_balance failed for all account types")
+    return {"total": merged}
 
 
 def _make_client(candidate_ids, api_key, api_secret, password=None):
