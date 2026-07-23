@@ -33,6 +33,26 @@ from routes import (
     referrals as referrals_routes,
 )
 
+# Monitorização de erros (Sentry) — SÓ ativa se SENTRY_DSN estiver no ambiente
+# (definido no Render). Sem DSN fica totalmente inerte, por isso é seguro em
+# local e no CI. Captura exceções não tratadas nas rotas e nas tarefas de
+# fundo (sincronização de corretoras, agendadores). send_default_pii=False:
+# nunca envia dados pessoais dos utilizadores — é uma app financeira.
+_SENTRY_DSN = os.environ.get("SENTRY_DSN")
+if _SENTRY_DSN:
+    try:
+        import sentry_sdk
+        sentry_sdk.init(
+            dsn=_SENTRY_DSN,
+            environment="production" if os.environ.get("RENDER") else "development",
+            traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.0")),
+            send_default_pii=False,
+        )
+        logger.info("Sentry error monitoring enabled")
+    except Exception as _e:
+        logger.warning(f"Sentry init failed (continuing without it): {_e}")
+
+
 # Render sets RENDER=true automatically on every deployed instance — use it
 # to disable the interactive API docs (which would otherwise fully enumerate
 # every route, including admin ones) in production while keeping them
