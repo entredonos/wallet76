@@ -75,9 +75,16 @@ def _map_transaction(t: dict) -> dict | None:
     fee = abs(float(t.get("totalFeesInBaseCurrency") or t.get("feeInBaseCurrency") or 0))
     currency = t.get("currency") or "EUR"
 
+    # Guarda de robustez (23 jul 2026): sem símbolo ou sem quantidade não é uma
+    # posição válida — não importar (evita "holdings" em branco). Os outros
+    # conectores já faziam isto; o DEGIRO era o único que faltava.
+    symbol = (t.get("productSymbol") or t.get("symbol") or "").upper().strip()
+    if not symbol or qty == 0:
+        return None
+
     # Convert price to USD if needed (caller should pass fx_rates)
     return {
-        "symbol": (t.get("productSymbol") or t.get("symbol") or "").upper().strip(),
+        "symbol": symbol,
         "name": t.get("productName") or "",
         "asset_type": "stock",  # DEGIRO is stocks/ETFs only
         "type": "BUY" if side == "B" else "SELL",
