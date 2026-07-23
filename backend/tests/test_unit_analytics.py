@@ -75,3 +75,39 @@ class TestMonthlyReturns:
         assert m["worst_month"]["month"] == "2026-03"
         assert m["worst_month"]["pct"] == -10.0
         assert len(m["months"]) == 2
+
+
+class TestSharpeVolatility:
+    def test_insufficient_returns(self):
+        # < 3 retornos diários -> None
+        m = _compute_metrics([_pt("2026-01-01", 100), _pt("2026-01-02", 110),
+                              _pt("2026-01-03", 120)])
+        assert m["sharpe"] is None
+        assert m["volatility_pct"] is None
+
+    def test_positive_portfolio_positive_sharpe(self):
+        vals = [100, 102, 101, 104, 103, 106]
+        m = _compute_metrics([_pt(f"2026-01-0{i+1}", v) for i, v in enumerate(vals)])
+        assert m["sharpe"] is not None
+        assert m["sharpe"] > 0
+        assert m["volatility_pct"] > 0
+
+    def test_declining_portfolio_negative_sharpe(self):
+        vals = [100, 98, 99, 96, 97, 94]
+        m = _compute_metrics([_pt(f"2026-01-0{i+1}", v) for i, v in enumerate(vals)])
+        assert m["sharpe"] is not None
+        assert m["sharpe"] < 0
+
+    def test_deposit_day_neutralised_by_cost(self):
+        # Dia 2 é um depósito puro (valor E custo sobem 100) -> não deve contar
+        # como retorno de +100%. Sem o ajuste de fluxos, a volatilidade
+        # dispararia para >1000%; com o ajuste fica modesta.
+        series = [
+            _pt("2026-01-01", 100, 0),
+            _pt("2026-01-02", 200, 100),   # depósito de 100
+            _pt("2026-01-03", 210, 100),
+            _pt("2026-01-04", 220, 100),
+        ]
+        m = _compute_metrics(series)
+        assert m["sharpe"] is not None
+        assert m["volatility_pct"] < 200   # depósito neutralizado (senão seria >1000%)

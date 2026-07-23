@@ -187,11 +187,39 @@ def _compute_metrics(series: list[dict]) -> dict:
                     "abs": round(curr_v - prev_v, 2),
                 })
 
+    # Sharpe & volatilidade — a partir dos retornos diários LÍQUIDOS de fluxos
+    # (depósitos/levantamentos). O valor da carteira sobe quando se compra mais
+    # (não é "retorno"), por isso descontamos a variação do custo (cost) para
+    # isolar o retorno de mercado: r_i = (Δvalor − Δcusto) / valor_anterior. Um
+    # dia de puro depósito dá ~0% e não infla a volatilidade/Sharpe. (Séries de
+    # benchmark não têm "cost" -> Δcusto=0, fica o retorno puro do índice.)
+    daily_rets = []
+    for i in range(1, len(series)):
+        prev_v = series[i - 1]["value"]
+        if prev_v and prev_v > 0:
+            d_val = series[i]["value"] - prev_v
+            d_cost = float(series[i].get("cost") or 0) - float(series[i - 1].get("cost") or 0)
+            daily_rets.append((d_val - d_cost) / prev_v)
+
+    sharpe = None
+    volatility_pct = None
+    if len(daily_rets) >= 3:
+        mean_r = sum(daily_rets) / len(daily_rets)
+        var = sum((r - mean_r) ** 2 for r in daily_rets) / (len(daily_rets) - 1)
+        std_r = var ** 0.5
+        ANN = 365 ** 0.5   # snapshots diários de calendário (carteira mista; cripto conta fins de semana)
+        volatility_pct = std_r * ANN * 100.0
+        if std_r > 0:
+            # Sharpe anualizado, taxa sem risco assumida 0% (comum em carteiras com cripto).
+            sharpe = (mean_r / std_r) * ANN
+
     return {
         "total_return_pct": round(total_return_pct, 2),
         "cagr_pct":         round(cagr_pct, 2) if cagr_pct is not None else None,
         "history_days":     history_days,
         "max_drawdown_pct": round(max_dd * 100, 2),
+        "sharpe":           round(sharpe, 2) if sharpe is not None else None,
+        "volatility_pct":   round(volatility_pct, 2) if volatility_pct is not None else None,
         "best_month":       best_month,
         "worst_month":      worst_month,
         "months":           month_returns,
@@ -212,6 +240,7 @@ BENCHMARK_CHOICES = {
     "VWCE.DE": "VWCE.DE",   # Vanguard FTSE All-World (proxy MSCI World, negociado na Xetra)
     "^STOXX50E": "^STOXX50E",  # Euro Stoxx 50
     "QQQ": "QQQ",           # Nasdaq 100
+    "BTC-USD": "BTC-USD",   # Bitcoin (via yfinance; BTC-USD é fiável no Yahoo)
 }
 
 

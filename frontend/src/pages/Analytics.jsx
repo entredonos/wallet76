@@ -25,6 +25,7 @@ const BENCHMARK_OPTIONS = [
   { value: "VWCE.DE",   labelKey: "analytics.benchmark_world" },
   { value: "^STOXX50E", labelKey: "analytics.benchmark_europe" },
   { value: "QQQ",       labelKey: "analytics.benchmark_nasdaq" },
+  { value: "BTC-USD",   labelKey: "analytics.benchmark_btc" },
 ];
 
 const RANGES = [
@@ -441,6 +442,24 @@ export default function Analytics({ currency }) {
           icon={Award}
           tint={(m.total_return_pct ?? 0) >= (bm.total_return_pct ?? 0) ? "emerald" : "rose"}
           tooltip={t("analytics.vs_benchmark_tooltip_generic") || "Your return vs the chosen benchmark over the same period."}
+        />
+        <MetricCard
+          label={t("analytics.sharpe")}
+          value={m.sharpe == null ? "N/D" : m.sharpe.toFixed(2)}
+          sub={t("analytics.sharpe_sub")}
+          positive={m.sharpe == null ? null : m.sharpe >= 0}
+          icon={Activity}
+          tint={m.sharpe == null ? "gray" : m.sharpe >= 1 ? "emerald" : m.sharpe >= 0 ? "amber" : "rose"}
+          tooltip={t("analytics.sharpe_tooltip")}
+        />
+        <MetricCard
+          label={t("analytics.volatility")}
+          value={m.volatility_pct == null ? "N/D" : `${m.volatility_pct.toFixed(1)}%`}
+          sub={t("analytics.volatility_sub")}
+          positive={null}
+          icon={Activity}
+          tint="amber"
+          tooltip={t("analytics.volatility_tooltip")}
         />
       </div>
       )}
