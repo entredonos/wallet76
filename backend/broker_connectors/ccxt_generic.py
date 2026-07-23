@@ -83,6 +83,19 @@ def _make_client(candidate_ids, api_key, api_secret, password=None):
     return klass(cfg), eid
 
 
+# Pistas de que um erro (mesmo não tipado como AuthenticationError pela ccxt)
+# é afinal um problema de credenciais/permissões/IP — para rejeitar já ao
+# ligar, em vez de criar uma ligação que nunca sincroniza. Inclui códigos de
+# erro da Bybit (10003 chave inválida, 10004 assinatura, 10005 permissão,
+# 33004 chave expirada).
+_AUTH_HINTS = (
+    "auth", "sign", "signature", "api key", "apikey", "api-key",
+    "permission", "invalid key", "unauthorized", "forbidden",
+    "expired", "revoked", "ip address", "ip white", "not whitelist",
+    "10003", "10004", "10005", "33004", "invalid api",
+)
+
+
 async def validate_credentials(candidate_ids, api_key, api_secret, password=None) -> bool:
     """True se a chave autentica. Só rejeitamos num erro de AUTENTICAÇÃO real
     (chave/assinatura inválida). Se autenticar mas o saldo falhar por outro
@@ -97,7 +110,12 @@ async def validate_credentials(candidate_ids, api_key, api_secret, password=None
         return True
     except ccxt.AuthenticationError:
         return False
-    except Exception:
+    except Exception as e:
+        # Erro não tipado como auth pela ccxt: se a mensagem cheira a
+        # credenciais/permissões/IP, rejeita (chave má); caso contrário
+        # (ex.: só um tipo de conta que não usamos) aceita.
+        if any(h in str(e).lower() for h in _AUTH_HINTS):
+            return False
         return True
     finally:
         try:
