@@ -18,6 +18,12 @@ const _failedUrls = new Set();
 function cryptoLogoUrl(sym) {
   return `https://cryptologos.cc/logos/${sym.toLowerCase()}-logo.svg?v=40`;
 }
+// CDN de ícones de cripto por símbolo (cobre ~470 moedas do topo). Fiável,
+// ao contrário da URL antiga da CoinGecko (que usava o slug como ficheiro e
+// dava 404 quase sempre). Para moedas fora do pacote, cai para o fallback.
+function cryptoCdnUrl(sym) {
+  return `https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/128/color/${sym.toLowerCase()}.png`;
+}
 function fmpUrl(sym) {
   return `https://financialmodelingprep.com/image-stock/${sym.toUpperCase()}.png`;
 }
@@ -76,19 +82,22 @@ export default function AssetIcon({ asset, size = 28, logoUrl, rounded = "rounde
   const sym = (asset.symbol || "").replace(/-USD$|-USDT$/, "").toUpperCase();
   const type = asset.asset_type || "stock";
 
-  // Explicit URL override (e.g. from search backend)
-  if (logoUrl && !_failedUrls.has(logoUrl)) {
-    return <LogoImg src={logoUrl} symbol={sym} size={size} rounded={rounded} />;
+  // Imagem real quando o backend já a dá (Mercado, movers, pesquisa —
+  // CoinGecko devolve `image`/`thumb`) ou override explícito. É o mais fiável.
+  const explicit = logoUrl || asset.image || asset.thumb || asset.logo;
+  if (explicit && !_failedUrls.has(explicit)) {
+    const fb = type === "crypto" ? cryptoCdnUrl(sym) : (type === "cash" ? null : fmpUrl(sym));
+    return <LogoImg src={explicit} fallback={fb} symbol={sym} size={size} rounded={rounded} />;
+  }
+
+  // Caixa (cash/liquidez): sem logótipo — selo com a moeda (USDT, EUR…).
+  if (type === "cash") {
+    return <FallbackIcon symbol={sym} size={size} />;
   }
 
   if (type === "crypto") {
-    const cgId = asset.coingecko_id;
-    // Primary: CoinGecko URL if we have the id; fallback: CryptoLogos by symbol
-    const primary = cgId
-      ? `https://assets.coingecko.com/coins/images/1/small/${cgId}.png`
-      : cryptoLogoUrl(sym);
-    const fallback = cgId ? cryptoLogoUrl(sym) : null;
-    return <LogoImg src={primary} fallback={fallback} symbol={sym} size={size} rounded={rounded} />;
+    // CDN por símbolo (fiável p/ o topo); fallback: cryptologos.cc; depois iniciais.
+    return <LogoImg src={cryptoCdnUrl(sym)} fallback={cryptoLogoUrl(sym)} symbol={sym} size={size} rounded={rounded} />;
   }
 
   // Stocks / ETFs -- Financial Modeling Prep

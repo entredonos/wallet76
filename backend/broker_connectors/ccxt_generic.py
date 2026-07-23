@@ -294,42 +294,51 @@ async def fetch_transactions(candidate_ids, api_key, api_secret, password=None) 
                 all_bal[cur] = a
         for base in sorted(set(all_bal) - traded):
             amt = all_bal.get(base, 0)
-            if amt <= 0 or base.upper() in _FIAT:
+            if amt <= 0:
                 continue
-            if base.upper() in _USD_STABLES:
-                px = 1.0
+            b = base.upper()
+            if b in _USD_STABLES:
+                # Stablecoin -> CAIXA (liquidez), valorizada ao par (1 USD).
+                asset_type, price_usd, price_cur = "cash", 1.0, "USD"
+            elif b in _FIAT:
+                # Fiat na exchange -> CAIXA na sua moeda (o portfólio converte
+                # via FX; price_usd=1 na própria moeda vira o valor em USD).
+                asset_type, price_usd, price_cur = "cash", 1.0, b
             else:
-                px = None
+                # Cripto real -> preço de mercado.
+                asset_type, price_cur = "crypto", "USD"
+                price_usd = None
                 for quote in ("USDT", "USDC", "USD"):
                     sym = f"{base}/{quote}"
                     if sym in client.markets:
                         try:
                             tk = await client.fetch_ticker(sym)
                             if tk and tk.get("last"):
-                                px = float(tk["last"])
+                                price_usd = float(tk["last"])
                                 break
                         except Exception:
                             continue
-                if not px or px <= 0:
+                if not price_usd or price_usd <= 0:
                     sym = f"{base}/BTC"
                     if sym in client.markets:
                         try:
                             tk = await client.fetch_ticker(sym)
                             if tk and tk.get("last"):
-                                px = float(tk["last"]) * btc_usd
+                                price_usd = float(tk["last"]) * btc_usd
                         except Exception:
-                            px = None
-            if not px or px <= 0:
-                continue
+                            price_usd = None
+                if not price_usd or price_usd <= 0:
+                    continue  # sem cotação -> não importa (evita valor $0)
             results.append({
-                "symbol": base.upper(),
-                "name": base.upper(),
-                "asset_type": "crypto",
+                "symbol": b,
+                "name": b,
+                "asset_type": asset_type,
                 "type": "BUY",
                 "date": date.today().isoformat(),
                 "quantity": amt,
-                "price_usd": px,
-                "price_currency": "USD",
+                "price_usd": price_usd,
+                "price_currency": price_cur,
+                "currency": price_cur,
                 "fee": 0.0,
                 "fee_currency": "USD",
                 "notes": f"{eid} saldo atual (sem historico de trades)",

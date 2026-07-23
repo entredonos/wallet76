@@ -385,6 +385,28 @@ async def _do_sync(conn_id: str, user_id: str, wallet_id: str | None, ip: str = 
 
         imported, errors = await _import_transactions(user_id, wallet_id, txns, conn_id)
 
+        # Numa exchange de cripto TODOS os ativos são cripto. Corrige qualquer
+        # transação desta ligação que tenha ficado como "stock" (importação
+        # antiga com defaults, ou reclassificação por colisão de símbolo com um
+        # ticker de ação) — senão a alocação mostrava "Ações" numa carteira só
+        # de cripto (ex.: DOGE a contar como ação).
+        if broker in CCXT_BROKERS:
+            _STABLE_FIAT = ["USDT", "USDC", "USD", "DAI", "TUSD", "FDUSD", "BUSD",
+                            "USDP", "PYUSD", "EUR", "GBP", "CHF", "JPY", "BRL", "CAD", "AUD"]
+            # Stablecoins/fiat -> caixa (cash/liquidez).
+            await db.transactions.update_many(
+                {"user_id": user_id, "_broker": broker, "asset_type": {"$ne": "cash"},
+                 "symbol": {"$in": _STABLE_FIAT}},
+                {"$set": {"asset_type": "cash"}},
+            )
+            # Tudo o resto numa exchange de cripto é cripto (corrige "Ações" mal
+            # classificadas, ex.: DOGE).
+            await db.transactions.update_many(
+                {"user_id": user_id, "_broker": broker, "asset_type": {"$ne": "crypto"},
+                 "symbol": {"$nin": _STABLE_FIAT}},
+                {"$set": {"asset_type": "crypto"}},
+            )
+
         await db.broker_connections.update_one(
             {"id": conn_id},
             {"$set": {
