@@ -217,6 +217,7 @@ async def fetch_transactions(candidate_ids, api_key, api_secret, password=None) 
                 except Exception:
                     continue
 
+        traded = set()
         for base in sorted(held):
             for quote in QUOTES:
                 symbol = f"{base}/{quote}"
@@ -230,6 +231,60 @@ async def fetch_transactions(candidate_ids, api_key, api_secret, password=None) 
                     m = _map_trade(tr, base, quote, btc_usd, eid)
                     if m:
                         results.append(m)
+                        traded.add(base)
+
+        # Holdings SEM histórico de trades (moedas depositadas/transferidas,
+        # não compradas nesta exchange): sem isto, a carteira ficava a $0
+        # mesmo tendo saldo. Criamos uma posição a partir do saldo ATUAL, ao
+        # preço atual, para o ativo aparecer. Fica marcado nas notas.
+        # Nota: usa um _broker_id fixo por ativo (dedup) — na 1ª sincronização
+        # regista o saldo; se o saldo mudar depois, corrige-se à mão (o
+        # histórico real de trades, quando existe, tem sempre prioridade).
+        for base in sorted(held - traded):
+            try:
+                amt = float(totals.get(base) or 0)
+            except (TypeError, ValueError):
+                amt = 0
+            if amt <= 0:
+                continue
+            px = None
+            for quote in ("USDT", "USDC", "USD"):
+                sym = f"{base}/{quote}"
+                if sym in client.markets:
+                    try:
+                        tk = await client.fetch_ticker(sym)
+                        if tk and tk.get("last"):
+                            px = float(tk["last"])
+                            break
+                    except Exception:
+                        continue
+            if not px or px <= 0:
+                # tenta via BTC como último recurso
+                sym = f"{base}/BTC"
+                if sym in client.markets:
+                    try:
+                        tk = await client.fetch_ticker(sym)
+                        if tk and tk.get("last"):
+                            px = float(tk["last"]) * btc_usd
+                    except Exception:
+                        px = None
+            if not px or px <= 0:
+                continue
+            results.append({
+                "symbol": base.upper(),
+                "name": base.upper(),
+                "asset_type": "crypto",
+                "type": "BUY",
+                "date": date.today().isoformat(),
+                "quantity": amt,
+                "price_usd": px,
+                "price_currency": "USD",
+                "fee": 0.0,
+                "fee_currency": "USD",
+                "notes": f"{eid} saldo atual (sem historico de trades)",
+                "_broker_id": f"{eid}_balance_{base}",
+                "_broker": eid,
+            })
     finally:
         try:
             await client.close()
