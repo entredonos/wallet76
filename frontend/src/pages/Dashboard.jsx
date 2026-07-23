@@ -96,10 +96,11 @@ export default function Dashboard({ currency }) {
   // Widget config — persisted in localStorage
   const [widgetConfig, setWidgetConfig] = useState(() => {
     try {
-      // Chave "-v2" (19 jul 2026): a ordem por omissão foi reorganizada, por
+      // Chave "-v3" (23 jul 2026): novos widgets (sentimento, filtros, saldo)
+      // e nova ordem por omissão — reiniciamos a config guardada uma vez para
       // isso reiniciamos a config guardada uma vez para toda a gente ver a
       // nova ordem (podem voltar a reordenar no editor de widgets).
-      const raw = localStorage.getItem("w76-dash-widgets-v2");
+      const raw = localStorage.getItem("w76-dash-widgets-v3");
       if (raw) {
         const saved = JSON.parse(raw);
         const ids = new Set(saved.map((w) => w.id));
@@ -133,7 +134,7 @@ export default function Dashboard({ currency }) {
   const pillVisible = (type) => !hiddenTypePills.includes(type);
   const walletPillVisible = (id) => !hiddenWalletPills.includes(id);
   useEffect(() => {
-    try { localStorage.setItem("w76-dash-widgets-v2", JSON.stringify(widgetConfig)); } catch { /* noop */ }
+    try { localStorage.setItem("w76-dash-widgets-v3", JSON.stringify(widgetConfig)); } catch { /* noop */ }
   }, [widgetConfig]);
 
   // Widget helpers — defined AFTER widgetConfig state to avoid TDZ
@@ -714,7 +715,7 @@ export default function Dashboard({ currency }) {
       .map((w) => {
         const st = stats[w.id] || { value: 0, cost: 0 };
         const pnlPct = st.cost > 0 ? ((st.value - st.cost) / st.cost) * 100 : 0;
-        return { id: w.id, name: w.name, value: st.value, pnlPct };
+        return { id: w.id, name: w.name, currency: w.currency || "USD", value: st.value, pnlPct };
       })
       .sort((a, b) => b.value - a.value);
   }, [allHoldings, wallets]);
@@ -1249,15 +1250,11 @@ const worstPerformer = useMemo(() => {
         />
       )}
 
-      {/* Filter pills — badges de tipo (Global/Cripto/Ações/ETFs/Liquidez) +
-          carteiras. Renderizam-se ACIMA dos cartões em AMBOS os modos
-          (avançado e leve/Painel), conforme pedido (23 jul 2026: "passar as
-          carteiras ... para cima dos 4 badges" + "por estas badges no painel
-          de quando se abre a app em cima"). order = wOrder("summary") - 1
-          coloca-as logo acima da grelha de cartões (order wOrder("summary"))
-          e do container do modo leve (order wOrder("summary") + 1), mas ainda
-          abaixo do cabeçalho (order 0). */}
-      <div style={{ order: wOrder("summary") - 1 }} className="flex flex-wrap items-center gap-2">
+      {/* Filtros (badges de tipo Global/Cripto/… + carteiras) — widget próprio
+          "filter_pills" (23 jul 2026): aparece nos DOIS modos e é ligável e
+          reordenável no Personalizar como qualquer outro widget. */}
+      {wVisible("filter_pills") && (
+      <div style={{ order: wOrder("filter_pills") }} className="flex flex-wrap items-center gap-2">
         <FilterPillsRow
           pillVisible={pillVisible}
           filterType={filterType}
@@ -1271,13 +1268,12 @@ const worstPerformer = useMemo(() => {
           walletPillVisible={walletPillVisible}
         />
       </div>
+      )}
 
-      {/* Summary cards — "advanced" only. "light" mode shows LightBalanceCard
-          instead (single consolidated Saldo Total + wallets list, below),
-          per the approved mockup (memory/mobile_app_proposal.md) — these 4
-          separate stacked cards were the "layout antigo" difference from
-          it (5 jul 2026). */}
-      {dashMode === "advanced" && (
+      {/* Summary cards (4 badges: Saldo/Investido/L&P/Variação 24h) — widget
+          "summary". Passam a aparecer nos DOIS modos (23 jul 2026): o
+          utilizador quis os 4 badges também no Painel inicial. Ligável e
+          reordenável no Personalizar como qualquer widget. */}
       <div style={{ order: wOrder("summary"), display: wVisible("summary") ? undefined : "none" }}
            // 2 por linha já a partir do mobile (não só a partir de sm) —
            // 1 por linha ocupava demasiado espaço vertical no telemóvel
@@ -1343,97 +1339,76 @@ const worstPerformer = useMemo(() => {
           }
         />
       </div>
+
+      {/* Sentimento do mercado (manómetro cripto+ações) — widget "sentiment".
+          Filho direto do painel, nos DOIS modos, com o seu próprio order:
+          ligável e reordenável no Personalizar como qualquer widget. */}
+      {wVisible("sentiment") && (
+        <div style={{ order: wOrder("sentiment") }}>
+          <MarketSentimentCard compact />
+        </div>
       )}
 
-      {/* Light view: LightBalanceCard (Saldo Total + carteiras) above a
-          static 7-day evolution card (badge + day-axis only, no range
-          picker, no candles/weekend bands/safety-net badge — those stay
-          exclusive to the full EvolutionChart in "advanced"). Everything
-          else (pills, movers, allocation, table) only renders in
-          "advanced". */}
-      {dashMode === "light" && (
-        // Explicit order — this div is a direct child of the outer
-        // "flex flex-col" dashboard container, same as the summary cards
-        // grid above it. Without an explicit order here, it defaults to 0
-        // (browser default), which is LESS than the summary grid's own
-        // order (wOrder("summary"), 20 by default) — so this card was
-        // rendering ABOVE the balance cards instead of below them (caught
-        // 5 jul 2026 from a live screenshot: "Evolução do Portfólio" was
-        // the very first thing on the page, saldo cards below it).
-        <div className="flex flex-col gap-6" style={{ order: wOrder("summary") + 1 }}>
-          {/* Manómetro de sentimento (Opção 1 aprovada 23 jul 2026) — topo do
-              Painel leve, o primeiro ecrã ao abrir a app. Cripto + Ações lado
-              a lado. */}
-          {wVisible("sentiment") && (
-            <div style={{ order: wOrder("summary") - 1 }}>
-              <MarketSentimentCard compact />
-            </div>
-          )}
-          {/* wVisible/wOrder wiring added 5 jul 2026: these two used to
-              render unconditionally in light mode regardless of what the
-              widget drawer said, so toggling "Saldo"/"Evolução" off there
-              had zero effect here — a real gap, not just cosmetic (user
-              flagged it: "editor de widgets... tens que ver se esta
-              atualizado aqui"). DashboardWidgetDrawer also now hides the
-              other 4 widgets (top_movers/performers/allocation/assets) and
-              the filter-pills section while in light mode, since none of
-              them render here — showing their toggles would just be
-              clutter with no effect. */}
-          {wVisible("summary") && (
-            <div style={{ order: wOrder("summary") }}>
-              <LightBalanceCard
-                totalLabel={mask(fmtCurrency(convert(summary.total, currency, fxRates), currency))}
-                changeLabel={fmtPct(summary.cost > 0 ? ((summary.total - summary.cost) / summary.cost) * 100 : 0)}
-                positive={(summary.total - summary.cost) >= 0}
-                sparkline={<Sparkline data={summarySparkData} positive={chartIsPositive} width={70} height={22} />}
-                onAdd={() => nav(selectedWallet ? `/transactions?wallet=${selectedWallet.id}&open=1` : "/transactions?open=1")}
-                onAdvanced={() => setDashMode("advanced")}
-                loading={loading}
-                wallets={walletBreakdown.map((w) => ({
-                  id: w.id,
-                  name: w.name,
-                  changeLabel: w.value > 0 ? fmtPct(w.pnlPct) : null,
-                  positive: w.pnlPct >= 0,
-                  sparkData: (walletSparks[w.id] || []).map((p) => ({ p })),
-                }))}
-                assets={walletAssets}
-              />
-            </div>
-          )}
-          {wVisible("evolution") && (
-            <div style={{ order: wOrder("evolution") }} className="flex flex-col gap-3">
-              <LightEvolutionCard
-                title={evolutionTitle}
-                points={lightChartPoints}
-                changePct={lightChangePct}
-                loading={lightHistoryLoading}
-                chartClasses={lightChartClasses}
-                hiddenClasses={hiddenClasses}
-                toggleClassLine={toggleClassLine}
-              />
-              {(() => {
-                // Highlights the button label ("Painel avançado" / "Advanced
-                // panel" / etc.) wherever it appears inside the hint sentence,
-                // in the same amber as the button itself — works across all 6
-                // languages since dash.light_mode_hint always embeds the exact
-                // dash.view_advanced string verbatim (quoted or between
-                // guillemets, depending on the language).
-                const hint = t("dash.light_mode_hint");
-                const label = t("dash.view_advanced");
-                const idx = hint.indexOf(label);
-                if (idx === -1) {
-                  return <p className="text-xs text-zinc-400 font-mono">{hint}</p>;
-                }
-                return (
-                  <p className="text-xs text-zinc-400 font-mono">
-                    {hint.slice(0, idx)}
-                    <span className="text-amber-400 font-medium">{label}</span>
-                    {hint.slice(idx + label.length)}
-                  </p>
-                );
-              })()}
-            </div>
-          )}
+      {/* Painel leve — cartão Saldo Total (widget "balance"). Só no modo leve:
+          no avançado o saldo vem dos 4 badges (widget "summary"). Filho direto
+          do painel, com o seu próprio order, por isso a posição escolhida no
+          Personalizar é respeitada globalmente. Cada carteira mostra o seu
+          valor na SUA moeda nativa (valueLabel). */}
+      {dashMode === "light" && wVisible("balance") && (
+        <div style={{ order: wOrder("balance") }}>
+          <LightBalanceCard
+            totalLabel={mask(fmtCurrency(convert(summary.total, currency, fxRates), currency))}
+            changeLabel={fmtPct(summary.cost > 0 ? ((summary.total - summary.cost) / summary.cost) * 100 : 0)}
+            positive={(summary.total - summary.cost) >= 0}
+            sparkline={<Sparkline data={summarySparkData} positive={chartIsPositive} width={70} height={22} />}
+            onAdd={() => nav(selectedWallet ? `/transactions?wallet=${selectedWallet.id}&open=1` : "/transactions?open=1")}
+            onAdvanced={() => setDashMode("advanced")}
+            loading={loading}
+            wallets={walletBreakdown.map((w) => ({
+              id: w.id,
+              name: w.name,
+              valueLabel: w.value > 0 ? mask(fmtCurrency(convert(w.value, w.currency, fxRates), w.currency)) : null,
+              changeLabel: w.value > 0 ? fmtPct(w.pnlPct) : null,
+              positive: w.pnlPct >= 0,
+              sparkData: (walletSparks[w.id] || []).map((p) => ({ p })),
+            }))}
+            assets={walletAssets}
+          />
+        </div>
+      )}
+
+      {/* Painel leve — gráfico de evolução simples (widget "evolution"). Só no
+          modo leve: no avançado é o EvolutionChart completo, mais abaixo. */}
+      {dashMode === "light" && wVisible("evolution") && (
+        <div style={{ order: wOrder("evolution") }} className="flex flex-col gap-3">
+          <LightEvolutionCard
+            title={evolutionTitle}
+            points={lightChartPoints}
+            changePct={lightChangePct}
+            loading={lightHistoryLoading}
+            chartClasses={lightChartClasses}
+            hiddenClasses={hiddenClasses}
+            toggleClassLine={toggleClassLine}
+          />
+          {(() => {
+            // Realça o rótulo do botão ("Painel avançado" / etc.) dentro da
+            // frase de dica, no mesmo âmbar do botão — funciona nas 6 línguas
+            // porque dash.light_mode_hint embebe sempre dash.view_advanced tal
+            // e qual.
+            const hint = t("dash.light_mode_hint");
+            const label = t("dash.view_advanced");
+            const idx = hint.indexOf(label);
+            if (idx === -1) {
+              return <p className="text-xs text-zinc-400 font-mono">{hint}</p>;
+            }
+            return (
+              <p className="text-xs text-zinc-400 font-mono">
+                {hint.slice(0, idx)}
+                <span className="text-amber-400 font-medium">{label}</span>
+                {hint.slice(idx + label.length)}
+              </p>
+            );
+          })()}
         </div>
       )}
 

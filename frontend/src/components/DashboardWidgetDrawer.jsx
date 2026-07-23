@@ -113,17 +113,15 @@ export default function DashboardWidgetDrawer({ open, onClose, widgetConfig, set
           </button>
         </div>
 
-        {/* Widget list — em modo "light" só "summary" (LightBalanceCard) e
-            "evolution" (LightEvolutionCard) chegam a ser desenhados no
-            Painel (ver Dashboard.jsx); os outros (top_movers/performers/
-            allocation/monthly_returns/assets) só existem em "advanced".
-            Mostrar os seus toggles aqui também em "light" não tinha efeito
-            nenhum — o utilizador reparou nisto (5 jul 2026: "editor de
-            widgets mas tens que ver se esta atualizado aqui") — por isso
-            filtramos a lista consoante o modo. */}
+        {/* Widget list — o Painel leve e o avançado partilham o mesmo sistema
+            de ordem (23 jul 2026). No modo "light" desenham-se: summary (4
+            badges), sentiment, filter_pills, balance (cartão Saldo) e
+            evolution; os restantes (top_movers/performers/allocation/assets)
+            só no "advanced". Filtramos a lista consoante o modo para não
+            mostrar toggles sem efeito. */}
         <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 space-y-2">
           {widgetConfig
-            .filter((w) => dashMode !== "light" || ["summary", "evolution"].includes(w.id))
+            .filter((w) => dashMode !== "light" || ["summary", "sentiment", "filter_pills", "balance", "evolution"].includes(w.id))
             .map((w) => {
             const def = widgetDefs.find((d) => d.id === w.id);
             if (!def) return null;
@@ -162,10 +160,10 @@ export default function DashboardWidgetDrawer({ open, onClose, widgetConfig, set
           })}
         </div>
 
-        {/* Filter pills section — só existem no modo "advanced" (as pills
-            de tipo/carteira da tabela de ativos); escondidas em "light"
-            pela mesma razão da lista de widgets acima. */}
-        {dashMode !== "light" && (
+        {/* Filter pills section — o widget "filter_pills" aparece agora nos
+            dois modos, por isso estes toggles (esconder pills de tipo/
+            carteira) também. */}
+        {(
         <div className="px-4 pb-2 border-t border-zinc-800 pt-4">
           <div className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-400 mb-3">{t("dash.widgets_filter_pills") || "Filter pills"}</div>
           <div className="space-y-1.5">

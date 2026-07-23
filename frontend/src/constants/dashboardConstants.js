@@ -101,15 +101,20 @@ export const DEFAULT_VISIBLE_COLS = ["type","price","qty","value","avg_cost","pn
 
 // ── Widget system ────────────────────────────────────────────────────────────
 export const WIDGET_DEFS = [
-  // Ordem por omissão (19 jul 2026) — pirâmide invertida: números -> tendência
-  // + composição (a dupla central) -> o que mexeu -> secundários -> detalhe.
-  { id: "summary",    labelKey: "dash.widget_summary" },
-  { id: "evolution",  labelKey: "dash.widget_evolution" },
-  { id: "allocation", labelKey: "dash.widget_allocation" },
-  { id: "top_movers", labelKey: "dash.widget_top_movers" },
-  { id: "performers", labelKey: "dash.widget_performers" }, // sub-linha dentro de top_movers
-  { id: "liquidity",  labelKey: "dash.widget_liquidity" },
-  { id: "assets",     labelKey: "dash.widget_assets" },
+  // Ordem por omissão (23 jul 2026) — o Painel inicial (modo leve) e o
+  // avançado partilham este mesmo sistema de ordem. Ordem pedida pelo
+  // utilizador para o arranque da app: 4 badges -> sentimento -> filtros ->
+  // saldo -> evolução; os restantes (só no avançado) seguem a seguir.
+  { id: "summary",      labelKey: "dash.widget_summary" },      // 4 cartões (Saldo/Investido/L&P/24h)
+  { id: "sentiment",    labelKey: "dash.widget_sentiment" },    // manómetro cripto+ações
+  { id: "filter_pills", labelKey: "dash.widget_filter_pills" }, // badges Global/Cripto/… + carteiras
+  { id: "balance",      labelKey: "dash.widget_balance" },      // cartão Saldo Total (só modo leve)
+  { id: "evolution",    labelKey: "dash.widget_evolution" },
+  { id: "allocation",   labelKey: "dash.widget_allocation" },
+  { id: "top_movers",   labelKey: "dash.widget_top_movers" },
+  { id: "performers",   labelKey: "dash.widget_performers" },   // sub-linha dentro de top_movers
+  { id: "liquidity",    labelKey: "dash.widget_liquidity" },
+  { id: "assets",       labelKey: "dash.widget_assets" },
   // "monthly_returns" removido do painel (19 jul 2026) — era uma prévia
   // duplicada do gráfico que já vive na página Análise; fica só lá.
 ]

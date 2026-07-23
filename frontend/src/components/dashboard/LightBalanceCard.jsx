@@ -119,6 +119,9 @@ export default function LightBalanceCard({
                 >
                   <span className="text-sm text-zinc-300 truncate">{w.name}</span>
                   <span className="flex items-center gap-2 shrink-0">
+                    {w.valueLabel && (
+                      <span className="text-sm font-mono text-zinc-200">{w.valueLabel}</span>
+                    )}
                     <Sparkline data={w.sparkData} positive={w.positive} width={48} height={20} />
                     {w.changeLabel && (
                       <span className={`text-xs font-mono w-12 text-right ${w.positive ? "text-emerald-400" : "text-rose-400"}`}>
