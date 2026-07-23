@@ -38,6 +38,35 @@ from routes import (
 # local e no CI. Captura exceções não tratadas nas rotas e nas tarefas de
 # fundo (sincronização de corretoras, agendadores). send_default_pii=False:
 # nunca envia dados pessoais dos utilizadores — é uma app financeira.
+# Ruído externo NÃO-acionável que não deve encher o painel do Sentry: o
+# yfinance/Yahoo devolve "possibly delisted / no data" para símbolos que
+# mudaram de ticker ou que ele não cobre (ex.: cripto nova). Não são bugs da
+# app (continuam nos logs do Render), por isso filtramo-los — o Sentry deve
+# mostrar só o que precisas mesmo de ver.
+_SENTRY_NOISE = (
+    "possibly delisted", "no price data found", "no data found",
+    "failed download", "quote not found", "symbol may be delisted",
+    "not found for symbol",
+)
+
+
+def _sentry_before_send(event, hint):
+    parts = []
+    if event.get("message"):
+        parts.append(str(event["message"]))
+    le = event.get("logentry") or {}
+    for k in ("message", "formatted"):
+        if le.get(k):
+            parts.append(str(le[k]))
+    for v in ((event.get("exception") or {}).get("values") or []):
+        if v.get("value"):
+            parts.append(str(v["value"]))
+    text = " ".join(parts).lower()
+    if any(n in text for n in _SENTRY_NOISE):
+        return None   # descarta — não chega ao Sentry
+    return event
+
+
 _SENTRY_DSN = os.environ.get("SENTRY_DSN")
 if _SENTRY_DSN:
     try:
@@ -47,6 +76,7 @@ if _SENTRY_DSN:
             environment="production" if os.environ.get("RENDER") else "development",
             traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.0")),
             send_default_pii=False,
+            before_send=_sentry_before_send,
         )
         logger.info("Sentry error monitoring enabled")
     except Exception as _e:
