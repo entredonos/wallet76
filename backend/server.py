@@ -70,6 +70,13 @@ async def ping():
     return {"ok": True, "app": "wallet76"}
 
 
+# ⚠️ TEMPORÁRIO — verificação do Sentry. Dispara um erro (exceção de rota) para
+# confirmar a captura de exceções não tratadas. REMOVER após o teste.
+@app.get("/sentry-test")
+async def sentry_test():
+    raise RuntimeError("Wallet76 Sentry TEST — exceção de rota. Se ves isto no Sentry, funciona!")
+
+
 @api_router.get("/")
 async def root():
     return {"message": "Portfolio Tracker API"}
