@@ -19,6 +19,7 @@ import LightBalanceCard from "../components/dashboard/LightBalanceCard";
 import SharePanel from "../components/dashboard/SharePanel";
 import FilterPillsRow from "../components/dashboard/FilterPillsRow";
 import MarketSentimentCard from "../components/dashboard/MarketSentimentCard";
+import { filterHoldings, assetTypeSet } from "../lib/holdingsFilter";
 import TopMoversWidget from "../components/dashboard/TopMoversWidget";
 import EvolutionChart from "../components/dashboard/EvolutionChart";
 import AllocationWidget from "../components/dashboard/AllocationWidget";
@@ -633,7 +634,7 @@ export default function Dashboard({ currency }) {
   // "Crypto" pill, even if some other wallet holds stocks/ETFs. Selecting
   // "Todas as carteiras" shows the union across every wallet.
   const presentAssetTypes = useMemo(
-    () => new Set(holdingsInWalletScope.map((a) => a.asset_type)),
+    () => assetTypeSet(holdingsInWalletScope),
     [holdingsInWalletScope]
   );
 
@@ -641,7 +642,7 @@ export default function Dashboard({ currency }) {
   // only for the "Global" row's type pills, which stay visible regardless
   // of which wallet (if any) is currently selected.
   const globalAssetTypes = useMemo(
-    () => new Set(allHoldings.map((a) => a.asset_type)),
+    () => assetTypeSet(allHoldings),
     [allHoldings]
   );
 
@@ -655,13 +656,10 @@ export default function Dashboard({ currency }) {
     }
   }, [presentAssetTypes, filterType]);
 
-  const filtered = useMemo(() => {
-    return allHoldings.filter((a) => {
-      if (filterType !== "all" && a.asset_type !== filterType) return false;
-      if (filterWallet !== "all" && a.wallet_id !== filterWallet) return false;
-      return true;
-    });
-  }, [allHoldings, filterType, filterWallet]);
+  const filtered = useMemo(
+    () => filterHoldings(allHoldings, filterType, filterWallet),
+    [allHoldings, filterType, filterWallet]
+  );
 
   const selectedWallet = wallets.find((w) => w.id === filterWallet);
 

@@ -1,0 +1,30 @@
+# Testes unitários do frontend (jest via CRA/craco). Lógica pura: matemática
+# do manómetro (gaugeMath) e filtragem das badges (holdingsFilter). Corre em
+# cada push/PR que toque em frontend/.
+name: Frontend unit tests
+
+on:
+  push:
+    paths: ["frontend/**", ".github/workflows/frontend-tests.yml"]
+  pull_request:
+    paths: ["frontend/**", ".github/workflows/frontend-tests.yml"]
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Run jest (single run)
+        env:
+          CI: true
+        run: npx craco test --watchAll=false --ci

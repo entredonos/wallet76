@@ -10,32 +10,7 @@ import React from "react";
 // 100 -> ponta direita (0°). 5 arcos coloridos (medo extremo=vermelho …
 // ganância extrema=verde), agulha por cima.
 
-const SEGMENTS = [
-  { from: 0, to: 20, color: "#ef4444" },   // extreme fear
-  { from: 20, to: 40, color: "#f97316" },  // fear
-  { from: 40, to: 60, color: "#eab308" },  // neutral
-  { from: 60, to: 80, color: "#84cc16" },  // greed
-  { from: 80, to: 100, color: "#22c55e" }, // extreme greed
-];
-
-// score (0..100) -> ângulo em graus (180 no 0, 0 no 100)
-const scoreToAngle = (v) => 180 - (Math.max(0, Math.min(100, v)) / 100) * 180;
-
-// ponto polar no ecrã (y para baixo)
-function polar(cx, cy, r, angleDeg) {
-  const a = (angleDeg * Math.PI) / 180;
-  return { x: cx + r * Math.cos(a), y: cy - r * Math.sin(a) };
-}
-
-function arcPath(cx, cy, r, fromScore, toScore) {
-  const a1 = scoreToAngle(fromScore); // ângulo maior (mais à esquerda)
-  const a2 = scoreToAngle(toScore);
-  const p1 = polar(cx, cy, r, a1);
-  const p2 = polar(cx, cy, r, a2);
-  // large-arc-flag=0 (cada segmento < 180°), sweep-flag=1 (sentido horário
-  // no ecrã — esquerda -> topo -> direita fica no semicírculo de cima).
-  return `M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A ${r} ${r} 0 0 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
-}
+import { SEGMENTS, scoreToAngle, polar, arcPath } from "../../lib/gaugeMath";
 
 export default function SentimentGauge({
   score = 0,
