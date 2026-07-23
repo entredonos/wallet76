@@ -70,6 +70,16 @@ async def ping():
     return {"ok": True, "app": "wallet76"}
 
 
+# ⚠️ TEMPORÁRIO — endpoint de verificação do Sentry. Dispara um erro de
+# propósito para confirmar que a captura chega ao painel do Sentry. REMOVER
+# assim que o teste estiver feito (23 jul 2026).
+@app.get("/sentry-test")
+async def sentry_test():
+    raise RuntimeError(
+        "Wallet76 Sentry test error — se vês isto no Sentry, a monitorizacao funciona!"
+    )
+
+
 @api_router.get("/")
 async def root():
     return {"message": "Portfolio Tracker API"}
