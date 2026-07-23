@@ -22,7 +22,7 @@ from broker_connectors.crypto import (
     get_or_create_user_aes_key, migrate_conn_to_v3,
 )
 from broker_connectors import degiro, ibkr, trading212, binance, coinbase, kraken, ccxt_generic, xtb
-from prices import get_fx_rates, resolve_asset_types_bulk
+from prices import get_fx_rates, resolve_asset_types_bulk, resolve_crypto_ids_bulk
 
 router = APIRouter()
 
@@ -185,6 +185,12 @@ async def _import_transactions(
     stock_symbols = [t["symbol"] for t in transactions if t.get("asset_type", "stock") == "stock" and t.get("symbol")]
     type_map = await resolve_asset_types_bulk(stock_symbols) if stock_symbols else {}
 
+    # Resolver coingecko_id dos ativos cripto sem id (importados de exchanges só
+    # trazem o símbolo) — sem isto ficavam sem cotação (-100% de PnL falso).
+    crypto_symbols = [t["symbol"] for t in transactions
+                      if t.get("asset_type") == "crypto" and t.get("symbol") and not t.get("coingecko_id")]
+    cg_map = await resolve_crypto_ids_bulk(crypto_symbols) if crypto_symbols else {}
+
     for t in transactions:
         try:
             broker = t.get("_broker", "")
@@ -196,6 +202,16 @@ async def _import_transactions(
                     "_broker_id": broker_id,
                 })
                 if existing:
+                    # Backfill: preencher coingecko_id em falta numa transação já
+                    # importada, para ativos cripto antigos (importados antes de
+                    # resolvermos o id) passarem a ter cotação sem apagar nada.
+                    if (t.get("asset_type") == "crypto" and not existing.get("coingecko_id")):
+                        new_cg = t.get("coingecko_id") or cg_map.get(t["symbol"].upper())
+                        if new_cg:
+                            await db.transactions.update_one(
+                                {"id": existing["id"]},
+                                {"$set": {"coingecko_id": new_cg}},
+                            )
                     continue
 
             price_usd = await _usd_price(t["price_usd"], t.get("price_currency", "USD"), fx_rates)
@@ -208,6 +224,7 @@ async def _import_transactions(
                 "symbol": t["symbol"],
                 "name": t.get("name") or t["symbol"],
                 "asset_type": type_map.get(t["symbol"].upper(), t.get("asset_type", "stock")),
+                "coingecko_id": t.get("coingecko_id") or cg_map.get(t["symbol"].upper()),
                 "type": t["type"],
                 "date": t["date"],
                 "quantity": float(t["quantity"]),

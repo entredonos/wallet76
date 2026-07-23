@@ -329,6 +329,74 @@ async def resolve_asset_types_bulk(symbols: List[str]) -> dict:
     return {s: (r if isinstance(r, str) else "stock") for s, r in zip(uniq, results)}
 
 
+# Símbolos cripto cujo id CoinGecko NÃO é o símbolo em minúsculas — os mais
+# enganadores. Usado como atalho antes de ir à rede (e como rede de segurança
+# se a CoinGecko falhar). O resto é resolvido dinamicamente por market cap.
+_CG_SYMBOL_OVERRIDES = {
+    "USDT": "tether", "USDC": "usd-coin", "XRP": "ripple", "BNB": "binancecoin",
+    "DOGE": "dogecoin", "TON": "the-open-network", "DOT": "polkadot",
+    "MATIC": "matic-network", "POL": "polygon-ecosystem-token", "SHIB": "shiba-inu",
+    "AVAX": "avalanche-2", "LINK": "chainlink", "UNI": "uniswap", "LTC": "litecoin",
+    "BCH": "bitcoin-cash", "ATOM": "cosmos", "XLM": "stellar", "ETC": "ethereum-classic",
+    "FIL": "filecoin", "HBAR": "hedera-hashgraph", "APT": "aptos", "ARB": "arbitrum",
+    "OP": "optimism", "NEAR": "near", "GRT": "the-graph", "IMX": "immutable-x",
+    "RNDR": "render-token", "INJ": "injective-protocol", "SUI": "sui", "SEI": "sei-network",
+    "TRX": "tron", "DAI": "dai", "FDUSD": "first-digital-usd", "WBTC": "wrapped-bitcoin",
+    "BTC": "bitcoin", "ETH": "ethereum", "SOL": "solana", "ADA": "cardano",
+}
+
+
+async def resolve_crypto_ids_bulk(symbols: List[str]) -> dict:
+    """Mapa { SÍMBOLO -> coingecko_id } para dar cotação a cripto importada de
+    exchanges (que só traz o símbolo). Sem o id certo, o ativo ficava sem preço
+    (-100% de PnL falso). Estratégia: overrides estáticos dos mais enganadores
+    (USDT->tether, XRP->ripple…) + mapa dinâmico por market cap (top ~500 da
+    CoinGecko, em cache 24h) para o resto — escolhendo, por símbolo, a moeda de
+    maior capitalização (evita apanhar um homónimo obscuro)."""
+    uniq = {s.upper() for s in symbols if s}
+    if not uniq:
+        return {}
+
+    out = {}
+    remaining = set()
+    for sym in uniq:
+        if sym in _CG_SYMBOL_OVERRIDES:
+            out[sym] = _CG_SYMBOL_OVERRIDES[sym]
+        else:
+            remaining.add(sym)
+
+    if remaining:
+        cache_key = "cg_symbol_to_id_map"
+        sym_map = _cache_get(cache_key, ttl=86_400)  # 24h
+        if not sym_map:
+            sym_map = {}
+            try:
+                async with httpx.AsyncClient(timeout=15) as ch:
+                    for page in (1, 2):
+                        r = await ch.get(
+                            "https://api.coingecko.com/api/v3/coins/markets",
+                            params={"vs_currency": "usd", "order": "market_cap_desc",
+                                    "per_page": 250, "page": page, "sparkline": "false"},
+                        )
+                        if r.status_code != 200:
+                            break
+                        for x in r.json():
+                            sym = (x.get("symbol") or "").upper()
+                            cid = x.get("id")
+                            # 1º a aparecer = maior market cap (lista já ordenada)
+                            if sym and cid and sym not in sym_map:
+                                sym_map[sym] = cid
+                if sym_map:
+                    _cache_set(cache_key, sym_map)
+            except Exception as e:
+                logger.warning(f"resolve_crypto_ids_bulk market map error: {e}")
+        for sym in remaining:
+            if sym in (sym_map or {}):
+                out[sym] = sym_map[sym]
+
+    return out
+
+
 # --- Holdings ---
 def compute_holdings_from_txns(txns: List[dict]) -> List[dict]:
     """Compute current holdings from a list of transactions (weighted average cost)."""
