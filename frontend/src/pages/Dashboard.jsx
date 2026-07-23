@@ -238,7 +238,14 @@ export default function Dashboard({ currency }) {
   const CACHE_TTL = 30_000; // 30 seconds
   const CACHE_VER = "v3"; // Bump to clear stale cache entries
 
-  const cacheKey = (suffix) => `w76_dash_${CACHE_VER}_${suffix}_${filterWallet}_${filterType}_${range}`;
+  const cacheKey = (suffix) => {
+    // O /portfolio e /sparklines NÃO dependem da carteira (o /portfolio traz
+    // tudo; a filtragem por carteira/tipo é feita no cliente). Só o /history é
+    // por carteira/tipo/range. Cachear o portfolio de forma global faz com que
+    // trocar de carteira o reutilize (instantâneo) em vez de o voltar a pedir.
+    if (suffix === "history") return `w76_dash_${CACHE_VER}_history_${filterWallet}_${filterType}_${range}`;
+    return `w76_dash_${CACHE_VER}_${suffix}`;
+  };
 
   const readCache = (suffix) => {
     try {
@@ -281,19 +288,20 @@ export default function Dashboard({ currency }) {
     const cachedHistory   = readCache("history");
     const cachedSparklines = readCache("sparklines");
 
-    if (cachedPortfolio && cachedHistory && cachedSparklines) {
-      // All three cached — show immediately, skip skeleton
+    // Portfolio em cache -> mostra JÁ (é global, não depende da carteira). O
+    // gráfico (history) é por carteira e recarrega à parte, mas isso é só a
+    // zona do gráfico, não bloqueia o resto — acaba o "4-5s a pensar" ao trocar.
+    if (cachedPortfolio) {
       applyPortfolio(cachedPortfolio);
-      setHistory(cachedHistory);
-      setChartLoading(false);
-      setSparklines(cachedSparklines);
       setLoading(false);
-      // Still refetch silently to keep data fresh
       setRefreshing(true);
+    } else if (!silent) {
+      setLoading(true);
     } else {
-      // No cache (first visit or expired) — show skeleton
-      if (!silent) setLoading(true); else setRefreshing(true);
+      setRefreshing(true);
     }
+    if (cachedHistory) { setHistory(cachedHistory); setChartLoading(false); }
+    if (cachedSparklines) setSparklines(cachedSparklines);
 
     // The 3 requests below are independent (different data, different
     // error handling) so they run concurrently instead of one after another

@@ -12,12 +12,12 @@ const LOCALE = { pt: "pt-PT", en: "en-GB", fr: "fr-FR", de: "de-DE", it: "it-IT"
 const DAY_MS = 86400000;
 
 const COPY = {
-  pt: { title: "Calendário de Dividendos", subtitle: "Próximos pagamentos das tuas posições.", next30: "Próximos 30 dias", est12: "Estimativa 12 meses", received: "Recebido este ano", avg: "Média mensal", yieldLbl: "yield da carteira", chartTitle: "Rendimento por mês", chartNote: "Estimado, na tua moeda base. Passa o rato ou toca num mês.", agendaTitle: "Próximos pagamentos", perShare: "por ação", emptyTitle: "Sem dividendos a caminho", emptyDesc: "Nenhuma das tuas posições atuais paga dividendos, ou ainda não há histórico suficiente.", clear: "Limpar", legendEx: "Ex-dividendo", legendPay: "Pagamento", loading: "A carregar…", monthEmpty: "Sem pagamentos neste mês.", total: "Total", exLbl: "ex-div", payLbl: "pag.", confirmed: "Confirmado", estimated: "Estimado", freq: { monthly: "Mensal", quarterly: "Trimestral", "semi-annual": "Semestral", annual: "Anual" } },
-  en: { title: "Dividend Calendar", subtitle: "Upcoming payments from your holdings.", next30: "Next 30 days", est12: "12-month estimate", received: "Received this year", avg: "Monthly average", yieldLbl: "portfolio yield", chartTitle: "Income by month", chartNote: "Estimated, in your base currency. Hover or tap a month.", agendaTitle: "Upcoming payments", perShare: "per share", emptyTitle: "No dividends coming up", emptyDesc: "None of your current holdings pay dividends, or there isn't enough history yet.", clear: "Clear", legendEx: "Ex-dividend", legendPay: "Payment", loading: "Loading…", monthEmpty: "No payments this month.", total: "Total", exLbl: "ex-div", payLbl: "pay", confirmed: "Confirmed", estimated: "Estimated", freq: { monthly: "Monthly", quarterly: "Quarterly", "semi-annual": "Semi-annual", annual: "Annual" } },
-  fr: { title: "Calendrier des Dividendes", subtitle: "Prochains versements de vos positions.", next30: "30 prochains jours", est12: "Estimation 12 mois", received: "Reçu cette année", avg: "Moyenne mensuelle", yieldLbl: "rendement du portefeuille", chartTitle: "Revenu par mois", chartNote: "Estimé, dans votre devise de base. Survolez ou touchez un mois.", agendaTitle: "Prochains versements", perShare: "par action", emptyTitle: "Aucun dividende à venir", emptyDesc: "Aucune de vos positions actuelles ne verse de dividendes, ou l'historique est insuffisant.", clear: "Effacer", legendEx: "Ex-dividende", legendPay: "Versement", loading: "Chargement…", monthEmpty: "Aucun versement ce mois.", total: "Total", exLbl: "ex-div", payLbl: "vers.", confirmed: "Confirmé", estimated: "Estimé", freq: { monthly: "Mensuel", quarterly: "Trimestriel", "semi-annual": "Semestriel", annual: "Annuel" } },
-  de: { title: "Dividendenkalender", subtitle: "Anstehende Zahlungen aus Ihren Positionen.", next30: "Nächste 30 Tage", est12: "12-Monats-Schätzung", received: "Dieses Jahr erhalten", avg: "Monatsdurchschnitt", yieldLbl: "Portfolio-Rendite", chartTitle: "Ertrag pro Monat", chartNote: "Geschätzt, in Ihrer Basiswährung. Monat überfahren oder antippen.", agendaTitle: "Anstehende Zahlungen", perShare: "pro Aktie", emptyTitle: "Keine Dividenden in Sicht", emptyDesc: "Keine Ihrer aktuellen Positionen zahlt Dividenden, oder es gibt noch nicht genug Historie.", clear: "Löschen", legendEx: "Ex-Dividende", legendPay: "Zahlung", loading: "Wird geladen…", monthEmpty: "Keine Zahlungen in diesem Monat.", total: "Gesamt", exLbl: "Ex-Tag", payLbl: "Zahlg.", confirmed: "Bestätigt", estimated: "Geschätzt", freq: { monthly: "Monatlich", quarterly: "Vierteljährlich", "semi-annual": "Halbjährlich", annual: "Jährlich" } },
-  it: { title: "Calendario Dividendi", subtitle: "Prossimi pagamenti dalle tue posizioni.", next30: "Prossimi 30 giorni", est12: "Stima 12 mesi", received: "Ricevuto quest'anno", avg: "Media mensile", yieldLbl: "rendimento del portafoglio", chartTitle: "Reddito per mese", chartNote: "Stimato, nella tua valuta base. Passa il mouse o tocca un mese.", agendaTitle: "Prossimi pagamenti", perShare: "per azione", emptyTitle: "Nessun dividendo in arrivo", emptyDesc: "Nessuna delle tue posizioni attuali paga dividendi, o non c'è ancora storico sufficiente.", clear: "Cancella", legendEx: "Ex-dividendo", legendPay: "Pagamento", loading: "Caricamento…", monthEmpty: "Nessun pagamento questo mese.", total: "Totale", exLbl: "ex-div", payLbl: "pag.", confirmed: "Confermato", estimated: "Stimato", freq: { monthly: "Mensile", quarterly: "Trimestrale", "semi-annual": "Semestrale", annual: "Annuale" } },
-  es: { title: "Calendario de Dividendos", subtitle: "Próximos pagos de tus posiciones.", next30: "Próximos 30 días", est12: "Estimación 12 meses", received: "Recibido este año", avg: "Media mensual", yieldLbl: "rendimiento de la cartera", chartTitle: "Ingresos por mes", chartNote: "Estimado, en tu moneda base. Pasa el ratón o toca un mes.", agendaTitle: "Próximos pagos", perShare: "por acción", emptyTitle: "Sin dividendos próximos", emptyDesc: "Ninguna de tus posiciones actuales paga dividendos, o aún no hay historial suficiente.", clear: "Limpiar", legendEx: "Ex-dividendo", legendPay: "Pago", loading: "Cargando…", monthEmpty: "Sin pagos este mes.", total: "Total", exLbl: "ex-div", payLbl: "pago", confirmed: "Confirmado", estimated: "Estimado", freq: { monthly: "Mensual", quarterly: "Trimestral", "semi-annual": "Semestral", annual: "Anual" } },
+  pt: { all_wallets: "Todas as carteiras", title: "Calendário de Dividendos", subtitle: "Próximos pagamentos das tuas posições.", next30: "Próximos 30 dias", est12: "Estimativa 12 meses", received: "Recebido este ano", avg: "Média mensal", yieldLbl: "yield da carteira", chartTitle: "Rendimento por mês", chartNote: "Estimado, na tua moeda base. Passa o rato ou toca num mês.", agendaTitle: "Próximos pagamentos", perShare: "por ação", emptyTitle: "Sem dividendos a caminho", emptyDesc: "Nenhuma das tuas posições atuais paga dividendos, ou ainda não há histórico suficiente.", clear: "Limpar", legendEx: "Ex-dividendo", legendPay: "Pagamento", loading: "A carregar…", monthEmpty: "Sem pagamentos neste mês.", total: "Total", exLbl: "ex-div", payLbl: "pag.", confirmed: "Confirmado", estimated: "Estimado", freq: { monthly: "Mensal", quarterly: "Trimestral", "semi-annual": "Semestral", annual: "Anual" } },
+  en: { all_wallets: "All wallets", title: "Dividend Calendar", subtitle: "Upcoming payments from your holdings.", next30: "Next 30 days", est12: "12-month estimate", received: "Received this year", avg: "Monthly average", yieldLbl: "portfolio yield", chartTitle: "Income by month", chartNote: "Estimated, in your base currency. Hover or tap a month.", agendaTitle: "Upcoming payments", perShare: "per share", emptyTitle: "No dividends coming up", emptyDesc: "None of your current holdings pay dividends, or there isn't enough history yet.", clear: "Clear", legendEx: "Ex-dividend", legendPay: "Payment", loading: "Loading…", monthEmpty: "No payments this month.", total: "Total", exLbl: "ex-div", payLbl: "pay", confirmed: "Confirmed", estimated: "Estimated", freq: { monthly: "Monthly", quarterly: "Quarterly", "semi-annual": "Semi-annual", annual: "Annual" } },
+  fr: { all_wallets: "Tous les portefeuilles", title: "Calendrier des Dividendes", subtitle: "Prochains versements de vos positions.", next30: "30 prochains jours", est12: "Estimation 12 mois", received: "Reçu cette année", avg: "Moyenne mensuelle", yieldLbl: "rendement du portefeuille", chartTitle: "Revenu par mois", chartNote: "Estimé, dans votre devise de base. Survolez ou touchez un mois.", agendaTitle: "Prochains versements", perShare: "par action", emptyTitle: "Aucun dividende à venir", emptyDesc: "Aucune de vos positions actuelles ne verse de dividendes, ou l'historique est insuffisant.", clear: "Effacer", legendEx: "Ex-dividende", legendPay: "Versement", loading: "Chargement…", monthEmpty: "Aucun versement ce mois.", total: "Total", exLbl: "ex-div", payLbl: "vers.", confirmed: "Confirmé", estimated: "Estimé", freq: { monthly: "Mensuel", quarterly: "Trimestriel", "semi-annual": "Semestriel", annual: "Annuel" } },
+  de: { all_wallets: "Alle Depots", title: "Dividendenkalender", subtitle: "Anstehende Zahlungen aus Ihren Positionen.", next30: "Nächste 30 Tage", est12: "12-Monats-Schätzung", received: "Dieses Jahr erhalten", avg: "Monatsdurchschnitt", yieldLbl: "Portfolio-Rendite", chartTitle: "Ertrag pro Monat", chartNote: "Geschätzt, in Ihrer Basiswährung. Monat überfahren oder antippen.", agendaTitle: "Anstehende Zahlungen", perShare: "pro Aktie", emptyTitle: "Keine Dividenden in Sicht", emptyDesc: "Keine Ihrer aktuellen Positionen zahlt Dividenden, oder es gibt noch nicht genug Historie.", clear: "Löschen", legendEx: "Ex-Dividende", legendPay: "Zahlung", loading: "Wird geladen…", monthEmpty: "Keine Zahlungen in diesem Monat.", total: "Gesamt", exLbl: "Ex-Tag", payLbl: "Zahlg.", confirmed: "Bestätigt", estimated: "Geschätzt", freq: { monthly: "Monatlich", quarterly: "Vierteljährlich", "semi-annual": "Halbjährlich", annual: "Jährlich" } },
+  it: { all_wallets: "Tutti i portafogli", title: "Calendario Dividendi", subtitle: "Prossimi pagamenti dalle tue posizioni.", next30: "Prossimi 30 giorni", est12: "Stima 12 mesi", received: "Ricevuto quest'anno", avg: "Media mensile", yieldLbl: "rendimento del portafoglio", chartTitle: "Reddito per mese", chartNote: "Stimato, nella tua valuta base. Passa il mouse o tocca un mese.", agendaTitle: "Prossimi pagamenti", perShare: "per azione", emptyTitle: "Nessun dividendo in arrivo", emptyDesc: "Nessuna delle tue posizioni attuali paga dividendi, o non c'è ancora storico sufficiente.", clear: "Cancella", legendEx: "Ex-dividendo", legendPay: "Pagamento", loading: "Caricamento…", monthEmpty: "Nessun pagamento questo mese.", total: "Totale", exLbl: "ex-div", payLbl: "pag.", confirmed: "Confermato", estimated: "Stimato", freq: { monthly: "Mensile", quarterly: "Trimestrale", "semi-annual": "Semestrale", annual: "Annuale" } },
+  es: { all_wallets: "Todas las carteras", title: "Calendario de Dividendos", subtitle: "Próximos pagos de tus posiciones.", next30: "Próximos 30 días", est12: "Estimación 12 meses", received: "Recibido este año", avg: "Media mensual", yieldLbl: "rendimiento de la cartera", chartTitle: "Ingresos por mes", chartNote: "Estimado, en tu moneda base. Pasa el ratón o toca un mes.", agendaTitle: "Próximos pagos", perShare: "por acción", emptyTitle: "Sin dividendos próximos", emptyDesc: "Ninguna de tus posiciones actuales paga dividendos, o aún no hay historial suficiente.", clear: "Limpiar", legendEx: "Ex-dividendo", legendPay: "Pago", loading: "Cargando…", monthEmpty: "Sin pagos este mes.", total: "Total", exLbl: "ex-div", payLbl: "pago", confirmed: "Confirmado", estimated: "Estimado", freq: { monthly: "Mensual", quarterly: "Trimestral", "semi-annual": "Semestral", annual: "Anual" } },
 };
 
 const BADGE_COLORS = ["#60a5fa", "#34d399", "#f87171", "#fbbf24", "#a78bfa", "#22d3ee", "#fb923c", "#f472b6"];
@@ -41,6 +41,9 @@ export default function Dividends({ currency = "USD" }) {
   const [fx, setFx] = useState({ USD: 1, EUR: 0.92, CHF: 0.88, BRL: 5.0 });
   const [portfolioUsd, setPortfolioUsd] = useState(0);
   const [nameMap, setNameMap] = useState({});
+  const [wallets, setWallets] = useState([]);
+  const [walletFilter, setWalletFilter] = useState("all");
+  const [walletSymbols, setWalletSymbols] = useState({}); // wallet_id -> Set(símbolos)
   const [selectedDay, setSelectedDay] = useState(null);
   const [hoverMonth, setHoverMonth] = useState(null);
   const [pinMonth, setPinMonth] = useState(null);
@@ -62,8 +65,16 @@ export default function Dividends({ currency = "USD" }) {
           setFx(sum.fx_rates || { USD: 1, EUR: sum.eur_rate || 0.92, CHF: sum.chf_rate || 0.88, BRL: sum.brl_rate || 5.0 });
           setPortfolioUsd(sum.total_usd || 0);
           const map = {};
-          (pRes.value.data?.assets || []).forEach((a) => { if (a.symbol) map[a.symbol.toUpperCase()] = a.name || a.symbol; });
+          const wsym = {};
+          (pRes.value.data?.assets || []).forEach((a) => {
+            if (a.symbol) map[a.symbol.toUpperCase()] = a.name || a.symbol;
+            if (a.wallet_id && a.symbol) {
+              (wsym[a.wallet_id] = wsym[a.wallet_id] || new Set()).add(a.symbol.toUpperCase());
+            }
+          });
           setNameMap(map);
+          setWalletSymbols(wsym);
+          setWallets(pRes.value.data?.wallets || []);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -72,6 +83,17 @@ export default function Dividends({ currency = "USD" }) {
     return () => { cancelled = true; };
   }, []);
 
+  // Dividendos com scope à carteira: se uma carteira estiver selecionada, só
+  // entram os símbolos que ela contém. Uma carteira sem símbolos que pagam
+  // dividendos (ex.: só cripto) fica com a lista vazia -> mostra "sem
+  // dividendos" (o mesmo estado vazio já existente).
+  const scopedDivs = useMemo(() => {
+    if (walletFilter === "all") return divs;
+    const syms = walletSymbols[walletFilter];
+    if (!syms) return [];
+    return divs.filter((d) => syms.has((d.symbol || "").toUpperCase()));
+  }, [divs, walletFilter, walletSymbols]);
+
   // Project payments with real ex/pay dates (Yahoo) for the announced one,
   // then estimated future ones stepping by frequency.
   const projected = useMemo(() => {
@@ -79,7 +101,7 @@ export default function Dividends({ currency = "USD" }) {
     const end = new Date(today); end.setDate(end.getDate() + 365);
     const startWin = new Date(today); startWin.setDate(startWin.getDate() - 2);
     const out = [];
-    for (const d of divs) {
+    for (const d of scopedDivs) {
       if (!d.frequency) continue;
       const step = FREQ_DAYS[d.frequency] || 91;
       const perPay = (d.annual_income || 0) / (FREQ_PER_YEAR[d.frequency] || 4);
@@ -105,7 +127,7 @@ export default function Dividends({ currency = "USD" }) {
     }
     out.sort((a, b) => incomeDate(a) - incomeDate(b));
     return out;
-  }, [divs]);
+  }, [scopedDivs]);
 
   const kpis = useMemo(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -173,12 +195,29 @@ export default function Dividends({ currency = "USD" }) {
         <Coins className="w-6 h-6 text-emerald-400" />
         <h1 className="text-2xl font-bold text-zinc-100">{c.title}</h1>
       </div>
-      <p className="text-sm text-zinc-500 mb-6">{c.subtitle}</p>
+      <p className="text-sm text-zinc-500 mb-4">{c.subtitle}</p>
+
+      {/* Seletor de carteira: filtra os dividendos à carteira escolhida. */}
+      {wallets.length > 0 && (
+        <div className="mb-6">
+          <select
+            value={walletFilter}
+            onChange={(e) => setWalletFilter(e.target.value)}
+            className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200"
+            data-testid="dividends-wallet-filter"
+          >
+            <option value="all">{c.all_wallets || "Todas as carteiras"}</option>
+            {wallets.map((w) => (
+              <option key={w.id} value={w.id}>{w.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="relative">
         {loading ? (
           <div className="text-zinc-500 text-sm py-20 text-center">{c.loading}</div>
-        ) : divs.length === 0 ? (
+        ) : scopedDivs.length === 0 ? (
           <div className="border border-zinc-800 rounded-2xl p-10 text-center bg-zinc-900/50">
             <Coins className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
             <p className="text-zinc-200 font-semibold mb-1">{c.emptyTitle}</p>

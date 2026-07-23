@@ -378,6 +378,40 @@ async def _search_coingecko_id(symbol: str) -> str | None:
     return cid
 
 
+async def get_crypto_images(coingecko_ids: list) -> dict:
+    """{ coingecko_id -> URL do logótipo } para os ícones das holdings. Usa o
+    top de mercado da CoinGecko (mesma fonte já usada para resolver ids), em
+    cache 24h — um id fora do top não tem imagem aqui (o frontend cai para o
+    CDN por símbolo / iniciais)."""
+    ids = [c for c in {x for x in (coingecko_ids or []) if x}]
+    if not ids:
+        return {}
+    cache_key = "cg_id_to_image_map"
+    img_map = _cache_get(cache_key, ttl=86_400)
+    if not img_map:
+        img_map = {}
+        try:
+            async with httpx.AsyncClient(timeout=15) as ch:
+                for page in (1, 2):
+                    r = await ch.get(
+                        "https://api.coingecko.com/api/v3/coins/markets",
+                        params={"vs_currency": "usd", "order": "market_cap_desc",
+                                "per_page": 250, "page": page, "sparkline": "false"},
+                    )
+                    if r.status_code != 200:
+                        break
+                    for x in r.json():
+                        cid = x.get("id")
+                        img = x.get("image")
+                        if cid and img:
+                            img_map[cid] = img
+            if img_map:
+                _cache_set(cache_key, img_map)
+        except Exception as e:
+            logger.warning(f"get_crypto_images error: {e}")
+    return {cid: img_map[cid] for cid in ids if cid in (img_map or {})}
+
+
 async def resolve_crypto_ids_bulk(symbols: List[str]) -> dict:
     """Mapa { SÍMBOLO -> coingecko_id } para dar cotação a cripto importada de
     exchanges (que só traz o símbolo). Sem o id certo, o ativo ficava sem preço

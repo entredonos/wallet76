@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends
 from core import db, get_current_user, _cache_get, _cache_set, logger
 from prices import (
     compute_holdings_from_txns, migrate_legacy_assets,
-    get_crypto_prices, get_stock_prices, get_fx_rates,
+    get_crypto_prices, get_stock_prices, get_fx_rates, get_crypto_images,
     detect_and_fix_equity_types, backfill_holding_names,
 )
 from routes.news import _fetch_yf, _fetch_crypto_ohlc
@@ -55,11 +55,12 @@ async def _price_holdings(user_id: str) -> dict:
     # name for whatever still falls back to name==symbol — see prices.py)
     # and runs gathered alongside the price/FX fetches so it adds no extra
     # serial latency beyond whichever of the four is already slowest.
-    crypto_prices, stock_prices, fx_rates, _ = await asyncio.gather(
+    crypto_prices, stock_prices, fx_rates, _, crypto_images = await asyncio.gather(
         get_crypto_prices(crypto_ids),
         get_stock_prices(stock_syms),
         get_fx_rates(),
         backfill_holding_names(holdings),
+        get_crypto_images(crypto_ids),
     )
     eur_rate = fx_rates["EUR"]
     chf_rate = fx_rates["CHF"]
@@ -74,11 +75,13 @@ async def _price_holdings(user_id: str) -> dict:
     for h in holdings:
         price_usd = 0.0
         change_24h = 0.0
+        image_url = None
         if h["asset_type"] == "crypto":
             cg_id = h.get("coingecko_id") or h["symbol"].lower()
             p = crypto_prices.get(cg_id, {})
             price_usd = float(p.get("usd") or 0)
             change_24h = float(p.get("usd_24h_change") or 0)
+            image_url = crypto_images.get(cg_id)
         elif h["asset_type"] in EQUITY_TYPES:
             p = stock_prices.get(h["symbol"].upper(), {})
             price_usd = float(p.get("usd") or 0)
@@ -110,6 +113,7 @@ async def _price_holdings(user_id: str) -> dict:
             "pnl_pct": pnl_pct,
             "change_24h": change_24h,
             "daily_change_usd": daily_change_value,
+            "image": image_url,
         })
         total_usd += value
         total_cost += cost
