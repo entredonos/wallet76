@@ -413,13 +413,33 @@ function AddBrokerForm({ brokerKey, onAdded, onCancel }) {
 }
 
 // -- Connection card ----------------------------------------------------------
-function ConnectionCard({ conn, wallets, onDelete, onSynced }) {
+function ConnectionCard({ conn, wallets, onDelete, onSynced, onWalletCreated }) {
   const { t } = useI18n();
   const BROKERS = getBROKERS(t);
   const meta = BROKERS[conn.broker] || {};
   const [syncing, setSyncing] = useState(false);
   const [walletId, setWalletId] = useState(wallets[0]?.id || "");
   const [expanded, setExpanded] = useState(false);
+  const [creatingWallet, setCreatingWallet] = useState(false);
+  const [newWalletName, setNewWalletName] = useState(conn.label || meta.name || "");
+  const [creatingWalletBusy, setCreatingWalletBusy] = useState(false);
+
+  const createWallet = async () => {
+    const name = newWalletName.trim();
+    if (!name) return;
+    setCreatingWalletBusy(true);
+    try {
+      const { data } = await api.post("/wallets", { name, type: "broker", currency: "USD" });
+      setWalletId(data.id);          // passa a importar para a carteira nova
+      setCreatingWallet(false);
+      onWalletCreated?.();           // atualiza a lista de carteiras no ecrã
+      toast.success(`"${name}" ${t("brokers.wallet_created")}`);
+    } catch {
+      toast.error(t("brokers.wallet_create_failed"));
+    } finally {
+      setCreatingWalletBusy(false);
+    }
+  };
 
   const sync = async () => {
     setSyncing(true);
@@ -508,21 +528,45 @@ function ConnectionCard({ conn, wallets, onDelete, onSynced }) {
             </div>
           )}
 
-          {wallets.length > 1 && (
-            <div>
-              <Label className="text-xs font-mono uppercase tracking-widest text-zinc-500">{t("brokers.import_wallet") || "Importar para carteira"}</Label>
-              <select
-                value={walletId}
-                onChange={(e) => setWalletId(e.target.value)}
-                className="mt-1.5 w-full bg-zinc-900 border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-300"
-              >
-                <option value="">— {t("brokers.no_wallet") || "sem carteira"} —</option>
-                {wallets.map((w) => (
-                  <option key={w.id} value={w.id}>{w.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          <div>
+            <Label className="text-xs font-mono uppercase tracking-widest text-zinc-500">{t("brokers.import_wallet") || "Importar para carteira"}</Label>
+            <select
+              value={walletId}
+              onChange={(e) => {
+                if (e.target.value === "__new__") { setCreatingWallet(true); return; }
+                setCreatingWallet(false);
+                setWalletId(e.target.value);
+              }}
+              className="mt-1.5 w-full bg-zinc-900 border border-zinc-800 rounded-md px-3 py-2 text-sm text-zinc-300"
+            >
+              <option value="">— {t("brokers.no_wallet") || "sem carteira"} —</option>
+              {wallets.map((w) => (
+                <option key={w.id} value={w.id}>{w.name}</option>
+              ))}
+              <option value="__new__">+ {t("brokers.new_wallet")}</option>
+            </select>
+            {creatingWallet && (
+              <div className="mt-2 flex items-center gap-2">
+                <Input
+                  value={newWalletName}
+                  onChange={(e) => setNewWalletName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); createWallet(); } }}
+                  placeholder={t("brokers.new_wallet_placeholder")}
+                  className="bg-zinc-900 border-zinc-800 text-sm"
+                  autoFocus
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={creatingWalletBusy || !newWalletName.trim()}
+                  onClick={createWallet}
+                  className="bg-zinc-100 text-zinc-950 hover:bg-white shrink-0"
+                >
+                  {creatingWalletBusy ? "…" : (t("brokers.create_btn") || "Criar")}
+                </Button>
+              </div>
+            )}
+          </div>
 
           <div className="flex gap-2">
             {conn._manual ? (
@@ -613,7 +657,7 @@ export default function ConnectedAccounts() {
       ) : connections.length > 0 ? (
         <div className="space-y-3">
           {connections.map((c) => (
-            <ConnectionCard key={c.id} conn={c} wallets={wallets} onDelete={onDelete} onSynced={onSynced} />
+            <ConnectionCard key={c.id} conn={c} wallets={wallets} onDelete={onDelete} onSynced={onSynced} onWalletCreated={load} />
           ))}
         </div>
       ) : (
