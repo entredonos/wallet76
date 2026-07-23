@@ -12,6 +12,7 @@ from broker_connectors.ccxt_generic import (
     _short,
 )
 from broker_connectors import xtb
+from broker_connectors import ibkr
 
 
 # --------------------------------------------------------------------------
@@ -175,3 +176,33 @@ class TestXtbLeg:
         assert leg["price_usd"] == 5.0
         assert leg["fee"] == 0.0
         assert leg["_broker_id"] == "xtb_close_1"
+
+
+# --------------------------------------------------------------------------
+# ibkr._is_transient — decide se um erro do IBKR é transitório (tentar de novo)
+# ou permanente (falhar já). Regula o retry automático da Flex Query.
+# --------------------------------------------------------------------------
+class TestIbkrIsTransient:
+    @pytest.mark.parametrize("msg", [
+        "Statement could not be generated at this time. Please try again shortly",
+        "Statement generation in progress",
+        "1019",
+        "Too many requests have been made",
+        "1018",
+        "Statement could not be retrieved at this point",
+    ])
+    def test_transient_errors_retry(self, msg):
+        assert ibkr._is_transient(msg) is True
+
+    @pytest.mark.parametrize("msg", [
+        "Invalid request or unable to validate request",
+        "Token has expired",
+        "Invalid token",
+        "Query ID not found",
+        "",
+    ])
+    def test_permanent_errors_do_not_retry(self, msg):
+        assert ibkr._is_transient(msg) is False
+
+    def test_not_ready_is_ibkr_error_subclass(self):
+        assert issubclass(ibkr.IBKRNotReady, ibkr.IBKRError)

@@ -24,29 +24,83 @@ class IBKRError(Exception):
     pass
 
 
+class IBKRNotReady(IBKRError):
+    """IBKR respondeu, mas o extrato ainda não está pronto — token/consulta
+    acabados de criar (ainda a propagar), geração em curso, ou limite de
+    frequência. As credenciais são plausivelmente válidas; vale a pena tentar
+    de novo daqui a pouco."""
+    pass
+
+
+# Erros TRANSITÓRIOS do IBKR: o relatório ainda não está pronto ou estamos a
+# ser limitados por frequência. Vale a pena voltar a tentar automaticamente em
+# vez de falhar a sincronização toda. Um token/consulta acabados de criar
+# também podem demorar (até ~1h) a propagar.
+_TRANSIENT_HINTS = (
+    "generated at this time",     # "Statement could not be generated at this time"
+    "try again",
+    "generation in progress",
+    "too many requests",
+    "not ready",
+    "please wait",
+    "could not be retrieved",
+    "1018",   # too many requests / rate limit
+    "1019",   # statement generation in progress
+    "1021",   # statement could not be retrieved at this point
+)
+
+# Mensagem amigável quando esgotamos as tentativas por o relatório não estar
+# pronto (o caso típico logo a seguir a criar o token/consulta).
+_NOT_READY_MSG = (
+    "O IBKR ainda está a preparar o relatório e não o conseguiu gerar. É "
+    "normal logo depois de criar o token/consulta (pode demorar até ~1h a "
+    "ficar ativo). Tenta sincronizar de novo dentro de alguns minutos."
+)
+
+
+def _is_transient(msg: str) -> bool:
+    m = (msg or "").lower()
+    return any(h in m for h in _TRANSIENT_HINTS)
+
+
 async def _request_statement(token: str, query_id: str) -> str:
-    """Step 1: request statement generation, returns reference code."""
-    async with httpx.AsyncClient(headers=HEADERS, timeout=20) as client:
-        r = await client.get(
-            f"{BASE}.SendRequest",
-            params={"t": token, "q": query_id, "v": "3"},
-        )
-        r.raise_for_status()
+    """Step 1: request statement generation, returns reference code.
 
-    root = ET.fromstring(r.text)
-    status = root.findtext("Status")
-    if status != "Success":
-        err = root.findtext("ErrorMessage") or root.findtext("ErrorCode") or "Unknown error"
-        raise IBKRError(f"IB Flex request failed: {err}")
-
-    ref = root.findtext("ReferenceCode")
-    if not ref:
-        raise IBKRError("No ReferenceCode in IB response")
-    return ref
+    Tenta de novo automaticamente nos erros transitórios do IBKR ("ainda não
+    pronto" / limite de frequência) com backoff exponencial, para uma
+    sincronização não falhar só porque o relatório não estava pronto no
+    instante em que pedimos. Falha já nos erros permanentes (token inválido/
+    expirado, query id errado)."""
+    last_err = "Unknown error"
+    for delay in (0, 3, 6, 12):  # 4 tentativas, ~21s no pior caso
+        if delay:
+            await asyncio.sleep(delay)
+        async with httpx.AsyncClient(headers=HEADERS, timeout=20) as client:
+            r = await client.get(
+                f"{BASE}.SendRequest",
+                params={"t": token, "q": query_id, "v": "3"},
+            )
+            r.raise_for_status()
+        try:
+            root = ET.fromstring(r.text)
+        except ET.ParseError:
+            last_err = "Invalid response from IBKR"
+            continue
+        if root.findtext("Status") == "Success":
+            ref = root.findtext("ReferenceCode")
+            if not ref:
+                raise IBKRError("No ReferenceCode in IB response")
+            return ref
+        last_err = root.findtext("ErrorMessage") or root.findtext("ErrorCode") or "Unknown error"
+        if not _is_transient(last_err):
+            raise IBKRError(f"IB Flex request failed: {last_err}")
+        # transitório — continua o ciclo e tenta de novo após o backoff
+    raise IBKRNotReady(f"{_NOT_READY_MSG} (IBKR: {last_err})")
 
 
 async def _get_statement(token: str, ref: str) -> str:
     """Step 2: poll until statement is ready (usually <5s), return XML."""
+    last_err = ""
     async with httpx.AsyncClient(headers=HEADERS, timeout=60) as client:
         for attempt in range(10):
             await asyncio.sleep(2 * (attempt + 1))
@@ -57,16 +111,16 @@ async def _get_statement(token: str, ref: str) -> str:
             r.raise_for_status()
             if "<FlexQueryResponse" in r.text:
                 return r.text
-            # Still generating — check for error
+            # Ainda a gerar — distingue "não pronto" (continua) de erro real.
             try:
                 root = ET.fromstring(r.text)
-                err = root.findtext("ErrorMessage") or ""
-                if err and "1019" not in err:   # 1019 = statement not ready yet
-                    raise IBKRError(f"IB Flex error: {err}")
+                last_err = root.findtext("ErrorMessage") or ""
+                if last_err and not _is_transient(last_err):
+                    raise IBKRError(f"IB Flex error: {last_err}")
             except ET.ParseError:
                 pass
 
-    raise IBKRError("IB Flex statement timed out after 10 attempts")
+    raise IBKRNotReady(_NOT_READY_MSG + (f" (IBKR: {last_err})" if last_err else ""))
 
 
 def _parse_xml(xml_text: str) -> list[dict]:
@@ -128,5 +182,10 @@ async def validate_credentials(token: str, query_id: str) -> bool:
     try:
         ref = await _request_statement(token, query_id)
         return bool(ref)
+    except IBKRNotReady:
+        # O IBKR aceitou as credenciais — só o relatório é que ainda não está
+        # pronto. Deixamos ligar na mesma; a sincronização apanha os dados
+        # quando estiver disponível, em vez de bloquear a ligação até lá.
+        return True
     except IBKRError:
         return False
