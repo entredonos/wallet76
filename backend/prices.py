@@ -346,6 +346,38 @@ _CG_SYMBOL_OVERRIDES = {
 }
 
 
+async def _search_coingecko_id(symbol: str) -> str | None:
+    """Resolve UM símbolo cripto -> coingecko_id via /search da CoinGecko,
+    escolhendo, entre os que têm exatamente esse símbolo, o de melhor market
+    cap. Cobre moedas fora do top de mercado (users novos com qualquer coin).
+    Cache por símbolo (30 dias) para não repetir a chamada a cada sync."""
+    sym = symbol.upper()
+    cache_key = f"cg_sym_id:{sym}"
+    cached = _cache_get(cache_key, ttl=2_592_000)  # 30 dias
+    if cached:
+        return cached.get("id")
+    cid = None
+    try:
+        async with httpx.AsyncClient(timeout=10) as ch:
+            r = await ch.get("https://api.coingecko.com/api/v3/search", params={"query": symbol})
+            if r.status_code == 200:
+                coins = r.json().get("coins", []) or []
+                matches = [c for c in coins if (c.get("symbol") or "").upper() == sym]
+                pool = matches or coins
+
+                def _rank(c):
+                    rk = c.get("market_cap_rank")
+                    return rk if isinstance(rk, int) else 10 ** 9
+                pool.sort(key=_rank)
+                if pool:
+                    cid = pool[0].get("id")
+    except Exception as e:
+        logger.warning(f"CoinGecko search '{symbol}' error: {e}")
+    if cid:
+        _cache_set(cache_key, {"id": cid})
+    return cid
+
+
 async def resolve_crypto_ids_bulk(symbols: List[str]) -> dict:
     """Mapa { SÍMBOLO -> coingecko_id } para dar cotação a cripto importada de
     exchanges (que só traz o símbolo). Sem o id certo, o ativo ficava sem preço
@@ -390,9 +422,28 @@ async def resolve_crypto_ids_bulk(symbols: List[str]) -> dict:
                     _cache_set(cache_key, sym_map)
             except Exception as e:
                 logger.warning(f"resolve_crypto_ids_bulk market map error: {e}")
+        still_missing = set()
         for sym in remaining:
             if sym in (sym_map or {}):
                 out[sym] = sym_map[sym]
+            else:
+                still_missing.add(sym)
+
+        # Fallback para QUALQUER moeda fora do top de mercado (users novos com
+        # coins pequenas): pesquisa individual por símbolo, concorrência
+        # limitada para respeitar o rate-limit da CoinGecko.
+        if still_missing:
+            sem = asyncio.Semaphore(3)
+
+            async def _one(sym):
+                async with sem:
+                    return sym, await _search_coingecko_id(sym)
+            pairs = await asyncio.gather(*[_one(s) for s in still_missing], return_exceptions=True)
+            for pr in pairs:
+                if isinstance(pr, tuple):
+                    sym, cid = pr
+                    if cid:
+                        out[sym] = cid
 
     return out
 
