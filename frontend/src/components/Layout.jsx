@@ -238,9 +238,9 @@ export default function Layout({ children, currency, setCurrency }) {
           </div>
         )}
 
-        <NavLink to="/news" className={linkCls} data-testid="nav-news" onClick={() => setOpen(false)}>
-          <Newspaper className="w-4 h-4" /> {t("nav.news")}
-        </NavLink>
+        {/* "Notícias" removido do menu (23 jul 2026) — redundante: o Mercado já
+            mostra notícias por separador e tem um link "ver todas" para /news
+            (a rota mantém-se, só saiu do menu para reduzir sobrecarga). */}
         <NavLink to="/market" className={linkCls} data-testid="nav-market" onClick={() => setOpen(false)}>
           <LineChart className="w-4 h-4" /> {t("nav.market")}
         </NavLink>

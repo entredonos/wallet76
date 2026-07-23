@@ -76,6 +76,49 @@ function BrokerLogo({ brokerKey, meta, size = 32 }) {
 }
 
 // -- Broker metadata ----------------------------------------------------------
+// Ajuda passo-a-passo só para o IBKR (o conector mais confuso) — mostrada
+// por baixo dos campos no formulário. Local (por língua) para não inchar o
+// I18nContext; são poucas frases e vivem junto do sítio onde se usam.
+const IBKR_HELP = {
+  en: { title: "How to get your Token and Query ID", steps: [
+    "In IBKR: Performance & Reports \u2192 Flex Queries \u2192 create an Activity Flex Query.",
+    "In Sections, tick Trades. Format: XML. Period: Last 365 Days. Save and note the Query ID (short number).",
+    "In Flex Web Service Configuration, enable the service and copy the Token (long number).",
+    "Paste the Token and Query ID here. Read-only \u2014 it never places orders.",
+  ]},
+  pt: { title: "Como obter o Token e o Query ID", steps: [
+    "No IBKR: Desempenho e Relat\u00f3rios \u2192 Flex Queries \u2192 cria uma Activity Flex Query.",
+    "Em Se\u00e7\u00f5es, marca Opera\u00e7\u00f5es (Trades). Formato: XML. Per\u00edodo: \u00daltimos 365 dias. Grava e anota o Query ID (n\u00famero curto).",
+    "Em Flex Web Service Configuration, ativa o servi\u00e7o e copia o Token (n\u00famero longo).",
+    "Cola aqui o Token e o Query ID. \u00c9 s\u00f3 de leitura \u2014 nunca faz ordens.",
+  ]},
+  fr: { title: "Comment obtenir votre Token et Query ID", steps: [
+    "Sur IBKR : Performance & Rapports \u2192 Flex Queries \u2192 cr\u00e9ez une Activity Flex Query.",
+    "Dans Sections, cochez Transactions (Trades). Format : XML. P\u00e9riode : 365 derniers jours. Enregistrez et notez le Query ID (num\u00e9ro court).",
+    "Dans Flex Web Service Configuration, activez le service et copiez le Token (num\u00e9ro long).",
+    "Collez le Token et le Query ID ici. Lecture seule \u2014 jamais d'ordres.",
+  ]},
+  de: { title: "So erhalten Sie Token und Query ID", steps: [
+    "In IBKR: Performance & Berichte \u2192 Flex Queries \u2192 erstellen Sie eine Activity Flex Query.",
+    "Unter Abschnitte: Trades aktivieren. Format: XML. Zeitraum: Letzte 365 Tage. Speichern und Query ID (kurze Nummer) notieren.",
+    "Unter Flex Web Service Configuration den Dienst aktivieren und den Token (lange Nummer) kopieren.",
+    "Token und Query ID hier einf\u00fcgen. Nur Lesezugriff \u2014 nie Orders.",
+  ]},
+  it: { title: "Come ottenere Token e Query ID", steps: [
+    "Su IBKR: Performance e Report \u2192 Flex Queries \u2192 crea una Activity Flex Query.",
+    "In Sezioni, seleziona Operazioni (Trades). Formato: XML. Periodo: Ultimi 365 giorni. Salva e annota il Query ID (numero corto).",
+    "In Flex Web Service Configuration, attiva il servizio e copia il Token (numero lungo).",
+    "Incolla qui il Token e il Query ID. Sola lettura \u2014 mai ordini.",
+  ]},
+  es: { title: "C\u00f3mo obtener el Token y el Query ID", steps: [
+    "En IBKR: Rendimiento e Informes \u2192 Flex Queries \u2192 crea una Activity Flex Query.",
+    "En Secciones, marca Operaciones (Trades). Formato: XML. Per\u00edodo: \u00daltimos 365 d\u00edas. Guarda y anota el Query ID (n\u00famero corto).",
+    "En Flex Web Service Configuration, activa el servicio y copia el Token (n\u00famero largo).",
+    "Pega aqu\u00ed el Token y el Query ID. Solo lectura \u2014 nunca hace \u00f3rdenes.",
+  ]},
+};
+
+
 const getBROKERS = (t) => ({
   degiro: {
     name: "DEGIRO",
@@ -317,11 +360,12 @@ function StatusBadge({ conn, t }) {
 
 // -- Add form -----------------------------------------------------------------
 function AddBrokerForm({ brokerKey, onAdded, onCancel }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const BROKERS = getBROKERS(t);
   const meta = BROKERS[brokerKey];
   const [values, setValues] = useState({});
   const [label, setLabel] = useState(meta.labelDefault);
+  const [helpOpen, setHelpOpen] = useState(brokerKey === "ibkr");
   const [loading, setLoading] = useState(false);
 
   const set = (key, val) => setValues((v) => ({ ...v, [key]: val }));
@@ -388,6 +432,25 @@ function AddBrokerForm({ brokerKey, onAdded, onCancel }) {
           </div>
         );
       })}
+      {brokerKey === "ibkr" && (IBKR_HELP[lang] || IBKR_HELP.en) && (
+        <div className="border border-blue-500/20 bg-blue-500/5 rounded-lg">
+          <button
+            type="button"
+            onClick={() => setHelpOpen((v) => !v)}
+            className="w-full flex items-center justify-between gap-2 px-3 py-2 text-xs font-medium text-blue-300 hover:text-blue-200"
+          >
+            <span>{(IBKR_HELP[lang] || IBKR_HELP.en).title}</span>
+            {helpOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+          {helpOpen && (
+            <ol className="px-4 pb-3 pt-0.5 space-y-1.5 text-xs text-zinc-400 leading-relaxed list-decimal list-outside ml-4">
+              {(IBKR_HELP[lang] || IBKR_HELP.en).steps.map((st, i) => (
+                <li key={i}>{st}</li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
       <p className="text-xs text-zinc-500 leading-relaxed">{meta.description}</p>
       {meta.security && (
         <div className="bg-amber-500/8 border border-amber-500/20 rounded-lg px-3 py-2.5 space-y-1">

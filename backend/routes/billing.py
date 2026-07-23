@@ -78,6 +78,10 @@ async def create_checkout_session(plan: str, currency: str = "eur", user=Depends
             }
         ],
         payment_method_collection="always",
+        # Ativa o campo de código promocional no Checkout — necessário para a
+        # oferta de "Fundadores" (cupão com desconto vitalício, nº de lugares
+        # limitado, gerido no Stripe). Sem código introduzido não muda nada.
+        allow_promotion_codes=True,
         subscription_data={
             "trial_period_days": trial_days,
             "metadata": {
