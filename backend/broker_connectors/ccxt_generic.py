@@ -61,17 +61,35 @@ async def _try_balance(client):
     conta.
     """
     ccxt = _ccxt()
-    last_err = None
-    for params in ({}, {"type": "unified"}, {"type": "spot"}, {"type": "funding"}, {"type": "swap"}):
+    last_ok = None
+    auth_err = None
+    # Ordem: unified primeiro (é onde a Bybit UTA guarda o saldo). Devolvemos a
+    # PRIMEIRA conta que tenha saldo real — antes devolvíamos a primeira que
+    # respondesse, que podia ser uma conta vazia, escondendo o saldo verdadeiro.
+    for params in ({"type": "unified"}, {}, {"type": "spot"}, {"type": "funding"}, {"type": "swap"}):
         try:
-            return await client.fetch_balance(params)
-        except ccxt.AuthenticationError:
-            raise
-        except Exception as e:  # noqa: BLE001
-            last_err = e
+            bal = await client.fetch_balance(params)
+        except ccxt.AuthenticationError as e:
+            auth_err = e
             continue
-    if last_err:
-        raise last_err
+        except Exception:
+            continue
+        totals = bal.get("total") or {}
+        has_holdings = False
+        for v in totals.values():
+            try:
+                if float(v or 0) > 0:
+                    has_holdings = True
+                    break
+            except (TypeError, ValueError):
+                continue
+        if has_holdings:
+            return bal
+        last_ok = bal  # sucesso mas vazio — fica como fallback
+    if last_ok is not None:
+        return last_ok
+    if auth_err is not None:
+        raise auth_err
     raise CcxtError("fetch_balance failed for all account types")
 
 
@@ -240,34 +258,46 @@ async def fetch_transactions(candidate_ids, api_key, api_secret, password=None) 
         # Nota: usa um _broker_id fixo por ativo (dedup) — na 1ª sincronização
         # regista o saldo; se o saldo mudar depois, corrige-se à mão (o
         # histórico real de trades, quando existe, tem sempre prioridade).
-        for base in sorted(held - traded):
+        # Todos os ativos com saldo que NÃO tiveram trades reais — inclui
+        # stablecoins (USDT, USDC…), que valem ~1 USD e são muitas vezes a
+        # maior fatia do saldo (antes eram ignoradas, dando carteira a 0).
+        _USD_STABLES = {"USDT", "USDC", "USD", "DAI", "TUSD", "FDUSD", "BUSD", "USDP", "PYUSD"}
+        _FIAT = {"EUR", "GBP", "CHF", "JPY", "BRL", "CAD", "AUD"}
+        all_bal = {}
+        for cur, amt0 in totals.items():
             try:
-                amt = float(totals.get(base) or 0)
+                a = float(amt0 or 0)
             except (TypeError, ValueError):
-                amt = 0
-            if amt <= 0:
+                a = 0
+            if a > 0:
+                all_bal[cur] = a
+        for base in sorted(set(all_bal) - traded):
+            amt = all_bal.get(base, 0)
+            if amt <= 0 or base.upper() in _FIAT:
                 continue
-            px = None
-            for quote in ("USDT", "USDC", "USD"):
-                sym = f"{base}/{quote}"
-                if sym in client.markets:
-                    try:
-                        tk = await client.fetch_ticker(sym)
-                        if tk and tk.get("last"):
-                            px = float(tk["last"])
-                            break
-                    except Exception:
-                        continue
-            if not px or px <= 0:
-                # tenta via BTC como último recurso
-                sym = f"{base}/BTC"
-                if sym in client.markets:
-                    try:
-                        tk = await client.fetch_ticker(sym)
-                        if tk and tk.get("last"):
-                            px = float(tk["last"]) * btc_usd
-                    except Exception:
-                        px = None
+            if base.upper() in _USD_STABLES:
+                px = 1.0
+            else:
+                px = None
+                for quote in ("USDT", "USDC", "USD"):
+                    sym = f"{base}/{quote}"
+                    if sym in client.markets:
+                        try:
+                            tk = await client.fetch_ticker(sym)
+                            if tk and tk.get("last"):
+                                px = float(tk["last"])
+                                break
+                        except Exception:
+                            continue
+                if not px or px <= 0:
+                    sym = f"{base}/BTC"
+                    if sym in client.markets:
+                        try:
+                            tk = await client.fetch_ticker(sym)
+                            if tk and tk.get("last"):
+                                px = float(tk["last"]) * btc_usd
+                        except Exception:
+                            px = None
             if not px or px <= 0:
                 continue
             results.append({
