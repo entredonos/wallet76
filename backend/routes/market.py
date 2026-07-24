@@ -1,5 +1,6 @@
 """Market data: top movers (crypto & stocks), latest news, portfolio news."""
 import asyncio
+import gc
 from datetime import datetime
 
 import httpx
@@ -37,6 +38,45 @@ async def market_movers_crypto():
     if cached and (cached.get("gainers") or cached.get("losers")):
         return cached
     return await _fetch_movers_crypto()
+
+
+_MOVERS_CHUNK = 25
+
+
+def _yf_batch_changes(symbols: list[str]) -> dict:
+    """Descarrega cotações de 'symbols' em LOTES pequenos e devolve
+    {symbol: (prev_close, last_close)}. Usa threads=False e liberta o
+    DataFrame de cada lote logo a seguir (del + gc) — evita o pico de memória
+    de puxar ~100 tickers de uma vez, que fazia o backend rebentar os 512MB de
+    RAM (OOM a cada 15 min, no ciclo do refresher). Só guardamos dois floats
+    por símbolo, não os DataFrames."""
+    out: dict = {}
+    for i in range(0, len(symbols), _MOVERS_CHUNK):
+        chunk = symbols[i:i + _MOVERS_CHUNK]
+        try:
+            data = yf.download(chunk, period="2d", interval="1d", group_by="ticker",
+                               auto_adjust=False, progress=False, threads=False)
+        except Exception as e:
+            logger.warning(f"yf batch err ({chunk[:3]}...): {e}")
+            continue
+        try:
+            single = len(chunk) == 1
+            lvl0 = None if single else data.columns.get_level_values(0)
+            for sym in chunk:
+                try:
+                    df = data if single else (data[sym] if sym in lvl0 else None)
+                    if df is None or df.empty:
+                        continue
+                    closes = df["Close"].dropna().tolist()
+                    if len(closes) < 2:
+                        continue
+                    out[sym] = (float(closes[-2]), float(closes[-1]))
+                except Exception:
+                    continue
+        finally:
+            del data
+    gc.collect()
+    return out
 
 
 async def _fetch_movers_crypto():
@@ -114,35 +154,25 @@ async def _fetch_movers_crypto():
 
     def _fetch():
         rows = []
-        try:
-            data = yf.download(yf_syms, period="2d", interval="1d", group_by="ticker", auto_adjust=False, progress=False, threads=True)
-            for (sym, name) in crypto_universe:
-                key = f"{sym}-USD"
-                try:
-                    df = data[key] if key in data.columns.get_level_values(0) else None
-                    if df is None or df.empty or len(df) < 2:
-                        continue
-                    closes = df["Close"].dropna().tolist()
-                    if len(closes) < 2:
-                        continue
-                    prev, last = float(closes[-2]), float(closes[-1])
-                    if prev == 0:
-                        continue
-                    pct = (last - prev) / prev * 100.0
-                    rows.append({
-                        "symbol": sym,
-                        "coingecko_id": name.lower().replace(" ", "-"),
-                        "name": name,
-                        "image": None,
-                        "price_usd": last,
-                        "change_24h": pct,
-                        "market_cap_usd": None,
-                        "volume_24h_usd": None,
-                    })
-                except Exception:
-                    continue
-        except Exception as e:
-            logger.warning(f"market crypto yf err: {e}")
+        changes = _yf_batch_changes(yf_syms)
+        for (sym, name) in crypto_universe:
+            pair = changes.get(f"{sym}-USD")
+            if not pair:
+                continue
+            prev, last = pair
+            if prev == 0:
+                continue
+            pct = (last - prev) / prev * 100.0
+            rows.append({
+                "symbol": sym,
+                "coingecko_id": name.lower().replace(" ", "-"),
+                "name": name,
+                "image": None,
+                "price_usd": last,
+                "change_24h": pct,
+                "market_cap_usd": None,
+                "volume_24h_usd": None,
+            })
         return rows
 
     rows = await asyncio.to_thread(_fetch)
@@ -183,30 +213,21 @@ async def _fetch_movers_stocks():
 
     def _fetch():
         rows = []
-        try:
-            data = yf.download(_STOCK_UNIVERSE, period="2d", interval="1d", group_by="ticker", auto_adjust=False, progress=False, threads=True)
-            for s in _STOCK_UNIVERSE:
-                try:
-                    df = data[s] if s in data.columns.get_level_values(0) else None
-                    if df is None or df.empty or len(df) < 2:
-                        continue
-                    closes = df["Close"].dropna().tolist()
-                    if len(closes) < 2:
-                        continue
-                    prev, last = float(closes[-2]), float(closes[-1])
-                    if prev == 0:
-                        continue
-                    pct = (last - prev) / prev * 100.0
-                    rows.append({
-                        "symbol": s,
-                        "name": s,
-                        "price_usd": last,
-                        "change_24h": pct,
-                    })
-                except Exception:
-                    continue
-        except Exception as e:
-            logger.warning(f"market stocks dl err: {e}")
+        changes = _yf_batch_changes(_STOCK_UNIVERSE)
+        for sym in _STOCK_UNIVERSE:
+            pair = changes.get(sym)
+            if not pair:
+                continue
+            prev, last = pair
+            if prev == 0:
+                continue
+            pct = (last - prev) / prev * 100.0
+            rows.append({
+                "symbol": sym,
+                "name": sym,
+                "price_usd": last,
+                "change_24h": pct,
+            })
         return rows
 
     rows = await asyncio.to_thread(_fetch)
