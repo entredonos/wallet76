@@ -57,3 +57,19 @@ body {
     * { @apply border-border; }
     body { @apply bg-background text-foreground; }
 }
+
+
+/* Gráficos (Recharts): ao clicar/duplo-clicar, o browser selecionava o SVG e
+   desenhava um contorno de foco (que em alguns sistemas/Windows sai amarelo,
+   parecendo o cartão "selecionado"). Removemos o contorno e a seleção em todos
+   os gráficos da app de uma vez. */
+.recharts-wrapper,
+.recharts-wrapper *,
+.recharts-surface,
+.recharts-surface * {
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+}

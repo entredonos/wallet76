@@ -17,6 +17,7 @@ import walletMarkSmall from "../assets/wallet76-mark-small.png";
 import GlobalSearch from "./GlobalSearch";
 import Sparkline from "./Sparkline";
 import FeedbackWidget from "./FeedbackWidget";
+import PullToRefresh from "./PullToRefresh";
 import { onSidebarRefreshRequested } from "../lib/sidebarRefresh";
 import { usePlan } from "../hooks/usePlan";
 
@@ -442,6 +443,7 @@ export default function Layout({ children, currency, setCurrency }) {
 
   return (
     <>
+    <PullToRefresh />
     {/* overflow-x-hidden: rede de segurança contra qualquer botão/linha de
         uma página filha que não encolha em ecrãs estreitos. Sem isto, uma
         página a "empurrar" a largura (ex.: Alerts.jsx, 6 jul 2026 — botão
