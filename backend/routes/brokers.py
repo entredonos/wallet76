@@ -178,14 +178,25 @@ async def _import_transactions(
 
     # Modo FOTOGRAFIA (ex.: IBKR Open Positions): a importação representa o
     # estado ATUAL e completo desta ligação, não um registo incremental. Antes
-    # de reinserir, apagamos as linhas anteriores DESTA ligação (via
-    # _broker_conn_id) para as quantidades acompanharem as posições reais — sem
-    # duplicar e sem deixar ativos já vendidos pendurados. Só toca nesta
-    # ligação: não mexe em transações manuais nem de outras corretoras/contas.
-    if transactions and any(t.get("_snapshot") for t in transactions):
+    # de reinserir, limpamos para as quantidades acompanharem as posições reais
+    # — sem duplicar e sem deixar ativos já vendidos pendurados.
+    snapshot_txns = [t for t in transactions if t.get("_snapshot")]
+    if snapshot_txns:
+        snap_broker = snapshot_txns[0].get("_broker", "")
+        # Ids das ligações que AINDA existem desta corretora (para preservar os
+        # dados de uma 2.ª conta da mesma corretora ligada em paralelo).
+        sibs = await db.broker_connections.find(
+            {"user_id": user_id, "broker": snap_broker}, {"id": 1}
+        ).to_list(length=None)
+        keep_ids = [c["id"] for c in sibs if c.get("id") and c["id"] != conn_id]
+        # Apaga as linhas DESTA ligação + quaisquer linhas ÓRFÃS da mesma
+        # corretora (de ligações já apagadas), preservando as das outras contas
+        # ativas. Isto também cura o caso de se ter apagado a ligação ANTES de
+        # esta limpeza existir (transações antigas ficaram sem ligação).
         await db.transactions.delete_many({
             "user_id": user_id,
-            "_broker_conn_id": conn_id,
+            "_broker": snap_broker,
+            "_broker_conn_id": {"$nin": keep_ids},
         })
 
     # ETF/REIT (7 jul 2026) — DEGIRO/Trading212/IBKR gravam sempre
