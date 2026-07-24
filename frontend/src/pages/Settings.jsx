@@ -803,27 +803,36 @@ export default function Settings() {
               </div>
             )}
 
-            <Button
-              onClick={async () => {
-                try {
-                  const { data } = await api.post("/billing/create-portal-session");
-                  window.location.href = data.url;
-                } catch (e) {
-                  // 14 jul 2026 — sem try/catch isto falhava em silêncio
-                  // (promise rejeitada sem handler) sempre que a conta ainda
-                  // não tinha stripe_customer_id, ou seja, nunca tinha
-                  // passado por um checkout — o botão parecia simplesmente
-                  // não fazer nada. O backend devolve 400 nesse caso.
-                  if (e.response?.status === 400) {
-                    toast.error(t("settings.subscription_manage_no_customer"));
-                  } else {
-                    toast.error(formatApiErrorDetail(e.response?.data?.detail) || t("common.error"));
+            {subscription.stripe_customer_id ? (
+              // Já passou por um checkout (tem cliente Stripe) -> pode gerir a
+              // subscrição no portal do Stripe.
+              <Button
+                onClick={async () => {
+                  try {
+                    const { data } = await api.post("/billing/create-portal-session");
+                    window.location.href = data.url;
+                  } catch (e) {
+                    // 14 jul 2026 — sem try/catch isto falhava em silêncio
+                    // (promise rejeitada sem handler) sempre que a conta ainda
+                    // não tinha stripe_customer_id. O backend devolve 400.
+                    if (e.response?.status === 400) {
+                      toast.error(t("settings.subscription_manage_no_customer"));
+                    } else {
+                      toast.error(formatApiErrorDetail(e.response?.data?.detail) || t("common.error"));
+                    }
                   }
-                }
-              }}
-            >
-              {t("settings.subscription_manage")}
-            </Button>
+                }}
+              >
+                {t("settings.subscription_manage")}
+              </Button>
+            ) : (
+              // Ainda sem subscrição (plano grátis) -> em vez de abrir o portal
+              // (que dava 400 + erro ao cliente), leva à página de planos. É este
+              // o botão de upgrade dentro da app.
+              <Button onClick={() => navigate("/pricing")}>
+                {t("settings.subscription_subscribe")}
+              </Button>
+            )}
           </div>
         ) : (
           <div className="text-zinc-400 text-sm">
