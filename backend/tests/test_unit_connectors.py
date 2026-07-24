@@ -206,3 +206,61 @@ class TestIbkrIsTransient:
 
     def test_not_ready_is_ibkr_error_subclass(self):
         assert issubclass(ibkr.IBKRNotReady, ibkr.IBKRError)
+
+
+# --------------------------------------------------------------------------
+# ibkr._parse_xml — modo FOTOGRAFIA (Open Positions) vs fallback (Trades).
+# Garante que as posições atuais (incl. compradas antes do período da query)
+# entram, e que forex (CASH) e shorts ficam de fora.
+# --------------------------------------------------------------------------
+_XML_POS = """<FlexQueryResponse><FlexStatements><FlexStatement>
+ <Trades>
+   <Trade symbol="VOO" assetCategory="STK" buySell="BUY" quantity="2" tradePrice="500" ibCommission="-1" tradeDate="20260310" currency="USD" tradeID="111"/>
+   <Trade symbol="USD.CHF" assetCategory="CASH" buySell="BUY" quantity="1000" tradePrice="0.9" ibCommission="0" tradeDate="20260311" currency="CHF" tradeID="444"/>
+ </Trades>
+ <OpenPositions>
+   <OpenPosition symbol="VOO" assetCategory="STK" position="10" costBasisPrice="480.5" currency="USD" holdingPeriodDateTime="20230115;09:30:00"/>
+   <OpenPosition symbol="QQQM" assetCategory="STK" position="5" costBasisPrice="190" currency="USD" openDateTime="2022-06-01"/>
+   <OpenPosition symbol="USD.CHF" assetCategory="CASH" position="1000" costBasisPrice="0.9" currency="CHF"/>
+   <OpenPosition symbol="SHORTY" assetCategory="STK" position="-3" costBasisPrice="50" currency="USD"/>
+ </OpenPositions>
+</FlexStatement></FlexStatements></FlexQueryResponse>"""
+
+_XML_TRADES_ONLY = """<FlexQueryResponse><FlexStatements><FlexStatement><Trades>
+ <Trade symbol="AAPL" assetCategory="STK" buySell="BUY" quantity="3" tradePrice="100" ibCommission="-1" tradeDate="20260310" currency="USD" tradeID="900"/>
+</Trades></FlexStatement></FlexStatements></FlexQueryResponse>"""
+
+
+class TestIbkrParseXml:
+    def test_open_positions_take_over(self):
+        res = ibkr._parse_xml(_XML_POS)
+        syms = {r["symbol"] for r in res}
+        # snapshot mode: só posições; forex (CASH) e short excluídos
+        assert syms == {"VOO", "QQQM"}
+        assert all(r.get("_snapshot") for r in res)
+        assert all(r["type"] == "BUY" for r in res)
+
+    def test_open_position_uses_current_qty_and_avg_cost(self):
+        res = ibkr._parse_xml(_XML_POS)
+        voo = next(r for r in res if r["symbol"] == "VOO")
+        assert voo["quantity"] == 10          # quantidade ATUAL, não a das trades
+        assert voo["price_usd"] == 480.5      # custo médio da IBKR
+        assert voo["_broker_id"] == "pos-VOO" # id estável -> sync substitui
+        assert voo["date"] == "2023-01-15"    # data de abertura (antes do período)
+
+    def test_open_date_from_open_datetime(self):
+        res = ibkr._parse_xml(_XML_POS)
+        qqqm = next(r for r in res if r["symbol"] == "QQQM")
+        assert qqqm["date"] == "2022-06-01"
+
+    def test_fallback_to_trades_without_open_positions(self):
+        res = ibkr._parse_xml(_XML_TRADES_ONLY)
+        assert len(res) == 1
+        assert res[0]["symbol"] == "AAPL"
+        assert not res[0].get("_snapshot")
+
+    def test_norm_date_variants(self):
+        assert ibkr._norm_date("20240115") == "2024-01-15"
+        assert ibkr._norm_date("2024-01-15") == "2024-01-15"
+        assert ibkr._norm_date("20240115;09:30:00") == "2024-01-15"
+        assert ibkr._norm_date("") == ""

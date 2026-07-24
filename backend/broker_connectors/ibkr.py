@@ -1,8 +1,11 @@
 """Interactive Brokers Flex Query connector (official read-only API).
 
 Setup (user does this once in IB Web Portal):
-  1. Reports → Flex Queries → Create Trade Confirmation Flex Query
-  2. Enable: Symbol, Buy/Sell, Quantity, TradePrice, IBCommission, TradeDate, AssetCategory
+  1. Reports → Flex Queries → Create *Activity* Flex Query
+  2. Enable the "Open Positions" section (Symbol, AssetCategory, Position,
+     CostBasisPrice, Currency) — this gives current holdings regardless of
+     when they were bought. Optionally also enable "Trades" (used as a
+     fallback if no Open Positions section is present).
   3. Format: XML
   4. Save → note the Query ID
   5. Manage Flex Queries → Create Token → note the Token
@@ -123,11 +126,57 @@ async def _get_statement(token: str, ref: str) -> str:
     raise IBKRNotReady(_NOT_READY_MSG + (f" (IBKR: {last_err})" if last_err else ""))
 
 
-def _parse_xml(xml_text: str) -> list[dict]:
-    """Parse IB Flex XML into our internal transaction format."""
-    root = ET.fromstring(xml_text)
-    results = []
+def _norm_date(raw: str) -> str:
+    """Datas IB: 'YYYYMMDD', 'YYYY-MM-DD' ou 'YYYYMMDD;HHMMSS' -> 'YYYY-MM-DD'."""
+    if not raw:
+        return ""
+    raw = raw.split(";")[0].split(" ")[0].strip()
+    if len(raw) == 8 and raw.isdigit():
+        return f"{raw[:4]}-{raw[4:6]}-{raw[6:]}"
+    return raw[:10]
 
+
+def _parse_positions(root) -> list[dict]:
+    """Modo fotografia: le <OpenPosition> = o que a conta tem AGORA,
+    independentemente de quando foi comprado. Uma compra sintetica por
+    posicao, ao custo medio da propria IBKR. _broker_id estavel por simbolo
+    para cada sync refrescar a fotografia (o sync substitui as linhas IBKR)."""
+    out = []
+    for pos in root.iter("OpenPosition"):
+        if pos.get("assetCategory", "") not in ("STK", "ETF"):
+            continue  # acoes/ETFs; ignora forex (CASH), futuros e opcoes
+        symbol = (pos.get("symbol") or "").upper().strip()
+        qty = float(pos.get("position") or 0)      # com sinal; longo > 0
+        cost_price = abs(float(pos.get("costBasisPrice") or 0))
+        if not symbol or qty <= 0 or cost_price <= 0:
+            continue  # sem shorts, sem posicoes a zero, sem preco -> ignora
+        currency = pos.get("currency") or "USD"
+        open_date = _norm_date(pos.get("holdingPeriodDateTime")
+                               or pos.get("openDateTime") or "")
+        out.append({
+            "symbol": symbol,
+            "name": pos.get("description") or symbol,
+            "asset_type": "stock",
+            "type": "BUY",
+            "date": open_date or "2000-01-01",
+            "quantity": qty,
+            "price_usd": cost_price,
+            "price_currency": currency,
+            "fee": 0.0,
+            "fee_currency": currency,
+            "notes": "IBKR — posicao atual (custo medio)",
+            "_broker_id": f"pos-{symbol}",
+            "_broker": "ibkr",
+            "_snapshot": True,
+        })
+    return out
+
+
+def _parse_trades(root) -> list[dict]:
+    """Fallback: reconstroi a partir de <Trade> (compras/vendas dentro do
+    periodo da Flex Query). So usado quando a query nao tem a seccao de
+    Open Positions."""
+    results = []
     for trade in root.iter("Trade"):
         asset_cat = trade.get("assetCategory", "")
         if asset_cat not in ("STK", "ETF", "FUT", "OPT"):
@@ -141,13 +190,8 @@ def _parse_xml(xml_text: str) -> list[dict]:
         qty = abs(float(trade.get("quantity") or 0))
         price = abs(float(trade.get("tradePrice") or 0))
         commission = abs(float(trade.get("ibCommission") or 0))
-        trade_date = trade.get("tradeDate") or ""  # YYYYMMDD or YYYY-MM-DD
         currency = trade.get("currency") or "USD"
-
-        if len(trade_date) == 8:  # YYYYMMDD
-            trade_date = f"{trade_date[:4]}-{trade_date[4:6]}-{trade_date[6:]}"
-
-        asset_type = "stock" if asset_cat in ("STK", "ETF") else "stock"
+        trade_date = _norm_date(trade.get("tradeDate") or "")
 
         if not symbol or qty == 0:
             continue
@@ -155,9 +199,9 @@ def _parse_xml(xml_text: str) -> list[dict]:
         results.append({
             "symbol": symbol,
             "name": trade.get("description") or symbol,
-            "asset_type": asset_type,
+            "asset_type": "stock",
             "type": buy_sell,
-            "date": trade_date[:10],
+            "date": trade_date,
             "quantity": qty,
             "price_usd": price,
             "price_currency": currency,
@@ -169,6 +213,17 @@ def _parse_xml(xml_text: str) -> list[dict]:
         })
 
     return results
+
+
+def _parse_xml(xml_text: str) -> list[dict]:
+    """Parse IB Flex XML. Prefere Open Positions (posicoes atuais exatas,
+    incl. lotes comprados antes do periodo da query); recorre aos Trades
+    quando a query nao tem a seccao de Open Positions."""
+    root = ET.fromstring(xml_text)
+    positions = _parse_positions(root)
+    if positions:
+        return positions
+    return _parse_trades(root)
 
 
 async def fetch_transactions(token: str, query_id: str) -> list[dict]:

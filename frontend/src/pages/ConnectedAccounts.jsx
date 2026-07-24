@@ -481,7 +481,25 @@ function ConnectionCard({ conn, wallets, onDelete, onSynced, onWalletCreated }) 
   const BROKERS = getBROKERS(t);
   const meta = BROKERS[conn.broker] || {};
   const [syncing, setSyncing] = useState(false);
-  const [walletId, setWalletId] = useState(wallets[0]?.id || "");
+  // Carteira pré-selecionada: a que esta ligação usou na última sincronização
+  // (last_wallet_id); em falta dela, uma carteira cujo nome combine com o
+  // rótulo da ligação (ex.: ligação "Interactive Brokers" -> carteira com esse
+  // nome); só em último caso a primeira carteira. Evita mostrar sempre a 1.ª à
+  // toa (ex.: mostrava XTB numa ligação do IBKR).
+  const [walletId, setWalletId] = useState(() => {
+    if (conn.last_wallet_id && wallets.some((w) => w.id === conn.last_wallet_id)) {
+      return conn.last_wallet_id;
+    }
+    const lb = (conn.label || "").toLowerCase().trim();
+    if (lb) {
+      const m = wallets.find((w) => {
+        const wn = (w.name || "").toLowerCase().trim();
+        return wn && (wn === lb || wn.includes(lb) || lb.includes(wn));
+      });
+      if (m) return m.id;
+    }
+    return wallets[0]?.id || "";
+  });
   const [expanded, setExpanded] = useState(false);
   const [creatingWallet, setCreatingWallet] = useState(false);
   const [newWalletName, setNewWalletName] = useState(conn.label || meta.name || "");
@@ -749,11 +767,8 @@ export default function ConnectedAccounts() {
               className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-colors text-sm ${
                 addingBroker === key
                   ? "border-blue-500/50 bg-blue-500/10 text-zinc-100"
-                  : connected.has(key)
-                  ? "border-zinc-700 text-zinc-500 cursor-default"
                   : "border-zinc-800 text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800/40"
               }`}
-              disabled={connected.has(key)}
             >
               <BrokerLogo brokerKey={key} meta={meta} size={34} />
               <span className="text-xs font-medium text-center leading-tight">{meta.name}</span>

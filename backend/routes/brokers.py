@@ -176,6 +176,18 @@ async def _import_transactions(
     imported = 0
     errors = []
 
+    # Modo FOTOGRAFIA (ex.: IBKR Open Positions): a importação representa o
+    # estado ATUAL e completo desta ligação, não um registo incremental. Antes
+    # de reinserir, apagamos as linhas anteriores DESTA ligação (via
+    # _broker_conn_id) para as quantidades acompanharem as posições reais — sem
+    # duplicar e sem deixar ativos já vendidos pendurados. Só toca nesta
+    # ligação: não mexe em transações manuais nem de outras corretoras/contas.
+    if transactions and any(t.get("_snapshot") for t in transactions):
+        await db.transactions.delete_many({
+            "user_id": user_id,
+            "_broker_conn_id": conn_id,
+        })
+
     # ETF/REIT (7 jul 2026) — DEGIRO/Trading212/IBKR gravam sempre
     # asset_type="stock" nas suas respostas (ver broker_connectors/*.py);
     # aqui reclassificamos em bloco, uma única vez por símbolo único desta
@@ -407,15 +419,18 @@ async def _do_sync(conn_id: str, user_id: str, wallet_id: str | None, ip: str = 
                 {"$set": {"asset_type": "crypto"}},
             )
 
-        await db.broker_connections.update_one(
-            {"id": conn_id},
-            {"$set": {
-                "last_synced_at": now,
-                "last_imported": imported,
-                "last_error": None,
-                "_suspicious": False,
-            }},
-        )
+        _upd = {
+            "last_synced_at": now,
+            "last_imported": imported,
+            "last_error": None,
+            "_suspicious": False,
+        }
+        # Lembra a carteira usada nesta sincronização — o cartão da ligação
+        # passa a pré-selecioná-la (em vez da 1.ª carteira à toa). Só quando há
+        # carteira, para não apagar a memória anterior com None.
+        if wallet_id:
+            _upd["last_wallet_id"] = wallet_id
+        await db.broker_connections.update_one({"id": conn_id}, {"$set": _upd})
         await _write_audit(user_id, conn_id, broker, "success", imported, errors, ip=ip)
         logger.info("Broker sync %s/%s: %d imported, %d errors", broker, conn_id, imported, len(errors))
         return {"imported": imported, "errors": errors}
@@ -506,7 +521,15 @@ async def delete_connection(conn_id: str, user=Depends(get_current_user)):
     res = await db.broker_connections.delete_one({"id": conn_id, "user_id": user["id"]})
     if res.deleted_count == 0:
         raise HTTPException(404, "Connection not found")
-    return {"ok": True}
+    # Limpa as transações importadas por ESTA ligação (só as desta ligação, via
+    # _broker_conn_id) — senão ficavam órfãs para sempre e, ao re-adicionar a
+    # corretora, duplicavam com a nova importação. Não toca em transações
+    # manuais nem de outras ligações/contas.
+    removed = await db.transactions.delete_many({
+        "user_id": user["id"],
+        "_broker_conn_id": conn_id,
+    })
+    return {"ok": True, "removed_transactions": removed.deleted_count}
 
 
 # ---------------------------------------------------------------------------
