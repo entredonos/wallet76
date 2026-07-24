@@ -6,7 +6,7 @@ import { useI18n, LANGUAGES } from "../context/I18nContext";
 import { api } from "../lib/api";
 import {
   TrendingUp, LogOut, Wallet as WalletIcon, LayoutDashboard, Receipt, Bell,
-  Briefcase, Coins, Plus, Sun, Moon, Eye, Newspaper, Languages, LineChart, Settings, Link2, Globe, Search, BarChart2, ShieldCheck, ChevronDown, User, MoreHorizontal,
+  Briefcase, Coins, Plus, Sun, Moon, Eye, Newspaper, Languages, LineChart, Settings, Link2, Globe, Search, BarChart2, ShieldCheck, ChevronDown, User, MoreHorizontal, Sparkles,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import walletLogo from "../assets/wallet76-logo80x60.png";
@@ -33,7 +33,7 @@ export default function Layout({ children, currency, setCurrency }) {
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const { lang, setLang, t } = useI18n();
-  const { previewPlan } = usePlan();
+  const { previewPlan, isFree } = usePlan();
   const nav = useNavigate();
   const loc = useLocation();
   const [wallets, setWallets] = useState([]);
@@ -250,6 +250,19 @@ export default function Layout({ children, currency, setCurrency }) {
         <NavLink to="/settings" className={linkCls} data-testid="nav-settings" onClick={() => setOpen(false)}>
           <Settings className="w-4 h-4" /> {t("nav.settings")}
         </NavLink>
+
+        {/* Botão de upgrade visível só para o plano grátis — torna o caminho
+            para os planos óbvio em qualquer ecrã (não só Dashboard/Settings). */}
+        {isFree && (
+          <Link
+            to="/pricing"
+            onClick={() => setOpen(false)}
+            data-testid="nav-upgrade"
+            className="mt-2 flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 transition-colors shadow-[0_0_0_1px_rgba(96,165,250,0.25)]"
+          >
+            <Sparkles className="w-4 h-4" /> {t("settings.subscription_subscribe")}
+          </Link>
+        )}
       </nav>
 
       <div className="px-5 mt-4 mb-2 flex items-center justify-between">
