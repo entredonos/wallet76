@@ -19,6 +19,7 @@ import Sparkline from "./Sparkline";
 import FeedbackWidget from "./FeedbackWidget";
 import PullToRefresh from "./PullToRefresh";
 import { onSidebarRefreshRequested } from "../lib/sidebarRefresh";
+import { walletColorKey, WALLET_TEXT_CLASS } from "../lib/walletColors";
 import { usePlan } from "../hooks/usePlan";
 
 const TYPE_ICON = { broker: Briefcase, exchange: Coins, wallet: WalletIcon };
@@ -301,6 +302,9 @@ export default function Layout({ children, currency, setCurrency }) {
         )}
         {wallets.map((w) => {
           const Icon = TYPE_ICON[w.type] || WalletIcon;
+          // Cor da carteira (mesma dos pontos dos badges no body) — a mala do
+          // sidebar passa a ter a cor atribuída à carteira por ordem de criação.
+          const wColorKey = walletColorKey(wallets, w.id);
           const st = walletStats[w.id];
           const pnlPct = st?.pnlPct;
           const sparkData = (walletSparks[w.id] || []).map(p => ({ p }));
@@ -326,7 +330,7 @@ export default function Layout({ children, currency, setCurrency }) {
                 <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-blue-300" />
               )}
 
-              <Icon className={`w-4 h-4 shrink-0 ${activeWallet ? "text-blue-300" : "text-zinc-400"}`} />
+              <Icon className={`w-4 h-4 shrink-0 ${WALLET_TEXT_CLASS[wColorKey] || "text-zinc-400"}`} />
 
               <span className="truncate min-w-0 flex-1">{w.name}</span>
 
