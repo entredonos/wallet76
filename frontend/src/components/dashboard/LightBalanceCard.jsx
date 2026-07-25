@@ -2,6 +2,10 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "../../context/I18nContext";
 import Sparkline from "../Sparkline";
+import { Briefcase, Coins, Wallet as WalletIcon } from "lucide-react";
+import { WALLET_TEXT_CLASS } from "../../lib/walletColors";
+
+const TYPE_ICON = { broker: Briefcase, exchange: Coins, wallet: WalletIcon };
 
 // Dashboard "light" view's headline card — one consolidated Saldo Total
 // (value + % + mini sparkline) followed by "As tuas carteiras", instead of
@@ -70,14 +74,19 @@ export default function LightBalanceCard({
             <div className="text-sm text-zinc-400 font-mono py-2">{t("nav.no_wallets")}</div>
           ) : (
             <div className="space-y-2">
-              {wallets.map((w) => (
+              {wallets.map((w) => {
+                const WIcon = TYPE_ICON[w.type] || WalletIcon;
+                return (
                 <Link
                   key={w.id}
                   to={`/dashboard?wallet=${w.id}`}
                   className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg bg-zinc-950/40 border border-zinc-800/40 hover:border-zinc-700 hover:bg-zinc-950/70 transition-colors"
                   data-testid={`light-balance-wallet-${w.id}`}
                 >
-                  <span className="text-sm text-zinc-300 truncate">{w.name}</span>
+                  <span className="flex items-center gap-2 min-w-0">
+                    <WIcon className={`w-4 h-4 shrink-0 ${WALLET_TEXT_CLASS[w.colorKey] || "text-zinc-500"}`} />
+                    <span className="text-sm text-zinc-300 truncate">{w.name}</span>
+                  </span>
                   <span className="flex items-center gap-2 shrink-0">
                     {w.valueLabel && (
                       <span className="text-sm font-mono text-zinc-200">{w.valueLabel}</span>
@@ -90,7 +99,8 @@ export default function LightBalanceCard({
                     )}
                   </span>
                 </Link>
-              ))}
+                );
+              })}
             </div>
           )}
         </>

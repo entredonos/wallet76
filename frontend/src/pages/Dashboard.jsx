@@ -20,6 +20,7 @@ import SharePanel from "../components/dashboard/SharePanel";
 import FilterPillsRow from "../components/dashboard/FilterPillsRow";
 import MarketSentimentCard from "../components/dashboard/MarketSentimentCard";
 import { filterHoldings, assetTypeSet } from "../lib/holdingsFilter";
+import { walletColorKey } from "../lib/walletColors";
 import TopMoversWidget from "../components/dashboard/TopMoversWidget";
 import EvolutionChart from "../components/dashboard/EvolutionChart";
 import AllocationWidget from "../components/dashboard/AllocationWidget";
@@ -719,7 +720,7 @@ export default function Dashboard({ currency }) {
       .map((w) => {
         const st = stats[w.id] || { value: 0, cost: 0 };
         const pnlPct = st.cost > 0 ? ((st.value - st.cost) / st.cost) * 100 : 0;
-        return { id: w.id, name: w.name, currency: w.currency || "USD", value: st.value, pnlPct };
+        return { id: w.id, name: w.name, type: w.type, currency: w.currency || "USD", value: st.value, pnlPct };
       })
       .sort((a, b) => b.value - a.value);
   }, [allHoldings, wallets]);
@@ -1344,8 +1345,12 @@ const worstPerformer = useMemo(() => {
           do painel, com o seu próprio order, por isso a posição escolhida no
           Personalizar é respeitada globalmente. Cada carteira mostra o seu
           valor na SUA moeda nativa (valueLabel). */}
-      {dashMode === "light" && wVisible("balance") && (
-        <div style={{ order: wOrder("balance") }}>
+      {/* FOTO 2 (pedido do utilizador): "As tuas carteiras" (balance) e a
+          Evolução lado a lado no ecrã grande (lg: 2 colunas), empilhados no
+          telemóvel. items-start evita esticarem à altura um do outro. */}
+      {dashMode === "light" && (wVisible("balance") || wVisible("evolution")) && (
+        <div style={{ order: wOrder("balance") }} className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          {wVisible("balance") && (
           <LightBalanceCard
             totalLabel={mask(fmtCurrency(convert(summary.total, currency, fxRates), currency))}
             changeLabel={fmtPct(summary.cost > 0 ? ((summary.total - summary.cost) / summary.cost) * 100 : 0)}
@@ -1357,6 +1362,8 @@ const worstPerformer = useMemo(() => {
             wallets={walletBreakdown.map((w) => ({
               id: w.id,
               name: w.name,
+              type: w.type,
+              colorKey: walletColorKey(wallets, w.id),
               valueLabel: w.value > 0 ? mask(fmtCurrency(convert(w.value, w.currency, fxRates), w.currency)) : null,
               changeLabel: w.value > 0 ? fmtPct(w.pnlPct) : null,
               positive: w.pnlPct >= 0,
@@ -1364,13 +1371,9 @@ const worstPerformer = useMemo(() => {
             }))}
             assets={walletAssets}
           />
-        </div>
-      )}
-
-      {/* Painel leve — gráfico de evolução simples (widget "evolution"). Só no
-          modo leve: no avançado é o EvolutionChart completo, mais abaixo. */}
-      {dashMode === "light" && wVisible("evolution") && (
-        <div style={{ order: wOrder("evolution") }} className="flex flex-col gap-3">
+          )}
+          {wVisible("evolution") && (
+          <div className="flex flex-col gap-3">
           <LightEvolutionCard
             title={evolutionTitle}
             points={lightChartPoints}
@@ -1399,6 +1402,8 @@ const worstPerformer = useMemo(() => {
               </p>
             );
           })()}
+          </div>
+          )}
         </div>
       )}
 
