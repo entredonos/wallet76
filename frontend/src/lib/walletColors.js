@@ -41,3 +41,15 @@ export const WALLET_TEXT_CLASS = {
   rose: "text-rose-300",
   cyan: "text-cyan-300",
 };
+
+
+// Tile (quadrado de cantos redondos) por cor — fundo ténue + borda da cor da
+// carteira, com o ícone da mala lá dentro (sidebar e lista "As tuas carteiras").
+export const WALLET_TILE_CLASS = {
+  amber: "bg-amber-500/10 border-amber-500/30",
+  blue: "bg-blue-500/10 border-blue-500/30",
+  purple: "bg-purple-500/10 border-purple-500/30",
+  emerald: "bg-emerald-500/10 border-emerald-500/30",
+  rose: "bg-rose-500/10 border-rose-500/30",
+  cyan: "bg-cyan-500/10 border-cyan-500/30",
+};

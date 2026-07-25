@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useI18n } from "../../context/I18nContext";
 import Sparkline from "../Sparkline";
 import { Briefcase, Coins, Wallet as WalletIcon } from "lucide-react";
-import { WALLET_TEXT_CLASS } from "../../lib/walletColors";
+import { WALLET_TEXT_CLASS, WALLET_TILE_CLASS } from "../../lib/walletColors";
 
 const TYPE_ICON = { broker: Briefcase, exchange: Coins, wallet: WalletIcon };
 
@@ -84,7 +84,9 @@ export default function LightBalanceCard({
                   data-testid={`light-balance-wallet-${w.id}`}
                 >
                   <span className="flex items-center gap-2 min-w-0">
-                    <WIcon className={`w-4 h-4 shrink-0 ${WALLET_TEXT_CLASS[w.colorKey] || "text-zinc-500"}`} />
+                    <span className={`shrink-0 flex items-center justify-center w-6 h-6 rounded-md border ${WALLET_TILE_CLASS[w.colorKey] || "border-zinc-700 bg-zinc-800/40"}`}>
+                      <WIcon className={`w-3.5 h-3.5 ${WALLET_TEXT_CLASS[w.colorKey] || "text-zinc-500"}`} />
+                    </span>
                     <span className="text-sm text-zinc-300 truncate">{w.name}</span>
                   </span>
                   <span className="flex items-center gap-2 shrink-0">

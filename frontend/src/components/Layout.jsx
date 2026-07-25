@@ -19,7 +19,7 @@ import Sparkline from "./Sparkline";
 import FeedbackWidget from "./FeedbackWidget";
 import PullToRefresh from "./PullToRefresh";
 import { onSidebarRefreshRequested } from "../lib/sidebarRefresh";
-import { walletColorKey, WALLET_TEXT_CLASS } from "../lib/walletColors";
+import { walletColorKey, WALLET_TEXT_CLASS, WALLET_TILE_CLASS } from "../lib/walletColors";
 import { usePlan } from "../hooks/usePlan";
 
 const TYPE_ICON = { broker: Briefcase, exchange: Coins, wallet: WalletIcon };
@@ -187,7 +187,7 @@ export default function Layout({ children, currency, setCurrency }) {
       </div>
 
       <nav className="px-3 py-2 space-y-1">
-        <NavLink to="/dashboard" className={linkCls} data-testid="nav-dashboard" onClick={() => setOpen(false)}>
+        <NavLink to="/dashboard" className={linkCls} data-testid="nav-dashboard" onClick={() => { setOpen(false); nav("/dashboard"); }}>
           <LayoutDashboard className="w-4 h-4" /> {t("nav.dashboard")}
         </NavLink>
 
@@ -330,7 +330,9 @@ export default function Layout({ children, currency, setCurrency }) {
                 <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-blue-300" />
               )}
 
-              <Icon className={`w-4 h-4 shrink-0 ${WALLET_TEXT_CLASS[wColorKey] || "text-zinc-400"}`} />
+              <span className={`shrink-0 flex items-center justify-center w-6 h-6 rounded-md border ${WALLET_TILE_CLASS[wColorKey] || "border-zinc-700 bg-zinc-800/40"}`}>
+                <Icon className={`w-3.5 h-3.5 ${WALLET_TEXT_CLASS[wColorKey] || "text-zinc-400"}`} />
+              </span>
 
               <span className="truncate min-w-0 flex-1">{w.name}</span>
 
