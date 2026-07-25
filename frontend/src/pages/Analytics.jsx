@@ -461,27 +461,29 @@ export default function Analytics({ currency }) {
           tint="amber"
           tooltip={t("analytics.volatility_tooltip")}
         />
-      </div>
-      )}
-
-      {wVisible("pnl") && (
-      <div style={{ order: aOrder("pnl") }} className="grid grid-cols-2 gap-4">
-        <MetricCard
-          label={t("analytics.unrealized") || "Unrealized P&L"}
-          value={fmtVal(data.unrealized_pnl_usd)}
-          sub={t("analytics.open_positions") || "Open positions"}
-          positive={data.unrealized_pnl_usd >= 0}
-          tint={data.unrealized_pnl_usd >= 0 ? "emerald" : "rose"}
-          tooltip={t("analytics.unrealized_tooltip") || "Current gain/loss on open positions."}
-        />
-        <MetricCard
-          label={t("analytics.realized") || "Realized P&L"}
-          value={fmtVal(data.realized_pnl_usd)}
-          sub={t("analytics.closed_positions") || "Closed positions"}
-          positive={data.realized_pnl_usd >= 0}
-          tint={data.realized_pnl_usd >= 0 ? "emerald" : "rose"}
-          tooltip={t("analytics.realized_tooltip") || "Total gain/loss from closed positions."}
-        />
+        {/* Ganhos não/realizados: antes num grid separado de 2 colunas (largura
+            toda, cartões gigantes). Passam para dentro desta grelha de 4 colunas
+            para ficarem do tamanho dos de cima e completarem a linha (4x2). */}
+        {wVisible("pnl") && (
+          <>
+            <MetricCard
+              label={t("analytics.unrealized") || "Unrealized P&L"}
+              value={fmtVal(data.unrealized_pnl_usd)}
+              sub={t("analytics.open_positions") || "Open positions"}
+              positive={data.unrealized_pnl_usd >= 0}
+              tint={data.unrealized_pnl_usd >= 0 ? "emerald" : "rose"}
+              tooltip={t("analytics.unrealized_tooltip") || "Current gain/loss on open positions."}
+            />
+            <MetricCard
+              label={t("analytics.realized") || "Realized P&L"}
+              value={fmtVal(data.realized_pnl_usd)}
+              sub={t("analytics.closed_positions") || "Closed positions"}
+              positive={data.realized_pnl_usd >= 0}
+              tint={data.realized_pnl_usd >= 0 ? "emerald" : "rose"}
+              tooltip={t("analytics.realized_tooltip") || "Total gain/loss from closed positions."}
+            />
+          </>
+        )}
       </div>
       )}
 

@@ -1161,25 +1161,31 @@ const worstPerformer = useMemo(() => {
                 >
                   <Bell className="w-4 h-4" /> {t("common.alerts")}
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => setDashMode((m) => (m === "light" ? "advanced" : "light"))}
-                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-amber-500/40 bg-zinc-900/50 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200 transition-colors"
-                  data-testid="wallet-quicklink-advanced"
-                >
-                  <Gauge className="w-4 h-4" /> {dashMode === "light" ? t("dash.view_advanced") : t("dash.view_summary")}
-                </button>
-                <Link
-                  to={`/transactions?wallet=${selectedWallet.id}&open=1`}
-                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-blue-500 text-zinc-950 font-medium hover:bg-blue-400 transition-colors"
-                  data-testid="wallet-quicklink-add"
-                >
-                  <Plus className="w-4 h-4" /> {t("common.add")}
-                </Link>
               </div>
             )}
           </div>
         <div className="flex items-center gap-2 shrink-0 flex-nowrap">
+          {/* Painel avançado/resumo + Adicionar — SEMPRE à esquerda do
+              Personalizar, em qualquer modo (pedido do utilizador). */}
+          <button
+            type="button"
+            onClick={() => setDashMode((m) => (m === "light" ? "advanced" : "light"))}
+            className="inline-flex items-center gap-1.5 text-xs px-2.5 sm:px-3 py-2 rounded-md border border-amber-500/40 bg-zinc-900/50 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200 transition-colors"
+            title={dashMode === "light" ? t("dash.view_advanced") : t("dash.view_summary")}
+            data-testid="dash-mode-toggle"
+          >
+            <Gauge className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">{dashMode === "light" ? t("dash.view_advanced") : t("dash.view_summary")}</span>
+          </button>
+          <Link
+            to={selectedWallet ? `/transactions?wallet=${selectedWallet.id}&open=1` : "/transactions?open=1"}
+            className="inline-flex items-center gap-1.5 text-xs px-2.5 sm:px-3 py-2 rounded-md bg-blue-500 text-zinc-950 font-medium hover:bg-blue-400 transition-colors"
+            title={t("common.add")}
+            data-testid="goto-tx-btn"
+          >
+            <Plus className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">{t("common.add")}</span>
+          </Link>
           <button
             onClick={() => setWidgetDrawer(true)}
             className="p-2 border border-zinc-800 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 transition-colors"
@@ -1205,36 +1211,14 @@ const worstPerformer = useMemo(() => {
         </div>
       </div>
 
-      {/* Segunda linha — só modo "advanced": dash-mode-toggle, Alertas e
-          "+Adicionar". Isolados dos 3 ícones acima, esta linha já não os
-          arrasta consigo — mas os 3 botões, com texto completo, ainda não
-          cabiam sempre numa só linha no telemóvel (6 jul 2026: "ficou
-          resumo/alertas e na linha em baixo adicionar... tens de por os 3
-          na mesma linha"). Agora nowrap forçado + o rótulo de texto
-          escondido abaixo de sm (só ícone + title/tooltip nesse breakpoint),
-          igual ao tratamento já usado nos 3 ícones acima — cabem sempre
-          numa linha só, com o texto completo a voltar a partir de sm. */}
+      {/* 2ª linha (modo avançado): o "Painel avançado" e o "Adicionar" passaram
+          para o topo (à esquerda do Personalizar, sempre visíveis). Fica aqui só
+          o atalho de Alertas. */}
       {dashMode === "advanced" && !selectedWallet && (
         <div className="flex flex-nowrap items-center justify-end gap-2 -mt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setDashMode((m) => (m === "light" ? "advanced" : "light"))}
-            className="bg-zinc-900/50 border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200 px-2.5 sm:px-3"
-            title={dashMode === "light" ? t("dash.view_advanced") : t("dash.view_summary")}
-            data-testid="dash-mode-toggle"
-          >
-            <Gauge className="w-4 h-4 sm:mr-2" />
-            <span className="hidden sm:inline">{dashMode === "light" ? t("dash.view_advanced") : t("dash.view_summary")}</span>
-          </Button>
           <Link to="/alerts">
             <Button variant="outline" size="sm" className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 px-2.5 sm:px-3" title={t("common.alerts")} data-testid="alerts-btn">
               <Bell className="w-4 h-4 sm:mr-2"/> <span className="hidden sm:inline">{t("common.alerts")}</span>
-            </Button>
-          </Link>
-          <Link to={selectedWallet ? `/transactions?wallet=${selectedWallet.id}&open=1` : "/transactions?open=1"}>
-            <Button size="sm" className="bg-blue-500 hover:bg-blue-400 text-zinc-950 font-medium px-2.5 sm:px-3" title={t("common.add")} data-testid="goto-tx-btn">
-              <Receipt className="w-4 h-4 sm:mr-2"/> <span className="hidden sm:inline">+ {t("common.add")}</span>
             </Button>
           </Link>
         </div>
@@ -1410,7 +1394,7 @@ const worstPerformer = useMemo(() => {
             return (
               <p className="text-xs text-zinc-400 font-mono">
                 {hint.slice(0, idx)}
-                <span className="text-amber-400 font-medium">{label}</span>
+                <button type="button" onClick={() => setDashMode("advanced")} className="text-amber-400 font-medium underline decoration-dotted underline-offset-2 hover:text-amber-300 transition-colors">{label}</button>
                 {hint.slice(idx + label.length)}
               </p>
             );
