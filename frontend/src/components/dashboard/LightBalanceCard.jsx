@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Plus, Gauge, ArrowUpRight, TrendingDown } from "lucide-react";
+import { Plus, Gauge } from "lucide-react";
 import { useI18n } from "../../context/I18nContext";
 import Sparkline from "../Sparkline";
 
@@ -13,10 +13,6 @@ import Sparkline from "../Sparkline";
 // The 4-card grid still renders as before in "advanced" mode — this only
 // replaces what "light" mode shows above the evolution chart.
 export default function LightBalanceCard({
-  totalLabel,
-  changeLabel,
-  positive,
-  sparkline,
   onAdd,
   onAdvanced,
   wallets,
@@ -27,22 +23,6 @@ export default function LightBalanceCard({
 
   return (
     <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-5">
-      <div className="flex items-center justify-between mb-1">
-        <div className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-400">{t("dash.balance")}</div>
-        {sparkline}
-      </div>
-      <div className="flex items-end gap-2.5 flex-wrap mb-4">
-        <div className="text-3xl font-display font-light tracking-tight text-zinc-50" data-testid="light-balance-total">
-          {totalLabel}
-        </div>
-        {changeLabel && (
-          <div className={`flex items-center gap-1 text-sm font-mono font-medium mb-1 ${positive ? "text-emerald-400" : "text-rose-400"}`}>
-            {positive ? <ArrowUpRight className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-            {changeLabel}
-          </div>
-        )}
-      </div>
-
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-5">
         <button
           onClick={onAdd}

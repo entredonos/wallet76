@@ -28,7 +28,7 @@ import AssetsTable from "../components/dashboard/AssetsTable";
 import DividendsCard from "../components/dashboard/DividendsCard";
 import LiquidityCard from "../components/dashboard/LiquidityCard";
 import {
-  SORT_OPTIONS, DEFAULT_VISIBLE_COLS, WIDGET_DEFS, DEFAULT_WIDGETS,
+  SORT_OPTIONS, DEFAULT_VISIBLE_COLS, WIDGET_DEFS, DEFAULT_WIDGETS, TYPE_PILL_DEFS,
 } from "../constants/dashboardConstants";
 import { useBinanceStream } from "../hooks/useBinanceStream";
 import { fmtCurrency, fmtPct, fmtCompact, convert } from "../lib/format";
@@ -663,6 +663,10 @@ export default function Dashboard({ currency }) {
   );
 
   const selectedWallet = wallets.find((w) => w.id === filterWallet);
+  // Título do painel = base (carteira selecionada ou "Painel") + filtro de
+  // tipo ativo (ex.: "Painel Cripto"), refletindo os badges do topo.
+  const activeTypeDef = filterType !== "all" ? TYPE_PILL_DEFS.find((d) => d.key === filterType) : null;
+  const pageTitle = (selectedWallet ? selectedWallet.name : t("dash.title")) + (activeTypeDef ? ` ${t(activeTypeDef.labelKey)}` : "");
 
   const totalForAlloc = filtered.reduce((s, a) => s + a.value_usd, 0) || 1;
   const withAlloc = useMemo(
@@ -1090,7 +1094,7 @@ const worstPerformer = useMemo(() => {
       <div className="flex items-center justify-between gap-3 flex-nowrap">
         <div className="min-w-0">
           <h1 className="font-display text-3xl sm:text-4xl font-light tracking-tight text-zinc-50 truncate">
-            {selectedWallet ? selectedWallet.name : t("dash.title")}
+            {pageTitle}
           </h1>
             {/* Era uma única frase traduzida ("{count} ativos • {wallets}
                 carteiras • Atualizado Xmin") — em ecrãs estreitos isso
