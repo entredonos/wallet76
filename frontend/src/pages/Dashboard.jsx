@@ -1048,6 +1048,25 @@ const worstPerformer = useMemo(() => {
     return <DashboardSkeleton data-testid="dashboard-loading" />;
   }
 
+  // Filtros contextuais (reutilizados): no modo AVANÇADO ficam no topo; no
+  // modo LEVE entram no cabeçalho do card (pedido do utilizador — a "proposta").
+  const filterPillsEl = wVisible("filter_pills") ? (
+    <div className="flex flex-wrap items-center gap-2">
+      <FilterPillsRow
+        pillVisible={pillVisible}
+        filterType={filterType}
+        filterWallet={filterWallet}
+        setFilterType={setFilterType}
+        setFilterWallet={setFilterWallet}
+        nav={nav}
+        globalAssetTypes={globalAssetTypes}
+        presentAssetTypes={presentAssetTypes}
+        wallets={wallets}
+        walletPillVisible={walletPillVisible}
+      />
+    </div>
+  ) : null;
+
   return (
     <div className="flex flex-col gap-6 fade-in">
       {/* Widget settings drawer */}
@@ -1092,7 +1111,7 @@ const worstPerformer = useMemo(() => {
           para a sua própria linha por baixo, livre para quebrar — assim
           o "+Adicionar" tem sempre a linha só para si (e para os outros
           2), sem competir por espaço com os 3 ícones. */}
-      <div className="flex items-center justify-between gap-3 flex-nowrap">
+      <div className="flex items-start justify-between gap-3 flex-nowrap">
         <div className="min-w-0">
           <h1 className="font-display text-3xl sm:text-4xl font-light tracking-tight text-zinc-50 truncate">
             {pageTitle}
@@ -1102,7 +1121,7 @@ const worstPerformer = useMemo(() => {
                 quebrava para 2 linhas, feio (5 jul 2026). Substituído por
                 "chips" pequenos com o número por cima do rótulo (letras
                 menores, sem quebra de linha). */}
-            <div className="flex items-center gap-4 mt-1.5" data-testid="dashboard-subtitle">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5" data-testid="dashboard-subtitle">
               {selectedWallet ? (
                 <StatChip value={filtered.length} label={t("dash.assets_label")} />
               ) : (
@@ -1242,20 +1261,11 @@ const worstPerformer = useMemo(() => {
       {/* Filtros (badges de tipo Global/Cripto/… + carteiras) — widget próprio
           "filter_pills" (23 jul 2026): aparece nos DOIS modos e é ligável e
           reordenável no Personalizar como qualquer outro widget. */}
-      {wVisible("filter_pills") && (
-      <div style={{ order: wOrder("filter_pills") }} className="flex flex-wrap items-center gap-2">
-        <FilterPillsRow
-          pillVisible={pillVisible}
-          filterType={filterType}
-          filterWallet={filterWallet}
-          setFilterType={setFilterType}
-          setFilterWallet={setFilterWallet}
-          nav={nav}
-          globalAssetTypes={globalAssetTypes}
-          presentAssetTypes={presentAssetTypes}
-          wallets={wallets}
-          walletPillVisible={walletPillVisible}
-        />
+      {/* Modo LEVE: os filtros entram no cabeçalho do card (LightBalanceCard).
+          Modo AVANÇADO: ficam aqui no topo. */}
+      {dashMode === "advanced" && filterPillsEl && (
+      <div style={{ order: wOrder("filter_pills") }}>
+        {filterPillsEl}
       </div>
       )}
 
@@ -1369,6 +1379,7 @@ const worstPerformer = useMemo(() => {
               positive: w.pnlPct >= 0,
               sparkData: (walletSparks[w.id] || []).map((p) => ({ p })),
             }))}
+            filterPills={filterPillsEl}
             assets={walletAssets}
           />
           )}

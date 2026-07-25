@@ -16,6 +16,7 @@ const TYPE_ICON = { broker: Briefcase, exchange: Coins, wallet: WalletIcon };
 // The 4-card grid still renders as before in "advanced" mode — this only
 // replaces what "light" mode shows above the evolution chart.
 export default function LightBalanceCard({
+  filterPills,
   wallets,
   assets,
   loading,
@@ -28,9 +29,11 @@ export default function LightBalanceCard({
           ATIVOS dessa carteira; caso contrário, a lista das carteiras. */}
       {assets ? (
         <>
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-400">{t("dash.assets")}</div>
-            <Link to="/dashboard" className="text-[11px] font-mono text-zinc-400 hover:text-zinc-200 transition-colors" data-testid="light-balance-back-all">
+          <div className="flex items-start justify-between gap-2 mb-3 flex-wrap">
+            {filterPills || (
+              <div className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-400">{t("dash.assets")}</div>
+            )}
+            <Link to="/dashboard" className="text-[11px] font-mono text-zinc-400 hover:text-zinc-200 transition-colors shrink-0" data-testid="light-balance-back-all">
               ‹ {t("tx.all_wallets")}
             </Link>
           </div>
@@ -66,7 +69,11 @@ export default function LightBalanceCard({
         </>
       ) : (
         <>
-          <div className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-400 mb-3">{t("dash.your_wallets")}</div>
+          {filterPills ? (
+            <div className="mb-3">{filterPills}</div>
+          ) : (
+            <div className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-400 mb-3">{t("dash.your_wallets")}</div>
+          )}
 
           {loading ? (
             <div className="text-sm text-zinc-400 font-mono py-2">{t("dash.chart_loading")}</div>
@@ -93,7 +100,7 @@ export default function LightBalanceCard({
                     {w.valueLabel && (
                       <span className="text-sm font-mono text-zinc-200">{w.valueLabel}</span>
                     )}
-                    <Sparkline data={w.sparkData} positive={w.positive} width={48} height={20} />
+                    <span className="hidden sm:inline-block"><Sparkline data={w.sparkData} positive={w.positive} width={48} height={20} /></span>
                     {w.changeLabel && (
                       <span className={`text-xs font-mono w-12 text-right ${w.positive ? "text-emerald-400" : "text-rose-400"}`}>
                         {w.changeLabel}
