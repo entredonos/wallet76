@@ -1182,42 +1182,7 @@ const worstPerformer = useMemo(() => {
                   <Bell className="w-4 h-4" /> {t("common.alerts")}
                 </Link>
               </div>
-            )}
-
-            {/* TELEMÓVEL (nº2): números + atalhos numa linha de CHIPS
-                deslizável (scroll horizontal). Alertas fora — está na barra de
-                baixo. No PC usa-se a versão acima (hidden sm:flex). */}
-            <div className="sm:hidden flex items-center gap-2 mt-2 overflow-x-auto" data-testid="dashboard-chips-mobile">
-              {selectedWallet && (
-                <Link to="/dashboard" className="shrink-0 inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-1 rounded-full border border-zinc-700 bg-zinc-900/60 text-zinc-300 whitespace-nowrap">
-                  <ChevronLeft className="w-3 h-3" /> {t("tx.all_wallets")}
-                </Link>
-              )}
-              {lastSyncMinutesLabel !== null && (
-                <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full border border-zinc-800 bg-zinc-900/40 whitespace-nowrap">
-                  <b className="text-zinc-200">{lastSyncMinutesLabel}min</b> <span className="text-zinc-500">{t("common.updated")}</span>
-                </span>
-              )}
-              <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full border border-zinc-800 bg-zinc-900/40 whitespace-nowrap">
-                <b className="text-zinc-200">{selectedWallet ? filtered.length : totalCount}</b> <span className="text-zinc-500">{t("dash.assets_label")}</span>
-              </span>
-              {!selectedWallet && (
-                <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full border border-zinc-800 bg-zinc-900/40 whitespace-nowrap">
-                  <b className="text-zinc-200">{walletCount}</b> <span className="text-zinc-500">{t("dash.wallets_label")}</span>
-                </span>
-              )}
-              {selectedWallet && (
-                <>
-                  <Link to={`/transactions?wallet=${selectedWallet.id}`} className="shrink-0 inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-1 rounded-full border border-zinc-700 bg-zinc-900/60 text-zinc-300 whitespace-nowrap">
-                    <Receipt className="w-3 h-3" /> {t("nav.transactions")}
-                  </Link>
-                  <Link to={`/analytics?wallet=${selectedWallet.id}`} className="shrink-0 inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-1 rounded-full border border-zinc-700 bg-zinc-900/60 text-zinc-300 whitespace-nowrap">
-                    <BarChart3 className="w-3 h-3" /> {t("nav.analytics")}
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
+            )}          </div>
         <div className="flex items-center gap-2 shrink-0 flex-nowrap">
           {/* Painel avançado/resumo + Adicionar — SEMPRE à esquerda do
               Personalizar, em qualquer modo (pedido do utilizador). */}
@@ -1263,6 +1228,40 @@ const worstPerformer = useMemo(() => {
             <Share2 className="w-4 h-4" />
           </button>
         </div>
+      </div>
+
+      {/* TELEMÓVEL (nº2): números + atalhos numa linha de CHIPS deslizável, a
+          LARGURA TOTAL por baixo do cabeçalho (antes ficava espremida na coluna
+          estreita do título e cortava). Alertas fora — está na barra de baixo. */}
+      <div className="sm:hidden -mt-2 flex items-center gap-2 overflow-x-auto" data-testid="dashboard-chips-mobile">
+        {selectedWallet && (
+          <Link to="/dashboard" className="shrink-0 inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-1 rounded-full border border-zinc-700 bg-zinc-900/60 text-zinc-300 whitespace-nowrap">
+            <ChevronLeft className="w-3 h-3" /> {t("tx.all_wallets")}
+          </Link>
+        )}
+        {lastSyncMinutesLabel !== null && (
+          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full border border-zinc-800 bg-zinc-900/40 whitespace-nowrap">
+            <b className="text-zinc-200">{lastSyncMinutesLabel}min</b> <span className="text-zinc-500">{t("common.updated")}</span>
+          </span>
+        )}
+        <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full border border-zinc-800 bg-zinc-900/40 whitespace-nowrap">
+          <b className="text-zinc-200">{selectedWallet ? filtered.length : totalCount}</b> <span className="text-zinc-500">{t("dash.assets_label")}</span>
+        </span>
+        {!selectedWallet && (
+          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full border border-zinc-800 bg-zinc-900/40 whitespace-nowrap">
+            <b className="text-zinc-200">{walletCount}</b> <span className="text-zinc-500">{t("dash.wallets_label")}</span>
+          </span>
+        )}
+        {selectedWallet && (
+          <>
+            <Link to={`/transactions?wallet=${selectedWallet.id}`} className="shrink-0 inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-1 rounded-full border border-zinc-700 bg-zinc-900/60 text-zinc-300 whitespace-nowrap">
+              <Receipt className="w-3 h-3" /> {t("nav.transactions")}
+            </Link>
+            <Link to={`/analytics?wallet=${selectedWallet.id}`} className="shrink-0 inline-flex items-center gap-1 text-[11px] font-mono px-2.5 py-1 rounded-full border border-zinc-700 bg-zinc-900/60 text-zinc-300 whitespace-nowrap">
+              <BarChart3 className="w-3 h-3" /> {t("nav.analytics")}
+            </Link>
+          </>
+        )}
       </div>
 
       {/* 2ª linha (modo avançado): o "Painel avançado" e o "Adicionar" passaram
