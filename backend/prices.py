@@ -379,11 +379,14 @@ async def resolve_sector(symbol: str) -> str | None:
     except Exception as e:
         logger.warning(f"resolve_sector http({sym}): {e}")
 
-    # 2) fallback yfinance (.info) — corre em thread (yf é síncrono)
+    # 2) fallback yfinance (.info) — corre em thread (yf é síncrono). Para ETFs/
+    # fundos não há setor GICS, por isso usa-se a CATEGORIA (ex.: "Trading--
+    # Inverse Equity") como equivalente.
     if not sector:
         try:
             info = await asyncio.to_thread(lambda: yf.Ticker(sym).info)
-            sector = ((info or {}).get("sector") or "") or None
+            info = info or {}
+            sector = (info.get("sector") or info.get("category") or "") or None
         except Exception as e:
             logger.warning(f"resolve_sector yf({sym}): {e}")
 
