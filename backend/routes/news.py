@@ -63,62 +63,6 @@ _CG_DAYS = {
 }
 
 
-@router.get("/news")
-async def get_news(symbol: str, asset_type: str = "stock"):
-    if not symbol:
-        return []
-    cache_key = f"news:{asset_type}:{symbol.upper()}"
-    cached = _cache_get(cache_key, ttl=300)
-    if cached:
-        return cached
-    yf_sym = f"{symbol.upper()}-USD" if asset_type == "crypto" else symbol.upper()
-
-    def _fetch(s):
-        try:
-            t = yf.Ticker(s)
-            items = t.news or []
-            out = []
-            for n in items[:20]:
-                content = n.get("content") or n
-                title = content.get("title") or n.get("title")
-                link = None
-                if content.get("canonicalUrl"):
-                    link = content["canonicalUrl"].get("url")
-                elif content.get("clickThroughUrl"):
-                    link = content["clickThroughUrl"].get("url")
-                else:
-                    link = n.get("link")
-                pub = (content.get("provider") or {}).get("displayName") or n.get("publisher", "")
-                ts = content.get("pubDate") or n.get("providerPublishTime")
-                thumb = None
-                thumb_obj = content.get("thumbnail") or n.get("thumbnail")
-                if thumb_obj:
-                    res = thumb_obj.get("resolutions") or []
-                    if res:
-                        thumb = res[0].get("url")
-                summary = content.get("summary") or n.get("summary", "")
-                if not title or not link:
-                    continue
-                out.append({
-                    "id": n.get("id") or n.get("uuid"),
-                    "title": title,
-                    "link": link,
-                    "publisher": pub,
-                    "ts": ts,
-                    "thumbnail": thumb,
-                    "summary": summary[:300] if summary else "",
-                })
-            return out
-        except Exception as e:
-            logger.warning(f"news {s} err: {e}")
-            return []
-
-    items = await asyncio.to_thread(_fetch, yf_sym)
-    if not items and asset_type == "crypto":
-        items = await asyncio.to_thread(_fetch, symbol.upper())
-    _cache_set(cache_key, items)
-    return items
-
 
 def _num_or(value, fallback):
     """float(value), falling back when value is NaN/None (NaN != NaN)."""
