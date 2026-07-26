@@ -333,24 +333,20 @@ export default function Alocacao({ currency = "USD" }) {
               </tbody>
             </table>
           </div>
-        </div>
 
-        {/* Totais (em baixo, à direita) — como na folha do utilizador. */}
-        <div className="flex justify-end mt-5">
-          <div className="flex gap-6 bg-zinc-900/40 border border-zinc-800/60 rounded-xl px-5 py-3">
-            <div className="text-right">
+          {/* Totais DENTRO do card dos ativos — cada um no seu badge, em baixo à direita. */}
+          <div className="flex flex-wrap justify-end gap-3 mt-5 pt-4 border-t border-zinc-800/60">
+            <div className="bg-zinc-950/50 border border-zinc-800 rounded-lg px-4 py-2 text-right">
               <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-mono">{L("alloc2.invested", "Total Investido")}</div>
-              <div className="text-lg font-mono text-zinc-200">{money(summary?.total_cost_usd || 0)}</div>
+              <div className="text-base font-mono text-zinc-200">{money(summary?.total_cost_usd || 0)}</div>
             </div>
-            <div className="w-px bg-zinc-800" />
-            <div className="text-right">
+            <div className="bg-zinc-950/50 border border-zinc-800 rounded-lg px-4 py-2 text-right">
               <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-mono">{L("alloc2.available", "Total Disponível")}</div>
-              <div className="text-lg font-mono text-zinc-100">{money(totalValue)}</div>
+              <div className="text-base font-mono text-zinc-100">{money(totalValue)}</div>
             </div>
-            <div className="w-px bg-zinc-800" />
-            <div className="text-right">
+            <div className="bg-zinc-950/50 border border-zinc-800 rounded-lg px-4 py-2 text-right">
               <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-mono">{L("alloc2.total_pct", "Percentagem Total")}</div>
-              <div className={`text-lg font-mono ${(summary?.total_pnl_pct || 0) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+              <div className={`text-base font-mono ${(summary?.total_pnl_pct || 0) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                 {(summary?.total_pnl_pct || 0) >= 0 ? "+" : ""}{Number(summary?.total_pnl_pct || 0).toFixed(2)}%
               </div>
             </div>
