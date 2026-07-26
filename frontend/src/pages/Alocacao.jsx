@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { Lock, Unlock, PieChart as PieIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -29,6 +29,10 @@ export default function Alocacao({ currency = "USD" }) {
   const [activeTab, setActiveTab] = useState(null);
   const [mode, setMode] = useState("basic");
   const [loading, setLoading] = useState(true);
+  const [mobileMode, setMobileMode] = useState("list"); // telemóvel: lista densa vs slide
+  const [slideIdx, setSlideIdx] = useState(0);
+  const [expanded, setExpanded] = useState({});
+  const touchX = useRef(null);
 
   const fx = summary?.fx_rates || {};
   const money = useCallback((usd) => fmtCurrency(convert(Number(usd || 0), currency, fx), currency), [currency, fx]);
@@ -80,6 +84,8 @@ export default function Alocacao({ currency = "USD" }) {
   useEffect(() => {
     if (!activeTab && classesPresent.length) setActiveTab(classesPresent[0]);
   }, [classesPresent, activeTab]);
+
+  useEffect(() => { setSlideIdx(0); }, [activeTab]);
 
   const groupPie = useMemo(() => classesPresent.map((c) => {
     const val = assets.filter((a) => (effectiveClass(a, overrides) || "other") === c)
@@ -163,6 +169,16 @@ export default function Alocacao({ currency = "USD" }) {
     setOverrides((prev) => ({ ...prev, [sym]: cls }));
     try { await api.put("/allocation/override", { symbol: sym, class: cls }); }
     catch { toast.error(L("alloc2.save_error", "Falha ao guardar")); }
+  };
+
+  // Modo slide (telemóvel): navegação por gesto de arrastar.
+  const onTouchStart = (e) => { touchX.current = e.touches[0].clientX; };
+  const onTouchEnd = (e) => {
+    if (touchX.current == null) return;
+    const dx = e.changedTouches[0].clientX - touchX.current;
+    if (dx < -40) setSlideIdx((i) => Math.min(i + 1, rows.length - 1));
+    else if (dx > 40) setSlideIdx((i) => Math.max(i - 1, 0));
+    touchX.current = null;
   };
 
   if (loading) {
@@ -334,53 +350,132 @@ export default function Alocacao({ currency = "USD" }) {
             </table>
           </div>
 
-          {/* Telemóvel: cartões por ativo (a tabela fica só no PC). */}
-          <div className="sm:hidden space-y-2">
-            {rows.map((r) => (
-              <div key={r.sym + r.wallet_id} className="bg-zinc-950/40 border border-zinc-800/50 rounded-lg p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <button onClick={() => toggleLock(r)} title={r.locked ? "Desbloquear" : "Fixar"}>
-                      {r.locked ? <Lock className="w-4 h-4 text-amber-400" /> : <Unlock className="w-4 h-4 text-zinc-600" />}
-                    </button>
-                    <span className="font-bold text-zinc-100 font-mono">{r.symbol}</span>
-                    {r.name && <span className="text-zinc-500 text-[11px] truncate">{r.name}</span>}
-                  </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${r.orient === "buy" ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/40" : "bg-rose-500/15 text-rose-400 border border-rose-500/40"}`}>
-                    {r.orient === "buy" ? L("alloc2.buy", "Comprar") : L("alloc2.wait", "Aguardar")}
-                  </span>
-                </div>
-                <div className="flex items-center gap-x-3 gap-y-1 mt-2 text-[11px] font-mono flex-wrap">
-                  <span className="text-zinc-400">PM <span className="text-amber-400">{money(r.avg_price)}</span></span>
-                  <span className="text-zinc-400">{L("alloc2.pct_now", "% Atual")} {r.atual.toFixed(2)}%</span>
-                  <span className="text-zinc-400 inline-flex items-center gap-1">
-                    {L("alloc2.pct_sug", "% Sug.")}{" "}
-                    {r.locked ? (
-                      <input type="number" min="0" max="100" step="0.5" value={assetTargets[r.sym]?.pct ?? ""}
-                        onChange={(e) => editLocked(r.sym, e.target.value)} onBlur={() => commitLocked(r.sym)}
-                        className="w-14 text-right bg-amber-500/10 border border-amber-500/40 rounded px-1.5 py-0.5 text-amber-300 outline-none" />
-                    ) : (<span className="text-zinc-300">{r.sug.toFixed(2)}%</span>)}
-                  </span>
-                  <select value={effectiveClass(r, overrides)} onChange={(e) => reclassify(r.sym, e.target.value)}
-                    className="ml-auto text-[10px] font-mono bg-zinc-900 border border-zinc-700 rounded px-1.5 py-1 text-zinc-400 outline-none">
-                    {ALLOCATION_CLASSES.map((c) => <option key={c} value={c}>{clsLabel(c)}</option>)}
-                  </select>
-                </div>
-                {mode === "full" && (
-                  <div className="flex gap-x-3 gap-y-1 mt-1.5 text-[10px] font-mono text-zinc-500 flex-wrap border-t border-zinc-800/40 pt-1.5">
-                    <span>Qtd {Number(r.quantity || 0)}</span>
-                    <span>{L("alloc2.value", "Valor")} {money(r.value_usd)}</span>
-                    <span className={r.pnl_pct >= 0 ? "text-emerald-400" : "text-rose-400"}>{r.pnl_pct >= 0 ? "+" : ""}{Number(r.pnl_pct || 0).toFixed(1)}%</span>
-                    {r.sector && <span>{r.sector}</span>}
-                  </div>
-                )}
+          {/* Telemóvel (Opção E): lista densa + modo slide. A tabela fica só no PC. */}
+          <div className="sm:hidden">
+            <div className="inline-flex rounded-md border border-zinc-800 bg-zinc-900/60 p-0.5 mb-3">
+              {["list", "slide"].map((m) => (
+                <button key={m} onClick={() => setMobileMode(m)}
+                  className={`px-3 py-1 text-[11px] font-mono rounded transition ${mobileMode === m ? "bg-zinc-100 text-zinc-950" : "text-zinc-400 hover:text-zinc-200"}`}>
+                  {m === "list" ? L("alloc2.list", "Lista") : L("alloc2.slide", "Slide")}
+                </button>
+              ))}
+            </div>
+
+            {mobileMode === "list" ? (
+              <div className="space-y-1.5">
+                {rows.map((r) => {
+                  const rk = r.sym + r.wallet_id;
+                  const isOpen = !!expanded[rk];
+                  return (
+                    <div key={rk} className="bg-zinc-950/40 border border-zinc-800/50 rounded-lg">
+                      <div className="flex items-center gap-2.5 px-3 py-2">
+                        <button onClick={() => toggleLock(r)}>
+                          {r.locked ? <Lock className="w-4 h-4 text-amber-400" /> : <Unlock className="w-4 h-4 text-zinc-600" />}
+                        </button>
+                        <button onClick={() => setExpanded((p) => ({ ...p, [rk]: !p[rk] }))} className="flex-1 min-w-0 text-left">
+                          <span className="font-bold text-zinc-100 font-mono text-[13px]">{r.symbol}</span>
+                          <div className="text-[10px] font-mono text-zinc-500 truncate">
+                            PM <span className="text-amber-400/90">{money(r.avg_price)}</span> · {L("alloc2.pct_now", "% At")} {r.atual.toFixed(2)}%
+                          </div>
+                        </button>
+                        <span className="text-[10px] font-mono text-zinc-400 shrink-0">{L("alloc2.pct_sug", "Sug")} {(r.locked ? Number(assetTargets[r.sym]?.pct || 0) : r.sug).toFixed(2)}%</span>
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${r.orient === "buy" ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/40" : "bg-rose-500/15 text-rose-400 border border-rose-500/40"}`}>
+                          {r.orient === "buy" ? L("alloc2.buy", "Comprar") : L("alloc2.wait", "Aguardar")}
+                        </span>
+                      </div>
+                      {isOpen && (
+                        <div className="px-3 pb-2.5 pt-0.5 border-t border-zinc-800/40 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] font-mono">
+                          {r.name && <span className="text-zinc-500">{r.name}</span>}
+                          <span className="text-zinc-400 inline-flex items-center gap-1">
+                            {L("alloc2.pct_sug", "% Sug.")}{" "}
+                            {r.locked ? (
+                              <input type="number" min="0" max="100" step="0.5" value={assetTargets[r.sym]?.pct ?? ""}
+                                onChange={(e) => editLocked(r.sym, e.target.value)} onBlur={() => commitLocked(r.sym)}
+                                className="w-14 text-right bg-amber-500/10 border border-amber-500/40 rounded px-1.5 py-0.5 text-amber-300 outline-none" />
+                            ) : (<span className="text-zinc-300">{r.sug.toFixed(2)}% <span className="text-[9px] text-zinc-600">auto</span></span>)}
+                          </span>
+                          <select value={effectiveClass(r, overrides)} onChange={(e) => reclassify(r.sym, e.target.value)}
+                            className="text-[10px] font-mono bg-zinc-900 border border-zinc-700 rounded px-1.5 py-1 text-zinc-400 outline-none">
+                            {ALLOCATION_CLASSES.map((c) => <option key={c} value={c}>{clsLabel(c)}</option>)}
+                          </select>
+                          {mode === "full" && (<>
+                            <span className="text-zinc-500">Qtd {Number(r.quantity || 0)}</span>
+                            <span className="text-zinc-500">{L("alloc2.value", "Valor")} {money(r.value_usd)}</span>
+                            <span className={r.pnl_pct >= 0 ? "text-emerald-400" : "text-rose-400"}>{r.pnl_pct >= 0 ? "+" : ""}{Number(r.pnl_pct || 0).toFixed(1)}%</span>
+                            {r.sector && <span className="text-zinc-500">{r.sector}</span>}
+                          </>)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {!rows.length && <div className="py-6 text-center text-zinc-500 font-mono text-sm">{L("alloc2.empty", "Sem ativos neste grupo.")}</div>}
               </div>
-            ))}
-            {!rows.length && <div className="py-6 text-center text-zinc-500 font-mono text-sm">{L("alloc2.empty", "Sem ativos neste grupo.")}</div>}
+            ) : (
+              rows.length ? (() => {
+                const idx = Math.min(slideIdx, rows.length - 1);
+                const r = rows[idx];
+                return (
+                  <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
+                    className="bg-gradient-to-b from-zinc-900/70 to-zinc-950/40 border border-zinc-800/70 rounded-2xl p-5">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => toggleLock(r)}>
+                        {r.locked ? <Lock className="w-5 h-5 text-amber-400" /> : <Unlock className="w-5 h-5 text-zinc-600" />}
+                      </button>
+                      <span className="text-2xl font-bold font-mono text-zinc-50">{r.symbol}</span>
+                      {r.name && <span className="text-zinc-500 text-xs truncate">{r.name}</span>}
+                      <span className={`ml-auto text-[11px] font-bold px-3 py-1 rounded-full ${r.orient === "buy" ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/40" : "bg-rose-500/15 text-rose-400 border border-rose-500/40"}`}>
+                        {r.orient === "buy" ? L("alloc2.buy", "Comprar") : L("alloc2.wait", "Aguardar")}
+                      </span>
+                    </div>
+                    <div className="mt-4 font-mono text-[13px]">
+                      <div className="flex justify-between py-2 border-b border-zinc-800/60"><span className="text-zinc-500">{L("alloc2.avg_price", "Preço Médio")}</span><span className="text-amber-400">{money(r.avg_price)}</span></div>
+                      <div className="flex justify-between py-2 border-b border-zinc-800/60"><span className="text-zinc-500">{L("alloc2.pct_now", "% Atual")}</span><span className="text-zinc-200">{r.atual.toFixed(2)}%</span></div>
+                      <div className="flex justify-between py-2 border-b border-zinc-800/60 items-center">
+                        <span className="text-zinc-500">{L("alloc2.pct_sug", "% Sugerida")}</span>
+                        {r.locked ? (
+                          <span className="inline-flex items-center gap-1">
+                            <input type="number" min="0" max="100" step="0.5" value={assetTargets[r.sym]?.pct ?? ""}
+                              onChange={(e) => editLocked(r.sym, e.target.value)} onBlur={() => commitLocked(r.sym)}
+                              className="w-16 text-right bg-amber-500/10 border border-amber-500/40 rounded px-2 py-0.5 text-amber-300 outline-none" />
+                            <span className="text-zinc-500">%</span>
+                          </span>
+                        ) : (<span className="text-zinc-200">{r.sug.toFixed(2)}% <span className="text-[9px] text-zinc-600">auto</span></span>)}
+                      </div>
+                      <div className="flex justify-between py-2 items-center">
+                        <span className="text-zinc-500">{L("alloc2.group", "Grupo")}</span>
+                        <select value={effectiveClass(r, overrides)} onChange={(e) => reclassify(r.sym, e.target.value)}
+                          className="text-[11px] font-mono bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-zinc-300 outline-none">
+                          {ALLOCATION_CLASSES.map((c) => <option key={c} value={c}>{clsLabel(c)}</option>)}
+                        </select>
+                      </div>
+                      {mode === "full" && (
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2 text-[11px] text-zinc-500">
+                          <span>Qtd {Number(r.quantity || 0)}</span>
+                          <span>{L("alloc2.value", "Valor")} {money(r.value_usd)}</span>
+                          <span className={r.pnl_pct >= 0 ? "text-emerald-400" : "text-rose-400"}>{r.pnl_pct >= 0 ? "+" : ""}{Number(r.pnl_pct || 0).toFixed(1)}%</span>
+                          {r.sector && <span>{r.sector}</span>}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between mt-4">
+                      <button onClick={() => setSlideIdx(Math.max(idx - 1, 0))} disabled={idx === 0} className="text-zinc-400 disabled:opacity-30 px-3 py-1 text-xl leading-none">‹</button>
+                      <div className="flex gap-1.5 flex-wrap justify-center px-2">
+                        {rows.map((_, i) => (
+                          <span key={i} onClick={() => setSlideIdx(i)} className={`h-1.5 rounded-full cursor-pointer transition-all ${i === idx ? "w-4 bg-blue-400" : "w-1.5 bg-zinc-700"}`} />
+                        ))}
+                      </div>
+                      <button onClick={() => setSlideIdx(Math.min(idx + 1, rows.length - 1))} disabled={idx === rows.length - 1} className="text-zinc-400 disabled:opacity-30 px-3 py-1 text-xl leading-none">›</button>
+                    </div>
+                    <div className="text-center text-[10px] text-zinc-600 font-mono mt-1">{idx + 1} / {rows.length}</div>
+                  </div>
+                );
+              })() : <div className="py-6 text-center text-zinc-500 font-mono text-sm">{L("alloc2.empty", "Sem ativos neste grupo.")}</div>
+            )}
           </div>
 
-          {/* Totais DENTRO do card dos ativos — cada um no seu badge, em baixo à direita. */}
-          <div className="flex flex-wrap justify-end gap-3 mt-5 pt-4 border-t border-zinc-800/60">
+          {/* Totais — PC: badges à direita; telemóvel (T2): 3 mini-cartões lado a lado. */}
+          <div className="hidden sm:flex flex-wrap justify-end gap-3 mt-5 pt-4 border-t border-zinc-800/60">
             <div className="bg-zinc-950/50 border border-zinc-800 rounded-lg px-4 py-2 text-right">
               <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-mono">{L("alloc2.invested", "Total Investido")}</div>
               <div className="text-base font-mono text-zinc-200">{money(summary?.total_cost_usd || 0)}</div>
@@ -394,6 +489,20 @@ export default function Alocacao({ currency = "USD" }) {
               <div className={`text-base font-mono ${(summary?.total_pnl_pct || 0) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                 {(summary?.total_pnl_pct || 0) >= 0 ? "+" : ""}{Number(summary?.total_pnl_pct || 0).toFixed(2)}%
               </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-zinc-800/60 sm:hidden">
+            <div className="bg-zinc-950/50 border border-zinc-800 rounded-lg px-2 py-2 text-center">
+              <div className="text-[9px] uppercase tracking-wide text-zinc-500 font-mono">{L("alloc2.invested_short", "Investido")}</div>
+              <div className="text-[13px] font-mono text-zinc-200 mt-0.5">{money(summary?.total_cost_usd || 0)}</div>
+            </div>
+            <div className="bg-zinc-950/50 border border-zinc-800 rounded-lg px-2 py-2 text-center">
+              <div className="text-[9px] uppercase tracking-wide text-zinc-500 font-mono">{L("alloc2.available_short", "Disponível")}</div>
+              <div className="text-[13px] font-mono text-zinc-100 mt-0.5">{money(totalValue)}</div>
+            </div>
+            <div className="bg-zinc-950/50 border border-zinc-800 rounded-lg px-2 py-2 text-center">
+              <div className="text-[9px] uppercase tracking-wide text-zinc-500 font-mono">{L("alloc2.total_short", "Total")}</div>
+              <div className={`text-[13px] font-mono mt-0.5 ${(summary?.total_pnl_pct || 0) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{(summary?.total_pnl_pct || 0) >= 0 ? "+" : ""}{Number(summary?.total_pnl_pct || 0).toFixed(2)}%</div>
             </div>
           </div>
         </div>
