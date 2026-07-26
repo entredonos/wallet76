@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Settings2 } from "lucide-react";
 import { useI18n } from "../../context/I18nContext";
@@ -14,7 +15,7 @@ import { ALLOCATION_CLASS_LABEL_KEY, ALLOCATION_CLASS_COLOR, effectiveClass } fr
 // before extraction — this stays a controlled/presentational component,
 // Dashboard.jsx still owns and persists the actual target values.
 export default function AllocationWidget({
-  allocationMode, setAllocationMode, setShowTargetDialog,
+  allocationMode, setAllocationMode,
   pieData, activeAllocation, setActiveAllocation, totalForAlloc, filtered,
   hideValues, currency, fxRates, hasAllocationTarget, classAllocationRows,
   allocOverrides,
@@ -55,15 +56,14 @@ export default function AllocationWidget({
           </div>
 
           {/* "UPGRADE v1.0" — opens the target-allocation dialog */}
-          <button
-            type="button"
-            onClick={() => setShowTargetDialog(true)}
+          <Link
+            to="/alocacao"
             className="p-1.5 rounded-md border border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition-colors"
             title={t("alloc.configure_target")}
             data-testid="allocation-target-settings-btn"
           >
             <Settings2 className="w-3.5 h-3.5" />
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -291,14 +291,13 @@ export default function AllocationWidget({
       {allocationMode === "class" && pieData.length > 0 && !hasAllocationTarget && (
         <div className="mt-4 pt-4 border-t border-zinc-800/60 flex items-center justify-between gap-3 flex-wrap">
           <div className="text-[11px] font-mono text-zinc-400">{t("alloc.no_target_hint")}</div>
-          <button
-            type="button"
-            onClick={() => setShowTargetDialog(true)}
+          <Link
+            to="/alocacao"
             className="px-2.5 py-1 text-[10px] font-mono rounded-md border border-zinc-700 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500 transition-colors"
             data-testid="allocation-define-target-btn"
           >
             {t("alloc.define_target_cta")}
-          </button>
+          </Link>
         </div>
       )}
     </>
