@@ -347,6 +347,45 @@ async def resolve_asset_types_bulk(symbols: List[str]) -> dict:
     return {s: (r if isinstance(r, str) else "stock") for s, r in zip(uniq, results)}
 
 
+async def resolve_sector(symbol: str) -> str | None:
+    """Setor (GICS) do símbolo via assetProfile do Yahoo. Cache 30 dias.
+    Devolve None para crypto/cash ou quando desconhecido. Não faz chamada extra
+    em loads seguintes — o resultado (mesmo None) fica cacheado."""
+    sym = (symbol or "").upper().strip()
+    if not sym:
+        return None
+    cache_key = f"asset_sector:{sym}"
+    cached = _cache_get(cache_key, ttl=2_592_000)  # 30 dias
+    if cached is not None:
+        return cached.get("sector")
+    sector = None
+    try:
+        async with httpx.AsyncClient(timeout=10, headers=_YF_HEADERS_TYPE) as ch:
+            for host in ("query2.finance.yahoo.com", "query1.finance.yahoo.com"):
+                r = await ch.get(
+                    f"https://{host}/v10/finance/quoteSummary/{sym}",
+                    params={"modules": "assetProfile", "corsDomain": "finance.yahoo.com", "formatted": "true"},
+                )
+                if r.status_code != 200:
+                    continue
+                result = (r.json().get("quoteSummary", {}) or {}).get("result") or []
+                if not result:
+                    continue
+                sector = ((result[0].get("assetProfile") or {}).get("sector") or "") or None
+                break
+    except Exception as e:
+        logger.warning(f"resolve_sector({sym}): {e}")
+    _cache_set(cache_key, {"sector": sector})
+    return sector
+
+
+async def resolve_sectors_bulk(symbols: List[str]) -> dict:
+    """Setores de vários símbolos em paralelo (só busca os não-cacheados)."""
+    uniq = list({s.upper() for s in symbols if s})
+    results = await asyncio.gather(*[resolve_sector(s) for s in uniq], return_exceptions=True)
+    return {s: (r if isinstance(r, str) else None) for s, r in zip(uniq, results)}
+
+
 # Símbolos cripto cujo id CoinGecko NÃO é o símbolo em minúsculas — os mais
 # enganadores. Usado como atalho antes de ir à rede (e como rede de segurança
 # se a CoinGecko falhar). O resto é resolvido dinamicamente por market cap.

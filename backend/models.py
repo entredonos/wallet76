@@ -164,6 +164,20 @@ class AllocationOverrideUpdate(BaseModel):
     override_class: Optional[str] = Field(None, alias="class")
 
 
+class AllocationAssetTargetUpdate(BaseModel):
+    # Alvo por ATIVO dentro do seu grupo (Nível 2), com cadeado. Só os ativos
+    # FIXADOS (locked=True) guardam pct; os não-fixados dividem o resto por igual
+    # (calculado no frontend). locked=False remove o ativo dos alvos por ativo.
+    symbol: str
+    pct: Optional[float] = None
+    locked: bool = True
+
+
+class SectorsRequest(BaseModel):
+    # Lista de símbolos para obter o setor (usado pela página Alocação).
+    symbols: List[str]
+
+
 class LockModeBody(BaseModel):
     mode: Literal["none", "pin", "biometric"]
 

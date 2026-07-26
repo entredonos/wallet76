@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 
 from core import db, get_current_user
-from models import ALLOCATION_CLASSES, AllocationOverrideUpdate, AllocationTargetUpdate
+from models import ALLOCATION_CLASSES, AllocationOverrideUpdate, AllocationTargetUpdate, AllocationAssetTargetUpdate, SectorsRequest
 
 router = APIRouter()
 
@@ -34,6 +34,7 @@ async def get_allocation_prefs(user=Depends(get_current_user)):
     return {
         "targets": doc.get("targets") or {},
         "overrides": doc.get("overrides") or {},
+        "asset_targets": doc.get("asset_targets") or {},
     }
 
 
@@ -92,3 +93,45 @@ async def put_allocation_override(payload: AllocationOverrideUpdate, user=Depend
         upsert=True,
     )
     return {"ok": True, "symbol": symbol, "class": payload.override_class}
+
+
+@router.put("/allocation/asset-target")
+async def put_allocation_asset_target(payload: AllocationAssetTargetUpdate, user=Depends(get_current_user)):
+    # Nível 2: alvo por ATIVO com cadeado. locked=True guarda a pct fixada;
+    # locked=False remove o ativo (volta a "auto" — divide o resto por igual,
+    # calculado no frontend). A soma dos ativos de um grupo NUNCA pode passar o
+    # alvo do grupo, mas essa validação vive no frontend (que tem os holdings).
+    symbol = payload.symbol.upper().strip()
+    if not symbol:
+        raise HTTPException(400, detail="symbol required")
+
+    if not payload.locked:
+        await db.allocation_prefs.update_one(
+            {"user_id": user["id"]},
+            {"$unset": {f"asset_targets.{symbol}": ""}},
+            upsert=True,
+        )
+        return {"ok": True, "symbol": symbol, "locked": False}
+
+    pct = float(payload.pct or 0)
+    if pct < 0 or pct > 100:
+        raise HTTPException(400, detail="pct fora de 0-100")
+
+    await db.allocation_prefs.update_one(
+        {"user_id": user["id"]},
+        {"$set": {
+            "user_id": user["id"],
+            f"asset_targets.{symbol}": {"pct": pct, "locked": True},
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }},
+        upsert=True,
+    )
+    return {"ok": True, "symbol": symbol, "pct": pct, "locked": True}
+
+
+@router.post("/allocation/sectors")
+async def get_sectors(payload: SectorsRequest, user=Depends(get_current_user)):
+    # Devolve {SYMBOL: setor} para os símbolos pedidos (cacheado 30 dias no
+    # prices.py). A página Alocação chama isto uma vez com os seus equities.
+    from prices import resolve_sectors_bulk  # lazy: evita import circular
+    return await resolve_sectors_bulk(payload.symbols[:500])
