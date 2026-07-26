@@ -140,6 +140,14 @@ def get_data_health() -> dict:
     }
 
 
+def _cg_headers() -> dict:
+    """Header com a chave demo do CoinGecko em TODAS as chamadas (não só na de
+    preço). Sem isto, as chamadas de nome/pesquisa/detalhe continuam a apanhar
+    429 no IP partilhado do Render mesmo com COINGECKO_API_KEY definida."""
+    key = os.environ.get("COINGECKO_API_KEY", "").strip()
+    return {"x-cg-demo-api-key": key} if key else {}
+
+
 # --- Crypto prices ---
 async def get_crypto_prices(coingecko_ids: List[str], symbol_map: dict | None = None) -> dict:
     """Returns dict { coingecko_id: { usd, eur, usd_24h_change, eur_24h_change } }.
@@ -178,8 +186,7 @@ async def get_crypto_prices(coingecko_ids: List[str], symbol_map: dict | None = 
     # partilhado por IP, que IPs de cloud como o Render apanham quase sempre em
     # 429). Definir COINGECKO_API_KEY no ambiente ativa-a; sem ela funciona
     # como antes.
-    _cg_key = os.environ.get("COINGECKO_API_KEY", "").strip()
-    headers = {"x-cg-demo-api-key": _cg_key} if _cg_key else {}
+    headers = _cg_headers()
     try:
         async with httpx.AsyncClient(timeout=15) as client_http:
             r = await client_http.get(url, params=params, headers=headers)
@@ -578,7 +585,7 @@ async def _search_coingecko_id(symbol: str) -> str | None:
     cid = None
     try:
         async with httpx.AsyncClient(timeout=10) as ch:
-            r = await ch.get("https://api.coingecko.com/api/v3/search", params={"query": symbol})
+            r = await ch.get("https://api.coingecko.com/api/v3/search", params={"query": symbol}, headers=_cg_headers())
             if r.status_code == 200:
                 coins = r.json().get("coins", []) or []
                 matches = [c for c in coins if (c.get("symbol") or "").upper() == sym]
@@ -610,7 +617,7 @@ async def get_crypto_images(coingecko_ids: list) -> dict:
     if not img_map:
         img_map = {}
         try:
-            async with httpx.AsyncClient(timeout=15) as ch:
+            async with httpx.AsyncClient(timeout=15, headers=_cg_headers()) as ch:
                 for page in (1, 2):
                     r = await ch.get(
                         "https://api.coingecko.com/api/v3/coins/markets",
@@ -656,7 +663,7 @@ async def resolve_crypto_ids_bulk(symbols: List[str]) -> dict:
         if not sym_map:
             sym_map = {}
             try:
-                async with httpx.AsyncClient(timeout=15) as ch:
+                async with httpx.AsyncClient(timeout=15, headers=_cg_headers()) as ch:
                     for page in (1, 2):
                         r = await ch.get(
                             "https://api.coingecko.com/api/v3/coins/markets",
@@ -780,6 +787,7 @@ async def _resolve_crypto_name(coingecko_id: str) -> str | None:
                     "localization": "false", "tickers": "false", "market_data": "false",
                     "community_data": "false", "developer_data": "false", "sparkline": "false",
                 },
+                headers=_cg_headers(),
             )
             r.raise_for_status()
             name = r.json().get("name")
