@@ -7,7 +7,7 @@ import { useI18n, LANGUAGES } from "../context/I18nContext";
 import { api } from "../lib/api";
 import {
   TrendingUp, LogOut, Wallet as WalletIcon, LayoutDashboard, Receipt, Bell,
-  Briefcase, Coins, Plus, Sun, Moon, Eye, Newspaper, Languages, LineChart, Settings, Link2, Globe, Search, BarChart2, ShieldCheck, ChevronDown, User, MoreHorizontal, Sparkles,
+  Briefcase, Coins, Plus, Sun, Moon, Eye, Newspaper, Languages, LineChart, Settings, Link2, Globe, Search, BarChart2, ShieldCheck, ChevronDown, MoreHorizontal, Sparkles,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import walletLogo from "../assets/wallet76-logo80x60.png";
@@ -548,9 +548,9 @@ export default function Layout({ children, currency, setCurrency }) {
           {[
             { to: "/dashboard", icon: LayoutDashboard, labelKey: "nav.dashboard" },
             { to: "/wallets",   icon: WalletIcon,       labelKey: "nav.wallets" },
+            { to: "/alocacao",  icon: AllocIcon,        labelKey: "nav.allocation" },
             { to: "/market",    icon: LineChart,        labelKey: "nav.market" },
             { to: "/alerts",    icon: Bell,             labelKey: "nav.alerts", badge: alertCount },
-            { to: "/profile",   icon: User,             labelKey: "nav.profile" },
             { to: "/more",      icon: MoreHorizontal,   labelKey: "nav.more" },
           ].map(({ to, icon: Icon, labelKey, badge }) => (
             <NavLink

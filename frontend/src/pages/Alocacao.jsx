@@ -10,6 +10,8 @@ import {
 } from "../lib/allocation";
 import { WALLET_DOT_CLASS, walletColorKey } from "../lib/walletColors";
 import { renderPieSliceLabel } from "../constants/dashboardConstants";
+import { usePlan } from "../hooks/usePlan";
+import UpgradeOverlay from "../components/UpgradeOverlay";
 
 // Página "Alocação" (Portfólio → Alocação) — alocação-alvo a 2 níveis.
 // Nível 1: % por grupo/classe (donut + editor, soma 100%).
@@ -21,6 +23,7 @@ const MARGIN = 0.5; // margem para "Comprar" vs "Aguardar"
 
 export default function Alocacao({ currency = "USD" }) {
   const { t } = useI18n();
+  const { isPro } = usePlan();
   const L = useCallback((key, fb) => { const v = t(key); return v && v !== key ? v : fb; }, [t]);
   const [assets, setAssets] = useState([]);
   const [wallets, setWallets] = useState([]);
@@ -231,7 +234,8 @@ export default function Alocacao({ currency = "USD" }) {
   const colCount = mode === "full" ? 12 : 7;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white px-4 sm:px-6 py-8">
+    <div className="min-h-screen bg-zinc-950 text-white px-4 sm:px-6 py-8 relative">
+      {!isPro && <UpgradeOverlay feature={L("nav.allocation", "Alocação")} />}
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center gap-2 mb-1">
           <PieIcon className="w-5 h-5 text-blue-400" />
