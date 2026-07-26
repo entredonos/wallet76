@@ -348,17 +348,19 @@ async def resolve_asset_types_bulk(symbols: List[str]) -> dict:
 
 
 async def resolve_sector(symbol: str) -> str | None:
-    """Setor (GICS) do símbolo via assetProfile do Yahoo. Cache 30 dias.
-    Devolve None para crypto/cash ou quando desconhecido. Não faz chamada extra
-    em loads seguintes — o resultado (mesmo None) fica cacheado."""
+    """Setor (GICS) do símbolo. Tenta o quoteSummary do Yahoo e, se falhar,
+    recorre ao yfinance (.info). Cache 30 dias SÓ em sucesso — se não obtiver
+    setor, não cacheia (volta a tentar no próximo load em vez de ficar preso)."""
     sym = (symbol or "").upper().strip()
     if not sym:
         return None
     cache_key = f"asset_sector:{sym}"
-    cached = _cache_get(cache_key, ttl=2_592_000)  # 30 dias
+    cached = _cache_get(cache_key, ttl=2_592_000)  # 30 dias (só sucessos)
     if cached is not None:
         return cached.get("sector")
+
     sector = None
+    # 1) HTTP quoteSummary
     try:
         async with httpx.AsyncClient(timeout=10, headers=_YF_HEADERS_TYPE) as ch:
             for host in ("query2.finance.yahoo.com", "query1.finance.yahoo.com"):
@@ -372,10 +374,21 @@ async def resolve_sector(symbol: str) -> str | None:
                 if not result:
                     continue
                 sector = ((result[0].get("assetProfile") or {}).get("sector") or "") or None
-                break
+                if sector:
+                    break
     except Exception as e:
-        logger.warning(f"resolve_sector({sym}): {e}")
-    _cache_set(cache_key, {"sector": sector})
+        logger.warning(f"resolve_sector http({sym}): {e}")
+
+    # 2) fallback yfinance (.info) — corre em thread (yf é síncrono)
+    if not sector:
+        try:
+            info = await asyncio.to_thread(lambda: yf.Ticker(sym).info)
+            sector = ((info or {}).get("sector") or "") or None
+        except Exception as e:
+            logger.warning(f"resolve_sector yf({sym}): {e}")
+
+    if sector:
+        _cache_set(cache_key, {"sector": sector})
     return sector
 
 

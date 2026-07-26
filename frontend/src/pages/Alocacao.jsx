@@ -262,7 +262,7 @@ export default function Alocacao({ currency = "USD" }) {
             </div>
           )}
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto hidden sm:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-[10px] uppercase tracking-wider text-zinc-500 font-mono border-b border-zinc-800">
@@ -332,6 +332,51 @@ export default function Alocacao({ currency = "USD" }) {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Telemóvel: cartões por ativo (a tabela fica só no PC). */}
+          <div className="sm:hidden space-y-2">
+            {rows.map((r) => (
+              <div key={r.sym + r.wallet_id} className="bg-zinc-950/40 border border-zinc-800/50 rounded-lg p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <button onClick={() => toggleLock(r)} title={r.locked ? "Desbloquear" : "Fixar"}>
+                      {r.locked ? <Lock className="w-4 h-4 text-amber-400" /> : <Unlock className="w-4 h-4 text-zinc-600" />}
+                    </button>
+                    <span className="font-bold text-zinc-100 font-mono">{r.symbol}</span>
+                    {r.name && <span className="text-zinc-500 text-[11px] truncate">{r.name}</span>}
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${r.orient === "buy" ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/40" : "bg-rose-500/15 text-rose-400 border border-rose-500/40"}`}>
+                    {r.orient === "buy" ? L("alloc2.buy", "Comprar") : L("alloc2.wait", "Aguardar")}
+                  </span>
+                </div>
+                <div className="flex items-center gap-x-3 gap-y-1 mt-2 text-[11px] font-mono flex-wrap">
+                  <span className="text-zinc-400">PM <span className="text-amber-400">{money(r.avg_price)}</span></span>
+                  <span className="text-zinc-400">{L("alloc2.pct_now", "% Atual")} {r.atual.toFixed(2)}%</span>
+                  <span className="text-zinc-400 inline-flex items-center gap-1">
+                    {L("alloc2.pct_sug", "% Sug.")}{" "}
+                    {r.locked ? (
+                      <input type="number" min="0" max="100" step="0.5" value={assetTargets[r.sym]?.pct ?? ""}
+                        onChange={(e) => editLocked(r.sym, e.target.value)} onBlur={() => commitLocked(r.sym)}
+                        className="w-14 text-right bg-amber-500/10 border border-amber-500/40 rounded px-1.5 py-0.5 text-amber-300 outline-none" />
+                    ) : (<span className="text-zinc-300">{r.sug.toFixed(2)}%</span>)}
+                  </span>
+                  <select value={effectiveClass(r, overrides)} onChange={(e) => reclassify(r.sym, e.target.value)}
+                    className="ml-auto text-[10px] font-mono bg-zinc-900 border border-zinc-700 rounded px-1.5 py-1 text-zinc-400 outline-none">
+                    {ALLOCATION_CLASSES.map((c) => <option key={c} value={c}>{clsLabel(c)}</option>)}
+                  </select>
+                </div>
+                {mode === "full" && (
+                  <div className="flex gap-x-3 gap-y-1 mt-1.5 text-[10px] font-mono text-zinc-500 flex-wrap border-t border-zinc-800/40 pt-1.5">
+                    <span>Qtd {Number(r.quantity || 0)}</span>
+                    <span>{L("alloc2.value", "Valor")} {money(r.value_usd)}</span>
+                    <span className={r.pnl_pct >= 0 ? "text-emerald-400" : "text-rose-400"}>{r.pnl_pct >= 0 ? "+" : ""}{Number(r.pnl_pct || 0).toFixed(1)}%</span>
+                    {r.sector && <span>{r.sector}</span>}
+                  </div>
+                )}
+              </div>
+            ))}
+            {!rows.length && <div className="py-6 text-center text-zinc-500 font-mono text-sm">{L("alloc2.empty", "Sem ativos neste grupo.")}</div>}
           </div>
 
           {/* Totais DENTRO do card dos ativos — cada um no seu badge, em baixo à direita. */}
