@@ -1,25 +1,29 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { Lock, Unlock, PieChart as PieIcon } from "lucide-react";
+import { Lock, Unlock, PieChart as PieIcon, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../lib/api";
 import { useI18n } from "../context/I18nContext";
-import { fmtCurrency, convert } from "../lib/format";
+import { fmtCurrency, fmtCompact, fmtQty, fmtPriceSmart, convert } from "../lib/format";
 import {
   ALLOCATION_CLASSES, ALLOCATION_CLASS_LABEL_KEY, ALLOCATION_CLASS_COLOR, effectiveClass,
 } from "../lib/allocation";
+import { WALLET_DOT_CLASS, walletColorKey } from "../lib/walletColors";
 import { renderPieSliceLabel } from "../constants/dashboardConstants";
 
 // Página "Alocação" (Portfólio → Alocação) — alocação-alvo a 2 níveis.
 // Nível 1: % por grupo/classe (donut + editor, soma 100%).
-// Nível 2: dentro de cada aba, a % de cada ativo divide-se automaticamente por
+// Nível 2: dentro de cada aba, a % de cada ATIVO divide-se automaticamente por
 // igual; cada ativo pode ser FIXADO (cadeado) e os não-fixados reajustam-se.
+// O mesmo ativo em várias carteiras é AGREGADO numa linha só (1 ativo = 1 alvo);
+// a repartição por carteira aparece ao expandir.
 const MARGIN = 0.5; // margem para "Comprar" vs "Aguardar"
 
 export default function Alocacao({ currency = "USD" }) {
   const { t } = useI18n();
   const L = useCallback((key, fb) => { const v = t(key); return v && v !== key ? v : fb; }, [t]);
   const [assets, setAssets] = useState([]);
+  const [wallets, setWallets] = useState([]);
   const [summary, setSummary] = useState(null);
   const [overrides, setOverrides] = useState({});
   const [assetTargets, setAssetTargets] = useState({});
@@ -36,7 +40,11 @@ export default function Alocacao({ currency = "USD" }) {
 
   const fx = summary?.fx_rates || {};
   const money = useCallback((usd) => fmtCurrency(convert(Number(usd || 0), currency, fx), currency), [currency, fx]);
+  const moneyK = useCallback((usd) => fmtCompact(convert(Number(usd || 0), currency, fx), currency), [currency, fx]);
+  const price = useCallback((usd) => fmtPriceSmart(convert(Number(usd || 0), currency, fx), currency), [currency, fx]);
   const clsLabel = useCallback((c) => L(ALLOCATION_CLASS_LABEL_KEY[c], c), [L]);
+  const walletName = useCallback((id) => wallets.find((w) => w.id === id)?.name || L("alloc2.wallet", "Carteira"), [wallets, L]);
+  const walletDot = useCallback((id) => WALLET_DOT_CLASS[walletColorKey(wallets, id)] || "bg-zinc-500", [wallets]);
 
   useEffect(() => {
     let cancel = false;
@@ -45,6 +53,7 @@ export default function Alocacao({ currency = "USD" }) {
         const [p, a] = await Promise.all([api.get("/portfolio"), api.get("/allocation")]);
         if (cancel) return;
         setAssets((p.data.assets || []).filter((x) => Number(x.value_usd || 0) > 0));
+        setWallets(p.data.wallets || []);
         setSummary(p.data.summary || null);
         setOverrides(a.data.overrides || {});
         setAssetTargets(a.data.asset_targets || {});
@@ -97,24 +106,50 @@ export default function Alocacao({ currency = "USD" }) {
     () => Object.values(groupDraft).reduce((s, v) => s + Number(v || 0), 0),
     [groupDraft]);
 
+  // Linhas do Nível 2: agregadas por símbolo (o mesmo ativo em várias carteiras
+  // = 1 linha). Soma quantidade/valor/custo; PM = custo/quantidade (média
+  // ponderada). Isto também corrige o alvo: cada ativo conta 1× (não 1× por
+  // carteira). A repartição por carteira fica em `wallets`.
   const rows = useMemo(() => {
     if (!activeTab) return [];
     const inClass = assets.filter((a) => (effectiveClass(a, overrides) || "other") === activeTab);
-    const groupTarget = Number(savedTargets[activeTab] || 0);
-    const locked = inClass.filter((a) => assetTargets[(a.symbol || "").toUpperCase()]?.locked);
-    const sumLocked = locked.reduce((s, a) => s + Number(assetTargets[(a.symbol || "").toUpperCase()].pct || 0), 0);
-    const unlockedN = inClass.length - locked.length;
-    const perUnlocked = unlockedN > 0 ? Math.max(0, groupTarget - sumLocked) / unlockedN : 0;
-    return inClass.map((a) => {
+    const bySym = new Map();
+    inClass.forEach((a) => {
       const sym = (a.symbol || "").toUpperCase();
-      const lk = assetTargets[sym]?.locked;
-      const sug = lk ? Number(assetTargets[sym].pct || 0) : perUnlocked;
-      const atual = totalValue ? Number(a.value_usd || 0) / totalValue * 100 : 0;
-      return {
-        ...a, sym, locked: !!lk, sug, atual,
-        sector: sectors[sym] || null,
-        orient: atual < sug - MARGIN ? "buy" : "wait",
-      };
+      if (!sym) return;
+      let g = bySym.get(sym);
+      if (!g) {
+        g = { sym, symbol: a.symbol, name: a.name, asset_type: a.asset_type,
+              quantity: 0, value_usd: 0, cost_usd: 0, price_usd: Number(a.price_usd || 0), wallets: [] };
+        bySym.set(sym, g);
+      }
+      const q = Number(a.quantity || 0);
+      const v = Number(a.value_usd || 0);
+      const c = a.cost_usd != null ? Number(a.cost_usd) : Number(a.avg_price || 0) * q;
+      g.quantity += q;
+      g.value_usd += v;
+      g.cost_usd += c;
+      if (Number(a.price_usd)) g.price_usd = Number(a.price_usd);
+      g.wallets.push({ id: a.wallet_id, quantity: q, value_usd: v });
+    });
+    const groups = [...bySym.values()].map((g) => ({
+      ...g,
+      avg_price: g.quantity ? g.cost_usd / g.quantity : 0,
+      pnl_pct: g.cost_usd ? (g.value_usd - g.cost_usd) / g.cost_usd * 100 : 0,
+    }));
+
+    const groupTarget = Number(savedTargets[activeTab] || 0);
+    const lockedGroups = groups.filter((g) => assetTargets[g.sym]?.locked);
+    const sumLocked = lockedGroups.reduce((s, g) => s + Number(assetTargets[g.sym].pct || 0), 0);
+    const unlockedN = groups.length - lockedGroups.length;
+    const perUnlocked = unlockedN > 0 ? Math.max(0, groupTarget - sumLocked) / unlockedN : 0;
+
+    return groups.map((g) => {
+      const lk = assetTargets[g.sym]?.locked;
+      const sug = lk ? Number(assetTargets[g.sym].pct || 0) : perUnlocked;
+      const atual = totalValue ? g.value_usd / totalValue * 100 : 0;
+      return { ...g, locked: !!lk, sug, atual, sector: sectors[g.sym] || null,
+               orient: atual < sug - MARGIN ? "buy" : "wait" };
     }).sort((x, y) => y.value_usd - x.value_usd);
   }, [activeTab, assets, overrides, savedTargets, assetTargets, totalValue, sectors]);
 
@@ -171,6 +206,8 @@ export default function Alocacao({ currency = "USD" }) {
     catch { toast.error(L("alloc2.save_error", "Falha ao guardar")); }
   };
 
+  const toggleExpand = (sym) => setExpanded((p) => ({ ...p, [sym]: !p[sym] }));
+
   // Modo slide (telemóvel): navegação por gesto de arrastar.
   const onTouchStart = (e) => { touchX.current = e.touches[0].clientX; };
   const onTouchEnd = (e) => {
@@ -181,9 +218,17 @@ export default function Alocacao({ currency = "USD" }) {
     touchX.current = null;
   };
 
+  const orientChip = (r, big) => (
+    <span className={`${big ? "text-[11px] px-3 py-1" : "text-[9px] px-2 py-0.5"} font-bold rounded-full shrink-0 ${r.orient === "buy" ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/40" : "bg-rose-500/15 text-rose-400 border border-rose-500/40"}`}>
+      {r.orient === "buy" ? L("alloc2.buy", "Comprar") : L("alloc2.wait", "Aguardar")}
+    </span>
+  );
+
   if (loading) {
     return <div className="min-h-screen bg-zinc-950 text-zinc-400 flex items-center justify-center font-mono text-sm">{L("common.loading", "A carregar…")}</div>;
   }
+
+  const colCount = mode === "full" ? 12 : 7;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white px-4 sm:px-6 py-8">
@@ -278,6 +323,7 @@ export default function Alocacao({ currency = "USD" }) {
             </div>
           )}
 
+          {/* ===== PC: tabela ===== */}
           <div className="overflow-x-auto hidden sm:block">
             <table className="w-full text-sm">
               <thead>
@@ -297,60 +343,85 @@ export default function Alocacao({ currency = "USD" }) {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
-                  <tr key={r.sym + r.wallet_id} className="border-b border-zinc-800/40 hover:bg-zinc-900/40">
-                    <td className="py-2.5 px-2">
-                      <button onClick={() => toggleLock(r)} title={r.locked ? "Desbloquear" : "Fixar"}>
-                        {r.locked ? <Lock className="w-4 h-4 text-amber-400" /> : <Unlock className="w-4 h-4 text-zinc-600 hover:text-zinc-400" />}
-                      </button>
-                    </td>
-                    <td className="py-2.5 px-2 font-mono">
-                      <span className="font-bold text-zinc-100">{r.symbol}</span>
-                      {r.name && <span className="text-zinc-500 ml-2 text-xs">{r.name}</span>}
-                    </td>
-                    <td className="py-2.5 px-2">
-                      <select value={effectiveClass(r, overrides)} onChange={(e) => reclassify(r.sym, e.target.value)}
-                        title={L("alloc2.reclassify", "Mudar de grupo")}
-                        className="text-[10px] font-mono bg-zinc-900 border border-zinc-700 rounded px-1.5 py-1 text-zinc-400 hover:text-zinc-200 outline-none cursor-pointer">
-                        {ALLOCATION_CLASSES.map((c) => <option key={c} value={c}>{clsLabel(c)}</option>)}
-                      </select>
-                    </td>
-                    {mode === "full" && <td className="py-2.5 px-2 text-zinc-400 text-xs">{r.sector || "—"}</td>}
-                    {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-300">{Number(r.quantity || 0)}</td>}
-                    <td className="py-2.5 px-2 text-right font-mono text-amber-400">{money(r.avg_price)}</td>
-                    {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-300">{money(r.price_usd)}</td>}
-                    {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-200">{money(r.value_usd)}</td>}
-                    {mode === "full" && <td className={`py-2.5 px-2 text-right font-mono ${r.pnl_pct >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{r.pnl_pct >= 0 ? "+" : ""}{Number(r.pnl_pct || 0).toFixed(1)}%</td>}
-                    <td className="py-2.5 px-2 text-right font-mono text-zinc-300">{r.atual.toFixed(2)}%</td>
-                    <td className="py-2.5 px-2 text-right font-mono">
-                      {r.locked ? (
-                        <span className="inline-flex items-center gap-1">
-                          <input type="number" min="0" max="100" step="0.5"
-                            value={assetTargets[r.sym]?.pct ?? ""}
-                            onChange={(e) => editLocked(r.sym, e.target.value)}
-                            onBlur={() => commitLocked(r.sym)}
-                            className="w-16 text-right font-mono text-xs bg-amber-500/10 border border-amber-500/40 rounded px-2 py-0.5 text-amber-300 outline-none" />
-                          <span className="text-xs text-zinc-500">%</span>
-                        </span>
-                      ) : (
-                        <span className="text-zinc-400">{r.sug.toFixed(2)}% <span className="text-[9px] text-zinc-600">auto</span></span>
+                {rows.map((r) => {
+                  const multi = r.wallets.length > 1;
+                  const open = !!expanded[r.sym];
+                  return (
+                    <React.Fragment key={r.sym}>
+                      <tr className="border-b border-zinc-800/40 hover:bg-zinc-900/40">
+                        <td className="py-2.5 px-2">
+                          <button onClick={() => toggleLock(r)} title={r.locked ? "Desbloquear" : "Fixar"}>
+                            {r.locked ? <Lock className="w-4 h-4 text-amber-400" /> : <Unlock className="w-4 h-4 text-zinc-600 hover:text-zinc-400" />}
+                          </button>
+                        </td>
+                        <td className="py-2.5 px-2 font-mono">
+                          <span className="font-bold text-zinc-100">{r.symbol}</span>
+                          {r.name && <span className="text-zinc-500 ml-2 text-xs">{r.name}</span>}
+                          {multi && (
+                            <button onClick={() => toggleExpand(r.sym)}
+                              className="ml-2 inline-flex items-center gap-0.5 text-[10px] text-blue-400/80 hover:text-blue-300 align-middle">
+                              <ChevronDown className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} />
+                              {r.wallets.length} {L("alloc2.wallets", "carteiras")}
+                            </button>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-2">
+                          <select value={effectiveClass(r, overrides)} onChange={(e) => reclassify(r.sym, e.target.value)}
+                            title={L("alloc2.reclassify", "Mudar de grupo")}
+                            className="text-[10px] font-mono bg-zinc-900 border border-zinc-700 rounded px-1.5 py-1 text-zinc-400 hover:text-zinc-200 outline-none cursor-pointer">
+                            {ALLOCATION_CLASSES.map((c) => <option key={c} value={c}>{clsLabel(c)}</option>)}
+                          </select>
+                        </td>
+                        {mode === "full" && <td className="py-2.5 px-2 text-zinc-400 text-xs">{r.sector || "—"}</td>}
+                        {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-300">{fmtQty(r.quantity)}</td>}
+                        <td className="py-2.5 px-2 text-right font-mono text-amber-400">{price(r.avg_price)}</td>
+                        {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-300">{price(r.price_usd)}</td>}
+                        {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-200">{money(r.value_usd)}</td>}
+                        {mode === "full" && <td className={`py-2.5 px-2 text-right font-mono ${r.pnl_pct >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{r.pnl_pct >= 0 ? "+" : ""}{Number(r.pnl_pct || 0).toFixed(1)}%</td>}
+                        <td className="py-2.5 px-2 text-right font-mono text-zinc-300">{r.atual.toFixed(2)}%</td>
+                        <td className="py-2.5 px-2 text-right font-mono">
+                          {r.locked ? (
+                            <span className="inline-flex items-center gap-1">
+                              <input type="number" min="0" max="100" step="0.5"
+                                value={assetTargets[r.sym]?.pct ?? ""}
+                                onChange={(e) => editLocked(r.sym, e.target.value)}
+                                onBlur={() => commitLocked(r.sym)}
+                                className="w-16 text-right font-mono text-xs bg-amber-500/10 border border-amber-500/40 rounded px-2 py-0.5 text-amber-300 outline-none" />
+                              <span className="text-xs text-zinc-500">%</span>
+                            </span>
+                          ) : (
+                            <span className="text-zinc-400">{r.sug.toFixed(2)}% <span className="text-[9px] text-zinc-600">auto</span></span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-2">{orientChip(r)}</td>
+                      </tr>
+                      {multi && open && (
+                        <tr className="bg-zinc-950/40">
+                          <td></td>
+                          <td colSpan={colCount - 1} className="px-2 pb-2.5">
+                            <div className="flex flex-wrap gap-x-5 gap-y-1 text-[11px] font-mono text-zinc-400">
+                              {r.wallets.map((w, i) => (
+                                <span key={i} className="inline-flex items-center gap-1.5">
+                                  <span className={`w-2 h-2 rounded-full ${walletDot(w.id)}`} />
+                                  <span className="text-zinc-300">{walletName(w.id)}</span>
+                                  <span className="text-zinc-500">{fmtQty(w.quantity)} · {money(w.value_usd)}</span>
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
                       )}
-                    </td>
-                    <td className="py-2.5 px-2">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${r.orient === "buy" ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/40" : "bg-rose-500/15 text-rose-400 border border-rose-500/40"}`}>
-                        {r.orient === "buy" ? (L("alloc2.buy", "Comprar")) : (L("alloc2.wait", "Aguardar"))}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                    </React.Fragment>
+                  );
+                })}
                 {!rows.length && (
-                  <tr><td colSpan={12} className="py-6 text-center text-zinc-500 font-mono text-sm">{L("alloc2.empty", "Sem ativos neste grupo.")}</td></tr>
+                  <tr><td colSpan={colCount} className="py-6 text-center text-zinc-500 font-mono text-sm">{L("alloc2.empty", "Sem ativos neste grupo.")}</td></tr>
                 )}
               </tbody>
             </table>
           </div>
 
-          {/* Telemóvel (Opção E): lista densa + modo slide. A tabela fica só no PC. */}
+          {/* ===== Telemóvel (Opção E): lista densa + modo slide ===== */}
           <div className="sm:hidden">
             <div className="inline-flex rounded-md border border-zinc-800 bg-zinc-900/60 p-0.5 mb-3">
               {["list", "slide"].map((m) => (
@@ -364,46 +435,58 @@ export default function Alocacao({ currency = "USD" }) {
             {mobileMode === "list" ? (
               <div className="space-y-1.5">
                 {rows.map((r) => {
-                  const rk = r.sym + r.wallet_id;
-                  const isOpen = !!expanded[rk];
+                  const multi = r.wallets.length > 1;
+                  const open = !!expanded[r.sym];
                   return (
-                    <div key={rk} className="bg-zinc-950/40 border border-zinc-800/50 rounded-lg">
+                    <div key={r.sym} className="bg-zinc-950/40 border border-zinc-800/50 rounded-lg">
                       <div className="flex items-center gap-2.5 px-3 py-2">
                         <button onClick={() => toggleLock(r)}>
                           {r.locked ? <Lock className="w-4 h-4 text-amber-400" /> : <Unlock className="w-4 h-4 text-zinc-600" />}
                         </button>
-                        <button onClick={() => setExpanded((p) => ({ ...p, [rk]: !p[rk] }))} className="flex-1 min-w-0 text-left">
+                        <button onClick={() => toggleExpand(r.sym)} className="flex-1 min-w-0 text-left">
                           <span className="font-bold text-zinc-100 font-mono text-[13px]">{r.symbol}</span>
+                          {multi && <span className="ml-1.5 text-[9px] font-mono text-blue-400/80">· {r.wallets.length} {L("alloc2.wallets", "carteiras")}</span>}
                           <div className="text-[10px] font-mono text-zinc-500 truncate">
-                            PM <span className="text-amber-400/90">{money(r.avg_price)}</span> · {L("alloc2.pct_now", "% At")} {r.atual.toFixed(2)}%
+                            PM <span className="text-amber-400/90">{price(r.avg_price)}</span> · {L("alloc2.pct_now", "% At")} {r.atual.toFixed(2)}%
                           </div>
                         </button>
                         <span className="text-[10px] font-mono text-zinc-400 shrink-0">{L("alloc2.pct_sug", "Sug")} {(r.locked ? Number(assetTargets[r.sym]?.pct || 0) : r.sug).toFixed(2)}%</span>
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${r.orient === "buy" ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/40" : "bg-rose-500/15 text-rose-400 border border-rose-500/40"}`}>
-                          {r.orient === "buy" ? L("alloc2.buy", "Comprar") : L("alloc2.wait", "Aguardar")}
-                        </span>
+                        {orientChip(r)}
                       </div>
-                      {isOpen && (
-                        <div className="px-3 pb-2.5 pt-0.5 border-t border-zinc-800/40 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] font-mono">
-                          {r.name && <span className="text-zinc-500">{r.name}</span>}
-                          <span className="text-zinc-400 inline-flex items-center gap-1">
-                            {L("alloc2.pct_sug", "% Sug.")}{" "}
-                            {r.locked ? (
-                              <input type="number" min="0" max="100" step="0.5" value={assetTargets[r.sym]?.pct ?? ""}
-                                onChange={(e) => editLocked(r.sym, e.target.value)} onBlur={() => commitLocked(r.sym)}
-                                className="w-14 text-right bg-amber-500/10 border border-amber-500/40 rounded px-1.5 py-0.5 text-amber-300 outline-none" />
-                            ) : (<span className="text-zinc-300">{r.sug.toFixed(2)}% <span className="text-[9px] text-zinc-600">auto</span></span>)}
-                          </span>
-                          <select value={effectiveClass(r, overrides)} onChange={(e) => reclassify(r.sym, e.target.value)}
-                            className="text-[10px] font-mono bg-zinc-900 border border-zinc-700 rounded px-1.5 py-1 text-zinc-400 outline-none">
-                            {ALLOCATION_CLASSES.map((c) => <option key={c} value={c}>{clsLabel(c)}</option>)}
-                          </select>
-                          {mode === "full" && (<>
-                            <span className="text-zinc-500">Qtd {Number(r.quantity || 0)}</span>
-                            <span className="text-zinc-500">{L("alloc2.value", "Valor")} {money(r.value_usd)}</span>
-                            <span className={r.pnl_pct >= 0 ? "text-emerald-400" : "text-rose-400"}>{r.pnl_pct >= 0 ? "+" : ""}{Number(r.pnl_pct || 0).toFixed(1)}%</span>
-                            {r.sector && <span className="text-zinc-500">{r.sector}</span>}
-                          </>)}
+                      {mode === "full" && (
+                        <div className="px-3 pb-2 -mt-0.5 text-[10px] font-mono text-zinc-500 flex flex-wrap gap-x-3 gap-y-0.5">
+                          <span>Qtd {fmtQty(r.quantity)}</span>
+                          <span>{L("alloc2.value", "Valor")} {money(r.value_usd)}</span>
+                          <span className={r.pnl_pct >= 0 ? "text-emerald-400" : "text-rose-400"}>{r.pnl_pct >= 0 ? "+" : ""}{Number(r.pnl_pct || 0).toFixed(1)}%</span>
+                          {r.sector && <span>{r.sector}</span>}
+                        </div>
+                      )}
+                      {open && (
+                        <div className="px-3 pb-2.5 pt-2 border-t border-zinc-800/40 space-y-2">
+                          {multi && (
+                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-mono">
+                              {r.wallets.map((w, i) => (
+                                <span key={i} className="inline-flex items-center gap-1 text-zinc-400">
+                                  <span className={`w-2 h-2 rounded-full ${walletDot(w.id)}`} />
+                                  <span className="text-zinc-300">{walletName(w.id)}</span> {fmtQty(w.quantity)} · {money(w.value_usd)}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] font-mono">
+                            <span className="text-zinc-400 inline-flex items-center gap-1">
+                              {L("alloc2.pct_sug", "% Sug.")}{" "}
+                              {r.locked ? (
+                                <input type="number" min="0" max="100" step="0.5" value={assetTargets[r.sym]?.pct ?? ""}
+                                  onChange={(e) => editLocked(r.sym, e.target.value)} onBlur={() => commitLocked(r.sym)}
+                                  className="w-14 text-right bg-amber-500/10 border border-amber-500/40 rounded px-1.5 py-0.5 text-amber-300 outline-none" />
+                              ) : (<span className="text-zinc-300">{r.sug.toFixed(2)}% <span className="text-[9px] text-zinc-600">auto</span></span>)}
+                            </span>
+                            <select value={effectiveClass(r, overrides)} onChange={(e) => reclassify(r.sym, e.target.value)}
+                              className="text-[10px] font-mono bg-zinc-900 border border-zinc-700 rounded px-1.5 py-1 text-zinc-400 outline-none">
+                              {ALLOCATION_CLASSES.map((c) => <option key={c} value={c}>{clsLabel(c)}</option>)}
+                            </select>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -415,6 +498,7 @@ export default function Alocacao({ currency = "USD" }) {
               rows.length ? (() => {
                 const idx = Math.min(slideIdx, rows.length - 1);
                 const r = rows[idx];
+                const multi = r.wallets.length > 1;
                 return (
                   <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
                     className="bg-gradient-to-b from-zinc-900/70 to-zinc-950/40 border border-zinc-800/70 rounded-2xl p-5">
@@ -424,12 +508,10 @@ export default function Alocacao({ currency = "USD" }) {
                       </button>
                       <span className="text-2xl font-bold font-mono text-zinc-50">{r.symbol}</span>
                       {r.name && <span className="text-zinc-500 text-xs truncate">{r.name}</span>}
-                      <span className={`ml-auto text-[11px] font-bold px-3 py-1 rounded-full ${r.orient === "buy" ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/40" : "bg-rose-500/15 text-rose-400 border border-rose-500/40"}`}>
-                        {r.orient === "buy" ? L("alloc2.buy", "Comprar") : L("alloc2.wait", "Aguardar")}
-                      </span>
+                      <span className="ml-auto">{orientChip(r, true)}</span>
                     </div>
                     <div className="mt-4 font-mono text-[13px]">
-                      <div className="flex justify-between py-2 border-b border-zinc-800/60"><span className="text-zinc-500">{L("alloc2.avg_price", "Preço Médio")}</span><span className="text-amber-400">{money(r.avg_price)}</span></div>
+                      <div className="flex justify-between py-2 border-b border-zinc-800/60"><span className="text-zinc-500">{L("alloc2.avg_price", "Preço Médio")}</span><span className="text-amber-400">{price(r.avg_price)}</span></div>
                       <div className="flex justify-between py-2 border-b border-zinc-800/60"><span className="text-zinc-500">{L("alloc2.pct_now", "% Atual")}</span><span className="text-zinc-200">{r.atual.toFixed(2)}%</span></div>
                       <div className="flex justify-between py-2 border-b border-zinc-800/60 items-center">
                         <span className="text-zinc-500">{L("alloc2.pct_sug", "% Sugerida")}</span>
@@ -449,9 +531,19 @@ export default function Alocacao({ currency = "USD" }) {
                           {ALLOCATION_CLASSES.map((c) => <option key={c} value={c}>{clsLabel(c)}</option>)}
                         </select>
                       </div>
+                      {multi && (
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 pt-2 text-[10px] text-zinc-500">
+                          {r.wallets.map((w, i) => (
+                            <span key={i} className="inline-flex items-center gap-1">
+                              <span className={`w-2 h-2 rounded-full ${walletDot(w.id)}`} />
+                              {walletName(w.id)} {fmtQty(w.quantity)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       {mode === "full" && (
                         <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2 text-[11px] text-zinc-500">
-                          <span>Qtd {Number(r.quantity || 0)}</span>
+                          <span>Qtd {fmtQty(r.quantity)}</span>
                           <span>{L("alloc2.value", "Valor")} {money(r.value_usd)}</span>
                           <span className={r.pnl_pct >= 0 ? "text-emerald-400" : "text-rose-400"}>{r.pnl_pct >= 0 ? "+" : ""}{Number(r.pnl_pct || 0).toFixed(1)}%</span>
                           {r.sector && <span>{r.sector}</span>}
@@ -474,7 +566,7 @@ export default function Alocacao({ currency = "USD" }) {
             )}
           </div>
 
-          {/* Totais — PC: badges à direita; telemóvel (T2): 3 mini-cartões lado a lado. */}
+          {/* ===== Totais — PC: badges à direita; telemóvel (T2): 3 lado a lado ===== */}
           <div className="hidden sm:flex flex-wrap justify-end gap-3 mt-5 pt-4 border-t border-zinc-800/60">
             <div className="bg-zinc-950/50 border border-zinc-800 rounded-lg px-4 py-2 text-right">
               <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-mono">{L("alloc2.invested", "Total Investido")}</div>
@@ -494,11 +586,11 @@ export default function Alocacao({ currency = "USD" }) {
           <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-zinc-800/60 sm:hidden">
             <div className="bg-zinc-950/50 border border-zinc-800 rounded-lg px-2 py-2 text-center">
               <div className="text-[9px] uppercase tracking-wide text-zinc-500 font-mono">{L("alloc2.invested_short", "Investido")}</div>
-              <div className="text-[13px] font-mono text-zinc-200 mt-0.5">{money(summary?.total_cost_usd || 0)}</div>
+              <div className="text-[13px] font-mono text-zinc-200 mt-0.5">{moneyK(summary?.total_cost_usd || 0)}</div>
             </div>
             <div className="bg-zinc-950/50 border border-zinc-800 rounded-lg px-2 py-2 text-center">
               <div className="text-[9px] uppercase tracking-wide text-zinc-500 font-mono">{L("alloc2.available_short", "Disponível")}</div>
-              <div className="text-[13px] font-mono text-zinc-100 mt-0.5">{money(totalValue)}</div>
+              <div className="text-[13px] font-mono text-zinc-100 mt-0.5">{moneyK(totalValue)}</div>
             </div>
             <div className="bg-zinc-950/50 border border-zinc-800 rounded-lg px-2 py-2 text-center">
               <div className="text-[9px] uppercase tracking-wide text-zinc-500 font-mono">{L("alloc2.total_short", "Total")}</div>

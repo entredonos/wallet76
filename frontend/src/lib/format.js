@@ -27,6 +27,39 @@ export function fmtCompact(value, currency = "USD") {
   return `${sym}${num.toFixed(2)}`;
 }
 
+const SUBSCRIPTS = "₀₁₂₃₄₅₆₇₈₉";
+function toSubscript(n) {
+  return String(n).split("").map((d) => SUBSCRIPTS[Number(d)] || d).join("");
+}
+
+// Quantidade compacta: 1.71M, 12.3k, 1,234, 0.1425…
+export function fmtQty(value) {
+  const n = Number(value || 0);
+  const a = Math.abs(n);
+  if (a >= 1e9) return (n / 1e9).toFixed(2).replace(/\.?0+$/, "") + "B";
+  if (a >= 1e6) return (n / 1e6).toFixed(2).replace(/\.?0+$/, "") + "M";
+  if (a >= 1e4) return (n / 1e3).toFixed(1).replace(/\.?0+$/, "") + "k";
+  if (a >= 1) return n.toLocaleString("en-US", { maximumFractionDigits: 4 });
+  if (a === 0) return "0";
+  return n.toLocaleString("en-US", { maximumFractionDigits: 8 }).replace(/\.?0+$/, "") || "0";
+}
+
+// Preço com casas adaptáveis; para valores minúsculos usa notação de
+// subscrito estilo CoinGecko: $0.0₅812  (= $0.00000812).
+export function fmtPriceSmart(value, currency = "USD") {
+  const n = Number(value || 0);
+  const a = Math.abs(n);
+  if (a === 0) return fmtCurrency(0, currency);
+  if (a >= 1) return fmtCurrency(n, currency);
+  if (a >= 0.01) return fmtCurrency(n, currency, { max: 4 });
+  const [mant, expPart] = a.toExponential().split("e");
+  const exp = parseInt(expPart, 10);            // negativo
+  const zeros = -exp - 1;                        // zeros à direita do ponto
+  const digits = mant.replace(".", "").replace(/0+$/, "").slice(0, 4) || "0";
+  const sign = n < 0 ? "-" : "";
+  return `${sign}${curSymbol(currency)}0.0${toSubscript(zeros)}${digits}`;
+}
+
 export function convert(usdValue, currency, fxRates = {}) {
   if (!usdValue && usdValue !== 0) return 0;
   if (currency === "EUR") {
