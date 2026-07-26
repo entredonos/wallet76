@@ -1,13 +1,85 @@
 """Price fetching helpers (CoinGecko, yfinance, FX) and holding computation."""
 import asyncio
+import math
 import os
 import re as _re
+from datetime import datetime, timezone
 from typing import List
 
 import httpx
 import yfinance as yf
 
-from core import _cache_get, _cache_set, _cache_get_stale, logger, db
+from core import (_cache_get, _cache_set, _cache_get_stale, _cache_age,
+                  _cache_count_prefix, logger, db)
+
+
+# --- Guardas de sanidade dos dados (28 jul 2026) ---------------------------
+# Um preço/câmbio inválido (0, negativo, NaN, ausente) NUNCA deve ser cacheado
+# nem devolvido: além de aparecer errado ao utilizador, ENVENENA o fallback
+# "último valor conhecido" (_cache_get_stale) — passa a ser o valor de reserva.
+# Estas guardas rejeitam o valor mau, registam o evento, e deixam o fluxo cair
+# no último valor bom.
+
+def _price_ok(usd) -> bool:
+    """True se `usd` é um número finito e positivo."""
+    try:
+        p = float(usd)
+    except (TypeError, ValueError):
+        return False
+    return math.isfinite(p) and p > 0
+
+
+# Câmbios por USD aceitáveis (banda relativa ao fallback): rejeita valores
+# absurdos (0, negativos, ou N vezes fora do esperado) que 150x-avaliariam
+# uma posição. Chave -> (min, max).
+_FX_FALLBACK = {
+    "USD": 1.0, "EUR": 0.92, "GBP": 0.79, "CHF": 0.88,
+    "JPY": 155.0, "BRL": 5.0, "CAD": 1.37, "AUD": 1.52,
+}
+
+
+def _fx_ok(code: str, value) -> bool:
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return False
+    base = _FX_FALLBACK.get(code)
+    if not base or not math.isfinite(v) or v <= 0:
+        return False
+    return base * 0.2 <= v <= base * 5.0
+
+
+def _record_data_issue(source: str, key: str, reason: str) -> None:
+    """Regista um valor rejeitado para o health-check (in-memory, barato) e
+    emite um log greppable ('[data-health]') para alertas nos logs do Render."""
+    try:
+        issues = _cache_get_stale("data_health:issues") or []
+        issues.append({
+            "source": source, "key": key, "reason": reason,
+            "ts": datetime.now(timezone.utc).isoformat(),
+        })
+        _cache_set("data_health:issues", issues[-200:])
+    except Exception:
+        pass
+    logger.warning(f"[data-health] {source}:{key} rejeitado ({reason})")
+
+
+def get_data_health() -> dict:
+    """Snapshot da saúde dos dados para o endpoint admin /data-health."""
+    issues = _cache_get_stale("data_health:issues") or []
+    fx_age = _cache_age("fx:rates")
+    from collections import Counter
+    by_source = Counter(i.get("source") for i in issues)
+    return {
+        "recent_issues": issues[-50:],
+        "issue_count_total": len(issues),
+        "issues_by_source": dict(by_source),
+        "fx_age_seconds": fx_age,
+        "fx_stale": fx_age is None or fx_age > 3600,
+        "cached_stock_prices": _cache_count_prefix("stock_price:"),
+        "cached_crypto_prices": _cache_count_prefix("crypto_price:"),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 # --- Crypto prices ---
@@ -56,8 +128,11 @@ async def get_crypto_prices(coingecko_ids: List[str], symbol_map: dict | None = 
             r.raise_for_status()
             data = r.json()
             for cid, val in data.items():
-                _cache_set(f"crypto_price:{cid}", val)
-                result[cid] = val
+                if _price_ok((val or {}).get("usd")):
+                    _cache_set(f"crypto_price:{cid}", val)
+                    result[cid] = val
+                else:
+                    _record_data_issue("crypto", cid, "preco invalido do CoinGecko")
     except Exception as e:
         logger.error(f"CoinGecko error: {e}")
 
@@ -175,8 +250,11 @@ async def get_stock_prices(symbols: List[str]) -> dict:
 
     data = await asyncio.to_thread(_yf_fetch, missing)
     for sym, val in data.items():
-        _cache_set(f"stock_price:{sym}", val)
-    result.update(data)
+        if _price_ok((val or {}).get("usd")):
+            _cache_set(f"stock_price:{sym}", val)
+            result[sym] = val
+        else:
+            _record_data_issue("stock", sym, "preco invalido do yfinance")
 
     # Resolve unknown symbols via Yahoo Search
     unresolved = [s for s in missing if s not in result or not result[s].get("usd")]
@@ -226,7 +304,7 @@ async def get_stock_prices(symbols: List[str]) -> dict:
             new_syms = [r for _, r in resolved_pairs]
             resolved_data = await asyncio.to_thread(_yf_fetch, new_syms)
             for orig, real in resolved_pairs:
-                if real in resolved_data and resolved_data[real].get("usd"):
+                if real in resolved_data and _price_ok(resolved_data[real].get("usd")):
                     result[orig] = resolved_data[real]
                     _cache_set(f"stock_price:{orig}", resolved_data[real])
 
@@ -258,20 +336,30 @@ async def get_fx_rates() -> dict:
     # era tratada 1:1 com o USD — uma compra em JPY ficava ~150x sobreavaliada,
     # GBP/CAD/AUD ~30-50% erradas. Agora buscamos e devolvemos todas. Os valores
     # abaixo são só fallback para quando a API falha; a chamada ao vivo sobrepõe.
-    rates = {
-        "USD": 1.0, "EUR": 0.92, "GBP": 0.79, "CHF": 0.88,
-        "JPY": 155.0, "BRL": 5.0, "CAD": 1.37, "AUD": 1.52,
-    }
+    rates = dict(_FX_FALLBACK)
+    got_live = False
     try:
         async with httpx.AsyncClient(timeout=10) as ch:
             r = await ch.get("https://open.er-api.com/v6/latest/USD")
             if r.status_code == 200:
                 data = r.json().get("rates", {})
                 for c in ("EUR", "GBP", "CHF", "JPY", "BRL", "CAD", "AUD"):
-                    if data.get(c):
-                        rates[c] = float(data[c])
+                    v = data.get(c)
+                    if v is None:
+                        continue
+                    if _fx_ok(c, v):
+                        rates[c] = float(v)
+                        got_live = True
+                    else:
+                        _record_data_issue("fx", c, f"cambio fora de banda ({v})")
     except Exception as e:
-        logger.warning(f"FX rate fetch failed, using defaults: {e}")
+        logger.warning(f"FX rate fetch failed: {e}")
+    if not got_live:
+        # Nada de fiavel ao vivo -> preferir o ULTIMO cambio bom (live) em cache
+        # aos valores fixos no codigo (que envelhecem), se existir.
+        stale = _cache_get_stale("fx:rates")
+        if stale:
+            return stale
     _cache_set("fx:rates", rates)
     return rates
 

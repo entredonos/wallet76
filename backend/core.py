@@ -335,6 +335,20 @@ def cache_get_stale(key: str):
     return entry[1] if entry else None
 
 
+def cache_age(key: str):
+    """Idade (segundos) da entrada em cache, ou None se não existir. Usado
+    pelo health-check dos dados para medir a frescura (ex.: câmbio velho)."""
+    entry = _cache.get(key)
+    if not entry:
+        return None
+    return (datetime.now(timezone.utc) - entry[0]).total_seconds()
+
+
+def cache_count_prefix(prefix: str) -> int:
+    """Quantas entradas em cache começam por `prefix` (ex.: 'stock_price:')."""
+    return sum(1 for k in _cache if k.startswith(prefix))
+
+
 def cache_clear_prefix(prefix: str) -> int:
     """Remove todas as entradas cuja chave começa por `prefix`. Usado quando
     transações mudam (criar/editar/apagar/importar/reset) para invalidar de
@@ -363,6 +377,8 @@ def invalidate_history_cache(user_id: str) -> None:
 _cache_get = cache_get
 _cache_set = cache_set
 _cache_get_stale = cache_get_stale
+_cache_age = cache_age
+_cache_count_prefix = cache_count_prefix
 _cache_clear_prefix = cache_clear_prefix
 
 

@@ -8,6 +8,17 @@ from pydantic import BaseModel
 
 router = APIRouter()
 
+
+@router.get("/admin/data-health")
+async def admin_data_health(user=Depends(require_admin)):
+    """Admin only — snapshot da qualidade dos dados: valores rejeitados
+    recentes (preços/câmbios), frescura do câmbio e nº de preços em cache.
+    Serve para vigiar a fiabilidade das fontes, sobretudo no arranque.
+    Nota: o cache é por-worker, por isso o snapshot reflete um worker; o
+    sinal durável para alertas são os logs '[data-health]' no Render."""
+    from prices import get_data_health  # lazy: evita import circular
+    return get_data_health()
+
 # Safe projection for admin user listings — never pull password_hash or
 # reset/verify token hashes into Python just to discard them in _safe_user.
 _USER_LIST_PROJECTION = {
