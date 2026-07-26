@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { Lock, Unlock, PieChart as PieIcon } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { api } from "../lib/api";
 import { useI18n } from "../context/I18nContext";
 import { fmtCurrency, convert } from "../lib/format";
