@@ -49,7 +49,7 @@ export const PIE_COLORS = ["#3b82f6", "#10b981", "#a855f7", "#eab308", "#ef4444"
 // (task #89), instead of only in the legend below. Skips slivers too thin
 // to fit a legible label so the chart doesn't turn into overlapping text.
 export function renderPieSliceLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }) {
-  if (percent < 0.04) return null;
+  if (percent < 0.02) return null;  // mostra a % mesmo em fatias pequenas (>=2%)
   const RADIAN = Math.PI / 180;
   const radius = innerRadius + (outerRadius - innerRadius) * 0.6;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
