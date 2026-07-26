@@ -268,6 +268,7 @@ export default function Alocacao({ currency = "USD" }) {
                 <tr className="text-[10px] uppercase tracking-wider text-zinc-500 font-mono border-b border-zinc-800">
                   <th className="text-left py-2 px-2 w-8"></th>
                   <th className="text-left py-2 px-2">{L("alloc2.asset", "Ativo")}</th>
+                  <th className="text-left py-2 px-2">{L("alloc2.group", "Grupo")}</th>
                   {mode === "full" && <th className="text-left py-2 px-2">{L("alloc2.sector", "Setor")}</th>}
                   {mode === "full" && <th className="text-right py-2 px-2">{L("alloc2.qty", "Qtd")}</th>}
                   <th className="text-right py-2 px-2">{L("alloc2.avg_price", "Preço Médio")}</th>
@@ -290,9 +291,11 @@ export default function Alocacao({ currency = "USD" }) {
                     <td className="py-2.5 px-2 font-mono">
                       <span className="font-bold text-zinc-100">{r.symbol}</span>
                       {r.name && <span className="text-zinc-500 ml-2 text-xs">{r.name}</span>}
+                    </td>
+                    <td className="py-2.5 px-2">
                       <select value={effectiveClass(r, overrides)} onChange={(e) => reclassify(r.sym, e.target.value)}
                         title={L("alloc2.reclassify", "Mudar de grupo")}
-                        className="ml-2 text-[10px] bg-zinc-900 border border-zinc-700 rounded px-1 py-0.5 text-zinc-500 hover:text-zinc-300 outline-none cursor-pointer align-middle">
+                        className="text-[10px] font-mono bg-zinc-900 border border-zinc-700 rounded px-1.5 py-1 text-zinc-400 hover:text-zinc-200 outline-none cursor-pointer">
                         {ALLOCATION_CLASSES.map((c) => <option key={c} value={c}>{clsLabel(c)}</option>)}
                       </select>
                     </td>
