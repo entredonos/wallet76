@@ -157,6 +157,14 @@ export default function Alocacao({ currency = "USD" }) {
     catch { toast.error(L("alloc2.save_error", "Falha ao guardar")); }
   };
 
+  // Reclassificar um símbolo para outro grupo (ex.: BTC classificado como "stock"
+  // -> "crypto"). Usa o override por símbolo (aplica-se a todas as carteiras).
+  const reclassify = async (sym, cls) => {
+    setOverrides((prev) => ({ ...prev, [sym]: cls }));
+    try { await api.put("/allocation/override", { symbol: sym, class: cls }); }
+    catch { toast.error(L("alloc2.save_error", "Falha ao guardar")); }
+  };
+
   if (loading) {
     return <div className="min-h-screen bg-zinc-950 text-zinc-400 flex items-center justify-center font-mono text-sm">{L("common.loading", "A carregar…")}</div>;
   }
@@ -282,6 +290,11 @@ export default function Alocacao({ currency = "USD" }) {
                     <td className="py-2.5 px-2 font-mono">
                       <span className="font-bold text-zinc-100">{r.symbol}</span>
                       {r.name && <span className="text-zinc-500 ml-2 text-xs">{r.name}</span>}
+                      <select value={effectiveClass(r, overrides)} onChange={(e) => reclassify(r.sym, e.target.value)}
+                        title={L("alloc2.reclassify", "Mudar de grupo")}
+                        className="ml-2 text-[10px] bg-zinc-900 border border-zinc-700 rounded px-1 py-0.5 text-zinc-500 hover:text-zinc-300 outline-none cursor-pointer align-middle">
+                        {ALLOCATION_CLASSES.map((c) => <option key={c} value={c}>{clsLabel(c)}</option>)}
+                      </select>
                     </td>
                     {mode === "full" && <td className="py-2.5 px-2 text-zinc-400 text-xs">{r.sector || "—"}</td>}
                     {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-300">{Number(r.quantity || 0)}</td>}
