@@ -6,10 +6,10 @@ import { useI18n } from "../context/I18nContext";
 import { useAuth } from "../context/AuthContext";
 
 const PRICES = {
-  eur: { sym: "€",   pos: "suffix", monthly: "6,99",  yearly: "59,99"  },
-  chf: { sym: "CHF", pos: "prefix", monthly: "6.90",  yearly: "59.00"  },
-  usd: { sym: "$",   pos: "prefix", monthly: "7.99",  yearly: "69.99"  },
-  brl: { sym: "R$",  pos: "prefix", monthly: "39,90", yearly: "399,00" },
+  eur: { sym: "€",   pos: "suffix", monthly: "5,99",  yearly: "49,99"  },
+  chf: { sym: "CHF", pos: "prefix", monthly: "5.90",  yearly: "49.00"  },
+  usd: { sym: "$",   pos: "prefix", monthly: "5.99",  yearly: "49.99"  },
+  brl: { sym: "R$",  pos: "prefix", monthly: "19,90", yearly: "149,00" },
 };
 const CURRENCIES = ["eur", "chf", "usd", "brl"];
 
