@@ -156,6 +156,7 @@ const PublicPortfolio = lazy(() => import("./pages/PublicPortfolio"));
 const ConnectedAccounts = lazy(() => import("./pages/ConnectedAccounts"));
 const AssetDetail = lazy(() => import("./pages/AssetDetail"));
 const Analytics = lazy(() => import("./pages/Analytics"));
+const Alocacao = lazy(() => import("./pages/Alocacao"));
 const Dividends = lazy(() => import("./pages/Dividends"));
 const AdminFeedback = lazy(() => import("./pages/AdminFeedback"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
@@ -300,6 +301,7 @@ function AppRoutes() {
         <Route path="/more" element={wrap(<More />)} />
         <Route path="/connected-accounts" element={wrap(<ConnectedAccounts />)} />
         <Route path="/analytics" element={wrap(<Analytics currency={currency} />)} />
+        <Route path="/alocacao" element={wrap(<Alocacao currency={currency} />)} />
         <Route path="/dividends" element={wrap(<Dividends currency={currency} />)} />
         <Route path="/admin/feedback" element={wrap(<AdminFeedback />)} />
         <Route path="/asset/:assetType/:symbol" element={wrap(<AssetChart currency={currency} />)} />

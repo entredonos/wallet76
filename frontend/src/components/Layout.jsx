@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
+import { PieChart as AllocIcon } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useI18n, LANGUAGES } from "../context/I18nContext";
@@ -29,7 +30,7 @@ const TYPE_ICON = { broker: Briefcase, exchange: Coins, wallet: WalletIcon };
 const NAV_DIV = { pt: "Dividendos", en: "Dividends", fr: "Dividendes", de: "Dividenden", it: "Dividendi", es: "Dividendos" };
 const PREVIEW_MSG = { pt: "Pré-visualização de plano:", en: "Plan preview:", fr: "Aperçu du plan :", de: "Plan-Vorschau:", it: "Anteprima piano:", es: "Vista previa de plan:" };
 const PREVIEW_BACK = { pt: "voltar ao normal", en: "back to normal", fr: "revenir à la normale", de: "zurück zum Normalzustand", it: "torna al normale", es: "volver a lo normal" };
-const PORTFOLIO_GROUP_ROUTES = ["/wallets", "/transactions", "/watchlist", "/alerts", "/analytics", "/dividends"];
+const PORTFOLIO_GROUP_ROUTES = ["/wallets", "/transactions", "/watchlist", "/alerts", "/analytics", "/alocacao", "/dividends"];
 
 export default function Layout({ children, currency, setCurrency }) {
   const { user, logout } = useAuth();
@@ -233,6 +234,9 @@ export default function Layout({ children, currency, setCurrency }) {
             </NavLink>
             <NavLink to="/analytics" className={linkCls} data-testid="nav-analytics" onClick={() => setOpen(false)}>
               <BarChart2 className="w-4 h-4" /> {t("nav.analytics")}
+            </NavLink>
+            <NavLink to="/alocacao" className={linkCls} data-testid="nav-allocation" onClick={() => setOpen(false)}>
+              <AllocIcon className="w-4 h-4" /> {t("nav.allocation")}
             </NavLink>
             <NavLink to="/dividends" className={linkCls} data-testid="nav-dividends" onClick={() => setOpen(false)}>
               <Coins className="w-4 h-4" /> {NAV_DIV[lang] || NAV_DIV.en}
