@@ -24,7 +24,6 @@ import { walletColorKey } from "../lib/walletColors";
 import TopMoversWidget from "../components/dashboard/TopMoversWidget";
 import EvolutionChart from "../components/dashboard/EvolutionChart";
 import AllocationWidget from "../components/dashboard/AllocationWidget";
-import AllocationTargetDialog from "../components/dashboard/AllocationTargetDialog";
 import AssetsTable from "../components/dashboard/AssetsTable";
 import DividendsCard from "../components/dashboard/DividendsCard";
 import LiquidityCard from "../components/dashboard/LiquidityCard";
@@ -175,7 +174,6 @@ export default function Dashboard({ currency }) {
   // doesn't need to re-fetch on range/wallet/type filter changes.
   const [allocTargets, setAllocTargets] = useState({});
   const [allocOverrides, setAllocOverrides] = useState({});
-  const [showTargetDialog, setShowTargetDialog] = useState(false);
   const [reclassifyOpenKey, setReclassifyOpenKey] = useState(null);
   const [sortKey, setSortKey] = useState("value_usd");
   const [sortDir, setSortDir] = useState("desc");
@@ -818,9 +816,8 @@ export default function Dashboard({ currency }) {
   // Os sliders inline de arrastar (handleClassSliderDrag /
   // commitClassSliderDrag + o estado de drag draftAllocTargets) foram
   // removidos — o widget "Distribuição da Carteira" passou a mostrar o
-  // alvo como uma barra estática (marca branca), só editável pelo
-  // AllocationTargetDialog (botão de definições), para evitar alterar o
-  // alvo com um toque acidental no telemóvel.
+  // alvo como uma barra estática (marca branca), só de leitura; a edição
+  // dos alvos vive agora na página Alocação (/alocacao).
   const effectiveAllocTargets = allocTargets;
 
   // "UPGRADE v1.0" — target vs. actual per class, merged into the pie
@@ -1503,7 +1500,6 @@ const worstPerformer = useMemo(() => {
           <AllocationWidget
             allocationMode={allocationMode}
             setAllocationMode={setAllocationMode}
-            setShowTargetDialog={setShowTargetDialog}
             pieData={pieData}
             activeAllocation={activeAllocation}
             setActiveAllocation={setActiveAllocation}
@@ -1518,17 +1514,6 @@ const worstPerformer = useMemo(() => {
           />
         </div>
       </div>
-
-      {showTargetDialog && (
-        <AllocationTargetDialog
-          open={showTargetDialog}
-          onOpenChange={setShowTargetDialog}
-          initialTargets={allocTargets}
-          holdings={allHoldings}
-          overrides={allocOverrides}
-          onSaved={(targets) => setAllocTargets(targets)}
-        />
-      )}
 
       {/* "Ativos e Liquidez" (7 jul 2026) — ver comentário em
           dashboardConstants.js (WIDGET_DEFS, id "liquidity") e

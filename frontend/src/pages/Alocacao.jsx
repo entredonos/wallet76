@@ -455,12 +455,12 @@ export default function Alocacao({ currency = "USD" }) {
                       <th className="text-left px-2 py-2 border-b border-zinc-800">{L("alloc2.group", "Grupo")}</th>
                       {mode === "full" && <th className="text-left px-2 py-2 border-b border-zinc-800">{L("alloc2.sector", "Setor")}</th>}
                       {mode === "full" && <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.qty", "Qtd")}</th>}
-                      <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.avg_price", "PM")}</th>
+                      <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.avg_price_short", "PM")}</th>
                       {mode === "full" && <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.price", "Cotação")}</th>}
-                      {mode === "full" && <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.value", "Valor")}</th>}
+                      {mode === "full" && <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.value_short", "Valor")}</th>}
                       {mode === "full" && <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.return", "Retorno")}</th>}
-                      <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.pct_now", "% At")}</th>
-                      <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.pct_sug", "% Sug")}</th>
+                      <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.pct_now_short", "% At")}</th>
+                      <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.pct_sug_short", "% Sug")}</th>
                       <th className="text-left px-2 py-2 border-b border-zinc-800">{L("alloc2.orient", "Orient.")}</th>
                     </tr>
                   </thead>
@@ -580,7 +580,7 @@ export default function Alocacao({ currency = "USD" }) {
                       {mode === "full" && (
                         <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2 text-[11px] text-zinc-500">
                           <span>Qtd {fmtQty(r.quantity)}</span>
-                          <span>{L("alloc2.value", "Valor")} {money(r.value_usd)}</span>
+                          <span>{L("alloc2.value_short", "Valor")} {money(r.value_usd)}</span>
                           <span className={r.pnl_pct >= 0 ? "text-emerald-400" : "text-rose-400"}>{r.pnl_pct >= 0 ? "+" : ""}{Number(r.pnl_pct || 0).toFixed(1)}%</span>
                           {r.sector && <span>{r.sector}</span>}
                         </div>
