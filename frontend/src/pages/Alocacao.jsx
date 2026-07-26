@@ -302,6 +302,25 @@ export default function Alocacao({ currency = "USD" }) {
         </div>
 
         <div className="bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-5">
+          {/* Telemóvel: Básico/Completo + Lista/Slide na mesma linha, por cima das abas. */}
+          <div className="sm:hidden flex items-center gap-2 mb-3">
+            <div className="inline-flex rounded-md border border-zinc-800 bg-zinc-900/60 p-0.5">
+              {["basic", "full"].map((m) => (
+                <button key={m} onClick={() => setMode(m)}
+                  className={`px-2.5 py-1 text-[11px] font-mono rounded transition ${mode === m ? "bg-zinc-100 text-zinc-950" : "text-zinc-400 hover:text-zinc-200"}`}>
+                  {m === "basic" ? L("alloc2.basic", "Básico") : L("alloc2.full", "Completo")}
+                </button>
+              ))}
+            </div>
+            <div className="inline-flex rounded-md border border-zinc-800 bg-zinc-900/60 p-0.5">
+              {["list", "slide"].map((m) => (
+                <button key={m} onClick={() => setMobileMode(m)}
+                  className={`px-3 py-1 text-[11px] font-mono rounded transition ${mobileMode === m ? "bg-zinc-100 text-zinc-950" : "text-zinc-400 hover:text-zinc-200"}`}>
+                  {m === "list" ? L("alloc2.list", "Lista") : L("alloc2.slide", "Slide")}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
             <div className="flex gap-1 flex-wrap">
               {classesPresent.map((c) => (
@@ -311,7 +330,7 @@ export default function Alocacao({ currency = "USD" }) {
                 </button>
               ))}
             </div>
-            <div className="inline-flex rounded-md border border-zinc-800 bg-zinc-900/60 p-0.5">
+            <div className="hidden sm:inline-flex rounded-md border border-zinc-800 bg-zinc-900/60 p-0.5">
               {["basic", "full"].map((m) => (
                 <button key={m} onClick={() => setMode(m)}
                   className={`px-2.5 py-1 text-[11px] font-mono rounded transition ${mode === m ? "bg-zinc-100 text-zinc-950" : "text-zinc-400 hover:text-zinc-200"}`}>
@@ -427,15 +446,6 @@ export default function Alocacao({ currency = "USD" }) {
 
           {/* ===== Telemóvel (Opção E): lista densa + modo slide ===== */}
           <div className="sm:hidden">
-            <div className="inline-flex rounded-md border border-zinc-800 bg-zinc-900/60 p-0.5 mb-3">
-              {["list", "slide"].map((m) => (
-                <button key={m} onClick={() => setMobileMode(m)}
-                  className={`px-3 py-1 text-[11px] font-mono rounded transition ${mobileMode === m ? "bg-zinc-100 text-zinc-950" : "text-zinc-400 hover:text-zinc-200"}`}>
-                  {m === "list" ? L("alloc2.list", "Lista") : L("alloc2.slide", "Slide")}
-                </button>
-              ))}
-            </div>
-
             {mobileMode === "list" ? (
               <div className="overflow-x-auto -mx-1">
                 <table className="min-w-max text-[11px] font-mono border-separate border-spacing-0">

@@ -524,7 +524,7 @@ export default function Layout({ children, currency, setCurrency }) {
       {/* ── Mobile bottom navigation ─────────────────────────────────── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800/60"
            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="flex items-center justify-around h-14">
+        <div className="flex items-center h-14 px-1">
           {/* 6 separadores (8 jul 2026, antes eram 5): Início/Carteiras/
               Mercado/Alertas/Perfil/Mais — "Transações" deixou de ter
               separador próprio aqui (fica acessível a partir de Carteiras
@@ -556,7 +556,7 @@ export default function Layout({ children, currency, setCurrency }) {
             <NavLink
               key={to}
               to={to}
-              className={({ isActive }) => `flex flex-col items-center gap-1 px-2 py-2 text-xs transition-colors ${isActive ? "text-zinc-50" : "text-zinc-400 hover:text-zinc-300"}`}
+              className={({ isActive }) => `flex flex-1 min-w-0 flex-col items-center gap-1 px-0.5 py-2 text-[10px] transition-colors ${isActive ? "text-zinc-50" : "text-zinc-400 hover:text-zinc-300"}`}
             >
               <div className="relative">
                 <Icon className="w-5 h-5" />
@@ -565,7 +565,7 @@ export default function Layout({ children, currency, setCurrency }) {
 {badge > 99 ? "99+" : badge}</span>
                 )}
               </div>
-              <span>{t(labelKey)}</span>
+              <span className="max-w-full truncate">{t(labelKey)}</span>
             </NavLink>
           ))}
         </div>

@@ -98,7 +98,8 @@ export default function DashboardWidgetDrawer({ open, onClose, widgetConfig, set
       />
 
       {/* Drawer */}
-      <div className="fixed right-0 top-0 bottom-0 z-50 w-80 bg-zinc-950 border-l border-zinc-800 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
+      <div className="fixed right-0 top-0 bottom-0 z-50 w-80 bg-zinc-950 border-l border-zinc-800 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
+           style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}>
         {/* Header */}
         <div className="flex items-start justify-between px-5 py-4 border-b border-zinc-800">
           <div>
@@ -119,7 +120,8 @@ export default function DashboardWidgetDrawer({ open, onClose, widgetConfig, set
             evolution; os restantes (top_movers/performers/allocation/assets)
             só no "advanced". Filtramos a lista consoante o modo para não
             mostrar toggles sem efeito. */}
-        <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 space-y-2">
+        <div className="flex-1 overflow-y-auto">
+          <div className="px-4 pt-4 pb-2 space-y-2">
           {widgetConfig
             .filter((w) => dashMode !== "light" || ["summary", "filter_pills", "balance", "evolution"].includes(w.id))
             .map((w) => {
@@ -160,11 +162,9 @@ export default function DashboardWidgetDrawer({ open, onClose, widgetConfig, set
           })}
         </div>
 
-        {/* Filter pills section — o widget "filter_pills" aparece agora nos
-            dois modos, por isso estes toggles (esconder pills de tipo/
-            carteira) também. */}
-        {(
-        <div className="px-4 pb-2 border-t border-zinc-800 pt-4">
+          {/* Filtros rápidos — dentro da área que faz scroll (28 jul 2026),
+              para o botão de repor nunca ficar cortado no telemóvel. */}
+          <div className="px-4 pb-4 border-t border-zinc-800 pt-4">
           <div className="text-xs font-mono uppercase tracking-[0.15em] text-zinc-400 mb-3">{t("dash.widgets_filter_pills") || "Filter pills"}</div>
           <div className="space-y-1.5">
             {TYPE_PILLS.map((pill) => (
@@ -202,8 +202,8 @@ export default function DashboardWidgetDrawer({ open, onClose, widgetConfig, set
               </button>
             ))}
           </div>
+          </div>
         </div>
-        )}
 
         {/* Footer */}
         <div className="px-4 py-3 border-t border-zinc-800">
