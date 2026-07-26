@@ -59,9 +59,67 @@ def _record_data_issue(source: str, key: str, reason: str) -> None:
             "ts": datetime.now(timezone.utc).isoformat(),
         })
         _cache_set("data_health:issues", issues[-200:])
+        _maybe_alert_spike(issues)
     except Exception:
         pass
     logger.warning(f"[data-health] {source}:{key} rejeitado ({reason})")
+
+
+# Aviso proativo: se muitos valores forem rejeitados numa janela curta, é sinal
+# de uma fonte em baixo (não de um ativo pontual). Notifica o dono por email,
+# com throttle para não fazer spam.
+_SPIKE_WINDOW = 600      # 10 min
+_SPIKE_THRESHOLD = 20    # rejeitados na janela para disparar
+_ALERT_THROTTLE = 3600   # no máximo 1 email/hora
+
+
+def _maybe_alert_spike(issues: list) -> None:
+    now = datetime.now(timezone.utc)
+    recent = 0
+    for it in reversed(issues):
+        try:
+            ts = datetime.fromisoformat(it["ts"])
+        except Exception:
+            continue
+        if (now - ts).total_seconds() > _SPIKE_WINDOW:
+            break
+        recent += 1
+    if recent < _SPIKE_THRESHOLD:
+        return
+    last = _cache_get_stale("data_health:last_alert")
+    if last:
+        try:
+            if (now - datetime.fromisoformat(last)).total_seconds() < _ALERT_THROTTLE:
+                return
+        except Exception:
+            pass
+    _cache_set("data_health:last_alert", now.isoformat())  # marca ANTES de agendar (evita duplo disparo no mesmo burst)
+    try:
+        loop = asyncio.get_running_loop()
+        loop.create_task(_send_data_health_alert(recent))
+    except RuntimeError:
+        pass  # sem loop a correr (ex.: chamada sincrona isolada) — ignora
+
+
+async def _send_data_health_alert(count: int) -> None:
+    try:
+        from core import ADMIN_EMAILS
+        from email_utils import send_email
+        health = get_data_health()
+        by = health.get("issues_by_source", {})
+        rows = "".join(f"<li><b>{s}</b>: {n}</li>" for s, n in by.items()) or "<li>—</li>"
+        html = (
+            f"<p>O Wallet76 rejeitou <b>{count}</b> valores de dados nos últimos "
+            f"{_SPIKE_WINDOW // 60} minutos (preços/câmbios inválidos vindos de fontes externas).</p>"
+            f"<ul>{rows}</ul>"
+            f"<p>Os valores inválidos foram <b>bloqueados</b> — os utilizadores continuam a ver o "
+            f"último valor bom — mas convém verificar as fontes. Detalhe em <i>Admin → Dados</i>.</p>"
+        )
+        for email in ADMIN_EMAILS:
+            await send_email(email, "⚠️ Wallet76 — pico de dados rejeitados", html)
+        logger.warning(f"[data-health] alerta de pico enviado ({count} rejeitados)")
+    except Exception as e:
+        logger.warning(f"[data-health] falha a enviar alerta: {e}")
 
 
 def get_data_health() -> dict:

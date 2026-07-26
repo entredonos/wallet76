@@ -422,6 +422,86 @@ function FeedbackTab() {
   );
 }
 
+function DataHealthTab() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true); setError(false);
+    try {
+      const { data: d } = await api.get("/admin/data-health");
+      setData(d);
+    } catch { setError(true); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) return <div className="text-zinc-500 font-mono text-sm py-10 text-center">A carregar…</div>;
+  if (error || !data) return <div className="text-rose-400 font-mono text-sm py-10 text-center">Falha a carregar o estado dos dados.</div>;
+
+  const fxMin = data.fx_age_seconds == null ? "—" : Math.round(data.fx_age_seconds / 60);
+  const bySource = data.issues_by_source || {};
+  const issues = (data.recent_issues || []).slice().reverse();
+
+  const stats = [
+    { label: "Câmbio (min)", value: data.fx_stale ? `${fxMin} \u26a0` : fxMin, tone: data.fx_stale ? "text-amber-400" : "text-emerald-400" },
+    { label: "Rejeitados (total)", value: data.issue_count_total || 0, tone: (data.issue_count_total || 0) > 0 ? "text-amber-400" : "text-zinc-100" },
+    { label: "Preços ações", value: data.cached_stock_prices || 0, tone: "text-zinc-100" },
+    { label: "Preços cripto", value: data.cached_crypto_prices || 0, tone: "text-zinc-100" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-sm text-zinc-400">Qualidade das fontes de dados (preços e câmbios). Valores inválidos são bloqueados antes de chegarem ao utilizador.</div>
+        <button onClick={load} className="flex items-center gap-1.5 shrink-0 text-xs font-mono text-zinc-400 hover:text-zinc-200 border border-zinc-800 hover:border-zinc-700 rounded-md px-3 py-1.5">
+          <RefreshCw className="w-3.5 h-3.5" /> Atualizar
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {stats.map((st) => (
+          <div key={st.label} className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+            <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-mono">{st.label}</div>
+            <div className={`text-2xl font-mono mt-1 ${st.tone}`}>{st.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {Object.keys(bySource).length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(bySource).map(([src, n]) => (
+            <span key={src} className="text-xs font-mono px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30">{src}: {n}</span>
+          ))}
+        </div>
+      )}
+
+      <div>
+        <div className="text-xs font-mono uppercase tracking-wider text-zinc-500 mb-2">Rejeitados recentes</div>
+        {issues.length === 0 ? (
+          <div className="text-emerald-400/80 font-mono text-sm py-6 text-center border border-zinc-800/60 rounded-xl">Sem valores rejeitados.</div>
+        ) : (
+          <div className="border border-zinc-800/60 rounded-xl divide-y divide-zinc-800/50 overflow-hidden">
+            {issues.map((it, i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-2.5 text-xs font-mono">
+                <span className="text-zinc-500 shrink-0 w-36 truncate">{new Date(it.ts).toLocaleString()}</span>
+                <span className="text-amber-300 shrink-0 w-12">{it.source}</span>
+                <span className="text-zinc-200 shrink-0 w-24 truncate">{it.key}</span>
+                <span className="text-zinc-500 truncate">{it.reason}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="text-[11px] text-zinc-600 font-mono leading-relaxed">
+        Nota: o retrato é de um worker (cache em memória), por isso pode variar entre atualizações. O sinal completo para alertas são os logs "[data-health]" no Render; um pico dispara também um email automático (no máximo 1/hora).
+      </div>
+    </div>
+  );
+}
+
 function TabBadge({ n }) {
   if (!n) return null;
   return (
@@ -490,6 +570,7 @@ export default function AdminFeedback() {
         {[
           { key: "feedback", label: "Feedback",     icon: MessageSquare, badge: feedbackUnread },
           { key: "users",    label: "Utilizadores",  icon: Users,         badge: usersUnread },
+          { key: "data",     label: "Dados",         icon: Activity,      badge: 0 },
         ].map(({ key, label, icon: Icon, badge }) => (
           <button
             key={key}
@@ -505,7 +586,7 @@ export default function AdminFeedback() {
         ))}
       </div>
 
-      {tab === "feedback" ? <FeedbackTab /> : <UsersTab />}
+      {tab === "feedback" ? <FeedbackTab /> : tab === "users" ? <UsersTab /> : <DataHealthTab />}
     </div>
   );
 }
