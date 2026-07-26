@@ -142,9 +142,6 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Wallets = lazy(() => import("./pages/Wallets"));
 const Transactions = lazy(() => import("./pages/Transactions"));
 const Alerts = lazy(() => import("./pages/Alerts"));
-const Watchlist = lazy(() => import("./pages/Watchlist"));
-const News = lazy(() => import("./pages/News"));
-const Market = lazy(() => import("./pages/Market"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Profile = lazy(() => import("./pages/Profile"));
 const More = lazy(() => import("./pages/More"));
@@ -293,9 +290,6 @@ function AppRoutes() {
         <Route path="/transactions" element={wrap(<Transactions currency={currency} />)} />
         <Route path="/alerts" element={wrap(<Alerts currency={currency} />)} />
         <Route path="/wallets" element={wrap(<Wallets baseCurrency={currency} />)} />
-        <Route path="/watchlist"    element={wrap(<Watchlist currency={currency} />)} />
-        <Route path="/news" element={wrap(<News />)} />
-        <Route path="/market"       element={wrap(<Market currency={currency} />)} />
         <Route path="/settings" element={wrap(<Settings />)} />
         <Route path="/profile" element={wrap(<Profile currency={currency} setCurrency={setCurrency} />)} />
         <Route path="/more" element={wrap(<More />)} />

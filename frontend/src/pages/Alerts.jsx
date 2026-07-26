@@ -15,8 +15,7 @@ import {
 } from "../components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { toast } from "sonner";
-import { Bell, Plus, Trash2, Pencil, Star, ArrowUp, ArrowDown, BellRing, Check } from "lucide-react";
-import InlineWatchlistDialog from "../components/InlineWatchlistDialog";
+import { Bell, Plus, Trash2, Pencil, ArrowUp, ArrowDown, BellRing, Check } from "lucide-react";
 import AssetIcon from "../components/AssetIcon";
 import { fmtCurrency, fmtPct, convert } from "../lib/format";
 import { useI18n } from "../context/I18nContext";
@@ -54,7 +53,6 @@ export default function Alerts({ currency = "USD" }) {
   const [notifPerm, setNotifPerm] = useState(typeof Notification !== "undefined" ? Notification.permission : "denied");
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [editAlert, setEditAlert] = useState(null);
-  const [watchAsset, setWatchAsset] = useState(null);
 
   useEffect(() => { if (prefillSymbol) setOpen(true); }, [prefillSymbol]);
 
@@ -188,7 +186,6 @@ export default function Alerts({ currency = "USD" }) {
                 distance={distance}
                 onToggle={() => toggleAlert(a)}
                 onEdit={() => setEditAlert(a)}
-                onWatch={() => setWatchAsset(a)}
                 onDelete={() => setConfirmDelete(a)}
                 currency={currency}
                 fxRates={fxRates}
@@ -258,9 +255,6 @@ export default function Alerts({ currency = "USD" }) {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-3">
-                        <button onClick={() => setWatchAsset(a)} className="text-zinc-600 hover:text-amber-400 transition-colors" title={t("watch.add")} data-testid={`alert-watch-${a.id}`}>
-                          <Star className="w-4 h-4"/>
-                        </button>
                         <button onClick={() => setEditAlert(a)} className="text-zinc-600 hover:text-zinc-200 transition-colors" title={t("alert.edit")} data-testid={`alert-edit-${a.id}`}>
                           <Pencil className="w-4 h-4"/>
                         </button>
@@ -294,7 +288,6 @@ export default function Alerts({ currency = "USD" }) {
 
       <EditAlertDialog alert={editAlert} onClose={() => setEditAlert(null)} onSaved={load} currency={currency} fxRates={fxRates} />
 
-      <InlineWatchlistDialog asset={watchAsset} open={!!watchAsset} onOpenChange={(v) => { if (!v) setWatchAsset(null); }} />
     </div>
   );
 }
@@ -573,9 +566,6 @@ function AlertCard({ a, current, distance, onToggle, onEdit, onWatch, onDelete, 
           )}
         </button>
         <div className="flex items-center gap-4">
-          <button onClick={onWatch} className="text-zinc-600 hover:text-amber-400 transition-colors" title={t("watch.add")} data-testid={`alert-watch-card-${a.id}`}>
-            <Star className="w-4 h-4"/>
-          </button>
           <button onClick={onEdit} className="text-zinc-600 hover:text-zinc-200 transition-colors" title={t("alert.edit")} data-testid={`alert-edit-card-${a.id}`}>
             <Pencil className="w-4 h-4"/>
           </button>

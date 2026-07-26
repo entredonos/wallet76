@@ -9,7 +9,6 @@ from routes import billing as billing_routes
 from core import db, client, logger, APP_URL, TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET  # noqa: F401  (loads .env via core import)
 from alert_checker import run_alert_checker
 from routes.portfolio import run_snapshot_scheduler
-from routes.market import run_market_movers_refresher
 from telegram_utils import set_telegram_webhook
 from routes import (
     auth as auth_routes,
@@ -249,12 +248,6 @@ async def startup():
     # Was previously imported but never started — price alerts (and their
     # email notifications) were not actually being checked periodically.
     asyncio.create_task(run_alert_checker())
-
-    # Keeps the Market tab's movers cache warm so users don't pay the ~20s
-    # cold-cache cost themselves (mostly yfinance's batch download of ~100
-    # stock tickers in market_movers_stocks) — see run_market_movers_refresher
-    # docstring in routes/market.py.
-    asyncio.create_task(run_market_movers_refresher())
 
     # Regista o webhook do Telegram automaticamente sempre que
     # TELEGRAM_BOT_TOKEN estiver definido — zero passos manuais além de

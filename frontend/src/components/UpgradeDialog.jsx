@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Wallet as WalletIcon, Bell, ListChecks } from "lucide-react";
+import { Sparkles, Wallet as WalletIcon, Bell } from "lucide-react";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { useI18n } from "../context/I18nContext";
 
@@ -23,7 +23,6 @@ export default function UpgradeDialog({ open, onOpenChange, reason = "wallet_lim
   const features = [
     { Icon: WalletIcon, label: t("upgrade.dialog_feature_wallets") },
     { Icon: Bell, label: t("upgrade.dialog_feature_alerts") },
-    { Icon: ListChecks, label: t("upgrade.dialog_feature_watchlists") },
   ];
 
   return (

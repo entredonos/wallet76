@@ -7,7 +7,7 @@ import { useI18n, LANGUAGES } from "../context/I18nContext";
 import { api } from "../lib/api";
 import {
   TrendingUp, LogOut, Wallet as WalletIcon, LayoutDashboard, Receipt, Bell,
-  Briefcase, Coins, Plus, Sun, Moon, Eye, Newspaper, Languages, LineChart, Settings, Link2, Globe, Search, BarChart2, ShieldCheck, ChevronDown, MoreHorizontal, Sparkles,
+  Briefcase, Coins, Plus, Sun, Moon, Languages, Settings, Link2, Globe, Search, BarChart2, ShieldCheck, ChevronDown, MoreHorizontal, Sparkles,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import walletLogo from "../assets/wallet76-logo80x60.png";
@@ -30,7 +30,7 @@ const TYPE_ICON = { broker: Briefcase, exchange: Coins, wallet: WalletIcon };
 const NAV_DIV = { pt: "Dividendos", en: "Dividends", fr: "Dividendes", de: "Dividenden", it: "Dividendi", es: "Dividendos" };
 const PREVIEW_MSG = { pt: "Pré-visualização de plano:", en: "Plan preview:", fr: "Aperçu du plan :", de: "Plan-Vorschau:", it: "Anteprima piano:", es: "Vista previa de plan:" };
 const PREVIEW_BACK = { pt: "voltar ao normal", en: "back to normal", fr: "revenir à la normale", de: "zurück zum Normalzustand", it: "torna al normale", es: "volver a lo normal" };
-const PORTFOLIO_GROUP_ROUTES = ["/wallets", "/transactions", "/watchlist", "/alerts", "/analytics", "/alocacao", "/dividends"];
+const PORTFOLIO_GROUP_ROUTES = ["/wallets", "/transactions", "/alerts", "/analytics", "/alocacao", "/dividends"];
 
 export default function Layout({ children, currency, setCurrency }) {
   const { user, logout } = useAuth();
@@ -40,7 +40,6 @@ export default function Layout({ children, currency, setCurrency }) {
   const nav = useNavigate();
   const loc = useLocation();
   const [wallets, setWallets] = useState([]);
-  const [watchlist, setWatchlist] = useState([]);
   const [alertCount, setAlertCount] = useState(0);
   const [walletStats, setWalletStats] = useState({}); // { [wallet_id]: { value, cost, pnl, pnlPct } }
   const [walletSparks, setWalletSparks] = useState({}); // { [wallet_id]: [number...7] }
@@ -105,16 +104,14 @@ export default function Layout({ children, currency, setCurrency }) {
     const load = async () => {
       if (document.visibilityState === "hidden") return;
       try {
-        const [w, a, wl, p] = await Promise.all([
+        const [w, a, p] = await Promise.all([
           api.get("/wallets"),
           api.get("/alerts"),
-          api.get("/watchlists"),
           api.get("/portfolio"),
         ]);
         if (cancel) return;
         setWallets(w.data || []);
         setAlertCount((a.data || []).filter((x) => x.active).length);
-        setWatchlist(wl.data || []);
         // Sparklines optional — subscription gated, don't block main load
         api.get("/wallets/sparklines").then(r => setWalletSparks(r.data || {})).catch(() => {});
         // Per-wallet PnL aggregation
@@ -192,7 +189,7 @@ export default function Layout({ children, currency, setCurrency }) {
           <LayoutDashboard className="w-4 h-4" /> {t("nav.dashboard")}
         </NavLink>
 
-        {/* Portfólio group — Carteiras/Transações/Watchlist/Alertas, colapsável */}
+        {/* Portfólio group — Carteiras/Transações/Alertas/Análise/Alocação/Dividendos, colapsável */}
         <button
           type="button"
           onClick={() => setPortfolioOpen((v) => !v)}
@@ -218,13 +215,6 @@ export default function Layout({ children, currency, setCurrency }) {
             <NavLink to="/transactions" className={linkCls} data-testid="nav-transactions" onClick={() => setOpen(false)}>
               <Receipt className="w-4 h-4" /> {t("nav.transactions")}
             </NavLink>
-            <NavLink to="/watchlist" className={linkCls} data-testid="nav-watchlist" onClick={() => setOpen(false)}>
-              <Eye className="w-4 h-4" />
-              <span>{t("nav.watchlist")}</span>
-              {watchlist.length > 0 && (
-                <span className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700" data-testid="watchlist-badge">{watchlist.length}</span>
-              )}
-            </NavLink>
             <NavLink to="/alerts" className={linkCls} data-testid="nav-alerts" onClick={() => setOpen(false)}>
               <Bell className="w-4 h-4" />
               <span>{t("nav.alerts")}</span>
@@ -244,12 +234,6 @@ export default function Layout({ children, currency, setCurrency }) {
           </div>
         )}
 
-        {/* "Notícias" removido do menu (23 jul 2026) — redundante: o Mercado já
-            mostra notícias por separador e tem um link "ver todas" para /news
-            (a rota mantém-se, só saiu do menu para reduzir sobrecarga). */}
-        <NavLink to="/market" className={linkCls} data-testid="nav-market" onClick={() => setOpen(false)}>
-          <LineChart className="w-4 h-4" /> {t("nav.market")}
-        </NavLink>
         <NavLink to="/connected-accounts" className={linkCls} data-testid="nav-brokers" onClick={() => setOpen(false)}>
           <Link2 className="w-4 h-4" /> {t("nav.brokers")}
         </NavLink>
@@ -549,7 +533,6 @@ export default function Layout({ children, currency, setCurrency }) {
             { to: "/dashboard", icon: LayoutDashboard, labelKey: "nav.dashboard" },
             { to: "/wallets",   icon: WalletIcon,       labelKey: "nav.wallets" },
             { to: "/alocacao",  icon: AllocIcon,        labelKey: "nav.allocation" },
-            { to: "/market",    icon: LineChart,        labelKey: "nav.market" },
             { to: "/alerts",    icon: Bell,             labelKey: "nav.alerts", badge: alertCount },
             { to: "/more",      icon: MoreHorizontal,   labelKey: "nav.more" },
           ].map(({ to, icon: Icon, labelKey, badge }) => (

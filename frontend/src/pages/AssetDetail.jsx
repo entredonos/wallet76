@@ -1,10 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import {
-  ArrowLeft, TrendingUp, TrendingDown, Plus, Bell, Globe,
-  BarChart2, Layers, Coins, ExternalLink, ChevronUp, ChevronDown,
-  DollarSign,
-} from "lucide-react";
+import { ArrowLeft, TrendingUp, Plus, Bell, Globe, BarChart2, Layers, Coins, ChevronUp, ChevronDown, DollarSign } from "lucide-react";
 import {
   ComposedChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -18,14 +14,6 @@ import { getDayBoundaries, getWeekendBands } from "../lib/chartGaps";
 import { CHART_RANGES, CHART_RANGES_SHOW_DATE, CHART_RANGES_DAY_MARKERS, CHART_RANGES_WEEKEND_SHADING } from "../constants/chartRanges";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-const REC_MAP = {
-  strong_buy:  { labelKey: "asset.rec_strong_buy",  cls: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
-  buy:         { labelKey: "asset.rec_buy",         cls: "bg-green-500/20  text-green-300  border-green-500/30"    },
-  hold:        { labelKey: "asset.rec_hold",        cls: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30"   },
-  sell:        { labelKey: "asset.rec_sell",        cls: "bg-red-500/20    text-red-300    border-red-500/30"      },
-  strong_sell: { labelKey: "asset.rec_strong_sell", cls: "bg-rose-500/20   text-rose-300   border-rose-500/30"    },
-};
-
 const TYPE_INFO = {
   stock:  { labelKey: "asset.type_stock",  Icon: TrendingUp, cls: "text-blue-400"    },
   etf:    { labelKey: "asset.type_etf",    Icon: Layers,      cls: "text-indigo-400"  },
@@ -50,39 +38,6 @@ function Stat({ label, value, sub }) {
       <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 mb-1">{label}</div>
       <div className="text-sm font-mono font-bold text-zinc-100">{value ?? "—"}</div>
       {sub && <div className="text-[10px] text-zinc-600 mt-0.5">{sub}</div>}
-    </div>
-  );
-}
-
-function RecBar({ dist }) {
-  const { t } = useI18n();
-  if (!dist) return null;
-  const total = (dist.strongBuy + dist.buy + dist.hold + dist.sell + dist.strongSell) || 1;
-  const pct = (v) => ((v / total) * 100).toFixed(0);
-  const bars = [
-    { key: "strongBuy",  labelKey: "asset.rec_strong_buy",  color: "bg-emerald-500", v: dist.strongBuy },
-    { key: "buy",        labelKey: "asset.rec_buy",         color: "bg-green-500",   v: dist.buy       },
-    { key: "hold",       labelKey: "asset.rec_hold",        color: "bg-yellow-500",  v: dist.hold      },
-    { key: "sell",       labelKey: "asset.rec_sell",        color: "bg-red-400",     v: dist.sell      },
-    { key: "strongSell", labelKey: "asset.rec_strong_sell", color: "bg-rose-600",    v: dist.strongSell},
-  ];
-  return (
-    <div className="space-y-2">
-      {/* Stacked bar */}
-      <div className="h-2.5 w-full flex rounded-full overflow-hidden gap-px">
-        {bars.map(b => b.v > 0 && (
-          <div key={b.key} className={`${b.color} transition-all`} style={{ width: `${pct(b.v)}%` }} />
-        ))}
-      </div>
-      {/* Legend */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1">
-        {bars.filter(b => b.v > 0).map(b => (
-          <div key={b.key} className="flex items-center gap-1.5 text-[11px] font-mono text-zinc-400">
-            <span className={`w-2 h-2 rounded-sm ${b.color}`} />
-            {t(b.labelKey)} <span className="text-zinc-600">({b.v})</span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -149,12 +104,6 @@ export default function AssetDetail({ currency = "USD" }) {
           if (found.coingecko_id) setCoingeckoId(found.coingecko_id);
           return;
         }
-        const { data: wl } = await api.get("/watchlists");
-        const w = (wl || []).find((x) => x.symbol.toUpperCase() === symbol.toUpperCase() && (!urlAssetType || x.asset_type === urlAssetType));
-        if (w) {
-          setPortfolioInfo(w);
-          if (w.coingecko_id) setCoingeckoId(w.coingecko_id);
-        }
       } catch { /* falls back to symbol-based lookup server-side */ }
     })();
   }, [symbol, urlAssetType]);
@@ -207,8 +156,6 @@ export default function AssetDetail({ currency = "USD" }) {
     [chart, effectiveType, range]
   );
 
-  const rec = detail?.analyst?.recommendation;
-  const recStyle = REC_MAP[rec] || null;
   const typeInfo = TYPE_INFO[effectiveType] || TYPE_INFO.stock;
 
   const pos = detail?.position;
@@ -416,13 +363,9 @@ export default function AssetDetail({ currency = "USD" }) {
           <Stat label={t("asset.open")}          value={fmt(detail?.open, currency, fxRates)} />
           <Stat label={t("asset.day_high")}      value={fmt(detail?.day_high, currency, fxRates)} />
           <Stat label={t("asset.day_low")}       value={fmt(detail?.day_low, currency, fxRates)} />
-          {detail?.pe_ratio    != null && <Stat label="P/E"          value={detail.pe_ratio.toFixed(2)} />}
-          {detail?.forward_pe  != null && <Stat label="Fwd P/E"      value={detail.forward_pe.toFixed(2)} />}
-          {detail?.eps         != null && <Stat label="EPS"          value={fmt(detail.eps, currency, fxRates)} />}
           {detail?.dividend_yield != null && !detail?.div_yield_trailing && (
             <Stat label={t("asset.dividend")} value={`${(detail.dividend_yield * 100).toFixed(2)}%`} />
           )}
-          {detail?.beta        != null && <Stat label="Beta"         value={detail.beta.toFixed(2)} />}
         </div>
       </div>
 
@@ -497,74 +440,6 @@ export default function AssetDetail({ currency = "USD" }) {
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {/* ── Analyst Recommendations ───────────────────────────────── */}
-      {/* -- Analyst Recommendations ---------------------------------------- */}
-      {detail?.analyst?.n_analysts > 0 && (
-        <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-2xl p-5">
-          <div className="text-xs font-mono uppercase tracking-widest text-zinc-400 mb-4">
-            {t("asset.analyst_rec")}
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-6">
-            {/* Consensus badge + score */}
-            <div className="flex flex-col items-center justify-center gap-2 min-w-[120px]">
-              {recStyle && (
-                <span className={`px-3 py-1.5 rounded-lg text-sm font-mono font-bold border ${recStyle.cls}`}>
-                  {t(recStyle.labelKey)}
-                </span>
-              )}
-              {detail.analyst.mean_score != null && (
-                <div className="text-xs text-zinc-600 font-mono">
-                  {t("asset.mean_score")}: {detail.analyst.mean_score.toFixed(1)}/5
-                </div>
-              )}
-              <div className="text-xs text-zinc-600">
-                {detail.analyst.n_analysts} {t("asset.analysts")}
-              </div>
-            </div>
-
-            {/* Target prices */}
-            <div className="flex-1 space-y-3">
-              {(detail.analyst.target_mean || detail.analyst.target_high || detail.analyst.target_low) && (
-                <div className="grid grid-cols-3 gap-2">
-                  <Stat label={t("asset.target_low")}  value={fmt(detail.analyst.target_low,  currency, fxRates)} />
-                  <Stat label={t("asset.target_mean")}  value={fmt(detail.analyst.target_mean, currency, fxRates)}
-                    sub={price && detail.analyst.target_mean
-                      ? `${detail.analyst.target_mean >= price ? "+" : ""}${Math.abs((detail.analyst.target_mean - price) / price * 100).toFixed(1)}% ${t("asset.vs_now")}`
-                      : undefined
-                    }
-                  />
-                  <Stat label={t("asset.target_high")} value={fmt(detail.analyst.target_high, currency, fxRates)} />
-                </div>
-              )}
-              {detail.analyst.distribution && <RecBar dist={detail.analyst.distribution} />}
-            </div>
-          </div>
-
-          {/* Recent upgrades/downgrades */}
-          {detail.analyst.upgrades?.length > 0 && (
-            <div className="mt-5">
-              <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-600 mb-2">
-                {t("asset.recent_ratings")}
-              </div>
-              <div className="space-y-1.5">
-                {detail.analyst.upgrades.map((u, i) => (
-                  <div key={i} className="flex items-center gap-3 text-xs font-mono text-zinc-400">
-                    <span className="text-zinc-600 shrink-0">{u.date}</span>
-                    <span className="font-bold text-zinc-300 shrink-0">{u.firm}</span>
-                    {u.from_grade && <span className="text-zinc-600">{u.from_grade} &rarr;</span>}
-                    <span className={
-                      (u.action || "").toLowerCase().includes("up") ? "text-emerald-400" :
-                      (u.action || "").toLowerCase().includes("down") ? "text-red-400" : "text-zinc-300"
-                    }>{u.to_grade}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
