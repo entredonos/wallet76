@@ -8,6 +8,7 @@ from routes import billing as billing_routes
 
 from core import db, client, logger, APP_URL, TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET  # noqa: F401  (loads .env via core import)
 from alert_checker import run_alert_checker
+from onboarding import run_onboarding_emailer
 from routes.portfolio import run_snapshot_scheduler
 from telegram_utils import set_telegram_webhook
 from routes import (
@@ -244,6 +245,9 @@ async def startup():
     # Was previously imported but never started — price alerts (and their
     # email notifications) were not actually being checked periodically.
     asyncio.create_task(run_alert_checker())
+
+    # Sequência de emails de onboarding (welcome no verify; 2-4 aqui).
+    asyncio.create_task(run_onboarding_emailer())
 
     # Regista o webhook do Telegram automaticamente sempre que
     # TELEGRAM_BOT_TOKEN estiver definido — zero passos manuais além de

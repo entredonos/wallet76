@@ -385,6 +385,12 @@ async def verify_email(payload: TokenBody):
             "$unset": {"verify_token_hash": "", "verify_token_expires": ""},
         },
     )
+    # Email de boas-vindas (1.º da sequência de onboarding) — fire-and-forget.
+    try:
+        from onboarding import send_welcome_email
+        asyncio.create_task(send_welcome_email(user)).add_done_callback(_log_email_task_result)
+    except Exception as _e:
+        logger.error(f"onboarding welcome enqueue falhou: {_e}")
     return {"ok": True}
 
 
