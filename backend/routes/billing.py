@@ -186,6 +186,18 @@ async def stripe_webhook(request: Request):
             }
         )
 
+        # Fundadores (X/100): marca o utilizador como fundador se a subscrição
+        # traz o cupão/código de fundador aplicado. Só marca True, nunca desmarca
+        # (um evento posterior pode não trazer o desconto expandido).
+        try:
+            if _subscription_is_founder(subscription):
+                await db.users.update_one(
+                    {"stripe_customer_id": customer_id},
+                    {"$set": {"is_founder": True}},
+                )
+        except Exception as e:
+            logger.warning(f"founder: falha a marcar fundador ({customer_id}): {e}")
+
         if existing_user and prev_status != "active" and status == "active":
             referral = await db.referrals.find_one({
                 "referred_user_id": existing_user["id"],
@@ -203,34 +215,53 @@ async def stripe_webhook(request: Request):
 
     return {"ok": True}
 
+def _subscription_is_founder(sub) -> bool:
+    # True se a subscrição traz o cupão/código promocional de fundador
+    # aplicado (FOUNDER_PROMO_ID pode ser o id do cupão ou um promo_...).
+    # Parsing defensivo: o objeto da subscrição pode trazer o desconto em
+    # "discount" (single, legado) ou "discounts" (lista).
+    if not FOUNDER_PROMO_ID:
+        return False
+    candidates = []
+    d = sub.get("discount")
+    if isinstance(d, dict):
+        candidates.append(d)
+    dl = sub.get("discounts")
+    if isinstance(dl, list):
+        candidates.extend(x for x in dl if isinstance(x, dict))
+    for disc in candidates:
+        coupon = disc.get("coupon")
+        cid = coupon.get("id") if isinstance(coupon, dict) else coupon
+        pc = disc.get("promotion_code")
+        pcid = pc.get("id") if isinstance(pc, dict) else pc
+        if FOUNDER_PROMO_ID in (cid, pcid):
+            return True
+    return False
 
 
 @router.get("/billing/founder-status")
 async def founder_status():
-    # Público (sem auth): quantas das vagas de fundador já foram usadas.
-    # Resultado em cache 60s para não chamar o Stripe em cada visita à landing.
+    # Público (sem auth): estado das vagas de fundador para a landing.
+    #   confirmados = fundadores com subscrição "active" (já pagaram) -> ocupam vaga
+    #   em_teste    = fundadores em "trialing" (provisorios, ainda podem confirmar/desistir)
+    #   livres      = total - confirmados - em_teste (verde na barra)
+    # Cache 60s para não bater na base de dados a cada visita.
     now = time.time()
     cached = _founder_cache["data"]
     if cached is not None and (now - _founder_cache["ts"]) < 60:
         return cached
 
     total = FOUNDER_SEATS
-    taken = None
     try:
-        if FOUNDER_PROMO_ID and stripe.api_key:
-            if FOUNDER_PROMO_ID.startswith("promo_"):
-                obj = stripe.PromotionCode.retrieve(FOUNDER_PROMO_ID)
-            else:
-                obj = stripe.Coupon.retrieve(FOUNDER_PROMO_ID)
-            taken = obj.get("times_redeemed")
-            if obj.get("max_redemptions"):
-                total = obj["max_redemptions"]
+        confirmados = await db.users.count_documents({"is_founder": True, "subscription_status": "active"})
+        em_teste = await db.users.count_documents({"is_founder": True, "subscription_status": "trialing"})
     except Exception as e:
-        logger.warning(f"founder-status: falha a ler o cupão de fundador no Stripe: {e}")
-        taken = None
+        logger.warning(f"founder-status: falha a contar fundadores: {e}")
+        confirmados = 0
+        em_teste = 0
 
-    remaining = (total - taken) if (taken is not None and total is not None) else None
-    data = {"total": total, "taken": taken, "remaining": remaining}
+    livres = max(0, total - confirmados - em_teste)
+    data = {"total": total, "confirmados": confirmados, "em_teste": em_teste, "livres": livres}
     _founder_cache["ts"] = now
     _founder_cache["data"] = data
     return data

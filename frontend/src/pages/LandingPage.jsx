@@ -34,7 +34,7 @@ const COPY = {
   en: {
     nav_features: "Features", nav_security: "Security", nav_pricing: "Pricing", nav_referral: "Invite & Earn",
     nav_login: "Sign in", nav_start: "Start for free",
-    founder_badge: "Founder pricing", founder_note: "Early users lock in the launch price for good.", founder_seat: "Founder seat",
+    founder_badge: "Founder pricing", founder_note: "Early users lock in the launch price for good.", founder_seat: "Founder seat", founder_free: "left", founder_trial: "in trial", founder_confirmed: "confirmed",
     badge: "Your investments. One place. Full control.",
     hero1: "Stocks, ETFs and crypto, from every broker.", hero2: "All in one portfolio.",
     hero_sub: "Bring everything you invest in into one clear view — in 6 languages and 4 currencies, with real-time prices. Encrypted, GDPR-compliant, and yours alone.",
@@ -149,7 +149,7 @@ const COPY = {
   pt: {
     nav_features: "Funcionalidades", nav_security: "Segurança", nav_pricing: "Preços", nav_referral: "Convida e Ganha",
     nav_login: "Entrar", nav_start: "Começar grátis",
-    founder_badge: "Preço de fundador", founder_note: "Os primeiros utilizadores garantem o preço de lançamento bloqueado.", founder_seat: "Vaga de fundador",
+    founder_badge: "Preço de fundador", founder_note: "Os primeiros utilizadores garantem o preço de lançamento bloqueado.", founder_seat: "Vaga de fundador", founder_free: "livres", founder_trial: "em teste", founder_confirmed: "confirmados",
     badge: "Os seus investimentos. Um lugar. Controlo total.",
     hero1: "Ações, ETFs e cripto, de todas as corretoras.", hero2: "Tudo numa só carteira.",
     hero_sub: "Junte tudo o que investe numa só visão — em 6 línguas e 4 moedas, com preços em tempo real. Encriptado, conforme o RGPD e só seu.",
@@ -264,7 +264,7 @@ const COPY = {
   fr: {
     nav_features: "Fonctionnalités", nav_security: "Sécurité", nav_pricing: "Tarifs", nav_referral: "Parrainage",
     nav_login: "Connexion", nav_start: "Commencer gratuitement",
-    founder_badge: "Tarif fondateur", founder_note: "Les premiers utilisateurs verrouillent le prix de lancement à vie.", founder_seat: "Place fondateur",
+    founder_badge: "Tarif fondateur", founder_note: "Les premiers utilisateurs verrouillent le prix de lancement à vie.", founder_seat: "Place fondateur", founder_free: "libres", founder_trial: "à l'essai", founder_confirmed: "confirmés",
     badge: "Vos investissements. Un endroit. Contrôle total.",
     hero1: "Actions, ETF et crypto, de tous vos courtiers.", hero2: "Le tout dans un seul portefeuille.",
     hero_sub: "Réunissez tout ce dans quoi vous investissez dans une seule vue claire — en 6 langues et 4 devises, avec des prix en temps réel. Chiffré, conforme RGPD, et à vous seul.",
@@ -379,7 +379,7 @@ const COPY = {
   de: {
     nav_features: "Funktionen", nav_security: "Sicherheit", nav_pricing: "Preise", nav_referral: "Empfehlen & Verdienen",
     nav_login: "Anmelden", nav_start: "Kostenlos starten",
-    founder_badge: "Gründerpreis", founder_note: "Die ersten Nutzer sichern sich den Startpreis dauerhaft.", founder_seat: "Gründerplatz",
+    founder_badge: "Gründerpreis", founder_note: "Die ersten Nutzer sichern sich den Startpreis dauerhaft.", founder_seat: "Gründerplatz", founder_free: "frei", founder_trial: "im Test", founder_confirmed: "bestätigt",
     badge: "Ihre Investments. Ein Ort. Volle Kontrolle.",
     hero1: "Aktien, ETFs und Krypto, von jedem Broker.", hero2: "Alles in einem Portfolio.",
     hero_sub: "Bringen Sie alles, worin Sie investieren, in eine übersichtliche Ansicht — in 6 Sprachen und 4 Währungen, mit Echtzeitkursen. Verschlüsselt, DSGVO-konform und nur für Sie.",
@@ -494,7 +494,7 @@ const COPY = {
   it: {
     nav_features: "Funzionalità", nav_security: "Sicurezza", nav_pricing: "Prezzi", nav_referral: "Invita e Guadagna",
     nav_login: "Accedi", nav_start: "Inizia gratis",
-    founder_badge: "Prezzo fondatore", founder_note: "I primi utenti bloccano per sempre il prezzo di lancio.", founder_seat: "Posto fondatore",
+    founder_badge: "Prezzo fondatore", founder_note: "I primi utenti bloccano per sempre il prezzo di lancio.", founder_seat: "Posto fondatore", founder_free: "libere", founder_trial: "in prova", founder_confirmed: "confermati",
     badge: "I tuoi investimenti. Un posto. Controllo totale.",
     hero1: "Azioni, ETF e cripto, da ogni broker.", hero2: "Tutto in un solo portafoglio.",
     hero_sub: "Riunisci tutto ciò in cui investi in un\u2019unica vista chiara — in 6 lingue e 4 valute, con prezzi in tempo reale. Crittografato, conforme GDPR e solo tuo.",
@@ -609,7 +609,7 @@ const COPY = {
   es: {
     nav_features: "Funcionalidades", nav_security: "Seguridad", nav_pricing: "Precios", nav_referral: "Invita y Gana",
     nav_login: "Iniciar sesión", nav_start: "Empezar gratis",
-    founder_badge: "Precio fundador", founder_note: "Los primeros usuarios fijan el precio de lanzamiento para siempre.", founder_seat: "Plaza de fundador",
+    founder_badge: "Precio fundador", founder_note: "Los primeros usuarios fijan el precio de lanzamiento para siempre.", founder_seat: "Plaza de fundador", founder_free: "libres", founder_trial: "en prueba", founder_confirmed: "confirmados",
     badge: "Tus inversiones. Un lugar. Control total.",
     hero1: "Acciones, ETFs y cripto, de todos los brókers.", hero2: "Todo en una sola cartera.",
     hero_sub: "Reúne todo lo que inviertes en una sola vista clara — en 6 idiomas y 4 monedas, con precios en tiempo real. Cifrado, conforme al RGPD y solo tuyo.",
@@ -892,8 +892,8 @@ export default function LandingPage() {
     fetch("/desktop-version.json", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null)).then(setDesktopInfo).catch(() => {});
   }, []);
-  // contador de fundador real — vem de /billing/founder-status (Stripe)
-  const [founder, setFounder] = useState({ total: 100, taken: null });
+  // contador de fundador real — vem de /billing/founder-status (DB/Stripe)
+  const [founder, setFounder] = useState({ total: 100, confirmados: 0, em_teste: 0, livres: 100 });
   useEffect(() => {
     let ignore = false;
     api
@@ -901,10 +901,11 @@ export default function LandingPage() {
       .then((r) => {
         if (ignore) return;
         const d = r.data || {};
-        setFounder({
-          total: typeof d.total === "number" ? d.total : 100,
-          taken: typeof d.taken === "number" ? d.taken : null,
-        });
+        const total = typeof d.total === "number" ? d.total : 100;
+        const confirmados = typeof d.confirmados === "number" ? d.confirmados : 0;
+        const em_teste = typeof d.em_teste === "number" ? d.em_teste : 0;
+        const livres = typeof d.livres === "number" ? d.livres : Math.max(0, total - confirmados - em_teste);
+        setFounder({ total, confirmados, em_teste, livres });
       })
       .catch(() => {});
     return () => {
@@ -1044,24 +1045,30 @@ export default function LandingPage() {
               {c.cta_secondary}
             </a>
           </div>
-          {/* contador de fundador real — vem de /billing/founder-status (Stripe) */}
-          <div className="max-w-md mx-auto mb-12 rounded-2xl border border-[#F59E0B]/25 bg-[#1E1E22] px-5 py-4 text-left">
-            <div className="flex items-center gap-2 mb-1.5">
+          {/* contador de fundador real (verde=livres, laranja=em teste, azul=confirmados) — /billing/founder-status */}
+          <div className="max-w-md mx-auto mb-12 rounded-2xl border border-white/10 bg-[#1E1E22] px-5 py-4 text-left">
+            <div className="flex items-center gap-2 mb-2.5">
               <Star className="w-4 h-4 text-[#FBBF24] shrink-0" />
               <span className="text-xs font-semibold uppercase tracking-widest text-[#FBBF24]">{c.founder_badge}</span>
             </div>
-            {typeof founder.taken === "number" ? (
-              <>
-                <div className="flex items-baseline justify-between gap-3 mb-2">
-                  <span className="text-sm text-zinc-300">{c.founder_seat}</span>
-                  <span className="text-lg font-bold font-mono bg-gradient-to-r from-[#FBBF24] via-[#F59E0B] to-[#FCD34D] bg-clip-text text-transparent">{founder.taken}/{founder.total}</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                  <div className="h-full rounded-full bg-gradient-to-r from-[#F59E0B] to-[#FBBF24]" style={{ width: `${Math.min(100, Math.round((founder.taken / founder.total) * 100))}%` }} />
-                </div>
-              </>
-            ) : null}
-            <p className="text-xs text-zinc-400 mt-2">{c.founder_note}</p>
+            <div className="flex items-baseline justify-between gap-3 mb-2">
+              <span className="text-sm text-zinc-300">{c.founder_seat}</span>
+              <span className="text-lg font-bold font-mono">
+                <span className="bg-gradient-to-r from-[#16A34A] to-[#22C55E] bg-clip-text text-transparent">{founder.livres}</span>
+                <span className="text-zinc-500">/{founder.total}</span>
+              </span>
+            </div>
+            <div className="flex h-2 rounded-full overflow-hidden bg-[#26262B] border border-white/5">
+              <div className="bg-gradient-to-r from-[#16A34A] to-[#22C55E]" style={{ width: `${Math.max(0, (founder.livres / founder.total) * 100)}%` }} />
+              <div className="bg-gradient-to-r from-[#F59E0B] to-[#FBBF24]" style={{ width: `${Math.max(0, (founder.em_teste / founder.total) * 100)}%` }} />
+              <div className="bg-gradient-to-r from-[#2B5AB8] to-[#4C82D8]" style={{ width: `${Math.max(0, (founder.confirmados / founder.total) * 100)}%` }} />
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5 text-xs text-zinc-400">
+              <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#22C55E]" /><b className="text-zinc-200">{founder.livres}</b> {c.founder_free}</span>
+              <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#F59E0B]" /><b className="text-zinc-200">{founder.em_teste}</b> {c.founder_trial}</span>
+              <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-gradient-to-r from-[#2B5AB8] to-[#4C82D8]" /><b className="text-zinc-200">{founder.confirmados}</b> {c.founder_confirmed}</span>
+            </div>
+            <p className="text-xs text-zinc-400 mt-2.5">{c.founder_note}</p>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10 mb-16">
