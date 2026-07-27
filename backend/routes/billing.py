@@ -105,6 +105,74 @@ async def create_checkout_session(plan: str, currency: str = "eur", user=Depends
     return {"url": session.url}
 
 
+def _founder_discount_param():
+    # Constrói o parâmetro discounts do Stripe a partir de FOUNDER_PROMO_ID,
+    # que pode ser o id de um cupão ou um promotion code (promo_...).
+    if not FOUNDER_PROMO_ID:
+        return None
+    if FOUNDER_PROMO_ID.startswith("promo_"):
+        return [{"promotion_code": FOUNDER_PROMO_ID}]
+    return [{"coupon": FOUNDER_PROMO_ID}]
+
+
+async def _founder_seats_used() -> int:
+    # Vagas ocupadas = confirmados (active) + em teste (trialing).
+    try:
+        confirmados = await db.users.count_documents({"is_founder": True, "subscription_status": "active"})
+        em_teste = await db.users.count_documents({"is_founder": True, "subscription_status": "trialing"})
+        return confirmados + em_teste
+    except Exception as e:
+        logger.warning(f"founder: falha a contar vagas usadas: {e}")
+        return 0
+
+
+@router.post("/billing/create-founder-checkout/{plan}")
+async def create_founder_checkout(plan: str, currency: str = "eur", user=Depends(get_current_user)):
+    # Checkout de FUNDADOR: aplicamos nós o cupão (o cliente não escreve
+    # código) e marcamos metadata.founder="true" — assim o webhook sabe com
+    # certeza que é fundador. A trava das 100 vagas é nossa (o cupão no Stripe
+    # pode ter limite alto), para uma vaga poder libertar-se se alguém desistir.
+    if plan not in ["monthly", "yearly"]:
+        raise HTTPException(status_code=400, detail="Plano inválido")
+
+    discounts = _founder_discount_param()
+    if not discounts:
+        raise HTTPException(status_code=400, detail="Oferta de fundador não configurada")
+
+    if await _founder_seats_used() >= FOUNDER_SEATS:
+        raise HTTPException(status_code=409, detail="Vagas de fundador esgotadas")
+
+    price_id = _price_id_for(plan, currency)
+    if not price_id:
+        raise HTTPException(status_code=500, detail="Preço Stripe não configurado")
+
+    customer_id = user.get("stripe_customer_id")
+    if not customer_id:
+        customer = stripe.Customer.create(email=user["email"], metadata={"user_id": user["id"]})
+        customer_id = customer.id
+        await db.users.update_one({"id": user["id"]}, {"$set": {"stripe_customer_id": customer_id}})
+
+    trial_days = 30
+    if user.get("referred_by") and not user.get("referral_trial_bonus_applied"):
+        trial_days = 45
+        await db.users.update_one({"id": user["id"]}, {"$set": {"referral_trial_bonus_applied": True}})
+
+    session = stripe.checkout.Session.create(
+        mode="subscription",
+        customer=customer_id,
+        line_items=[{"price": price_id, "quantity": 1}],
+        payment_method_collection="always",
+        discounts=discounts,
+        subscription_data={
+            "trial_period_days": trial_days,
+            "metadata": {"user_id": user["id"], "plan": plan, "founder": "true"},
+        },
+        success_url=f"{FRONTEND_URL}/billing-success",
+        cancel_url=f"{FRONTEND_URL}/pricing",
+    )
+    return {"url": session.url}
+
+
 @router.post("/billing/create-portal-session")
 async def create_portal_session(user=Depends(get_current_user)):
     customer_id = user.get("stripe_customer_id")
@@ -190,7 +258,8 @@ async def stripe_webhook(request: Request):
         # traz o cupão/código de fundador aplicado. Só marca True, nunca desmarca
         # (um evento posterior pode não trazer o desconto expandido).
         try:
-            if _subscription_is_founder(subscription):
+            _meta = subscription.get("metadata") or {}
+            if _meta.get("founder") == "true" or _subscription_is_founder(subscription):
                 await db.users.update_one(
                     {"stripe_customer_id": customer_id},
                     {"$set": {"is_founder": True}},

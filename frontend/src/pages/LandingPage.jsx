@@ -32,7 +32,7 @@ const LANGS_LIST = {
 
 const COPY = {
   en: {
-    nav_features: "Features", nav_security: "Security", nav_pricing: "Pricing", nav_referral: "Invite & Earn",
+    nav_features: "Features", nav_security: "Security", nav_pricing: "Pricing", nav_downloads: "Apps", nav_referral: "Invite & Earn",
     nav_login: "Sign in", nav_start: "Start for free",
     founder_badge: "Founder pricing", founder_note: "Early users lock in the launch price for good.", founder_seat: "Founder seat", founder_free: "left", founder_trial: "in trial", founder_confirmed: "confirmed",
     badge: "Your investments. One place. Full control.",
@@ -147,7 +147,7 @@ const COPY = {
     screens_tab_dashboard: "Dashboard", screens_tab_analytics: "Analytics", screens_tab_news: "News", screens_tab_mobile: "Mobile",
   },
   pt: {
-    nav_features: "Funcionalidades", nav_security: "Segurança", nav_pricing: "Preços", nav_referral: "Convida e Ganha",
+    nav_features: "Funcionalidades", nav_security: "Segurança", nav_pricing: "Preços", nav_downloads: "Apps", nav_referral: "Convida e Ganha",
     nav_login: "Entrar", nav_start: "Começar grátis",
     founder_badge: "Preço de fundador", founder_note: "Os primeiros utilizadores garantem o preço de lançamento bloqueado.", founder_seat: "Vaga de fundador", founder_free: "livres", founder_trial: "em teste", founder_confirmed: "confirmados",
     badge: "Os seus investimentos. Um lugar. Controlo total.",
@@ -262,7 +262,7 @@ const COPY = {
     screens_tab_dashboard: "Painel", screens_tab_analytics: "Análise", screens_tab_news: "Notícias", screens_tab_mobile: "Telemóvel",
   },
   fr: {
-    nav_features: "Fonctionnalités", nav_security: "Sécurité", nav_pricing: "Tarifs", nav_referral: "Parrainage",
+    nav_features: "Fonctionnalités", nav_security: "Sécurité", nav_pricing: "Tarifs", nav_downloads: "Apps", nav_referral: "Parrainage",
     nav_login: "Connexion", nav_start: "Commencer gratuitement",
     founder_badge: "Tarif fondateur", founder_note: "Les premiers utilisateurs verrouillent le prix de lancement à vie.", founder_seat: "Place fondateur", founder_free: "libres", founder_trial: "à l'essai", founder_confirmed: "confirmés",
     badge: "Vos investissements. Un endroit. Contrôle total.",
@@ -377,7 +377,7 @@ const COPY = {
     screens_tab_dashboard: "Tableau de bord", screens_tab_analytics: "Analyse", screens_tab_news: "Actualités", screens_tab_mobile: "Mobile",
   },
   de: {
-    nav_features: "Funktionen", nav_security: "Sicherheit", nav_pricing: "Preise", nav_referral: "Empfehlen & Verdienen",
+    nav_features: "Funktionen", nav_security: "Sicherheit", nav_pricing: "Preise", nav_downloads: "Apps", nav_referral: "Empfehlen & Verdienen",
     nav_login: "Anmelden", nav_start: "Kostenlos starten",
     founder_badge: "Gründerpreis", founder_note: "Die ersten Nutzer sichern sich den Startpreis dauerhaft.", founder_seat: "Gründerplatz", founder_free: "frei", founder_trial: "im Test", founder_confirmed: "bestätigt",
     badge: "Ihre Investments. Ein Ort. Volle Kontrolle.",
@@ -492,7 +492,7 @@ const COPY = {
     screens_tab_dashboard: "Dashboard", screens_tab_analytics: "Analyse", screens_tab_news: "Nachrichten", screens_tab_mobile: "Mobil",
   },
   it: {
-    nav_features: "Funzionalità", nav_security: "Sicurezza", nav_pricing: "Prezzi", nav_referral: "Invita e Guadagna",
+    nav_features: "Funzionalità", nav_security: "Sicurezza", nav_pricing: "Prezzi", nav_downloads: "App", nav_referral: "Invita e Guadagna",
     nav_login: "Accedi", nav_start: "Inizia gratis",
     founder_badge: "Prezzo fondatore", founder_note: "I primi utenti bloccano per sempre il prezzo di lancio.", founder_seat: "Posto fondatore", founder_free: "libere", founder_trial: "in prova", founder_confirmed: "confermati",
     badge: "I tuoi investimenti. Un posto. Controllo totale.",
@@ -607,7 +607,7 @@ const COPY = {
     screens_tab_dashboard: "Dashboard", screens_tab_analytics: "Analisi", screens_tab_news: "Notizie", screens_tab_mobile: "Mobile",
   },
   es: {
-    nav_features: "Funcionalidades", nav_security: "Seguridad", nav_pricing: "Precios", nav_referral: "Invita y Gana",
+    nav_features: "Funcionalidades", nav_security: "Seguridad", nav_pricing: "Precios", nav_downloads: "Apps", nav_referral: "Invita y Gana",
     nav_login: "Iniciar sesión", nav_start: "Empezar gratis",
     founder_badge: "Precio fundador", founder_note: "Los primeros usuarios fijan el precio de lanzamiento para siempre.", founder_seat: "Plaza de fundador", founder_free: "libres", founder_trial: "en prueba", founder_confirmed: "confirmados",
     badge: "Tus inversiones. Un lugar. Control total.",
@@ -987,6 +987,7 @@ export default function LandingPage() {
             <a href="#features" className="hover:text-white transition-colors">{c.nav_features}</a>
             <a href="#security" className="hover:text-white transition-colors">{c.nav_security}</a>
             <a href="#pricing" className="hover:text-white transition-colors">{c.nav_pricing}</a>
+            <a href="#downloads" className="hover:text-white transition-colors">{c.nav_downloads}</a>
             <a href="#referral" className="w76-invite-shine font-semibold transition-colors">{c.nav_referral}</a>
           </nav>
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
