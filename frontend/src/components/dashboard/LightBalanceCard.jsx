@@ -50,9 +50,9 @@ export default function LightBalanceCard({
                   className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-zinc-950/40 border border-zinc-800/40 hover:border-zinc-700 hover:bg-zinc-950/70 transition-colors"
                   data-testid={`light-balance-asset-${a.symbol}`}
                 >
-                  <span className="min-w-0">
-                    <span className="text-sm text-zinc-200 font-medium">{a.symbol}</span>
-                    <span className="text-[11px] text-zinc-500 ml-2 truncate">{a.name}</span>
+                  <span className="flex items-baseline gap-2 min-w-0">
+                    <span className="text-sm text-zinc-200 font-medium shrink-0">{a.symbol}</span>
+                    <span className="text-[11px] text-zinc-500 truncate">{a.name}</span>
                   </span>
                   <span className="flex items-center gap-3 shrink-0">
                     <span className="text-sm font-mono text-zinc-300">{a.valueLabel}</span>

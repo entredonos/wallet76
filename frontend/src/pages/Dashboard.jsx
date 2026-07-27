@@ -1261,19 +1261,6 @@ const worstPerformer = useMemo(() => {
         )}
       </div>
 
-      {/* 2ª linha (modo avançado): o "Painel avançado" e o "Adicionar" passaram
-          para o topo (à esquerda do Personalizar, sempre visíveis). Fica aqui só
-          o atalho de Alertas. */}
-      {dashMode === "advanced" && !selectedWallet && (
-        <div className="flex flex-nowrap items-center justify-end gap-2 -mt-2">
-          <Link to="/alerts">
-            <Button variant="outline" size="sm" className="bg-zinc-900/50 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 px-2.5 sm:px-3" title={t("common.alerts")} data-testid="alerts-btn">
-              <Bell className="w-4 h-4 sm:mr-2"/> <span className="hidden sm:inline">{t("common.alerts")}</span>
-            </Button>
-          </Link>
-        </div>
-      )}
-
       {/* Share panel */}
       {sharePanel && (
         <SharePanel
