@@ -82,7 +82,7 @@ const COPY = {
       { value: "4",  label: "Currencies (USD · EUR · CHF · BRL)" },
     ],
     plan_title: "Simple, transparent pricing",
-    plan_sub: "Start free. Upgrade when you are ready for the full power.",
+    plan_sub: "Start free. Upgrade when you are ready for the full power.", compare_short: "Compare", compare_link: "Wallet76 vs Sharesight, Finary & Delta",
     free_label: "Free", free_price: "€0", free_period: "forever", free_desc: "Everything you need to get started.",
     monthly_label: "Pro Monthly", monthly_price: "€5.99", monthly_period: "/ month", monthly_desc: "Full power, billed monthly.",
     annual_label: "Pro Annual", annual_price: "€4.17", annual_period: "/ month", annual_desc: "Best value — billed €49.99/year.",
@@ -197,7 +197,7 @@ const COPY = {
       { value: "4",  label: "Moedas (USD · EUR · CHF · BRL)" },
     ],
     plan_title: "Preços simples e transparentes",
-    plan_sub: "Comece grátis. Faça upgrade quando estiver pronto para o poder total.",
+    plan_sub: "Comece grátis. Faça upgrade quando estiver pronto para o poder total.", compare_short: "Comparar", compare_link: "Wallet76 vs Sharesight, Finary e Delta",
     free_label: "Grátis", free_price: "0€", free_period: "para sempre", free_desc: "Tudo o que precisa para começar.",
     monthly_label: "Pro Mensal", monthly_price: "5,99€", monthly_period: "/ mês", monthly_desc: "Poder total, faturado mensalmente.",
     annual_label: "Pro Anual", annual_price: "4,17€", annual_period: "/ mês", annual_desc: "Melhor valor — faturado 49,99€/ano.",
@@ -312,7 +312,7 @@ const COPY = {
       { value: "4",  label: "Devises (USD · EUR · CHF · BRL)" },
     ],
     plan_title: "Tarifs simples et transparents",
-    plan_sub: "Commencez gratuitement. Passez à la version complète quand vous êtes prêt.",
+    plan_sub: "Commencez gratuitement. Passez à la version complète quand vous êtes prêt.", compare_short: "Comparer", compare_link: "Wallet76 vs Sharesight, Finary et Delta",
     free_label: "Gratuit", free_price: "0€", free_period: "pour toujours", free_desc: "Tout ce qu'il faut pour commencer.",
     monthly_label: "Pro Mensuel", monthly_price: "5,99€", monthly_period: "/ mois", monthly_desc: "Puissance totale, facturé mensuellement.",
     annual_label: "Pro Annuel", annual_price: "4,17€", annual_period: "/ mois", annual_desc: "Meilleure valeur — facturé 49,99€/an.",
@@ -427,7 +427,7 @@ const COPY = {
       { value: "4",  label: "Währungen (USD · EUR · CHF · BRL)" },
     ],
     plan_title: "Einfache, transparente Preise",
-    plan_sub: "Kostenlos starten. Upgraden Sie, wenn Sie bereit sind.",
+    plan_sub: "Kostenlos starten. Upgraden Sie, wenn Sie bereit sind.", compare_short: "Vergleich", compare_link: "Wallet76 vs Sharesight, Finary & Delta",
     free_label: "Kostenlos", free_price: "0€", free_period: "für immer", free_desc: "Alles, was Sie für den Einstieg brauchen.",
     monthly_label: "Pro Monatlich", monthly_price: "5,99€", monthly_period: "/ Monat", monthly_desc: "Volle Leistung, monatlich abgerechnet.",
     annual_label: "Pro Jährlich", annual_price: "4,17€", annual_period: "/ Monat", annual_desc: "Bestes Preis-Leistungs-Verhältnis — 49,99€/Jahr.",
@@ -542,7 +542,7 @@ const COPY = {
       { value: "4",  label: "Valute (USD · EUR · CHF · BRL)" },
     ],
     plan_title: "Prezzi semplici e trasparenti",
-    plan_sub: "Inizia gratis. Aggiorna quando sei pronto per la piena potenza.",
+    plan_sub: "Inizia gratis. Aggiorna quando sei pronto per la piena potenza.", compare_short: "Confronta", compare_link: "Wallet76 vs Sharesight, Finary e Delta",
     free_label: "Gratuito", free_price: "0€", free_period: "per sempre", free_desc: "Tutto ciò che ti serve per iniziare.",
     monthly_label: "Pro Mensile", monthly_price: "5,99€", monthly_period: "/ mese", monthly_desc: "Piena potenza, fatturato mensilmente.",
     annual_label: "Pro Annuale", annual_price: "4,17€", annual_period: "/ mese", annual_desc: "Miglior valore — fatturato 49,99€/anno.",
@@ -657,7 +657,7 @@ const COPY = {
       { value: "4",  label: "Divisas (USD · EUR · CHF · BRL)" },
     ],
     plan_title: "Precios simples y transparentes",
-    plan_sub: "Empieza gratis. Actualiza cuando estés listo para el poder completo.",
+    plan_sub: "Empieza gratis. Actualiza cuando estés listo para el poder completo.", compare_short: "Comparar", compare_link: "Wallet76 vs Sharesight, Finary y Delta",
     free_label: "Gratuito", free_price: "0€", free_period: "para siempre", free_desc: "Todo lo que necesitas para empezar.",
     monthly_label: "Pro Mensual", monthly_price: "5,99€", monthly_period: "/ mes", monthly_desc: "Potencia total, facturado mensualmente.",
     annual_label: "Pro Anual", annual_price: "4,17€", annual_period: "/ mes", annual_desc: "Mejor valor — facturado 49,99€/año.",
@@ -1447,6 +1447,7 @@ export default function LandingPage() {
           <div className="text-center mb-14">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">{c.plan_title}</h2>
             <p className="text-zinc-400 text-lg">{c.plan_sub}</p>
+            <a href="/comparativo.html" className="inline-flex items-center gap-1.5 mt-4 text-sm text-[#5B8AD6] hover:text-[#8FB3E6] transition-colors">{c.compare_link} <span aria-hidden="true">→</span></a>
           </div>
           <div className="grid md:grid-cols-3 gap-5">
 
@@ -1617,6 +1618,7 @@ export default function LandingPage() {
             <Link to="/login" onClick={(e) => handleEntryClick(e, "/login")} className="hover:text-zinc-300 transition-colors">{c.footer_login}</Link>
             <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="hover:text-zinc-300 transition-colors">{c.footer_register}</Link>
             <Link to="/pricing" className="hover:text-zinc-300 transition-colors">{c.footer_pricing}</Link>
+            <a href="/comparativo.html" className="hover:text-zinc-300 transition-colors">{c.compare_short}</a>
             <Link to="/privacy" className="hover:text-zinc-300 transition-colors">{c.footer_privacy}</Link>
             <Link to="/terms" className="hover:text-zinc-300 transition-colors">{c.footer_terms}</Link>
             <Link to="/impressum" className="hover:text-zinc-300 transition-colors">Impressum</Link>
