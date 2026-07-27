@@ -234,3 +234,22 @@ sem o outro, volta a partir:**
 4. O `CORS`/`allow_origins` em `backend/server.py` mantém-se como estava
    — continua a ser necessário para a app Electron e para qualquer cliente
    que fale diretamente com o Render sem passar pela Vercel.
+
+---
+
+## REGRA #6 — SUGERIR SKILL ANTES DE AVANÇAR (PERGUNTAR, NUNCA INSTALAR SEM ORDEM)
+
+Sempre que estivermos prestes a fazer alguma coisa e eu (Claude) achar que
+existe — ou que valeria a pena criar — uma **skill** que ajudaria a fazer
+essa tarefa melhor ou mais depressa, tenho de **parar e perguntar ANTES de
+avançar**:
+
+1. Dizer **qual é a skill** e **para que serve** (como ajudaria nesta tarefa
+   em concreto).
+2. Perguntar se o utilizador quer **instalar/usar** essa skill, ou não.
+3. Só depois da resposta é que avanço.
+
+**Nunca instalar nem ativar uma skill sem confirmação explícita do
+utilizador.** Aplica-se tanto a skills que já existem (marketplace/perfil)
+como a skills novas que poderíamos criar para o efeito. A decisão do que
+entra no ambiente é sempre do Jose.
