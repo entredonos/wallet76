@@ -21,6 +21,12 @@ import {
 // depois de fechado (instalado ou não), fica marcado como visto.
 const INSTALL_SEEN_KEY = "w76_install_prompt_seen";
 
+// Comparativo por língua — páginas estáticas em /public (indexáveis).
+const COMPARE_SLUGS = {
+  pt: "/comparativo.html", en: "/comparison.html", fr: "/comparatif.html",
+  de: "/vergleich.html", it: "/confronto.html", es: "/comparativa.html",
+};
+
 const LANGS_LIST = {
   en: ["English", "Português", "Français", "Deutsch", "Italiano", "Español"],
   pt: ["Inglês", "Português", "Francês", "Alemão", "Italiano", "Espanhol"],
@@ -870,6 +876,7 @@ export default function LandingPage() {
   const { lang, setLang } = useI18n();
   const D = DIV_COPY[lang] || DIV_COPY.en;
   const c = getCopy(lang);
+  const compareHref = COMPARE_SLUGS[lang] || "/comparison.html";
   const langs = LANGS_LIST[lang] || LANGS_LIST.en;
   const navigate = useNavigate();
 
@@ -1447,7 +1454,6 @@ export default function LandingPage() {
           <div className="text-center mb-14">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">{c.plan_title}</h2>
             <p className="text-zinc-400 text-lg">{c.plan_sub}</p>
-            <a href="/comparativo.html" className="inline-flex items-center gap-1.5 mt-4 text-sm text-[#5B8AD6] hover:text-[#8FB3E6] transition-colors">{c.compare_link} <span aria-hidden="true">→</span></a>
           </div>
           <div className="grid md:grid-cols-3 gap-5">
 
@@ -1534,6 +1540,9 @@ export default function LandingPage() {
             </div>
 
           </div>
+          <div className="text-center mt-10">
+            <a href={compareHref} className="inline-flex items-center gap-1.5 text-sm text-[#5B8AD6] hover:text-[#8FB3E6] transition-colors">{c.compare_link} <span aria-hidden="true">→</span></a>
+          </div>
         </div>
       </section>
 
@@ -1618,7 +1627,7 @@ export default function LandingPage() {
             <Link to="/login" onClick={(e) => handleEntryClick(e, "/login")} className="hover:text-zinc-300 transition-colors">{c.footer_login}</Link>
             <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="hover:text-zinc-300 transition-colors">{c.footer_register}</Link>
             <Link to="/pricing" className="hover:text-zinc-300 transition-colors">{c.footer_pricing}</Link>
-            <a href="/comparativo.html" className="hover:text-zinc-300 transition-colors">{c.compare_short}</a>
+            <a href={compareHref} className="hover:text-zinc-300 transition-colors">{c.compare_short}</a>
             <Link to="/privacy" className="hover:text-zinc-300 transition-colors">{c.footer_privacy}</Link>
             <Link to="/terms" className="hover:text-zinc-300 transition-colors">{c.footer_terms}</Link>
             <Link to="/impressum" className="hover:text-zinc-300 transition-colors">Impressum</Link>
