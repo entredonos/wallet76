@@ -1,4 +1,5 @@
 import os
+import time
 from datetime import datetime, timezone
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -14,6 +15,14 @@ FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 PRICE_MONTHLY = os.environ.get("STRIPE_PRICE_MONTHLY")
 PRICE_YEARLY = os.environ.get("STRIPE_PRICE_YEARLY")
 WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
+
+# Oferta de Fundadores: nº de vagas e cupão/código promocional do Stripe cujos
+# resgates alimentam o contador público "X/100" na landing. Se
+# STRIPE_FOUNDER_PROMO_ID não estiver definido, o contador fica sem número
+# (a landing mostra só a oferta — nunca um número inventado).
+FOUNDER_PROMO_ID = os.environ.get("STRIPE_FOUNDER_PROMO_ID")
+FOUNDER_SEATS = int(os.environ.get("STRIPE_FOUNDER_SEATS", "100") or "100")
+_founder_cache = {"ts": 0.0, "data": None}
 
 # Multi-moeda (18 jul 2026). O utilizador escolhe a moeda na p\u00e1gina de pre\u00e7os.
 # Cada moeda precisa dos seus pr\u00f3prios Price IDs no Stripe; enquanto n\u00e3o
@@ -193,3 +202,35 @@ async def stripe_webhook(request: Request):
                     logger.error(f"referral: falha ao conceder recompensa ao referrer {referral['referrer_id']}: {e}")
 
     return {"ok": True}
+
+
+
+@router.get("/billing/founder-status")
+async def founder_status():
+    # Público (sem auth): quantas das vagas de fundador já foram usadas.
+    # Resultado em cache 60s para não chamar o Stripe em cada visita à landing.
+    now = time.time()
+    cached = _founder_cache["data"]
+    if cached is not None and (now - _founder_cache["ts"]) < 60:
+        return cached
+
+    total = FOUNDER_SEATS
+    taken = None
+    try:
+        if FOUNDER_PROMO_ID and stripe.api_key:
+            if FOUNDER_PROMO_ID.startswith("promo_"):
+                obj = stripe.PromotionCode.retrieve(FOUNDER_PROMO_ID)
+            else:
+                obj = stripe.Coupon.retrieve(FOUNDER_PROMO_ID)
+            taken = obj.get("times_redeemed")
+            if obj.get("max_redemptions"):
+                total = obj["max_redemptions"]
+    except Exception as e:
+        logger.warning(f"founder-status: falha a ler o cupão de fundador no Stripe: {e}")
+        taken = None
+
+    remaining = (total - taken) if (taken is not None and total is not None) else None
+    data = {"total": total, "taken": taken, "remaining": remaining}
+    _founder_cache["ts"] = now
+    _founder_cache["data"] = data
+    return data

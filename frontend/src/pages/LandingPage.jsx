@@ -3,10 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { useI18n } from "../context/I18nContext";
 import logo from "../assets/wallet76-logo.png";
 import dividendsShot from "../assets/dividends-shot.png";
+import { api } from "../lib/api";
 import {
   Bell, Globe2, Wallet, ShieldCheck, MonitorSmartphone,
   Lock, Server, FileText, RefreshCw, Newspaper, PieChart, Zap,
-  Users, Star, ChevronRight, BarChart2, Activity, Check, X, BarChart3,
+  Users, Star, ChevronRight, Activity, Check, X, BarChart3,
   Download, Share, SquarePlus, Eye, Smartphone, Baby, Heart, Bitcoin, Mail, Send, Gift,
   Coins,
 } from "lucide-react";
@@ -33,6 +34,7 @@ const COPY = {
   en: {
     nav_features: "Features", nav_security: "Security", nav_pricing: "Pricing", nav_referral: "Invite & Earn",
     nav_login: "Sign in", nav_start: "Start for free",
+    founder_badge: "Founder pricing", founder_note: "Early users lock in the launch price for good.", founder_seat: "Founder seat",
     badge: "Your investments. One place. Full control.",
     hero1: "Stocks, ETFs and crypto, from every broker.", hero2: "All in one portfolio.",
     hero_sub: "Bring everything you invest in into one clear view — in 6 languages and 4 currencies, with real-time prices. Encrypted, GDPR-compliant, and yours alone.",
@@ -147,6 +149,7 @@ const COPY = {
   pt: {
     nav_features: "Funcionalidades", nav_security: "Segurança", nav_pricing: "Preços", nav_referral: "Convida e Ganha",
     nav_login: "Entrar", nav_start: "Começar grátis",
+    founder_badge: "Preço de fundador", founder_note: "Os primeiros utilizadores garantem o preço de lançamento bloqueado.", founder_seat: "Vaga de fundador",
     badge: "Os seus investimentos. Um lugar. Controlo total.",
     hero1: "Ações, ETFs e cripto, de todas as corretoras.", hero2: "Tudo numa só carteira.",
     hero_sub: "Junte tudo o que investe numa só visão — em 6 línguas e 4 moedas, com preços em tempo real. Encriptado, conforme o RGPD e só seu.",
@@ -261,6 +264,7 @@ const COPY = {
   fr: {
     nav_features: "Fonctionnalités", nav_security: "Sécurité", nav_pricing: "Tarifs", nav_referral: "Parrainage",
     nav_login: "Connexion", nav_start: "Commencer gratuitement",
+    founder_badge: "Tarif fondateur", founder_note: "Les premiers utilisateurs verrouillent le prix de lancement à vie.", founder_seat: "Place fondateur",
     badge: "Vos investissements. Un endroit. Contrôle total.",
     hero1: "Actions, ETF et crypto, de tous vos courtiers.", hero2: "Le tout dans un seul portefeuille.",
     hero_sub: "Réunissez tout ce dans quoi vous investissez dans une seule vue claire — en 6 langues et 4 devises, avec des prix en temps réel. Chiffré, conforme RGPD, et à vous seul.",
@@ -375,6 +379,7 @@ const COPY = {
   de: {
     nav_features: "Funktionen", nav_security: "Sicherheit", nav_pricing: "Preise", nav_referral: "Empfehlen & Verdienen",
     nav_login: "Anmelden", nav_start: "Kostenlos starten",
+    founder_badge: "Gründerpreis", founder_note: "Die ersten Nutzer sichern sich den Startpreis dauerhaft.", founder_seat: "Gründerplatz",
     badge: "Ihre Investments. Ein Ort. Volle Kontrolle.",
     hero1: "Aktien, ETFs und Krypto, von jedem Broker.", hero2: "Alles in einem Portfolio.",
     hero_sub: "Bringen Sie alles, worin Sie investieren, in eine übersichtliche Ansicht — in 6 Sprachen und 4 Währungen, mit Echtzeitkursen. Verschlüsselt, DSGVO-konform und nur für Sie.",
@@ -489,6 +494,7 @@ const COPY = {
   it: {
     nav_features: "Funzionalità", nav_security: "Sicurezza", nav_pricing: "Prezzi", nav_referral: "Invita e Guadagna",
     nav_login: "Accedi", nav_start: "Inizia gratis",
+    founder_badge: "Prezzo fondatore", founder_note: "I primi utenti bloccano per sempre il prezzo di lancio.", founder_seat: "Posto fondatore",
     badge: "I tuoi investimenti. Un posto. Controllo totale.",
     hero1: "Azioni, ETF e cripto, da ogni broker.", hero2: "Tutto in un solo portafoglio.",
     hero_sub: "Riunisci tutto ciò in cui investi in un\u2019unica vista chiara — in 6 lingue e 4 valute, con prezzi in tempo reale. Crittografato, conforme GDPR e solo tuo.",
@@ -603,6 +609,7 @@ const COPY = {
   es: {
     nav_features: "Funcionalidades", nav_security: "Seguridad", nav_pricing: "Precios", nav_referral: "Invita y Gana",
     nav_login: "Iniciar sesión", nav_start: "Empezar gratis",
+    founder_badge: "Precio fundador", founder_note: "Los primeros usuarios fijan el precio de lanzamiento para siempre.", founder_seat: "Plaza de fundador",
     badge: "Tus inversiones. Un lugar. Control total.",
     hero1: "Acciones, ETFs y cripto, de todos los brókers.", hero2: "Todo en una sola cartera.",
     hero_sub: "Reúne todo lo que inviertes en una sola vista clara — en 6 idiomas y 4 monedas, con precios en tiempo real. Cifrado, conforme al RGPD y solo tuyo.",
@@ -729,9 +736,9 @@ const SCREEN_TABS = [
 
 function BrowserFrame({ children }) {
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-2 shadow-2xl shadow-black/40">
-      <div className="rounded-xl border border-zinc-800/60 overflow-hidden bg-zinc-900">
-        <div className="border-b border-zinc-800/60 px-4 py-2.5 flex items-center gap-1.5 bg-zinc-900/80">
+    <div className="rounded-2xl border border-white/10 bg-[#0F0F12] p-2 shadow-2xl shadow-black/50">
+      <div className="rounded-xl border border-white/5 overflow-hidden bg-[#17171A]">
+        <div className="border-b border-white/5 px-4 py-2.5 flex items-center gap-1.5 bg-[#17171A]">
           <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
           <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
           <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
@@ -755,26 +762,26 @@ const DIV_COPY = {
 
 const FEAT_ICONS = [PieChart, Bell, Activity, Wallet, RefreshCw, Newspaper, BarChart3, Globe2, MonitorSmartphone, Users, Star, FileText];
 const FEAT_COLORS = [
-  "text-blue-400 bg-blue-500/10 border-blue-500/20",
-  "text-amber-400 bg-amber-500/10 border-amber-500/20",
-  "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
-  "text-purple-400 bg-purple-500/10 border-purple-500/20",
-  "text-cyan-400 bg-cyan-500/10 border-cyan-500/20",
-  "text-rose-400 bg-rose-500/10 border-rose-500/20",
-  "text-indigo-400 bg-indigo-500/10 border-indigo-500/20",
-  "text-teal-400 bg-teal-500/10 border-teal-500/20",
-  "text-violet-400 bg-violet-500/10 border-violet-500/20",
-  "text-orange-400 bg-orange-500/10 border-orange-500/20",
-  "text-pink-400 bg-pink-500/10 border-pink-500/20",
-  "text-lime-400 bg-lime-500/10 border-lime-500/20",
+  "text-[#5B8AD6] bg-[#14306E]/12 border-[#14306E]/25",
+  "text-[#5B8AD6] bg-[#14306E]/12 border-[#14306E]/25",
+  "text-[#5B8AD6] bg-[#14306E]/12 border-[#14306E]/25",
+  "text-[#5B8AD6] bg-[#14306E]/12 border-[#14306E]/25",
+  "text-[#5B8AD6] bg-[#14306E]/12 border-[#14306E]/25",
+  "text-[#5B8AD6] bg-[#14306E]/12 border-[#14306E]/25",
+  "text-[#5B8AD6] bg-[#14306E]/12 border-[#14306E]/25",
+  "text-[#5B8AD6] bg-[#14306E]/12 border-[#14306E]/25",
+  "text-[#5B8AD6] bg-[#14306E]/12 border-[#14306E]/25",
+  "text-[#5B8AD6] bg-[#14306E]/12 border-[#14306E]/25",
+  "text-[#5B8AD6] bg-[#14306E]/12 border-[#14306E]/25",
+  "text-[#5B8AD6] bg-[#14306E]/12 border-[#14306E]/25",
 ];
 const SEC_ICONS = [Lock, ShieldCheck, Server, FileText, X, Check];
 
 function MockDashboard({ c }) {
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-3 shadow-2xl shadow-blue-500/10 w-full">
-      <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 overflow-hidden">
-        <div className="border-b border-zinc-800/60 px-4 py-3 flex items-center justify-between bg-zinc-900/60">
+    <div className="rounded-2xl border border-white/10 bg-[#1E1E22] p-3 shadow-2xl shadow-black/50 w-full">
+      <div className="rounded-xl border border-white/5 bg-[#17171A] overflow-hidden">
+        <div className="border-b border-white/5 px-4 py-3 flex items-center justify-between bg-[#17171A]">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 rounded-full bg-emerald-400" />
             <span className="text-xs font-mono text-zinc-400 tracking-widest uppercase">Wallet76</span>
@@ -792,7 +799,7 @@ function MockDashboard({ c }) {
             { label: c.mock_pnl, value: "+$5,440", change: "+12.71%", up: true },
             { label: c.mock_today, value: "+$384", change: "+0.80%", up: true },
           ].map((s) => (
-            <div key={s.label} className="rounded-xl border border-zinc-800/50 bg-zinc-900/50 p-3">
+            <div key={s.label} className="rounded-xl border border-white/5 bg-[#1E1E22] p-3">
               <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-widest mb-1">{s.label}</div>
               <div className="text-lg font-mono font-bold text-zinc-100">{s.value}</div>
               {s.change && <div className={`text-[11px] font-mono mt-0.5 ${s.up ? "text-emerald-400" : "text-red-400"}`}>{s.change}</div>}
@@ -800,7 +807,7 @@ function MockDashboard({ c }) {
           ))}
         </div>
         <div className="px-4 pb-2">
-          <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/30 p-4 h-24 overflow-hidden">
+          <div className="rounded-xl border border-white/5 bg-[#17171A] p-4 h-24 overflow-hidden">
             <svg viewBox="0 0 400 60" className="w-full h-full" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="gfill" x1="0" y1="0" x2="0" y2="1">
@@ -814,7 +821,7 @@ function MockDashboard({ c }) {
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 pt-2">
-          <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/30 p-4">
+          <div className="rounded-xl border border-white/5 bg-[#17171A] p-4">
             <div className="text-[10px] font-mono uppercase tracking-widest text-emerald-400 mb-3">{c.mock_top}</div>
             <div className="space-y-2">
               {[
@@ -822,7 +829,7 @@ function MockDashboard({ c }) {
                 { sym: "BTC",  name: "Bitcoin", val: "$12,800", pct: "+64%"  },
                 { sym: "AAPL", name: "Apple",   val: "$9,100",  pct: "+28%"  },
               ].map((a) => (
-                <div key={a.sym} className="flex items-center justify-between bg-black/30 border border-zinc-800/40 rounded-lg px-3 py-2">
+                <div key={a.sym} className="flex items-center justify-between bg-black/30 border border-white/5 rounded-lg px-3 py-2">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-[9px] font-mono text-zinc-300">{a.sym[0]}</div>
                     <div><div className="text-xs font-mono text-zinc-200">{a.sym}</div><div className="text-[10px] text-zinc-500">{a.name}</div></div>
@@ -832,13 +839,13 @@ function MockDashboard({ c }) {
               ))}
             </div>
           </div>
-          <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/30 p-4">
-            <div className="text-[10px] font-mono uppercase tracking-widest text-blue-400 mb-3">{c.mock_alloc}</div>
+          <div className="rounded-xl border border-white/5 bg-[#17171A] p-4">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-[#5B8AD6] mb-3">{c.mock_alloc}</div>
             <div className="space-y-2.5">
               {[
-                { label: c.mock_stocks, pct: 52, color: "bg-blue-500" },
-                { label: c.mock_crypto, pct: 30, color: "bg-amber-500" },
-                { label: c.mock_etf,    pct: 18, color: "bg-purple-500" },
+                { label: c.mock_stocks, pct: 52, color: "bg-[#20489E]" },
+                { label: c.mock_crypto, pct: 30, color: "bg-[#5B8AD6]" },
+                { label: c.mock_etf,    pct: 18, color: "bg-[#94A3B8]" },
               ].map((b) => (
                 <div key={b.label}>
                   <div className="flex justify-between text-[11px] text-zinc-400 mb-1"><span>{b.label}</span><span>{b.pct}%</span></div>
@@ -848,9 +855,9 @@ function MockDashboard({ c }) {
                 </div>
               ))}
             </div>
-            <div className="mt-4 border border-amber-500/20 bg-amber-500/5 rounded-lg px-3 py-2 flex items-center gap-2">
-              <Bell className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="text-[10px] text-amber-300 font-mono">{c.mock_alert}</span>
+            <div className="mt-4 border border-[#14306E]/30 bg-[#14306E]/10 rounded-lg px-3 py-2 flex items-center gap-2">
+              <Bell className="w-3.5 h-3.5 text-[#5B8AD6] shrink-0" />
+              <span className="text-[10px] text-[#93C5FD] font-mono">{c.mock_alert}</span>
             </div>
           </div>
         </div>
@@ -885,6 +892,26 @@ export default function LandingPage() {
     fetch("/desktop-version.json", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null)).then(setDesktopInfo).catch(() => {});
   }, []);
+  // contador de fundador real — vem de /billing/founder-status (Stripe)
+  const [founder, setFounder] = useState({ total: 100, taken: null });
+  useEffect(() => {
+    let ignore = false;
+    api
+      .get("/billing/founder-status")
+      .then((r) => {
+        if (ignore) return;
+        const d = r.data || {};
+        setFounder({
+          total: typeof d.total === "number" ? d.total : 100,
+          taken: typeof d.taken === "number" ? d.taken : null,
+        });
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
 
   // beforeinstallprompt (Android/Desktop) pode chegar depois deste
   // componente já ter montado — subscreve para saber assim que ficar
@@ -922,7 +949,22 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="min-h-screen bg-[#08080A] text-[#F4F4F5]">
+
+      <style>{`
+        .w76-invite-shine{
+          background:linear-gradient(90deg,#FBBF24 0%,#F59E0B 30%,#FCD34D 55%,#FBBF24 85%);
+          background-size:280% 100%;
+          -webkit-background-clip:text;background-clip:text;
+          color:transparent;-webkit-text-fill-color:transparent;
+          font-weight:700;
+          animation:w76shimmer 4.5s linear infinite;
+        }
+        @keyframes w76shimmer{to{background-position:280% 0}}
+        @media (prefers-reduced-motion: reduce){
+          .w76-invite-shine{animation:none;background:none;-webkit-text-fill-color:#F59E0B;color:#F59E0B}
+        }
+      `}</style>
 
       {/* NAV — em ecrãs < 640px o seletor de língua + "Entrar" + "Começar
           grátis" ficavam todos em linha com o logo, sem wrap, e
@@ -934,7 +976,7 @@ export default function LandingPage() {
           idioma antes de entrar). Mantém-se o seletor sempre visível; só
           "Entrar" fica escondido abaixo de sm — isso já é suficiente para
           caber em ~360px (logo + select + botão "Começar grátis"). */}
-      <header className="sticky top-0 z-50 border-b border-zinc-800/60 bg-zinc-950/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-white/5 bg-[#08080A]/85 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 shrink-0">
             <img src={logo} alt="Wallet76" className="h-9 sm:h-10 w-auto shrink-0" />
@@ -944,10 +986,10 @@ export default function LandingPage() {
             <a href="#features" className="hover:text-white transition-colors">{c.nav_features}</a>
             <a href="#security" className="hover:text-white transition-colors">{c.nav_security}</a>
             <a href="#pricing" className="hover:text-white transition-colors">{c.nav_pricing}</a>
-            <a href="#referral" className="hover:text-white transition-colors">{c.nav_referral}</a>
+            <a href="#referral" className="w76-invite-shine font-semibold transition-colors">{c.nav_referral}</a>
           </nav>
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            <select value={lang} onChange={(e) => setLang(e.target.value)} className="bg-zinc-900 border border-zinc-700 rounded-lg px-1.5 sm:px-2 py-1.5 text-xs text-zinc-300 focus:outline-none">
+            <select value={lang} onChange={(e) => setLang(e.target.value)} className="bg-[#1E1E22] border border-white/10 rounded-lg px-1.5 sm:px-2 py-1.5 text-xs text-zinc-300 focus:outline-none focus:ring-2 focus:ring-[#5B8AD6]">
               <option value="en">EN</option>
               <option value="pt">PT</option>
               <option value="fr">FR</option>
@@ -956,7 +998,7 @@ export default function LandingPage() {
               <option value="es">ES</option>
             </select>
             <Link to="/login" onClick={(e) => handleEntryClick(e, "/login")} className="hidden sm:inline-block text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5">{c.nav_login}</Link>
-            <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="text-xs sm:text-sm bg-white text-zinc-950 font-semibold px-3 sm:px-4 py-1.5 rounded-lg hover:bg-zinc-100 transition-colors whitespace-nowrap">{c.nav_start}</Link>
+            <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="text-xs sm:text-sm bg-[#14306E] text-white font-semibold px-3 sm:px-4 py-1.5 rounded-lg hover:bg-[#20489E] transition-colors whitespace-nowrap">{c.nav_start}</Link>
           </div>
         </div>
       </header>
@@ -979,10 +1021,10 @@ export default function LandingPage() {
             WebkitMaskImage: "radial-gradient(ellipse 65% 55% at 50% 0%, black 30%, transparent 100%)",
           }}
         />
-        <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[500px] h-[220px] bg-emerald-500/10 rounded-full blur-[110px] pointer-events-none" />
+        <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[500px] h-[220px] bg-[#5B8AD6]/10 rounded-full blur-[110px] pointer-events-none" />
         <div className="relative max-w-7xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 rounded-full border border-zinc-700/60 bg-zinc-900/60 text-xs text-zinc-400">
-            <Zap className="w-3 h-3 text-amber-400" />{c.badge}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 rounded-full border border-zinc-700/60 bg-[#1E1E22] text-xs text-zinc-400">
+            <Zap className="w-3 h-3 text-[#5B8AD6]" />{c.badge}
           </div>
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight mb-6">
             <span className="bg-gradient-to-r from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">{c.hero1}</span>
@@ -991,7 +1033,7 @@ export default function LandingPage() {
                 de "crescimento" — fica só em tons de verde (emerald->lime) em
                 vez de verde->vermelho, para não ler como "o património está a
                 cair" numa frase de vendas (vermelho = perdas em toda a app). */}
-            <span className="bg-gradient-to-r from-emerald-400 to-lime-400 bg-clip-text text-transparent">{c.hero2}</span>
+            <span className="bg-gradient-to-r from-[#14306E] via-[#2B5AB8] to-[#4C82D8] bg-clip-text text-transparent">{c.hero2}</span>
           </h1>
           <p className="max-w-2xl mx-auto text-zinc-400 text-lg leading-relaxed mb-10">{c.hero_sub}</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
@@ -1002,6 +1044,26 @@ export default function LandingPage() {
               {c.cta_secondary}
             </a>
           </div>
+          {/* contador de fundador real — vem de /billing/founder-status (Stripe) */}
+          <div className="max-w-md mx-auto mb-12 rounded-2xl border border-[#F59E0B]/25 bg-[#1E1E22] px-5 py-4 text-left">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Star className="w-4 h-4 text-[#FBBF24] shrink-0" />
+              <span className="text-xs font-semibold uppercase tracking-widest text-[#FBBF24]">{c.founder_badge}</span>
+            </div>
+            {typeof founder.taken === "number" ? (
+              <>
+                <div className="flex items-baseline justify-between gap-3 mb-2">
+                  <span className="text-sm text-zinc-300">{c.founder_seat}</span>
+                  <span className="text-lg font-bold font-mono bg-gradient-to-r from-[#FBBF24] via-[#F59E0B] to-[#FCD34D] bg-clip-text text-transparent">{founder.taken}/{founder.total}</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                  <div className="h-full rounded-full bg-gradient-to-r from-[#F59E0B] to-[#FBBF24]" style={{ width: `${Math.min(100, Math.round((founder.taken / founder.total) * 100))}%` }} />
+                </div>
+              </>
+            ) : null}
+            <p className="text-xs text-zinc-400 mt-2">{c.founder_note}</p>
+          </div>
+
           <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10 mb-16">
             {[
               { Icon: Eye,          label: c.trust5 },
@@ -1022,7 +1084,7 @@ export default function LandingPage() {
       </section>
 
       {/* BROKERS */}
-      <div className="border-y border-zinc-800/60 bg-zinc-900/30 py-5">
+      <div className="border-y border-white/5 bg-[#17171A] py-5">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 text-center">
           <span className="text-xs text-zinc-500 font-semibold uppercase tracking-widest">{c.integrations_label}:</span>
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
@@ -1052,7 +1114,7 @@ export default function LandingPage() {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 screenTab === tab.key
                   ? "bg-white text-zinc-950"
-                  : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600"
+                  : "bg-[#1E1E22] border border-white/5 text-zinc-400 hover:text-white hover:border-zinc-600"
               }`}
             >
               {c[tab.labelKey]}
@@ -1062,7 +1124,7 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto">
           {activeScreen.mobile ? (
             <div className="flex justify-center">
-              <div className="w-[260px] rounded-[2rem] border-4 border-zinc-800 bg-zinc-950 p-1.5 shadow-2xl shadow-black/40 overflow-hidden">
+              <div className="w-[260px] rounded-[2rem] border-4 border-[#17171b] bg-[#0F0F12] p-1.5 shadow-2xl shadow-black/40 overflow-hidden">
                 <img src={activeScreen.src} alt={c[activeScreen.labelKey]} className="w-full rounded-[1.5rem]" />
               </div>
             </div>
@@ -1090,8 +1152,8 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
           {/* Windows */}
-          <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-6 flex flex-col">
-            <div className="w-10 h-10 rounded-xl border flex items-center justify-center mb-4 text-blue-400 bg-blue-500/10 border-blue-500/20">
+          <div className="rounded-2xl border border-white/5 bg-[#1E1E22] p-6 flex flex-col">
+            <div className="w-10 h-10 rounded-xl border flex items-center justify-center mb-4 text-[#5B8AD6] bg-[#14306E]/20 border-[#14306E]/40">
               <MonitorSmartphone className="w-5 h-5" />
             </div>
             <h3 className="text-base font-semibold text-zinc-100 mb-2">{c.dl_windows}</h3>
@@ -1109,7 +1171,7 @@ export default function LandingPage() {
           </div>
 
           {/* Android */}
-          <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-6 flex flex-col">
+          <div className="rounded-2xl border border-white/5 bg-[#1E1E22] p-6 flex flex-col">
             <div className="w-10 h-10 rounded-xl border flex items-center justify-center mb-4 text-emerald-400 bg-emerald-500/10 border-emerald-500/20">
               <Smartphone className="w-5 h-5" />
             </div>
@@ -1128,8 +1190,8 @@ export default function LandingPage() {
           </div>
 
           {/* Mac / iOS / Web (PWA) */}
-          <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-6 flex flex-col">
-            <div className="w-10 h-10 rounded-xl border flex items-center justify-center mb-4 text-purple-400 bg-purple-500/10 border-purple-500/20">
+          <div className="rounded-2xl border border-white/5 bg-[#1E1E22] p-6 flex flex-col">
+            <div className="w-10 h-10 rounded-xl border flex items-center justify-center mb-4 text-[#5B8AD6] bg-[#14306E]/20 border-[#14306E]/40">
               <Globe2 className="w-5 h-5" />
             </div>
             <h3 className="text-base font-semibold text-zinc-100 mb-2">{c.dl_web}</h3>
@@ -1171,7 +1233,7 @@ export default function LandingPage() {
           {c.features.map((f, i) => {
             const Icon = FEAT_ICONS[i % FEAT_ICONS.length];
             return (
-              <div key={f.title} className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-6 hover:border-zinc-700 hover:bg-zinc-900/70 transition-all">
+              <div key={f.title} className="rounded-2xl border border-white/5 bg-[#1E1E22] p-6 hover:border-zinc-700 hover:bg-[#26262B] transition-all">
                 <div className={`w-10 h-10 rounded-xl border flex items-center justify-center mb-4 ${FEAT_COLORS[i % FEAT_COLORS.length]}`}>
                   <Icon className="w-5 h-5" />
                 </div>
@@ -1188,29 +1250,29 @@ export default function LandingPage() {
           concreto tipo "uma carteira para os filhos, outra para a mulher,
           controla tudo junto"). Mockup ilustrativo em código, mesmo estilo
           do MockDashboard do hero — sem dados/nomes reais de ninguém. */}
-      <section className="py-24 border-t border-zinc-800/60 bg-zinc-900/20">
+      <section className="py-24 border-t border-white/5 bg-[#17171A]">
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full border border-purple-500/30 bg-purple-500/10 text-xs text-purple-300">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full border border-[#5B8AD6]/30 bg-[#14306E]/20 text-xs text-[#C7D7FE]">
               <Users className="w-3.5 h-3.5" /> {c.family_badge}
             </div>
             <h2 className="text-4xl md:text-5xl font-bold mb-5 tracking-tight">{c.family_title}</h2>
             <p className="text-zinc-400 text-lg leading-relaxed">{c.family_sub}</p>
           </div>
 
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-purple-500/10">
-            <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-4 mb-3 flex items-center justify-between">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">{c.family_total_label}</span>
+          <div className="rounded-2xl border border-white/5 bg-[#0F0F12] p-4 shadow-2xl shadow-[#14306E]/30">
+            <div className="rounded-xl border border-white/5 bg-gradient-to-r from-[#14306E] to-[#2B5AB8] p-4 mb-3 flex items-center justify-between">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#C7D7FE]">{c.family_total_label}</span>
               <span className="text-xl font-mono font-bold text-zinc-100">$186,420</span>
             </div>
             <div className="space-y-2.5">
               {[
-                { label: c.family_wallet1, Icon: Wallet,   val: "$98,120", pct: "+18.4%", color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
+                { label: c.family_wallet1, Icon: Wallet,   val: "$98,120", pct: "+18.4%", color: "text-[#5B8AD6] bg-[#14306E]/20 border-[#14306E]/40" },
                 { label: c.family_wallet2, Icon: Baby,     val: "$21,300", pct: "+6.1%",  color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" },
                 { label: c.family_wallet3, Icon: Heart,    val: "$52,900", pct: "+11.7%", color: "text-rose-400 bg-rose-500/10 border-rose-500/20" },
-                { label: c.family_wallet4, Icon: Bitcoin,  val: "$14,100", pct: "-4.2%",  color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
+                { label: c.family_wallet4, Icon: Bitcoin,  val: "$14,100", pct: "-4.2%",  color: "text-[#5B8AD6] bg-[#14306E]/20 border-[#14306E]/40" },
               ].map((w) => (
-                <div key={w.label} className="flex items-center justify-between bg-zinc-900/50 border border-zinc-800/50 rounded-xl px-4 py-3">
+                <div key={w.label} className="flex items-center justify-between bg-[#1E1E22] border border-white/5 rounded-xl px-4 py-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${w.color}`}>
                       <w.Icon className="w-4 h-4" />
@@ -1235,19 +1297,19 @@ export default function LandingPage() {
           alternar o ritmo visual com a secção da família acima. */}
       <section className="py-24 max-w-7xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="order-2 lg:order-1 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-amber-500/10">
+          <div className="order-2 lg:order-1 rounded-2xl border border-white/5 bg-[#0F0F12] p-4 shadow-2xl shadow-[#14306E]/30">
             <div className="space-y-2.5">
               {[
                 { text: c.alerts_ex1, status: c.alerts_status_triggered, up: true },
                 { text: c.alerts_ex2, status: c.alerts_status_triggered, up: false },
                 { text: c.alerts_ex3, status: c.alerts_status_active, up: true, pending: true },
               ].map((a, i) => (
-                <div key={i} className="flex items-center gap-3 bg-zinc-900/50 border border-zinc-800/50 rounded-xl px-4 py-3">
+                <div key={i} className="flex items-center gap-3 bg-[#1E1E22] border border-white/5 rounded-xl px-4 py-3">
                   <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${a.up ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" : "text-rose-400 bg-rose-500/10 border-rose-500/20"}`}>
                     <Bell className="w-4 h-4" />
                   </div>
                   <span className="text-sm text-zinc-200 flex-1 min-w-0 truncate">{a.text}</span>
-                  <span className={`text-[10px] font-mono px-2 py-1 rounded-full shrink-0 ${a.pending ? "bg-blue-500/15 text-blue-300" : "bg-zinc-800 text-zinc-400"}`}>
+                  <span className={`text-[10px] font-mono px-2 py-1 rounded-full shrink-0 ${a.pending ? "bg-[#14306E]/40 text-[#C7D7FE]" : "bg-zinc-800 text-zinc-400"}`}>
                     {a.status}
                   </span>
                 </div>
@@ -1255,7 +1317,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="order-1 lg:order-2">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full border border-amber-500/30 bg-amber-500/10 text-xs text-amber-300">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full border border-[#5B8AD6]/30 bg-[#14306E]/20 text-xs text-[#C7D7FE]">
               <Bell className="w-3.5 h-3.5" /> {c.alerts_badge}
             </div>
             <h2 className="text-4xl md:text-5xl font-bold mb-5 tracking-tight">{c.alerts_title}</h2>
@@ -1270,8 +1332,8 @@ export default function LandingPage() {
                 { Icon: Bell, label: c.alerts_channel_push },
                 { Icon: Send, label: c.alerts_channel_telegram },
               ].map(({ Icon, label }) => (
-                <span key={label} className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-300 border border-zinc-800 bg-zinc-900/60 rounded-full px-3 py-1.5">
-                  <Icon className="w-3.5 h-3.5 text-amber-400" /> {label}
+                <span key={label} className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-300 border border-white/5 bg-[#1E1E22] rounded-full px-3 py-1.5">
+                  <Icon className="w-3.5 h-3.5 text-[#5B8AD6]" /> {label}
                 </span>
               ))}
             </div>
@@ -1281,7 +1343,7 @@ export default function LandingPage() {
 
       {/* DIVIDENDS SHOWCASE — 20 jul 2026: destaca o calendário de dividendos
           (mockup à direita), mesmo estilo das outras secções ilustradas. */}
-      <section className="py-24 border-t border-zinc-800/60 bg-zinc-900/20">
+      <section className="py-24 border-t border-white/5 bg-[#17171A]">
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
           <div>
             <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-xs text-emerald-300">
@@ -1291,7 +1353,7 @@ export default function LandingPage() {
             <p className="text-zinc-400 text-lg leading-relaxed">{D.sub}</p>
           </div>
 
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-2 shadow-2xl shadow-emerald-500/10 overflow-hidden">
+          <div className="rounded-2xl border border-white/5 bg-[#0F0F12] p-2 shadow-2xl shadow-emerald-500/10 overflow-hidden">
             <img src={dividendsShot} alt={D.title} className="w-full rounded-xl" loading="lazy" />
           </div>
         </div>
@@ -1301,18 +1363,18 @@ export default function LandingPage() {
       <section className="py-24 max-w-7xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-xs text-cyan-300">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full border border-[#5B8AD6]/30 bg-[#14306E]/20 text-xs text-[#C7D7FE]">
               <RefreshCw className="w-3.5 h-3.5" /> {c.sync_badge}
             </div>
             <h2 className="text-4xl md:text-5xl font-bold mb-5 tracking-tight">{c.sync_title}</h2>
             <p className="text-zinc-400 text-lg leading-relaxed">{c.sync_sub}</p>
           </div>
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-cyan-500/10">
+          <div className="rounded-2xl border border-white/5 bg-[#0F0F12] p-4 shadow-2xl shadow-[#14306E]/30">
             <div className="space-y-2.5">
               {["DEGIRO", "Interactive Brokers", "Trading 212", "Binance"].map((b) => (
-                <div key={b} className="flex items-center justify-between bg-zinc-900/50 border border-zinc-800/50 rounded-xl px-4 py-3">
+                <div key={b} className="flex items-center justify-between bg-[#1E1E22] border border-white/5 rounded-xl px-4 py-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-lg border border-cyan-500/20 bg-cyan-500/10 flex items-center justify-center shrink-0 text-cyan-400">
+                    <div className="w-8 h-8 rounded-lg border border-[#14306E]/40 bg-[#14306E]/20 flex items-center justify-center shrink-0 text-[#5B8AD6]">
                       <RefreshCw className="w-4 h-4" />
                     </div>
                     <span className="text-sm text-zinc-200 truncate">{b}</span>
@@ -1329,11 +1391,11 @@ export default function LandingPage() {
       </section>
 
       {/* STATS */}
-      <div className="py-16 border-y border-zinc-800/60 bg-gradient-to-r from-zinc-900/60 to-zinc-950">
+      <div className="py-16 border-y border-white/5 bg-[#17171A]">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {c.stats.map((s) => (
             <div key={s.label}>
-              <div className="text-4xl md:text-5xl font-extrabold font-mono bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-transparent mb-1">{s.value}</div>
+              <div className="text-4xl md:text-5xl font-extrabold font-mono bg-gradient-to-r from-[#14306E] via-[#2B5AB8] to-[#4C82D8] bg-clip-text text-transparent mb-1">{s.value}</div>
               <div className="text-zinc-500 text-sm">{s.label}</div>
             </div>
           ))}
@@ -1341,7 +1403,7 @@ export default function LandingPage() {
         {/* Languages pills */}
         <div className="max-w-7xl mx-auto px-6 mt-8 flex flex-wrap items-center justify-center gap-2">
           {langs.map((l) => (
-            <span key={l} className="px-3 py-1 rounded-full border border-zinc-800 bg-zinc-900/60 text-xs text-zinc-400 font-medium">{l}</span>
+            <span key={l} className="px-3 py-1 rounded-full border border-white/5 bg-[#1E1E22] text-xs text-zinc-400 font-medium">{l}</span>
           ))}
         </div>
       </div>
@@ -1372,7 +1434,7 @@ export default function LandingPage() {
       </section>
 
       {/* PRICING — 3 colunas lado a lado */}
-      <section id="pricing" className="py-24 border-t border-zinc-800/60 bg-zinc-900/20">
+      <section id="pricing" className="py-24 border-t border-white/5 bg-[#17171A]">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">{c.plan_title}</h2>
@@ -1381,7 +1443,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-5">
 
             {/* FREE */}
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-7 flex flex-col">
+            <div className="rounded-2xl border border-white/5 bg-[#1E1E22] p-7 flex flex-col">
               <div className="mb-5">
                 <div className="text-xs font-mono uppercase tracking-widest text-zinc-500 mb-2">{c.free_label}</div>
                 <div className="flex items-end gap-1 mb-1">
@@ -1408,12 +1470,12 @@ export default function LandingPage() {
             </div>
 
             {/* PRO MONTHLY */}
-            <div className="relative rounded-2xl border border-blue-500/40 bg-gradient-to-b from-blue-500/10 to-zinc-900/60 p-7 flex flex-col shadow-xl shadow-blue-500/10">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full whitespace-nowrap">
+            <div className="relative rounded-2xl border border-[#5B8AD6]/40 bg-gradient-to-b from-[#14306E]/25 to-zinc-900/60 p-7 flex flex-col shadow-xl shadow-[#14306E]/30">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#14306E] text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full whitespace-nowrap">
                 {c.most_popular}
               </div>
               <div className="mb-5">
-                <div className="text-xs font-mono uppercase tracking-widest text-blue-400 mb-2">{c.monthly_label}</div>
+                <div className="text-xs font-mono uppercase tracking-widest text-[#5B8AD6] mb-2">{c.monthly_label}</div>
                 <div className="flex items-end gap-1 mb-1">
                   <span className="text-4xl font-extrabold font-mono text-zinc-100">{c.monthly_price}</span>
                   <span className="text-zinc-500 mb-1 text-sm ml-1">{c.monthly_period}</span>
@@ -1423,11 +1485,11 @@ export default function LandingPage() {
               <div className="space-y-2 mb-6 flex-1">
                 {c.pro_features.map((f) => (
                   <div key={f} className="flex items-start gap-2 text-sm text-zinc-200">
-                    <Check className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />{f}
+                    <Check className="w-4 h-4 text-[#5B8AD6] mt-0.5 shrink-0" />{f}
                   </div>
                 ))}
               </div>
-              <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="block w-full text-center py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white font-semibold transition-colors text-sm">
+              <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="block w-full text-center py-2.5 bg-[#14306E] hover:bg-[#20489E] rounded-xl text-white font-semibold transition-colors text-sm">
                 {c.btn_monthly}
               </Link>
               <p className="text-center text-[11px] text-zinc-600 mt-2">{c.pro_trial}</p>
@@ -1473,12 +1535,12 @@ export default function LandingPage() {
           por amigo que passe a pagar, sem limite) + bónus nos marcos de
           3/6/10 convites, calibrado para dar exatamente os mesmos totais
           (2/6/12 meses) do modelo original por níveis nesses marcos. */}
-      <section id="referral" className="py-24 border-t border-zinc-800/60">
+      <section id="referral" className="py-24 border-t border-white/5">
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-3 mb-4 text-emerald-400">
+            <div className="inline-flex items-center gap-3 mb-4 text-[#FBBF24]">
               <Gift className="w-8 h-8" />
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-white">{c.referral_title}</h2>
+              <h2 className="text-4xl md:text-5xl font-bold tracking-tight w76-invite-shine">{c.referral_title}</h2>
             </div>
             <p className="text-zinc-400 text-lg max-w-2xl mx-auto">{c.referral_sub}</p>
             <p className="text-zinc-600 text-xs max-w-xl mx-auto mt-3">{c.referral_paid_note}</p>
@@ -1487,8 +1549,8 @@ export default function LandingPage() {
           {/* 3 passos */}
           <div className="grid sm:grid-cols-3 gap-5 mb-10">
             {[c.referral_step1, c.referral_step2, c.referral_step3].map((step, i) => (
-              <div key={step} className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 text-center">
-                <div className="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mx-auto mb-3 text-emerald-400 font-mono text-sm font-bold">
+              <div key={step} className="rounded-2xl border border-white/5 bg-[#1E1E22] p-6 text-center">
+                <div className="w-8 h-8 rounded-full bg-[#FBBF24]/15 border border-[#FBBF24]/30 flex items-center justify-center mx-auto mb-3 text-[#FBBF24] font-mono text-sm font-bold">
                   {i + 1}
                 </div>
                 <p className="text-sm text-zinc-300">{step}</p>
@@ -1501,8 +1563,8 @@ export default function LandingPage() {
           {/* Marcos de bónus */}
           <div className="grid sm:grid-cols-3 gap-5">
             {[c.referral_tier1, c.referral_tier2, c.referral_tier3].map((tier) => (
-              <div key={tier} className="rounded-2xl border border-emerald-500/20 bg-gradient-to-b from-emerald-500/5 to-zinc-900/40 p-6 text-center">
-                <Star className="w-5 h-5 text-emerald-400 mx-auto mb-2" />
+              <div key={tier} className="rounded-2xl border border-[#FBBF24]/20 bg-gradient-to-b from-[#FBBF24]/8 to-[#17171A] p-6 text-center">
+                <Star className="w-5 h-5 text-[#FBBF24] mx-auto mb-2" />
                 <p className="text-zinc-100 font-semibold">{tier}</p>
               </div>
             ))}
@@ -1513,22 +1575,22 @@ export default function LandingPage() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="py-28 relative overflow-hidden border-t border-zinc-800/60">
+      <section className="py-28 relative overflow-hidden border-t border-white/5 bg-gradient-to-br from-[#14306E] via-[#1E4A9E] to-[#2B5AB8]">
         <div
           className="absolute inset-0 pointer-events-none opacity-50"
           style={{
-            backgroundImage: "radial-gradient(rgba(161,161,170,0.3) 1px, transparent 1px)",
+            backgroundImage: "radial-gradient(rgba(255,255,255,0.12) 1px, transparent 1px)",
             backgroundSize: "28px 28px",
             maskImage: "radial-gradient(ellipse 55% 70% at 50% 50%, black 20%, transparent 100%)",
             WebkitMaskImage: "radial-gradient(ellipse 55% 70% at 50% 50%, black 20%, transparent 100%)",
           }}
         />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[220px] bg-blue-500/8 rounded-full blur-[110px] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[220px] bg-white/10 rounded-full blur-[110px] pointer-events-none" />
         <div className="relative max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-5 bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
+          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-5 text-white">
             {c.cta2_title}
           </h2>
-          <p className="text-zinc-400 text-lg mb-10">{c.cta2_sub}</p>
+          <p className="text-[#DCE7FA] text-lg mb-10">{c.cta2_sub}</p>
           <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="inline-flex items-center gap-2 px-8 py-4 bg-white text-zinc-950 font-bold rounded-xl hover:bg-zinc-100 transition-colors text-base">
             {c.cta2_btn} <ChevronRight className="w-5 h-5" />
           </Link>
@@ -1536,7 +1598,7 @@ export default function LandingPage() {
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-zinc-800/60 py-10">
+      <footer className="border-t border-white/5 py-10">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <img src={logo} alt="Wallet76" className="h-6 w-auto opacity-60" />
@@ -1570,7 +1632,7 @@ export default function LandingPage() {
           onClick={dismissInstallModal}
         >
           <div
-            className="relative w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl"
+            className="relative w-full max-w-sm rounded-2xl border border-white/5 bg-[#1E1E22] p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -1583,7 +1645,7 @@ export default function LandingPage() {
               <X className="w-4 h-4" />
             </button>
 
-            <div className="w-12 h-12 rounded-xl border border-blue-500/30 bg-blue-500/10 flex items-center justify-center mb-4">
+            <div className="w-12 h-12 rounded-xl border border-[#5B8AD6]/30 bg-[#14306E]/20 flex items-center justify-center mb-4">
               <img src={logo} alt="Wallet76" className="w-7 h-7 object-contain" />
             </div>
 
@@ -1593,13 +1655,13 @@ export default function LandingPage() {
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-3 text-sm text-zinc-300">
                     <span className="w-7 h-7 shrink-0 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center">
-                      <Share className="w-3.5 h-3.5 text-blue-400" />
+                      <Share className="w-3.5 h-3.5 text-[#5B8AD6]" />
                     </span>
                     {c.ios_step1}
                   </div>
                   <div className="flex items-center gap-3 text-sm text-zinc-300">
                     <span className="w-7 h-7 shrink-0 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center">
-                      <SquarePlus className="w-3.5 h-3.5 text-blue-400" />
+                      <SquarePlus className="w-3.5 h-3.5 text-[#5B8AD6]" />
                     </span>
                     {c.ios_step2}
                   </div>
