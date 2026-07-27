@@ -4,8 +4,6 @@ import { api } from "../lib/api";
 import { useI18n } from "../context/I18nContext";
 import walletLogo from "../assets/wallet76-logo80x60.png";
 
-const BROKERS = ["DEGIRO", "IBKR", "Trading212", "Binance"];
-
 // Cache em memória (não localStorage — reinicia a cada reload completo, de
 // propósito) da decisão "preciso mostrar o wizard?". Sem isto, como cada
 // rota protegida monta o seu próprio <Protected> (ver App.js), navegar entre
@@ -35,7 +33,7 @@ export default function OnboardingWizard({ onDone }) {
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState(0);
   const [walletName, setWalletName] = useState("");
-  const [broker, setBroker] = useState(null);
+  const [method, setMethod] = useState(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [createdWalletId, setCreatedWalletId] = useState(null);
@@ -107,12 +105,25 @@ export default function OnboardingWizard({ onDone }) {
     }
   };
 
-  const pickBroker = (b) => {
-    setBroker(b);
+  const pickMethod = (m) => {
+    setMethod(m);
     setStep(2);
   };
 
+  const startAction = () => {
+    const w = createdWalletId;
+    if (method === "broker") return finish("/connected-accounts");
+    if (method === "import") return finish(w ? `/transactions?wallet=${w}` : "/transactions");
+    return finish(w ? `/transactions?wallet=${w}&open=1` : "/transactions?open=1");
+  };
+
   if (!visible) return null;
+
+  const METHODS = [
+    { key: "broker", icon: "🔗", bg: "bg-blue-500/15", reco: true },
+    { key: "import", icon: "📄", bg: "bg-purple-500/15" },
+    { key: "manual", icon: "✏️", bg: "bg-amber-500/15" },
+  ];
 
   return (
     <div
@@ -120,9 +131,16 @@ export default function OnboardingWizard({ onDone }) {
       data-testid="onboarding-wizard"
     >
       <div className="w-full max-w-md">
-        <div className="flex items-center gap-2 mb-10 opacity-60">
+        <div className="flex items-center gap-2 mb-8 opacity-60">
           <img src={walletLogo} alt="Wallet76" className="w-9 h-9 rounded object-contain" />
           <span className="text-sm text-zinc-400">Wallet76</span>
+        </div>
+
+        {/* Barra de progresso (3 passos) */}
+        <div className="flex gap-1.5 mb-8">
+          {[0, 1, 2].map((i) => (
+            <span key={i} className={`h-[3px] flex-1 rounded-full transition-colors ${i <= step ? "bg-emerald-400" : "bg-zinc-800"}`} />
+          ))}
         </div>
 
         {step === 0 && (
@@ -144,11 +162,7 @@ export default function OnboardingWizard({ onDone }) {
               <p className="text-xs text-zinc-600">
                 {creating ? t("onboarding.creating") : t("onboarding.enter_hint")}
               </p>
-              <button
-                type="button"
-                onClick={() => finish("/dashboard")}
-                className="text-xs text-zinc-500 hover:text-zinc-300"
-              >
+              <button type="button" onClick={() => finish("/dashboard")} className="text-xs text-zinc-500 hover:text-zinc-300">
                 {t("onboarding.skip")}
               </button>
             </div>
@@ -157,54 +171,51 @@ export default function OnboardingWizard({ onDone }) {
 
         {step === 1 && (
           <div>
-            <p className="text-xl sm:text-2xl font-medium leading-snug mb-6 text-zinc-100">
-              {t("onboarding.brokers_question")}
+            <p className="text-xl sm:text-2xl font-medium leading-snug text-zinc-100">
+              {t("onboarding.start_title")}
             </p>
-            <div className="flex flex-wrap gap-2">
-              {BROKERS.map((b) => (
+            <p className="text-sm text-zinc-400 leading-relaxed mt-2 mb-6">
+              {t("onboarding.start_sub")}
+            </p>
+            <div className="space-y-2.5">
+              {METHODS.map((m) => (
                 <button
-                  key={b}
-                  onClick={() => pickBroker(b)}
-                  className="border border-zinc-700 hover:border-emerald-400 hover:text-emerald-300 rounded-full px-4 py-2 text-sm text-zinc-300 transition-colors"
+                  key={m.key}
+                  onClick={() => pickMethod(m.key)}
+                  className={`w-full flex items-center gap-3 text-left border rounded-xl p-3.5 transition-colors ${m.reco ? "border-emerald-500/40 bg-emerald-500/[0.06] hover:border-emerald-400" : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-600"}`}
                 >
-                  {b}
+                  <span className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg shrink-0 ${m.bg}`}>{m.icon}</span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-zinc-100">{t(`onboarding.method_${m.key}`)}</span>
+                    <span className="block text-[11px] text-zinc-500 mt-0.5">{t(`onboarding.method_${m.key}_desc`)}</span>
+                  </span>
+                  {m.reco && <span className="ml-auto text-[9px] font-bold text-emerald-950 bg-emerald-400 rounded px-1.5 py-0.5 shrink-0">{t("onboarding.fast")}</span>}
                 </button>
               ))}
-              <button
-                onClick={() => pickBroker(null)}
-                className="border border-zinc-700 hover:border-emerald-400 hover:text-emerald-300 rounded-full px-4 py-2 text-sm text-zinc-300 transition-colors"
-              >
-                {t("onboarding.broker_unknown")}
-              </button>
             </div>
-            <button
-              onClick={() => finish("/dashboard")}
-              className="text-xs text-zinc-500 hover:text-zinc-300 mt-6 block"
-            >
-              {t("onboarding.skip")}
+            <button onClick={() => finish("/dashboard")} className="text-xs text-zinc-500 hover:text-zinc-300 mt-6 block mx-auto">
+              {t("onboarding.explore_first")}
             </button>
           </div>
         )}
 
         {step === 2 && (
-          <div>
-            <p className="text-xl sm:text-2xl font-medium leading-snug mb-2 text-zinc-100">
-              {t("onboarding.done_title", { name: walletName.trim() })}
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-3xl text-emerald-400 mx-auto mb-5">✓</div>
+            <p className="text-xl sm:text-2xl font-medium leading-snug text-zinc-100">
+              {t("onboarding.ready_title")}
             </p>
-            <p className="text-sm text-zinc-400 leading-relaxed mb-7">
+            <p className="text-sm text-zinc-400 leading-relaxed mt-2 mb-7">
               {t("onboarding.done_body")}
             </p>
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col gap-2.5">
               <button
-                onClick={() => finish(createdWalletId ? `/transactions?wallet=${createdWalletId}&open=1` : "/transactions?open=1")}
-                className="bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-medium rounded-lg px-5 py-3 text-sm transition-colors"
+                onClick={startAction}
+                className="bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-semibold rounded-xl px-5 py-3.5 text-sm transition-colors"
               >
-                {t("onboarding.cta_add_transaction")}
+                {t(`onboarding.cta_${method || "manual"}`)}
               </button>
-              <button
-                onClick={() => finish("/dashboard")}
-                className="text-zinc-400 hover:text-zinc-200 text-sm px-5 py-3"
-              >
+              <button onClick={() => finish("/dashboard")} className="text-zinc-400 hover:text-zinc-200 text-sm px-5 py-2.5">
                 {t("onboarding.cta_go_dashboard")}
               </button>
             </div>
