@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { PieChart as AllocIcon } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -42,16 +42,6 @@ export default function Layout({ children, currency, setCurrency }) {
   const [wallets, setWallets] = useState([]);
   const [alertCount, setAlertCount] = useState(0);
   const [walletStats, setWalletStats] = useState({}); // { [wallet_id]: { value, cost, pnl, pnlPct } }
-  // 28 jul 2026 — a barra lateral pedia /portfolio de 30 em 30s. Medido em
-  // producao: essa e a chamada mais cara da app (733ms no melhor caso, 9,6s
-  // quando a cache de precos expira) e o Dashboard ja pede o MESMO /portfolio
-  // de 5 em 5 min. Resultado: a sidebar sozinha era responsavel por 10 dos 12
-  // /portfolio de cada 5 minutos, so para manter um numerozinho de PnL por
-  // carteira ao lado do nome. Os nomes/contagens (baratos) continuam a
-  // atualizar de 30 em 30s; o /portfolio passa a 5 min, alinhado com o
-  // Dashboard, e e sempre forcado quando alguem mexe mesmo numa carteira.
-  const PORTFOLIO_MIN_INTERVAL_MS = 300000;
-  const lastPortfolioAt = useRef(0);
   const [walletSparks, setWalletSparks] = useState({}); // { [wallet_id]: [number...7] }
   const [searchOpen, setSearchOpen] = useState(false);
   // Só o setter sobrevive (8 jul 2026, gaveta hambúrguer mobile removida —
@@ -111,24 +101,17 @@ export default function Layout({ children, currency, setCurrency }) {
   // while the tab is backgrounded, and catches up on refocus.
   useEffect(() => {
     let cancel = false;
-    const load = async ({ force = false } = {}) => {
+    const load = async () => {
       if (document.visibilityState === "hidden") return;
-      const now = Date.now();
-      // O PnL por carteira so precisa de ser recalculado de 5 em 5 min (ou
-      // logo que o utilizador altere alguma coisa); os nomes e o badge de
-      // alertas continuam nos 30s.
-      const wantPortfolio = force || now - lastPortfolioAt.current >= PORTFOLIO_MIN_INTERVAL_MS;
-      if (wantPortfolio) lastPortfolioAt.current = now;
       try {
         const [w, a, p] = await Promise.all([
           api.get("/wallets"),
           api.get("/alerts"),
-          wantPortfolio ? api.get("/portfolio") : Promise.resolve(null),
+          api.get("/portfolio"),
         ]);
         if (cancel) return;
         setWallets(w.data || []);
         setAlertCount((a.data || []).filter((x) => x.active).length);
-        if (!p) return;
         // Sparklines optional — subscription gated, don't block main load
         api.get("/wallets/sparklines").then(r => setWalletSparks(r.data || {})).catch(() => {});
         // Per-wallet PnL aggregation
@@ -148,20 +131,16 @@ export default function Layout({ children, currency, setCurrency }) {
           stats[id].pnlPct = stats[id].cost > 0 ? (stats[id].pnl / stats[id].cost) * 100 : 0;
         });
         setWalletStats(stats);
-      } catch (e) {
-        // Falhou: nao "gastar" a janela de 5 min — tentar outra vez no
-        // proximo tick em vez de ficar com stats vazias durante 5 minutos.
-        if (wantPortfolio) lastPortfolioAt.current = 0;
-      }
+      } catch (e) { /* noop */ }
     };
-    load({ force: true });
+    load();
     const tid = setInterval(load, 30000);
     const onVisible = () => { if (document.visibilityState === "visible") load(); };
     document.addEventListener("visibilitychange", onVisible);
     // Pages that create/rename/delete a wallet, alert, or watchlist call
     // requestSidebarRefresh() so the sidebar catches up immediately instead
     // of waiting out the rest of the 30s interval.
-    const unsubscribe = onSidebarRefreshRequested(() => load({ force: true }));
+    const unsubscribe = onSidebarRefreshRequested(load);
     return () => {
       cancel = true;
       clearInterval(tid);

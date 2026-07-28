@@ -148,131 +148,37 @@ def _cg_headers() -> dict:
     return {"x-cg-demo-api-key": key} if key else {}
 
 
-# --- Stale-while-revalidate + dedup de pedidos em voo (28 jul 2026) --------
-# Medido no dashboard em producao: de 60 em 60s o /portfolio e o /prices/live
-# batiam no mesmo instante em que a cache de 120s expirava e ficavam ambos
-# ~9,6s parados a espera da MESMA batch do yfinance. Duas correcoes:
-#
-# 1) stale-while-revalidate — quem apanha a cache acabada de expirar recebe
-#    JA o ultimo valor conhecido (segundos de idade, nao minutos) e a
-#    atualizacao vai para segundo plano. So se espera mesmo quando nao ha
-#    valor nenhum (simbolo novo) ou quando o que ha e velho demais.
-# 2) dedup de pedidos em voo — dois pedidos simultaneos para o mesmo simbolo
-#    lancavam duas batches identicas a fonte externa. Agora o segundo espera
-#    pelo resultado da primeira.
-#
-# Nota importante sobre a cache: `_cache_get` APAGA a entrada quando ela esta
-# expirada. Por isso aqui a frescura e avaliada com `_cache_age` +
-# `_cache_get_stale` e nunca com `_cache_get` — assim o valor antigo sobrevive
-# e o fallback "ultimo valor conhecido" no fim das duas funcoes (a protecao
-# contra o falso -100% de PnL) passa finalmente a ter alguma coisa para servir.
-
-STOCK_TTL = 120         # idade a partir da qual um preco de acao e refrescado
-STOCK_STALE_MAX = 900   # acima disto nao servimos stale: esperamos pelo novo
-CRYPTO_TTL = 60
-CRYPTO_STALE_MAX = 600
-
-_bg_tasks: set = set()
-_inflight_yf: dict = {}
-_inflight_cg: dict = {}
-
-
-def _spawn_bg(coro) -> None:
-    """Lanca `coro` em segundo plano sem atrasar a resposta ao utilizador.
-
-    Guarda uma referencia forte a task porque o asyncio so lhes guarda
-    referencias fracas — sem isto o GC pode mata-la a meio. Fora de um event
-    loop (scripts, testes) fecha a coroutine em vez de rebentar."""
-    try:
-        task = asyncio.ensure_future(coro)
-    except RuntimeError:
-        coro.close()
-        return
-    _bg_tasks.add(task)
-    task.add_done_callback(_bg_tasks.discard)
-
-
-def _split_by_freshness(prefix: str, keys: List[str], ttl: int, stale_max: int):
-    """Divide `keys` em frescos / stale-servivel / frios.
-
-    Devolve (result, warm, cold): `result` ja traz os frescos E os stale
-    (servem-se imediatamente), `warm` sao os stale que devem ser refrescados
-    em segundo plano, `cold` sao os que nao tem valor utilizavel nenhum e
-    obrigam mesmo a esperar pela fonte externa."""
-    result, warm, cold = {}, [], []
-    for k in keys:
-        ck = f"{prefix}{k}"
-        val = _cache_get_stale(ck)
-        age = _cache_age(ck)
-        if val is None or age is None:
-            cold.append(k)
-        elif age < ttl:
-            result[k] = val
-        elif age < stale_max:
-            result[k] = val
-            warm.append(k)
-        else:
-            cold.append(k)
-    return result, warm, cold
-
-
-async def _batch_dedup(inflight: dict, keys: List[str], fetch) -> dict:
-    """Corre `fetch(chaves)` garantindo UMA chamada por chave em voo.
-
-    Se outro pedido ja tem uma batch a decorrer que inclui a chave X, este
-    nao lanca uma segunda para X: espera pelo resultado da primeira."""
-    if not keys:
-        return {}
-    loop = asyncio.get_running_loop()
-    mine, waiting = [], {}
-    for k in keys:
-        fut = inflight.get(k)
-        if fut is not None and not fut.done():
-            waiting[k] = fut
-        else:
-            inflight[k] = loop.create_future()
-            mine.append(k)
-
-    out = {}
-    if mine:
-        data = {}
-        try:
-            data = await fetch(mine)
-        except Exception as e:
-            logger.error(f"batch fetch error: {e}")
-        finally:
-            # Resolver SEMPRE os futuros — mesmo em erro ou cancelamento —
-            # senao quem esta a espera fica pendurado para sempre.
-            for k in mine:
-                fut = inflight.pop(k, None)
-                if fut is not None and not fut.done():
-                    fut.set_result((data or {}).get(k))
-        out.update(data or {})
-
-    if waiting:
-        # shield: se ESTE pedido for cancelado (utilizador fechou o
-        # separador), nao queremos cancelar o future partilhado e deixar os
-        # outros a espera sem resposta.
-        got = await asyncio.gather(
-            *[asyncio.shield(f) for f in waiting.values()], return_exceptions=True)
-        for k, val in zip(list(waiting.keys()), got):
-            if isinstance(val, dict):
-                out[k] = val
-    return out
-
-
 # --- Crypto prices ---
-async def _cg_fetch_prices(ids: List[str]) -> dict:
-    """Uma chamada ao CoinGecko para `ids`, com validacao e escrita na cache.
+async def get_crypto_prices(coingecko_ids: List[str], symbol_map: dict | None = None) -> dict:
+    """Returns dict { coingecko_id: { usd, eur, usd_24h_change, eur_24h_change } }.
 
-    Extraido de dentro do get_crypto_prices para poder ser reutilizado pelo
-    refresh em segundo plano do stale-while-revalidate."""
-    out = {}
-    if not ids:
-        return out
+    Cached PER SYMBOL (not per combined request), and shared across every
+    user — not scoped to a single user's request. The old version cached by
+    the exact joined id-list ("crypto:bitcoin,ethereum"), so two users with
+    almost-identical holdings (both own BTC/ETH, one also owns SOL) each
+    triggered their own separate CoinGecko call for the SAME BTC/ETH prices
+    within the same 60s window, instead of the second user's request
+    reusing what the first one just fetched. Now each id has its own cache
+    entry, so only the ids NOT already cached actually hit CoinGecko."""
+    if not coingecko_ids:
+        return {}
+    ids = sorted(set(coingecko_ids))
+
+    result = {}
+    missing = []
+    for cid in ids:
+        cached = _cache_get(f"crypto_price:{cid}", ttl=60)
+        if cached is not None:
+            result[cid] = cached
+        else:
+            missing.append(cid)
+
+    if not missing:
+        return result
+
     url = "https://api.coingecko.com/api/v3/simple/price"
     params = {
-        "ids": ",".join(ids),
+        "ids": ",".join(missing),
         "vs_currencies": "usd,eur",
         "include_24hr_change": "true",
     }
@@ -289,49 +195,11 @@ async def _cg_fetch_prices(ids: List[str]) -> dict:
             for cid, val in data.items():
                 if _price_ok((val or {}).get("usd")):
                     _cache_set(f"crypto_price:{cid}", val)
-                    out[cid] = val
+                    result[cid] = val
                 else:
                     _record_data_issue("crypto", cid, "preco invalido do CoinGecko")
     except Exception as e:
         logger.error(f"CoinGecko error: {e}")
-    return out
-
-
-async def _refresh_crypto_prices(ids: List[str]) -> None:
-    """Refresh em segundo plano (stale-while-revalidate)."""
-    try:
-        await _batch_dedup(_inflight_cg, ids, _cg_fetch_prices)
-    except Exception as e:
-        logger.warning(f"refresh crypto prices falhou: {e}")
-
-
-async def get_crypto_prices(coingecko_ids: List[str], symbol_map: dict | None = None) -> dict:
-    """Returns dict { coingecko_id: { usd, eur, usd_24h_change, eur_24h_change } }.
-
-    Cached PER SYMBOL (not per combined request), and shared across every
-    user — not scoped to a single user's request. The old version cached by
-    the exact joined id-list ("crypto:bitcoin,ethereum"), so two users with
-    almost-identical holdings (both own BTC/ETH, one also owns SOL) each
-    triggered their own separate CoinGecko call for the SAME BTC/ETH prices
-    within the same 60s window, instead of the second user's request
-    reusing what the first one just fetched. Now each id has its own cache
-    entry, so only the ids NOT already cached actually hit CoinGecko."""
-    if not coingecko_ids:
-        return {}
-    ids = sorted(set(coingecko_ids))
-
-    # Frescos e stale saem daqui ja servidos; so os "cold" (sem valor
-    # nenhum) e que obrigam a esperar pelo CoinGecko.
-    result, warm, cold = _split_by_freshness(
-        "crypto_price:", ids, CRYPTO_TTL, CRYPTO_STALE_MAX)
-    if warm:
-        _spawn_bg(_refresh_crypto_prices(warm))
-
-    missing = cold
-    if not missing:
-        return result
-
-    result.update(await _batch_dedup(_inflight_cg, missing, _cg_fetch_prices))
 
     # 15 jul 2026 — qualquer id que continue sem preço aqui (CoinGecko caiu
     # de vez, ou simplesmente não devolveu esse id na resposta, ex.:
@@ -422,24 +290,6 @@ def _yf_fetch(symbols: List[str]) -> dict:
     return out
 
 
-async def _yf_fetch_async(symbols: List[str]) -> dict:
-    """`_yf_fetch` fora do event loop (e bloqueante: rede sincrona)."""
-    return await asyncio.to_thread(_yf_fetch, symbols)
-
-
-async def _refresh_stock_prices(symbols: List[str]) -> None:
-    """Refresh em segundo plano (stale-while-revalidate)."""
-    try:
-        data = await _batch_dedup(_inflight_yf, symbols, _yf_fetch_async)
-        for sym, val in (data or {}).items():
-            if _price_ok((val or {}).get("usd")):
-                _cache_set(f"stock_price:{sym}", val)
-            else:
-                _record_data_issue("stock", sym, "preco invalido do yfinance")
-    except Exception as e:
-        logger.warning(f"refresh stock prices falhou: {e}")
-
-
 async def get_stock_prices(symbols: List[str]) -> dict:
     """Same shared per-symbol caching as get_crypto_prices above — each
     symbol has its own cache entry so a second user requesting a stock
@@ -451,20 +301,19 @@ async def get_stock_prices(symbols: List[str]) -> dict:
         return {}
     syms = sorted(set([s.upper() for s in symbols]))
 
-    # Frescos e stale saem daqui ja servidos (stale-while-revalidate); so os
-    # "cold" — sem valor nenhum utilizavel — e que obrigam a esperar pela
-    # batch do yfinance, que e a chamada de ~9,6s que estava a travar o
-    # dashboard de 60 em 60s.
-    result, warm, cold = _split_by_freshness(
-        "stock_price:", syms, STOCK_TTL, STOCK_STALE_MAX)
-    if warm:
-        _spawn_bg(_refresh_stock_prices(warm))
+    result = {}
+    missing = []
+    for sym in syms:
+        cached = _cache_get(f"stock_price:{sym}", ttl=120)
+        if cached is not None:
+            result[sym] = cached
+        else:
+            missing.append(sym)
 
-    missing = cold
     if not missing:
         return result
 
-    data = await _batch_dedup(_inflight_yf, missing, _yf_fetch_async)
+    data = await asyncio.to_thread(_yf_fetch, missing)
     for sym, val in data.items():
         if _price_ok((val or {}).get("usd")):
             _cache_set(f"stock_price:{sym}", val)
@@ -518,7 +367,7 @@ async def get_stock_prices(symbols: List[str]) -> dict:
         resolved_pairs = [(o, r) for o, r in resolutions if r and r != o]
         if resolved_pairs:
             new_syms = [r for _, r in resolved_pairs]
-            resolved_data = await _batch_dedup(_inflight_yf, new_syms, _yf_fetch_async)
+            resolved_data = await asyncio.to_thread(_yf_fetch, new_syms)
             for orig, real in resolved_pairs:
                 if real in resolved_data and _price_ok(resolved_data[real].get("usd")):
                     result[orig] = resolved_data[real]
