@@ -241,17 +241,26 @@ async def stripe_webhook(request: Request):
         existing_user = await db.users.find_one({"stripe_customer_id": customer_id}, {"_id": 0, "id": 1, "subscription_status": 1})
         prev_status = existing_user.get("subscription_status") if existing_user else None
 
+        # 28 jul 2026 - o subscription_plan so entra no $set quando o evento
+        # traz mesmo metadata.plan. O Stripe manda muitos
+        # customer.subscription.updated sem metadata (renovacoes, mudancas de
+        # estado do pagamento), e o codigo anterior gravava plan=None nesses
+        # casos, apagando a informacao de mensal vs anual que ja tinhamos
+        # guardado no created. Nunca afetou o acesso - Pro/gratuito sai do
+        # subscription_status - mas estragava as metricas de receita. A regra
+        # passa a ser: escrever so o que o evento realmente afirma.
+        updates = {
+            "subscription_status": status,
+            "stripe_subscription_id": subscription_id,
+            "trial_ends_at": trial_end,
+            "current_period_end": current_period_end,
+        }
+        if plan:
+            updates["subscription_plan"] = plan
+
         await db.users.update_one(
             {"stripe_customer_id": customer_id},
-            {
-                "$set": {
-                    "subscription_status": status,
-                    "subscription_plan": plan,
-                    "stripe_subscription_id": subscription_id,
-                    "trial_ends_at": trial_end,
-                    "current_period_end": current_period_end,
-                }
-            }
+            {"$set": updates}
         )
 
         # Fundadores (X/100): marca o utilizador como fundador se a subscrição
