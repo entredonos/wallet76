@@ -440,6 +440,54 @@ def _trim_retro_result(result: list, range: str, now: datetime) -> list:
     return [p for p in result if (p.get("ts") or p.get("date") or "") >= cutoff]
 
 
+def _sanitize_points(points: list) -> list:
+    """Rede de segurança na fronteira do /history.
+
+    O Starlette serializa a resposta com `allow_nan=False`: basta UM valor
+    NaN/Infinity num ponto (preço mau vindo do Yahoo/CoinGecko, divisão por
+    zero, etc.) para a resposta INTEIRA rebentar com 500 — e isso acontece
+    *depois* do endpoint ter devolvido, logo fora de qualquer try/except
+    nosso e sem traceback útil nos logs. Era exatamente este o sintoma:
+    /history?range=1h e ?range=4h davam 500 enquanto ?range=all já
+    funcionava. Também normaliza `ts`/`date` para string, porque os
+    snapshots reais podem trazer datetime e a mistura dos dois tipos
+    rebentava a ordenação final.
+    """
+    import math
+
+    out = []
+    for pt in points or []:
+        if not isinstance(pt, dict):
+            continue
+        try:
+            tot = float(pt.get("total_usd") or 0)
+            pnl = float(pt.get("total_pnl_usd") or 0)
+        except (TypeError, ValueError):
+            continue
+        if not (math.isfinite(tot) and math.isfinite(pnl)):
+            continue
+
+        ts = pt.get("ts")
+        dt = pt.get("date")
+        if hasattr(ts, "isoformat"):
+            ts = ts.isoformat()
+        if hasattr(dt, "isoformat"):
+            dt = dt.isoformat()
+
+        clean = {**pt, "total_usd": tot, "total_pnl_usd": pnl,
+                 "ts": None if ts is None else str(ts),
+                 "date": None if dt is None else str(dt)}
+
+        bc = pt.get("by_class")
+        if isinstance(bc, dict):
+            clean["by_class"] = {
+                k: float(v) for k, v in bc.items()
+                if isinstance(v, (int, float)) and math.isfinite(float(v))
+            }
+        out.append(clean)
+    return out
+
+
 @router.get("/history")
 async def get_history(range: str = "1w", wallet_id: str | None = None, asset_type: str | None = None, user=Depends(get_current_user)):
     """Portfolio history. 15m/30m/1h/4h reconstruct intraday from each held
@@ -462,7 +510,7 @@ async def get_history(range: str = "1w", wallet_id: str | None = None, asset_typ
         cache_key = f"history_all:{user['id']}:{wallet_id or 'global'}:{asset_type or 'all'}"
         cached = _cache_get(cache_key, ttl=3600)
         if cached:
-            return _trim_retro_result(cached, range, now)
+            return _sanitize_points(_trim_retro_result(cached, range, now))
 
         try:
             result = await _build_retro_history(user["id"], wallet_id, asset_type)
@@ -470,7 +518,7 @@ async def get_history(range: str = "1w", wallet_id: str | None = None, asset_typ
             logger.error(f"retro history failed (user={user['id']}, range={range}): {e}", exc_info=True)
             return []
         _cache_set(cache_key, result)
-        return _trim_retro_result(result, range, now)
+        return _sanitize_points(_trim_retro_result(result, range, now))
 
     # 15m/30m/1h/4h: reconstructed retroactively from each held asset's own
     # intraday price history (same source as the individual asset charts),
@@ -483,14 +531,14 @@ async def get_history(range: str = "1w", wallet_id: str | None = None, asset_typ
         cache_key = f"history_intraday:{user['id']}:{wallet_id or 'global'}:{range}"
         cached = _cache_get(cache_key, ttl=900)
         if cached is not None:
-            return cached
+            return _sanitize_points(cached)
         try:
             result = await _build_retro_history_intraday(user["id"], range, wallet_id)
         except Exception as e:
             logger.error(f"intraday retro history failed (user={user['id']}, range={range}): {e}", exc_info=True)
             return []
         _cache_set(cache_key, result)
-        return result
+        return _sanitize_points(result)
 
     # N_BARS mirrors backend/routes/news.py: every button means "candle
     # size", not "look back this long" — clicking "30m" shows the last 70
@@ -573,7 +621,7 @@ async def get_history(range: str = "1w", wallet_id: str | None = None, asset_typ
             "source": "snapshot",
         })
 
-    return result
+    return _sanitize_points(result)
 
 @router.post("/history/backfill-types")
 async def backfill_type_values(user=Depends(get_current_user)):
@@ -1173,23 +1221,39 @@ async def _build_retro_history_intraday(user_id: str, range_key: str, wallet_id:
         # Aplica todas as transações com data <= t_ms ainda não aplicadas.
         while txn_ptr < len(txn_ts_sorted) and txn_ts_sorted[txn_ptr] <= t_ms:
             for t in txns_by_ts[txn_ts_sorted[txn_ptr]]:
-                key = (t["asset_type"], t["symbol"].upper())
-                fx = float(t.get("fx_to_usd") or 1.0)
-                q = float(t["quantity"])
-                p_usd = float(t["price"]) * fx
+                # Mesma blindagem já aplicada ao reconstrutor diário: uma
+                # transação malformada (liquidez sem preço, import de CSV
+                # incompleto) rebentava a reconstrução TODA e o gráfico
+                # ficava vazio. Ignora a má, continua com as boas.
+                try:
+                    at = t.get("asset_type")
+                    sym = t.get("symbol")
+                    if not at or not sym:
+                        continue
+                    key = (at, sym.upper())
+                    if key not in qty:
+                        qty[key] = 0.0
+                        cost[key] = 0.0
+                        last_price[key] = 0.0
+                    fx = float(t.get("fx_to_usd") or 1.0)
+                    q = float(t.get("quantity") or 0)
+                    p_usd = float(t.get("price") or 0) * fx
 
-                if t["type"] == "BUY":
-                    qty[key] += q
-                    cost[key] += q * p_usd + float(t.get("fee", 0)) * fx
-                else:
-                    sell_q = min(q, qty[key])
-                    if qty[key] > 0:
-                        avg = cost[key] / qty[key]
-                        cost[key] -= avg * sell_q
-                    qty[key] -= sell_q
-                    if qty[key] < 1e-9:
-                        qty[key] = 0
-                        cost[key] = 0
+                    if (t.get("type") or "").upper() == "BUY":
+                        qty[key] += q
+                        cost[key] += q * p_usd + float(t.get("fee", 0) or 0) * fx
+                    else:
+                        sell_q = min(q, qty[key])
+                        if qty[key] > 0:
+                            avg = cost[key] / qty[key]
+                            cost[key] -= avg * sell_q
+                        qty[key] -= sell_q
+                        if qty[key] < 1e-9:
+                            qty[key] = 0
+                            cost[key] = 0
+                except Exception as e:
+                    logger.warning(f"intraday retro: transacao ignorada (user={user_id}, id={t.get('id')}, {t.get('asset_type')}/{t.get('symbol')} {t.get('type')} qty={t.get('quantity')} price={t.get('price')}): {e}")
+                    continue
             txn_ptr += 1
 
         total_v = 0.0
@@ -1291,7 +1355,10 @@ async def _build_retro_history_intraday(user_id: str, range_key: str, wallet_id:
 
             result.append({"ts": ts, "date": s.get("date"), "total_usd": total, "total_pnl_usd": pnl, "source": "safety_net"})
 
-        result.sort(key=lambda p: p["ts"])
+        # str(...) porque os pontos reconstruídos trazem ts em ISO string e
+        # os snapshots podem trazer datetime — comparar os dois tipos
+        # levantava TypeError e matava a rede de segurança.
+        result.sort(key=lambda p: str(p.get("ts") or ""))
 
     return result
 
