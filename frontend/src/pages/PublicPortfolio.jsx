@@ -3,7 +3,14 @@ import { useParams, Link } from "react-router-dom";
 import { TrendingUp, TrendingDown, Minus, ExternalLink } from "lucide-react";
 import AssetIcon from "../components/AssetIcon";
 
-const API_BASE = process.env.REACT_APP_API_URL || "https://wallet76-1cvt.onrender.com/api";
+// 28 jul 2026: esta pagina tinha o seu proprio URL base, lido de
+// process.env.REACT_APP_API_URL — variavel que NAO existe em lado nenhum do
+// projeto (a correta e REACT_APP_BACKEND_URL). Resultado: caia sempre no
+// fallback, um URL antigo do Render (wallet76-1cvt) que ja nao e o servico
+// atual, e a carteira partilhada nunca carregava em producao. Passa a usar o
+// mesmo `API` que o resto da app (lib/api.js), que em producao e o caminho
+// relativo "/api" servido pelo rewrite same-origin do Vercel.
+import { API } from "../lib/api";
 
 function fmt(n, currency = "USD") {
   if (n === null || n === undefined) return "—";
@@ -31,7 +38,7 @@ export default function PublicPortfolio() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE}/p/${slug}`)
+    fetch(`${API}/p/${slug}`)
       .then((r) => {
         if (!r.ok) throw new Error(r.status === 404 ? "not_found" : "error");
         return r.json();

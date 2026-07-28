@@ -61,6 +61,21 @@ async def create_transaction(payload: TransactionCreate, user=Depends(get_curren
     return doc
 
 
+# ATENCAO A ORDEM (28 jul 2026): esta rota TEM de ficar registada ANTES de
+# @router.delete("/transactions/{txn_id}"). O FastAPI faz o match por ordem
+# de registo, por isso se /{txn_id} vier primeiro, um DELETE /transactions/all
+# e apanhado por ela com txn_id="all", nao encontra nenhuma transacao com esse
+# id e devolve 404 — o botao "apagar todas as transacoes" ficava simplesmente
+# sem efeito. Nao mover para baixo.
+@router.delete("/transactions/all")
+async def clear_all_transactions(user=Depends(get_current_user)):
+    """Delete ALL transactions for the current user (keeps wallets)."""
+    res = await db.transactions.delete_many({"user_id": user["id"]})
+    await db.snapshots.delete_many({"user_id": user["id"]})
+    invalidate_history_cache(user["id"])
+    return {"ok": True, "deleted": res.deleted_count}
+
+
 @router.patch("/transactions/{txn_id}")
 async def update_transaction(txn_id: str, payload: TransactionUpdate, user=Depends(get_current_user)):
     upd = {k: v for k, v in payload.model_dump().items() if v is not None}
@@ -94,14 +109,6 @@ async def clear_wallet_transactions(wallet_id: str, user=Depends(get_current_use
     invalidate_history_cache(user["id"])
     return {"ok": True, "deleted": res.deleted_count}
 
-
-@router.delete("/transactions/all")
-async def clear_all_transactions(user=Depends(get_current_user)):
-    """Delete ALL transactions for the current user (keeps wallets)."""
-    res = await db.transactions.delete_many({"user_id": user["id"]})
-    await db.snapshots.delete_many({"user_id": user["id"]})
-    invalidate_history_cache(user["id"])
-    return {"ok": True, "deleted": res.deleted_count}
 
 
 @router.get("/holdings")
