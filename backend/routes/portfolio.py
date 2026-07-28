@@ -752,6 +752,10 @@ async def _build_retro_history(user_id: str, wallet_id: str | None = None, asset
         assets.setdefault(key, {
             "asset_type": at,
             "symbol": sym.upper(),
+            # currency serve a liquidez (valor de face via FX) e coingecko_id
+            # o preco atual de recurso quando o yfinance nao devolve serie.
+            "currency": (t.get("currency") or "").upper(),
+            "coingecko_id": t.get("coingecko_id") or "",
         })
 
     def _fetch_closes(asset_type: str, symbol: str):
@@ -795,13 +799,63 @@ async def _build_retro_history(user_id: str, wallet_id: str | None = None, asset
     # só lento a frio — depois fica em cache 1h) e a caminhada dia a dia
     # (CPU pura; só seria lenta se `start` viesse de uma data de transação
     # corrompida/absurdamente antiga, fazendo `days` explodir).
+    # A liquidez nao tem ticker yfinance: era pedida na mesma, devolvia serie
+    # vazia e entrava no grafico a valor 0 (o saldo ao vivo ja a contava ao
+    # valor de face — as duas vistas nao batiam certo). Passa a ser avaliada
+    # como em _price_holdings: 1 unidade da moeda -> USD pela taxa FX.
+    market_keys = [k for k in keys if k[0] != "cash"]
+    cash_keys = [k for k in keys if k[0] == "cash"]
+
     t0 = time.monotonic()
-    closes_per_asset = await asyncio.gather(*[
-        asyncio.to_thread(_fetch_closes, k[0], k[1]) for k in keys
-    ])
+    closes_per_asset, fx_rates = await asyncio.gather(
+        asyncio.gather(*[
+            asyncio.to_thread(_fetch_closes, k[0], k[1]) for k in market_keys
+        ]),
+        get_fx_rates(),
+    )
     fetch_elapsed = time.monotonic() - t0
 
-    closes_map = {k: c for k, c in zip(keys, closes_per_asset)}
+    closes_map = {k: c for k, c in zip(market_keys, closes_per_asset)}
+
+    cash_price = {}
+    for k in cash_keys:
+        cur = (assets[k].get("currency") or k[1]).upper()
+        try:
+            rate = float(fx_rates.get(cur) or 1.0)
+        except (TypeError, ValueError):
+            rate = 1.0
+        cash_price[k] = (1.0 / rate) if rate else 1.0
+
+    # Rede de seguranca para o grafico vazio: o yfinance limita pedidos com
+    # frequencia e, quando falha para TODOS os ativos detidos, todas as
+    # series vinham vazias -> preco 0 -> total_v 0 -> cada dia era saltado
+    # (`if total_v <= 0: continue`) -> /history devolvia [] e o cartao
+    # "Evolucao do Portfolio" ficava em branco, mesmo com o portefolio ao
+    # vivo a carregar bem (esse usa outra fonte de precos). Nesse caso
+    # usa-se o preco ATUAL do ativo como carry-forward: a linha fica plana
+    # nesse ativo (aproximacao honesta e assumida), mas o grafico existe.
+    stale_keys = [k for k in market_keys if not closes_map.get(k)]
+    fallback_price = {}
+    if stale_keys:
+        cg_ids = [assets[k].get("coingecko_id") or k[1].lower()
+                  for k in stale_keys if k[0] == "crypto"]
+        syms = [k[1] for k in stale_keys if k[0] in EQUITY_TYPES]
+        try:
+            cur_crypto, cur_stock = await asyncio.gather(
+                get_crypto_prices(cg_ids), get_stock_prices(syms))
+        except Exception as e:
+            logger.warning(f"retro: precos de recurso falharam: {e}")
+            cur_crypto, cur_stock = {}, {}
+        for k in stale_keys:
+            if k[0] == "crypto":
+                cg = assets[k].get("coingecko_id") or k[1].lower()
+                fallback_price[k] = float((cur_crypto.get(cg) or {}).get("usd") or 0)
+            elif k[0] in EQUITY_TYPES:
+                fallback_price[k] = float((cur_stock.get(k[1].upper()) or {}).get("usd") or 0)
+        logger.warning(
+            f"retro ALL user={user_id}: {len(stale_keys)} ativo(s) sem serie yfinance "
+            f"({[f'{k[0]}:{k[1]}' for k in stale_keys]}) — a usar preco atual como recurso"
+        )
 
     days = []
     cur = start
@@ -879,13 +933,17 @@ async def _build_retro_history(user_id: str, wallet_id: str | None = None, asset
             if qty[k] <= 0:
                 continue
 
-            series = closes_map.get(k, {})
-            price = series.get(day_iso)
-
-            if price is None:
-                price = last_price[k]
+            if k[0] == "cash":
+                # Valor de face, igual ao saldo ao vivo (ver _price_holdings).
+                price = cash_price.get(k, 0.0)
             else:
-                last_price[k] = price
+                series = closes_map.get(k, {})
+                price = series.get(day_iso)
+
+                if price is None:
+                    price = last_price[k] or fallback_price.get(k, 0.0)
+                else:
+                    last_price[k] = price
 
             contrib = qty[k] * (price or 0)
             total_v += contrib
@@ -1001,8 +1059,8 @@ async def _build_retro_history_intraday(user_id: str, range_key: str, wallet_id:
     dos timestamps intraday devolvidos pela série de cada ativo, indo buscar
     o preço mais recente conhecido (carry-forward) em cada timestamp.
 
-    Cash não é precificado (mesma limitação pré-existente de
-    _build_retro_history — não há ticker yfinance para símbolos de moeda)."""
+    A liquidez é avaliada ao valor de face (1 unidade da moeda -> USD pela
+    taxa FX), tal como no saldo ao vivo e no reconstrutor diário."""
     query = {"user_id": user_id}
     if wallet_id and wallet_id != "all":
         query["wallet_id"] = wallet_id
@@ -1020,23 +1078,40 @@ async def _build_retro_history_intraday(user_id: str, range_key: str, wallet_id:
             "asset_type": t["asset_type"],
             "symbol": t["symbol"].upper(),
             "coingecko_id": t.get("coingecko_id") or "",
+            "currency": (t.get("currency") or "").upper(),
         })
 
     keys = list(assets.keys())
-    series_per_asset = await asyncio.gather(*[
-        _fetch_asset_intraday_series(
-            assets[k]["asset_type"], assets[k]["symbol"], assets[k]["coingecko_id"], range_key
-        ) for k in keys
-    ])
-    series_map = {k: s for k, s in zip(keys, series_per_asset)}
+    market_keys = [k for k in keys if k[0] != "cash"]
+    series_per_asset, fx_rates = await asyncio.gather(
+        asyncio.gather(*[
+            _fetch_asset_intraday_series(
+                assets[k]["asset_type"], assets[k]["symbol"], assets[k]["coingecko_id"], range_key
+            ) for k in market_keys
+        ]),
+        get_fx_rates(),
+    )
+    series_map = {k: s for k, s in zip(market_keys, series_per_asset)}
+
+    # Liquidez ao valor de face — ver comentário equivalente em
+    # _build_retro_history. Não tem série intraday nem ticker; entra com
+    # valor constante em cada ponto da timeline.
+    cash_price = {}
+    for k in [k for k in keys if k[0] == "cash"]:
+        cur = (assets[k].get("currency") or k[1]).upper()
+        try:
+            rate = float(fx_rates.get(cur) or 1.0)
+        except (TypeError, ValueError):
+            rate = 1.0
+        cash_price[k] = (1.0 / rate) if rate else 1.0
 
     # Diagnóstico: fica no log do backend sempre que isto corre, para se
     # voltar a aparecer um gráfico vazio/escasso dar para ver logo aqui
     # quantos ativos tinham série vazia, em vez de adivinhar às cegas.
-    empty_assets = [f"{k[0]}:{k[1]}" for k in keys if not series_map.get(k)]
-    counts = {f"{k[0]}:{k[1]}": len(series_map.get(k) or []) for k in keys}
+    empty_assets = [f"{k[0]}:{k[1]}" for k in market_keys if not series_map.get(k)]
+    counts = {f"{k[0]}:{k[1]}": len(series_map.get(k) or []) for k in market_keys}
     logger.info(
-        f"intraday retro user={user_id} range={range_key}: {len(keys)} ativo(s), "
+        f"intraday retro user={user_id} range={range_key}: {len(market_keys)} ativo(s) de mercado, "
         f"{len(empty_assets)} sem série ({empty_assets}), pontos por ativo: {counts}"
     )
 
@@ -1123,6 +1198,11 @@ async def _build_retro_history_intraday(user_id: str, range_key: str, wallet_id:
         by_class: dict[str, float] = {}
         for k in keys:
             if qty[k] <= 0:
+                continue
+            if k[0] == "cash":
+                contrib = qty[k] * cash_price.get(k, 0.0)
+                total_v += contrib
+                by_class[k[0]] = by_class.get(k[0], 0.0) + contrib
                 continue
             series = price_index.get(k, [])
             p = idx_ptr[k]
