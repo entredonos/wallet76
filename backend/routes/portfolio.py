@@ -464,7 +464,11 @@ async def get_history(range: str = "1w", wallet_id: str | None = None, asset_typ
         if cached:
             return _trim_retro_result(cached, range, now)
 
-        result = await _build_retro_history(user["id"], wallet_id, asset_type)
+        try:
+            result = await _build_retro_history(user["id"], wallet_id, asset_type)
+        except Exception as e:
+            logger.error(f"retro history failed (user={user['id']}, range={range}): {e}", exc_info=True)
+            return []
         _cache_set(cache_key, result)
         return _trim_retro_result(result, range, now)
 
@@ -740,10 +744,14 @@ async def _build_retro_history(user_id: str, wallet_id: str | None = None, asset
     assets = {}
 
     for t in txns:
-        key = (t["asset_type"], t["symbol"].upper())
+        at = t.get("asset_type")
+        sym = t.get("symbol")
+        if not at or not sym:
+            continue
+        key = (at, sym.upper())
         assets.setdefault(key, {
-            "asset_type": t["asset_type"],
-            "symbol": t["symbol"].upper(),
+            "asset_type": at,
+            "symbol": sym.upper(),
         })
 
     def _fetch_closes(asset_type: str, symbol: str):
@@ -824,26 +832,39 @@ async def _build_retro_history(user_id: str, wallet_id: str | None = None, asset
         day_iso = day.isoformat()
 
         for t in txns_by_day.get(day_iso, []):
-            key = (t["asset_type"], t["symbol"].upper())
-            fx = float(t.get("fx_to_usd") or 1.0)
-            q = float(t["quantity"])
-            p_usd = float(t["price"]) * fx
+            # Defensivo: uma transação malformada (campo em falta, quantidade/
+            # preço nulos, tipo desconhecido — ex.: liquidez ou import de CSV)
+            # rebentava a reconstrução TODA (500 no /history). Ignora a má e
+            # continua com as boas.
+            try:
+                at = t.get("asset_type")
+                sym = t.get("symbol")
+                if not at or not sym:
+                    continue
+                key = (at, sym.upper())
+                if key not in qty:
+                    qty[key] = 0.0
+                    cost[key] = 0.0
+                    last_price[key] = 0.0
+                fx = float(t.get("fx_to_usd") or 1.0)
+                q = float(t.get("quantity") or 0)
+                p_usd = float(t.get("price") or 0) * fx
 
-            if t["type"] == "BUY":
-                qty[key] += q
-                cost[key] += q * p_usd + float(t.get("fee", 0)) * fx
-            else:
-                sell_q = min(q, qty[key])
-
-                if qty[key] > 0:
-                    avg = cost[key] / qty[key]
-                    cost[key] -= avg * sell_q
-
-                qty[key] -= sell_q
-
-                if qty[key] < 1e-9:
-                    qty[key] = 0
-                    cost[key] = 0
+                if (t.get("type") or "").upper() == "BUY":
+                    qty[key] += q
+                    cost[key] += q * p_usd + float(t.get("fee", 0) or 0) * fx
+                else:
+                    sell_q = min(q, qty[key])
+                    if qty[key] > 0:
+                        avg = cost[key] / qty[key]
+                        cost[key] -= avg * sell_q
+                    qty[key] -= sell_q
+                    if qty[key] < 1e-9:
+                        qty[key] = 0
+                        cost[key] = 0
+            except Exception as e:
+                logger.warning(f"retro: transacao ignorada (user={user_id}): {e}")
+                continue
 
         total_v = 0.0
         # Retorno por categoria no gráfico de Evolução (7 jul 2026) — soma
