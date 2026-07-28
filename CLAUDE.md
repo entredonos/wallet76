@@ -253,3 +253,32 @@ avançar**:
 utilizador.** Aplica-se tanto a skills que já existem (marketplace/perfil)
 como a skills novas que poderíamos criar para o efeito. A decisão do que
 entra no ambiente é sempre do Jose.
+
+---
+
+## REGRA #7 — ATUALIZAR O README SEMPRE, NO MESMO TRABALHO
+
+Sempre que criarmos, alterarmos ou corrigirmos alguma coisa neste repositório,
+o **`README.md` é atualizado no mesmo trabalho**, antes de eu entregar os
+comandos de commit. Não fica para depois: "depois" nunca chega, e um README
+desatualizado é pior do que nenhum, porque descreve uma app que já não existe.
+
+Em concreto, cada alteração implica:
+
+1. **Uma entrada nova em §2 (Registo de alterações)** do README, com três
+   coisas: **o que estava mal**, **porque estava mal** (a causa-raiz, não o
+   sintoma) e **como ficou**. O *porquê* é a parte que vale — daqui a seis
+   meses o código lê-se, o raciocínio não.
+2. **Atualizar a secção estrutural afetada**: §4 estrutura de ficheiros,
+   §5 mapa de endpoints, §6 rotas do frontend, §7 funcionalidades,
+   §8 modelo de dados, §9 cache, §10 i18n, §11 segurança, §12 planos e
+   limites, §13 deploy e variáveis.
+3. **Se a alteração gerar uma lição do tipo "nunca mais fazer assim"**, essa
+   lição vira uma REGRA nova aqui no `CLAUDE.md` e é referenciada no README.
+4. **Atualizar a data** no cabeçalho do README.
+5. Se o item estava no `Wallet76_NEGOCIO.md`, **marcar a caixa** e apontar para
+   a secção do README onde ficou descrito.
+
+Isto vale para tudo: funcionalidade nova, correção de bug, endpoint novo,
+alteração de esquema, variável de ambiente nova, mudança de deploy. Se mexeu no
+repositório, mexe no README.

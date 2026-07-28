@@ -14,16 +14,26 @@ const AuthContext = createContext(null);
 // funcionar) antes de deixar o chamador navegar para o resto da app; no
 // caminho normal (cookie já disponível de imediato) isto resolve-se logo na
 // 1ª tentativa e não acrescenta atraso percetível.
+//
+// 28 jul 2026 — esta funcao passou a DEVOLVER os dados do /auth/me em vez de
+// um booleano. Motivo: a resposta do /auth/login e propositadamente magra
+// ({id, email, name, token}) e nao traz `is_admin`, `plan` nem
+// `subscription_status`, que so o /auth/me calcula. Como o login fazia
+// setUser(resposta-do-login), o utilizador ficava na app sem essas flags ate
+// ao primeiro refresh — o menu de admin nao aparecia e o usePlan() tratava
+// ate uma conta Pro como gratuita. Ja estavamos a chamar o /auth/me aqui e a
+// deitar a resposta fora; aproveita-la corrige o problema sem pedido extra e
+// deixa o /auth/me como unica fonte de verdade do objeto `user`.
 async function waitForSessionCookie(maxAttempts = 4, delayMs = 250) {
   for (let i = 0; i < maxAttempts; i++) {
     try {
-      await api.get("/auth/me");
-      return true;
+      const { data } = await api.get("/auth/me");
+      return data;
     } catch {
       if (i < maxAttempts - 1) await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
-  return false;
+  return null;
 }
 
 export function AuthProvider({ children }) {
@@ -82,15 +92,18 @@ export function AuthProvider({ children }) {
     // persist it anywhere JS-readable (no localStorage) — the httpOnly
     // cookie it also sets is the only thing that authenticates subsequent
     // requests. See lib/api.js for why.
-    await waitForSessionCookie();
-    setUser(data);
+    // Usa o objeto completo do /auth/me (com is_admin e plan). Se o /auth/me
+    // nao responder de todo, cai na resposta do login para nao bloquear a
+    // entrada — nesse caso o refresh seguinte completa o objeto.
+    const me = await waitForSessionCookie();
+    setUser(me || data);
     return data;
   };
 
   const verifyTwoFactor = async (pendingToken, code) => {
     const { data } = await api.post("/auth/2fa/verify", { pending_token: pendingToken, code });
-    await waitForSessionCookie();
-    setUser(data);
+    const me = await waitForSessionCookie();
+    setUser(me || data);
     return data;
   };
 

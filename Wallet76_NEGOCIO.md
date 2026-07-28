@@ -73,8 +73,8 @@
 - [ ] Corrigir URL hardcoded `wallet76.vercel.app` no email de alertas (email_utils.py:183) e traduzi-lo (só existe em EN)
 - [ ] Backups Mongo: script mongodump semanal (grátis) OU Atlas Flex
 - [ ] Decidir Vercel Pro vs Cloudflare Pages
-- [ ] Bug: `DELETE /transactions/all` nunca funciona (rota registada DEPOIS de `/transactions/{txn_id}` — o "all" é apanhado como id). Mover a rota para cima. (transactions.py:98)
-- [ ] `PublicPortfolio.jsx:6` usa env var errada (`REACT_APP_API_URL` em vez de `REACT_APP_BACKEND_URL`) → links partilhados dependem de URL Render hardcoded
+- [x] ~~Bug: `DELETE /transactions/all` nunca funciona (rota registada DEPOIS de `/transactions/{txn_id}`).~~ **FEITO 28 jul 2026** — rota movida para antes das irmãs parametrizadas (transactions.py:70); validado em produção. Ver README §2.
+- [x] ~~`PublicPortfolio.jsx:6` usa env var errada (`REACT_APP_API_URL`).~~ **FEITO 28 jul 2026** — passou a importar `API` do `lib/api.js`, como todas as outras páginas. Ver README §2 e §7.1.
 - [ ] `og:image` do index.html: URL relativo + ficheiro; usar URL absoluto `https://wallet76.com/...` com imagem 1200×630 (partilhas WhatsApp/redes saem sem imagem)
 - [ ] Teste ponta-a-ponta completo em live: registo → verificação → adicionar ativos → checkout fundador → cancelar no portal
 

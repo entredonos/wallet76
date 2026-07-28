@@ -73,3 +73,10 @@ _backup_*/
 # Pastas de segredos
 secrets/
 **/APP pass/
+
+# Documentação interna de organização (28 jul 2026)
+# O README passou a ser a estrutura completa da app, mas é uma ferramenta de
+# trabalho nossa — fica só no PC, fora do git. NOTA: ficando fora do git,
+# também fica fora de qualquer backup; a cópia que conta é a do disco.
+README.md
+README.md.bak-*
