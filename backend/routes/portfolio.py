@@ -5,6 +5,14 @@ from datetime import datetime, timezone, timedelta
 
 import httpx
 import yfinance as yf
+# pandas ao nível do módulo, de propósito. O yfinance já o importa
+# (yfinance/ticker.py: `import pandas as _pd`), por isso o pandas JÁ está
+# carregado desde o arranque — pô-lo aqui não custa um byte de memória nem
+# um milissegundo, é só um acerto no sys.modules. Tê-lo dentro dos handlers
+# dava a ideia errada de que era caro E deixava a importação a acontecer no
+# meio de um pedido, que é exatamente o padrão que rebentou com o dns/httpx
+# a 28 jul 2026 (ver README, §2).
+import pandas as pd
 from fastapi import APIRouter, Depends
 
 from core import db, get_current_user, _cache_get, _cache_set, logger
@@ -626,7 +634,6 @@ async def get_history(range: str = "1w", wallet_id: str | None = None, asset_typ
 @router.post("/history/backfill-types")
 async def backfill_type_values(user=Depends(get_current_user)):
     """Retroactively fill type_values in existing snapshots using reconstructed daily prices."""
-    import pandas as pd
 
     user_id = user["id"]
     txns = await db.transactions.find({"user_id": user_id}, {"_id": 0}).to_list(5000)
@@ -760,7 +767,6 @@ async def backfill_type_values(user=Depends(get_current_user)):
 
 async def _build_retro_history(user_id: str, wallet_id: str | None = None, asset_type: str | None = None):
     """Reconstrói o histórico ALL desde a primeira transação."""
-    import pandas as pd
 
     query = {"user_id": user_id}
 

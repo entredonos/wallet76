@@ -4,6 +4,14 @@ from datetime import datetime
 
 import httpx
 import yfinance as yf
+# pandas ao nível do módulo, de propósito. O yfinance já o importa
+# (yfinance/ticker.py: `import pandas as _pd`), por isso o pandas JÁ está
+# carregado desde o arranque — pô-lo aqui não custa um byte de memória nem
+# um milissegundo, é só um acerto no sys.modules. Tê-lo dentro dos handlers
+# dava a ideia errada de que era caro E deixava a importação a acontecer no
+# meio de um pedido, que é exatamente o padrão que rebentou com o dns/httpx
+# a 28 jul 2026 (ver README, §2).
+import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
 
 from core import db, get_current_user, _cache_get, _cache_set, logger
@@ -294,7 +302,6 @@ _MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov"
 def _fetch_dividend_info(sym: str) -> dict:
     """Fetch trailing 12-month dividend data synchronously (run in thread)."""
     try:
-        import pandas as pd
         ticker = yf.Ticker(sym)
         info   = ticker.info or {}
 
