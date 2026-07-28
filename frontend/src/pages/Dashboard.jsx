@@ -340,7 +340,7 @@ export default function Dashboard({ currency }) {
     const myReqId = ++historyReqIdRef.current;
     const historyPromise = (async () => {
       try {
-        const h = await api.get(`/history?range=${range}${filterWallet !== "all" ? `&wallet_id=${filterWallet}` : ""}${filterType !== "all" ? `&asset_type=${filterType}` : ""}`);
+        const h = await withNetworkRetry(() => api.get(`/history?range=${range}${filterWallet !== "all" ? `&wallet_id=${filterWallet}` : ""}${filterType !== "all" ? `&asset_type=${filterType}` : ""}`), { retries: 2, delayMs: 2500, shouldRetry: isColdStartError });
         if (historyReqIdRef.current === myReqId) {
           setHistory(h.data || []);
           setChartLoading(false);

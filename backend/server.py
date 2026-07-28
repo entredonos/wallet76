@@ -29,6 +29,7 @@ from routes import (
     allocation as allocation_routes,
     notifications as notifications_routes,
     referrals as referrals_routes,
+    sentiment as sentiment_routes,
 )
 
 # Monitorização de erros (Sentry) — SÓ ativa se SENTRY_DSN estiver no ambiente
@@ -123,6 +124,7 @@ for sub in (
     allocation_routes,
     notifications_routes,
     referrals_routes,
+    sentiment_routes,
 ):
     api_router.include_router(sub.router)
 
