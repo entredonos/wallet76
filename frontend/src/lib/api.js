@@ -66,6 +66,57 @@ api.interceptors.response.use(
   }
 );
 
+// --- Dedup de GETs em voo -------------------------------------------------
+// 28 jul 2026: o registo de rede de um login real mostrou o painel a disparar
+// ~14 pedidos no mesmo milissegundo, com repetições à vista — dois /portfolio
+// exatamente ao mesmo tempo (e um terceiro como retry), dois /preferences e
+// dois /wallets. Componentes diferentes (sidebar, painel, hooks) pedem os
+// mesmos dados sem saberem uns dos outros, o que em React é normal; o que não
+// é normal é o backend viver num Render de 0.5 CPU, onde cada cópia a mais
+// rouba tempo de CPU às outras. Nesse registo, quatro desses pedidos nunca
+// chegaram a voltar e morreram no timeout de 18s.
+//
+// Daqui para a frente: se já existe um GET igual em voo, devolvemos a MESMA
+// promessa em vez de abrir um segundo pedido. Isto não é cache — a entrada é
+// apagada assim que a resposta (ou o erro) chega, por isso um GET feito depois
+// disso volta a ir à rede como sempre. Só colapsa o que é literalmente
+// simultâneo, que é exatamente o desperdício que o registo mostrou.
+//
+// Porque é que o padrão é seguro, e onde é que não se aplica:
+// - só GET. POST/PUT/PATCH/DELETE mudam estado, e dois pedidos iguais podem
+//   ser mesmo intencionais (adicionar a mesma transação duas vezes, por ex.).
+// - pedidos com `signal`/`cancelToken` ficam de fora de propósito: se dois
+//   sítios partilhassem a promessa, bastava um deles cancelar para matar o
+//   pedido do outro.
+// - os parâmetros entram na chave (ordenados por nome), senão /history?range=1h
+//   e /history?range=4h colapsavam um no outro e o painel mostrava o gráfico
+//   errado. O `responseType` também entra: o /account/export pede um blob.
+// - os dois chamadores recebem o MESMO objeto de resposta. Hoje ninguém muta
+//   `res.data` (só lê); se algum dia for preciso mutar, copia-se primeiro no
+//   chamador.
+const inFlightGets = new Map();
+
+function dedupKey(url, config) {
+  const params = config?.params;
+  const sortedParams = params
+    ? JSON.stringify(Object.keys(params).sort().map((k) => [k, params[k]]))
+    : "";
+  return `${url}|${sortedParams}|${config?.responseType || ""}`;
+}
+
+const rawGet = api.get.bind(api);
+api.get = function dedupedGet(url, config) {
+  if (config && (config.signal || config.cancelToken)) return rawGet(url, config);
+  const key = dedupKey(url, config);
+  const existing = inFlightGets.get(key);
+  if (existing) return existing;
+  const pending = rawGet(url, config).finally(() => {
+    inFlightGets.delete(key);
+  });
+  inFlightGets.set(key, pending);
+  return pending;
+};
+
 // True when the request never reached the server (backend down, no network,
 // CORS block, etc.) — axios sets `error.request` but leaves `error.response`
 // undefined in that case, as opposed to a normal 4xx/5xx which has a response.
