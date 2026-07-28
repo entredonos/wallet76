@@ -18,6 +18,36 @@ from urllib.parse import urlparse
 from fastapi import HTTPException, Request, Depends
 from motor.motor_asyncio import AsyncIOMotorClient
 
+# --- Pré-carregamento de importações (NÃO REMOVER) ---------------------------
+# PRÉ-CARREGAMENTO obrigatório de dnspython + httpx/httpcore.
+#
+# O MONGO_URL é um "mongodb+srv://". Para resolver esse registo SRV o pymongo
+# faz `from dns import resolver` de forma PREGUIÇOSA — já em execução, fora do
+# arranque, e a partir da thread de fundo que remonitoriza o SRV a cada 60 s.
+# O dnspython puxa por sua vez `dns.query`, que importa `httpx`, `httpcore` e
+# `httpcore._backends.sync` (suporte a DNS-over-HTTPS).
+#
+# Se essa cadeia for importada nesse momento — em concorrência com o event
+# loop e com a memória já apertada (o plano Starter tem 512 MB e já levou
+# SIGKILL/137) — o Python pode deixar os módulos meio-construídos em
+# sys.modules. É permanente: ficam assim até o processo reiniciar, e a partir
+# daí TODAS as chamadas à base de dados rebentam com
+#   pymongo.errors.ConfigurationError: cannot import name 'resolver' from 'dns'
+#   pymongo.errors.ConfigurationError: module 'httpcore' has no attribute '_backends'
+# O /ping continua a responder 200 (não toca na BD), mas /auth/login e
+# /auth/me devolvem 500 — foi exatamente o incidente de 28 jul 2026.
+#
+# Importar aqui resolve na raiz: o core.py é o primeiro módulo a ser carregado,
+# na thread principal, antes de existir qualquer concorrência ou pressão de
+# memória. A partir daqui os módulos estão em sys.modules já completos e a
+# importação preguiçosa do pymongo passa a ser um acerto em cache.
+import dns.resolver  # noqa: F401
+import dns.query  # noqa: F401
+import httpcore  # noqa: F401
+import httpcore._backends.sync  # noqa: F401
+import httpx  # noqa: F401
+# -----------------------------------------------------------------------------
+
 # --- Config ---
 mongo_url = os.environ["MONGO_URL"]
 # tlsCAFile=certifi.where(): pin the CA bundle explicitly instead of relying

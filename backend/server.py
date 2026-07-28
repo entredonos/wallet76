@@ -75,6 +75,19 @@ if _SENTRY_DSN:
             environment="production" if os.environ.get("RENDER") else "development",
             traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.0")),
             send_default_pii=False,
+            # include_local_variables=False: o Sentry, ao capturar uma
+            # exceção, tenta copiar as variáveis locais de cada frame
+            # (serialize_frame -> copy(frame.f_locals)). No Python 3.13 o
+            # f_locals passou a devolver um FrameLocalsProxy (PEP 667), que
+            # o copy() não sabe copiar — e o próprio Sentry rebentava com
+            # "TypeError: cannot pickle 'FrameLocalsProxy' object". Isso
+            # mascarava o erro original: a resposta saía como um 500 sem
+            # "detail" e o frontend caía no texto genérico (errors.generic),
+            # deixando-nos cegos. Desligar a captura de locais é barato
+            # (perdemos só o valor das variáveis no painel; stack trace,
+            # mensagem e breadcrumbs mantêm-se) e garante que a captura
+            # nunca volta a rebentar por causa disto.
+            include_local_variables=False,
             before_send=_sentry_before_send,
         )
         logger.info("Sentry error monitoring enabled")
