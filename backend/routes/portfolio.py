@@ -863,7 +863,7 @@ async def _build_retro_history(user_id: str, wallet_id: str | None = None, asset
                         qty[key] = 0
                         cost[key] = 0
             except Exception as e:
-                logger.warning(f"retro: transacao ignorada (user={user_id}): {e}")
+                logger.warning(f"retro: transacao ignorada (user={user_id}, id={t.get('id')}, {t.get('asset_type')}/{t.get('symbol')} {t.get('type')} qty={t.get('quantity')} price={t.get('price')}): {e}")
                 continue
 
         total_v = 0.0
