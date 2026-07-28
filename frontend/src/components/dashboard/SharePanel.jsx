@@ -6,7 +6,7 @@ import { useI18n } from "../../context/I18nContext";
 // icon. Self-contained aside from the share state itself (still owned by
 // Dashboard.jsx, since it's fetched once via /share/status on mount and
 // needs to survive this panel being closed/reopened).
-export default function SharePanel({ shareData, shareLoading, copied, onClose, onGenerate, onRevoke, onToggleHideValues, onCopy }) {
+export default function SharePanel({ shareData, shareLoading, copied, onClose, onGenerate, onRevoke, onToggleHideValues, onChangeWallet, wallets = [], onCopy }) {
   const { t } = useI18n();
   return (
     <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-5 space-y-4">
@@ -34,16 +34,40 @@ export default function SharePanel({ shareData, shareLoading, copied, onClose, o
             </button>
           </div>
 
-          {/* Hide values toggle */}
-          <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-xs text-zinc-400">{t("dash.hide_public_values")}</span>
-            <button
-              onClick={onToggleHideValues}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${shareData.hide_values ? "bg-blue-500" : "bg-zinc-700"}`}
+          {/* Que carteira o link mostra. O link e sempre o mesmo: mudar
+              aqui muda o que quem ja o tem passa a ver. */}
+          <div className="space-y-1.5">
+            <span className="text-xs text-zinc-400">{t("dash.share_which_wallet")}</span>
+            <select
+              value={shareData.wallet_id || "all"}
+              onChange={(e) => onChangeWallet && onChangeWallet(e.target.value)}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-blue-500/60"
             >
-              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${shareData.hide_values ? "translate-x-4" : "translate-x-1"}`} />
-            </button>
-          </label>
+              <option value="all">{t("dash.share_all_wallets")}</option>
+              {(wallets || []).map((w) => (
+                <option key={w.id} value={w.id}>{w.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Hide values toggle */}
+          <div className="space-y-1">
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-xs text-zinc-400">{t("dash.hide_public_values")}</span>
+              <button
+                onClick={onToggleHideValues}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${shareData.hide_values ? "bg-blue-500" : "bg-zinc-700"}`}
+              >
+                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${shareData.hide_values ? "translate-x-4" : "translate-x-1"}`} />
+              </button>
+            </label>
+            {/* Honestidade sobre o alcance real da opcao: ela esconde os
+                totais, mas quantidades e precos continuam a ser enviados,
+                logo sao deduziveis por quem souber onde olhar. */}
+            {shareData.hide_values && (
+              <p className="text-[11px] text-zinc-500 leading-snug">{t("dash.hide_public_values_hint")}</p>
+            )}
+          </div>
 
           {/* Revoke */}
           <button

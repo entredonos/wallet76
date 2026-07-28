@@ -71,7 +71,7 @@ export default function PublicPortfolio() {
     );
   }
 
-  const { display_name, hide_values, assets = [], summary = {} } = data;
+  const { display_name, wallet_name, hide_values, assets = [], summary = {} } = data;
   const hasValues = !hide_values;
 
   return (
@@ -81,7 +81,10 @@ export default function PublicPortfolio() {
         <div className="flex items-center gap-3">
           <span className="font-display text-lg font-light tracking-tight text-zinc-50">Wallet76</span>
           <span className="text-zinc-700">·</span>
-          <span className="text-zinc-400 text-sm">{display_name}'s Portfolio</span>
+          <span className="text-zinc-400 text-sm">
+            {display_name}'s Portfolio
+            {wallet_name ? <span className="text-zinc-500"> · {wallet_name}</span> : null}
+          </span>
         </div>
         <Link
           to="/register"

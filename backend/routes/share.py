@@ -4,7 +4,7 @@ Endpoints (authenticated):
   POST   /api/share/generate   — create or refresh a share link for the user
   GET    /api/share/status     — return current share link info (or null)
   DELETE /api/share            — revoke the share link
-  PATCH  /api/share/settings   — update hide_values flag
+  PATCH  /api/share/settings   — update hide_values / wallet_id
 
 Public endpoint (no auth):
   GET    /api/p/{slug}         — return sanitised portfolio data for a share slug
@@ -16,7 +16,11 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
-from core import db, get_current_user, _cache_get, _cache_set, logger
+from typing import Optional
+
+from core import (
+    db, get_current_user, _cache_get, _cache_set, _cache_clear_prefix, logger,
+)
 from prices import (
     compute_holdings_from_txns,
     get_crypto_prices,
@@ -35,7 +39,25 @@ PUBLIC_CACHE_TTL = 60    # seconds to cache the public portfolio view
 # ---------------------------------------------------------------------------
 
 class ShareSettingsBody(BaseModel):
-    hide_values: bool = False
+    """Ambos os campos sao opcionais e tratados de forma independente: o
+    frontend envia so o que mudou. Distinguimos "campo nao enviado" de
+    "campo enviado a null" atraves de model_fields_set, porque wallet_id=None
+    e um valor com significado proprio (= partilhar todas as carteiras)."""
+    hide_values: Optional[bool] = None
+    wallet_id: Optional[str] = None
+
+
+def _public_cache_key(slug: str) -> str:
+    return f"public_portfolio:{slug}"
+
+
+def _invalidate_public_cache(slug: str) -> None:
+    """A vista publica e cacheada 60s. Sem isto, mudar o "ocultar valores",
+    trocar de carteira ou REVOGAR o link continuava a servir o conteudo
+    antigo ate um minuto — no caso da revogacao isso e um problema de
+    privacidade, nao so um atraso cosmetico."""
+    if slug:
+        _cache_clear_prefix(_public_cache_key(slug))
 
 
 # ---------------------------------------------------------------------------
@@ -45,14 +67,20 @@ class ShareSettingsBody(BaseModel):
 @router.post("/share/generate")
 async def generate_share_link(user=Depends(get_current_user)):
     """Create (or regenerate) a public share link for the authenticated user."""
+    prev = await db.share_links.find_one({"user_id": user["id"]}, {"_id": 0})
     slug = secrets.token_hex(SLUG_BYTES)
     now = datetime.now(timezone.utc).isoformat()
 
+    # Regenerar e "trocar o link", nao "repor as definicoes": preservamos o
+    # ocultar-valores e a carteira escolhida. Repor hide_values a False aqui
+    # (comportamento antigo) tornava publicos valores que o utilizador tinha
+    # escondido, sem qualquer aviso.
     doc = {
         "user_id": user["id"],
         "slug": slug,
-        "hide_values": False,
-        "created_at": now,
+        "hide_values": bool((prev or {}).get("hide_values", False)),
+        "wallet_id": (prev or {}).get("wallet_id") or None,
+        "created_at": (prev or {}).get("created_at") or now,
         "updated_at": now,
     }
 
@@ -61,7 +89,9 @@ async def generate_share_link(user=Depends(get_current_user)):
         {"$set": doc},
         upsert=True,
     )
-    return {"slug": slug, "hide_values": False}
+    # O slug antigo tem de deixar de responder de imediato.
+    _invalidate_public_cache((prev or {}).get("slug") or "")
+    return {"slug": slug, "hide_values": doc["hide_values"], "wallet_id": doc["wallet_id"]}
 
 
 @router.get("/share/status")
@@ -70,26 +100,54 @@ async def share_status(user=Depends(get_current_user)):
     doc = await db.share_links.find_one({"user_id": user["id"]}, {"_id": 0})
     if not doc:
         return {"active": False}
-    return {"active": True, "slug": doc["slug"], "hide_values": doc.get("hide_values", False)}
+    return {
+        "active": True,
+        "slug": doc["slug"],
+        "hide_values": doc.get("hide_values", False),
+        "wallet_id": doc.get("wallet_id") or None,
+    }
 
 
 @router.delete("/share")
 async def revoke_share_link(user=Depends(get_current_user)):
     """Delete the user's share link."""
+    doc = await db.share_links.find_one({"user_id": user["id"]}, {"slug": 1, "_id": 0})
     await db.share_links.delete_one({"user_id": user["id"]})
+    _invalidate_public_cache((doc or {}).get("slug") or "")
     return {"ok": True}
 
 
 @router.patch("/share/settings")
 async def update_share_settings(body: ShareSettingsBody, user=Depends(get_current_user)):
-    """Toggle hide_values on the existing share link."""
-    res = await db.share_links.update_one(
-        {"user_id": user["id"]},
-        {"$set": {"hide_values": body.hide_values, "updated_at": datetime.now(timezone.utc).isoformat()}},
-    )
-    if res.matched_count == 0:
+    """Update the existing share link: hide_values and/or which wallet it shows."""
+    link = await db.share_links.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not link:
         raise HTTPException(404, "No share link found. Generate one first.")
-    return {"ok": True, "hide_values": body.hide_values}
+
+    sent = body.model_fields_set
+    upd = {"updated_at": datetime.now(timezone.utc).isoformat()}
+
+    if "hide_values" in sent and body.hide_values is not None:
+        upd["hide_values"] = bool(body.hide_values)
+
+    if "wallet_id" in sent:
+        wid = (body.wallet_id or "").strip()
+        if wid:
+            # Confirmar a posse: sem isto, bastava enviar o id de uma
+            # carteira de outra pessoa para a passar a servir no link.
+            owned = await db.wallets.find_one({"id": wid, "user_id": user["id"]}, {"_id": 1})
+            if not owned:
+                raise HTTPException(404, "Wallet not found")
+        upd["wallet_id"] = wid or None
+
+    await db.share_links.update_one({"user_id": user["id"]}, {"$set": upd})
+    _invalidate_public_cache(link.get("slug") or "")
+    merged = {**link, **upd}
+    return {
+        "ok": True,
+        "hide_values": merged.get("hide_values", False),
+        "wallet_id": merged.get("wallet_id") or None,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -99,7 +157,7 @@ async def update_share_settings(body: ShareSettingsBody, user=Depends(get_curren
 @router.get("/p/{slug}")
 async def public_portfolio(slug: str):
     """Return a sanitised, read-only portfolio snapshot for a share slug."""
-    cache_key = f"public_portfolio:{slug}"
+    cache_key = _public_cache_key(slug)
     cached = _cache_get(cache_key, PUBLIC_CACHE_TTL)
     if cached:
         return cached
@@ -110,19 +168,36 @@ async def public_portfolio(slug: str):
 
     user_id = link["user_id"]
     hide_values = link.get("hide_values", False)
+    wallet_id = link.get("wallet_id") or None
+
+    # Carteira especifica escolhida no painel de partilha. Se ela ja nao
+    # existir (foi apagada depois de partilhada), respondemos 404 em vez de
+    # cair para "todas": voltar silenciosamente a mostrar a carteira inteira
+    # expunha mais do que o utilizador autorizou.
+    wallet_name = None
+    if wallet_id:
+        w = await db.wallets.find_one(
+            {"id": wallet_id, "user_id": user_id}, {"name": 1, "_id": 0})
+        if not w:
+            raise HTTPException(404, "Portfolio not found or link has been revoked.")
+        wallet_name = w.get("name") or None
 
     # Fetch user display name (never expose email)
     user = await db.users.find_one({"id": user_id}, {"name": 1, "_id": 0})
     display_name = (user or {}).get("name") or "Anonymous"
 
     # Compute holdings from transactions
-    txns = await db.transactions.find({"user_id": user_id}, {"_id": 0}).to_list(5000)
+    txn_query = {"user_id": user_id}
+    if wallet_id:
+        txn_query["wallet_id"] = wallet_id
+    txns = await db.transactions.find(txn_query, {"_id": 0}).to_list(5000)
     holdings = compute_holdings_from_txns(txns)
     holdings = [h for h in holdings if h.get("quantity", 0) > 0]
 
     if not holdings:
         result = {
             "display_name": display_name,
+            "wallet_name": wallet_name,
             "hide_values": hide_values,
             "assets": [],
             "summary": {},
@@ -212,6 +287,7 @@ async def public_portfolio(slug: str):
 
     result = {
         "display_name": display_name,
+        "wallet_name": wallet_name,
         "hide_values": hide_values,
         "assets": sorted(enriched, key=lambda x: -(x["price_usd"] * x["quantity"])),
         "summary": summary,

@@ -416,6 +416,18 @@ export default function Dashboard({ currency }) {
     } catch { toast.error(t("dash.update_setting_failed")); }
   };
 
+  // Que carteira o link publico mostra. `null` = todas (o backend trata
+  // wallet_id ausente/null como "sem filtro"). Enviamos so este campo no
+  // PATCH para nao mexer sem querer no ocultar-valores.
+  const changeShareWallet = async (walletId) => {
+    if (!shareData) return;
+    const next = walletId && walletId !== "all" ? walletId : null;
+    try {
+      await api.patch("/share/settings", { wallet_id: next });
+      setShareData((d) => ({ ...d, wallet_id: next }));
+    } catch { toast.error(t("dash.update_setting_failed")); }
+  };
+
   const copyShareLink = () => {
     const url = `${window.location.origin}/p/${shareData.slug}`;
     navigator.clipboard.writeText(url).then(() => {
@@ -1272,6 +1284,8 @@ const worstPerformer = useMemo(() => {
           onGenerate={generateShare}
           onRevoke={revokeShare}
           onToggleHideValues={toggleShareHideValues}
+          onChangeWallet={changeShareWallet}
+          wallets={wallets}
           onCopy={copyShareLink}
         />
       )}
