@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { api, formatApiErrorDetail } from "../lib/api";
-import { Button } from "../components/ui/button";
+import { api, formatApiErrorDetail, withNetworkRetry, isColdStartError } from "../lib/api";
 import { toast } from "sonner";
 import { bucketOHLC, bucketClassClose, getDayBoundaries, getWeekendBands } from "../lib/chartGaps";
 import { CHART_RANGE_BUCKET_MS, CHART_RANGES_DAY_MARKERS, CHART_RANGES_WEEKEND_SHADING, N_BARS } from "../constants/chartRanges";
@@ -317,7 +316,9 @@ export default function Dashboard({ currency }) {
     // chartLoading/sparklines state, same as before.
     const portfolioPromise = (async () => {
       try {
-        const p = await api.get("/portfolio");
+        // Retry no cold start do Render (rede/timeout ou 502/503/504) — evita
+        // o "erro ao carregar portefólio" no 1.º pedido depois de a app estar parada.
+        const p = await withNetworkRetry(() => api.get("/portfolio"), { retries: 2, delayMs: 2500, shouldRetry: isColdStartError });
         applyPortfolio(p.data);
         writeCache("portfolio", p.data);
         handleTriggeredAlerts(p.data);

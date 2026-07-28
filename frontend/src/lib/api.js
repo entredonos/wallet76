@@ -80,14 +80,23 @@ export function isNetworkError(error) {
 // reject immediately on the first attempt, same as before. `onRetry(attempt)`
 // fires right before each retry so the caller can show a "reconnecting" hint
 // instead of a plain error.
-export async function withNetworkRetry(fn, { retries = 2, delayMs = 2500, onRetry } = {}) {
+export function isColdStartError(error) {
+  // Cold Render instance waking up: either the request never reached the
+  // server (network error/timeout) OR the platform proxy answered with a
+  // gateway error (502/503/504) while the service was still booting. Both are
+  // transient and safe to retry for an idempotent GET like /portfolio.
+  const s = error?.response?.status;
+  return isNetworkError(error) || s === 502 || s === 503 || s === 504;
+}
+
+export async function withNetworkRetry(fn, { retries = 2, delayMs = 2500, onRetry, shouldRetry = isNetworkError } = {}) {
   let lastError;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error;
-      if (!isNetworkError(error) || attempt === retries) throw error;
+      if (!shouldRetry(error) || attempt === retries) throw error;
       if (onRetry) onRetry(attempt + 1);
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
