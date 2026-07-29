@@ -26,7 +26,7 @@ const MARGIN = 0.5; // margem para "Comprar" vs "Aguardar"
 // Colunas cujo primeiro clique ordena A->Z. Todas as outras sao numeros ou
 // percentagens e comecam do MAIOR para o menor — ninguem abre uma carteira
 // para ver primeiro o ativo mais pequeno.
-const SORT_TEXT = ["symbol", "sector", "wallet", "cls", "orient"];
+const SORT_TEXT = ["symbol", "sector", "cls", "orient"];
 
 export default function Alocacao({ currency = "USD" }) {
   const { t } = useI18n();
@@ -61,16 +61,21 @@ export default function Alocacao({ currency = "USD" }) {
   const walletName = useCallback((id) => wallets.find((w) => w.id === id)?.name || L("alloc2.wallet", "Carteira"), [wallets, L]);
   const walletDot = useCallback((id) => WALLET_DOT_CLASS[walletColorKey(wallets, id)] || "bg-zinc-500", [wallets]);
 
-  // Coluna "Carteira": so o ponto da cor, que e a mesma cor que a carteira tem
+  // Coluna da carteira: so o ponto da cor, que e a mesma cor que a carteira tem
   // no Dashboard, nos Top Movers e na pagina Carteiras — o nome vai no title,
-  // porque escrito ocupava uma coluna inteira e no telemovel nao cabia. Com o
-  // ativo em varias carteiras aparecem varios pontos, e o "N carteiras" do
-  // lado do simbolo continua a abrir o detalhe com quantidades e valores.
+  // porque escrito ocupava uma coluna inteira e no telemovel nao cabia.
+  //
+  // A coluna e a mais estreita da tabela de proposito (`w-px` faz a celula
+  // encolher ate ao conteudo) e nao ordena: ordenar por carteira obrigava a
+  // escolher uma das carteiras de um ativo que esta em varias, o que dava uma
+  // ordem que ninguem conseguia prever. Quem quiser ver por carteira tem a
+  // pagina Carteiras. Com o ativo em varias carteiras aparecem varios pontos, e
+  // o "N carteiras" do lado do simbolo continua a abrir o detalhe.
   const walletDots = useCallback((r) => (
-    <span className="inline-flex items-center justify-center gap-1">
+    <span className="inline-flex items-center justify-center gap-0.5">
       {(r.wallets || []).map((w, i) => (
         <span key={i} title={walletName(w.id)}
-          className={`w-2.5 h-2.5 rounded-full ${walletDot(w.id)}`} />
+          className={`w-2 h-2 rounded-full ${walletDot(w.id)}`} />
       ))}
     </span>
   ), [walletDot, walletName]);
@@ -82,10 +87,6 @@ export default function Alocacao({ currency = "USD" }) {
     switch (k) {
       case "symbol": return (r.symbol || "\uffff").toUpperCase();
       case "sector": return (r.sector || "\uffff").toString().toUpperCase();
-      case "wallet": {
-        const big = [...(r.wallets || [])].sort((a, b) => Number(b.value_usd || 0) - Number(a.value_usd || 0))[0];
-        return big ? walletName(big.id).toUpperCase() : "\uffff";
-      }
       case "cls": return clsLabel(effectiveClass(r, overrides) || "other").toUpperCase();
       case "orient": return r.orient === "buy" ? 0 : 1;
       case "change_24h": return Number(r.change_24h || 0);
@@ -97,7 +98,7 @@ export default function Alocacao({ currency = "USD" }) {
       case "sug": return Number(r.sug || 0);
       default: return Number(r.value_usd || 0);
     }
-  }, [walletName, clsLabel, overrides]);
+  }, [clsLabel, overrides]);
 
   // Empate desfaz-se sempre pelo valor decrescente (e nao e invertido pelo
   // sortDir de proposito): duas linhas com o mesmo setor ou a mesma orientacao
@@ -473,7 +474,6 @@ export default function Alocacao({ currency = "USD" }) {
                 <tr className="text-[10px] uppercase tracking-wider text-zinc-500 font-mono border-b border-zinc-800">
                   <th className="text-center py-2 px-2 w-8"></th>
                   {th("symbol", L("alloc2.asset", "Ativo"), "text-center py-2 px-2")}
-                  {th("wallet", L("alloc2.wallet", "Carteira"), "text-center py-2 px-2")}
                   {mode === "full" && th("sector", L("alloc2.sector", "Setor"), "text-center py-2 px-2")}
                   {th("change_24h", L("common.change_24h", "24h"), "text-center py-2 px-2")}
                   {mode === "full" && th("quantity", L("alloc2.qty", "Qtd"), "text-center py-2 px-2")}
@@ -484,6 +484,9 @@ export default function Alocacao({ currency = "USD" }) {
                   {th("atual", L("alloc2.pct_now", "% Atual"), "text-center py-2 px-2")}
                   {th("sug", L("alloc2.pct_sug", "% Sugerida"), "text-center py-2 px-2")}
                   {th("orient", L("alloc2.orient", "Orient."), "text-center py-2 px-2")}
+                  <th className="text-center py-2 px-1.5 w-px whitespace-nowrap" title={L("alloc2.wallet", "Carteira")}>
+                    {L("alloc2.wallet_letter", "C")}
+                  </th>
                   {mode === "full" && th("cls", L("alloc2.group", "Grupo"), "text-center py-2 px-2")}
                 </tr>
               </thead>
@@ -510,7 +513,6 @@ export default function Alocacao({ currency = "USD" }) {
                             </button>
                           )}
                         </td>
-                        <td className="py-2.5 px-2 text-center">{walletDots(r)}</td>
                         {mode === "full" && <td className="py-2.5 px-2 text-zinc-400 text-xs">{r.sector || "—"}</td>}
                         <td className="py-2.5 px-2">{move24h(r)}</td>
                         {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-300">{fmtQty(r.quantity)}</td>}
@@ -534,6 +536,7 @@ export default function Alocacao({ currency = "USD" }) {
                           )}
                         </td>
                         <td className="py-2.5 px-2">{orientChip(r)}</td>
+                        <td className="py-2.5 px-1.5 text-center w-px">{walletDots(r)}</td>
                         {mode === "full" && (
                           <td className="py-2.5 px-2">
                             <select value={effectiveClass(r, overrides)} onChange={(e) => reclassify(r.sym, e.target.value)}
@@ -578,7 +581,6 @@ export default function Alocacao({ currency = "USD" }) {
                   <thead>
                     <tr className="text-[9px] uppercase tracking-wide text-zinc-500">
                       {th("symbol", L("alloc2.asset", "Ativo"), "sticky left-0 z-20 bg-zinc-950 text-center py-2 pr-3 pl-1 border-b border-zinc-800")}
-                      {th("wallet", L("alloc2.wallet", "Carteira"), "text-center px-2 py-2 border-b border-zinc-800")}
                       {mode === "full" && th("sector", L("alloc2.sector", "Setor"), "text-center px-2 py-2 border-b border-zinc-800")}
                       {th("change_24h", L("common.change_24h", "24h"), "text-center px-2 py-2 border-b border-zinc-800")}
                       {mode === "full" && th("quantity", L("alloc2.qty", "Qtd"), "text-center px-2 py-2 border-b border-zinc-800")}
@@ -589,6 +591,9 @@ export default function Alocacao({ currency = "USD" }) {
                       {th("atual", L("alloc2.pct_now_short", "% At"), "text-center px-2 py-2 border-b border-zinc-800")}
                       {th("sug", L("alloc2.pct_sug_short", "% Sug"), "text-center px-2 py-2 border-b border-zinc-800")}
                       {th("orient", L("alloc2.orient", "Orient."), "text-center px-2 py-2 border-b border-zinc-800")}
+                      <th className="text-center px-1.5 py-2 w-px whitespace-nowrap border-b border-zinc-800" title={L("alloc2.wallet", "Carteira")}>
+                        {L("alloc2.wallet_letter", "C")}
+                      </th>
                       {mode === "full" && th("cls", L("alloc2.group", "Grupo"), "text-center px-2 py-2 border-b border-zinc-800")}
                     </tr>
                   </thead>
@@ -611,7 +616,6 @@ export default function Alocacao({ currency = "USD" }) {
                                 </button>
                               )}
                             </td>
-                            <td className="px-2 py-2 text-center">{walletDots(r)}</td>
                             {mode === "full" && <td className="px-2 py-2 text-zinc-400 whitespace-nowrap">{r.sector || "—"}</td>}
                             <td className="px-2 py-2">{move24h(r, 40, 18)}</td>
                             {mode === "full" && <td className="px-2 py-2 text-right text-zinc-300 whitespace-nowrap">{fmtQty(r.quantity)}</td>}
@@ -628,6 +632,7 @@ export default function Alocacao({ currency = "USD" }) {
                               ) : (<span className="text-zinc-400">{r.sug.toFixed(2)}% <span className="text-[8px] text-zinc-600">auto</span></span>)}
                             </td>
                             <td className="px-2 py-2">{orientChip(r)}</td>
+                            <td className="px-1.5 py-2 text-center w-px">{walletDots(r)}</td>
                             {mode === "full" && (
                               <td className="px-2 py-2">
                                 <select value={effectiveClass(r, overrides)} onChange={(e) => reclassify(r.sym, e.target.value)}
