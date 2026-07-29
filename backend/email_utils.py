@@ -3,7 +3,7 @@ import asyncio
 from typing import Optional
 
 import resend
-from core import RESEND_API_KEY, FROM_EMAIL, logger
+from core import RESEND_API_KEY, FROM_EMAIL, APP_URL, logger
 
 
 def _log_email_task_result(task: asyncio.Task) -> None:
@@ -44,6 +44,16 @@ EMAIL_I18N = {
         "reset_body": "Hi {name},<br><br>We received a request to reset your Wallet76 password. The link below expires in 1 hour.",
         "reset_cta": "Reset password",
         "link_hint": "If the button does not work, copy this link:",
+        "alert_subject": "{arrow} {name} ({symbol}) hit {price}",
+        "alert_title": "{arrow} Alert triggered: {symbol}",
+        "alert_intro": "Your price alert for {asset} has been triggered.",
+        "alert_condition": "Condition",
+        "alert_above": "above",
+        "alert_below": "below",
+        "alert_row": "Price {direction} {price}",
+        "alert_triggered": "Triggered at",
+        "alert_footer": "To manage your alerts or turn off email notifications, go to your Settings page.",
+        "alert_cta": "Open Wallet76",
     },
     "pt": {
         "verify_subject": "Confirma o teu email Wallet76",
@@ -55,6 +65,16 @@ EMAIL_I18N = {
         "reset_body": "Olá {name},<br><br>Recebemos um pedido para repor a tua password da Wallet76. O link abaixo expira em 1 hora.",
         "reset_cta": "Repor password",
         "link_hint": "Se o botão não funcionar, copia este link:",
+        "alert_subject": "{arrow} {name} ({symbol}) chegou a {price}",
+        "alert_title": "{arrow} Alerta disparado: {symbol}",
+        "alert_intro": "O teu alerta de preço para {asset} foi disparado.",
+        "alert_condition": "Condição",
+        "alert_above": "acima de",
+        "alert_below": "abaixo de",
+        "alert_row": "Preço {direction} {price}",
+        "alert_triggered": "Disparado a",
+        "alert_footer": "Para gerires os teus alertas ou desligares os emails de notificação, vai às Definições.",
+        "alert_cta": "Abrir a Wallet76",
     },
     "fr": {
         "verify_subject": "Confirmez votre e-mail Wallet76",
@@ -66,6 +86,16 @@ EMAIL_I18N = {
         "reset_body": "Bonjour {name},<br><br>Nous avons reçu une demande de réinitialisation de votre mot de passe Wallet76. Le lien ci-dessous expire dans 1 heure.",
         "reset_cta": "Réinitialiser",
         "link_hint": "Si le bouton ne fonctionne pas, copiez ce lien :",
+        "alert_subject": "{arrow} {name} ({symbol}) a atteint {price}",
+        "alert_title": "{arrow} Alerte déclenchée : {symbol}",
+        "alert_intro": "Votre alerte de prix pour {asset} s’est déclenchée.",
+        "alert_condition": "Condition",
+        "alert_above": "au-dessus de",
+        "alert_below": "en dessous de",
+        "alert_row": "Prix {direction} {price}",
+        "alert_triggered": "Déclenchée à",
+        "alert_footer": "Pour gérer vos alertes ou désactiver les e-mails de notification, rendez-vous dans vos Réglages.",
+        "alert_cta": "Ouvrir Wallet76",
     },
     "de": {
         "verify_subject": "Bestätige deine Wallet76-E-Mail",
@@ -77,6 +107,16 @@ EMAIL_I18N = {
         "reset_body": "Hallo {name},<br><br>Wir haben eine Anfrage zum Zurücksetzen deines Wallet76-Passworts erhalten. Der Link unten läuft in 1 Stunde ab.",
         "reset_cta": "Passwort zurücksetzen",
         "link_hint": "Falls die Schaltfläche nicht funktioniert, kopiere diesen Link:",
+        "alert_subject": "{arrow} {name} ({symbol}) hat {price} erreicht",
+        "alert_title": "{arrow} Alarm ausgelöst: {symbol}",
+        "alert_intro": "Dein Preisalarm für {asset} wurde ausgelöst.",
+        "alert_condition": "Bedingung",
+        "alert_above": "über",
+        "alert_below": "unter",
+        "alert_row": "Preis {direction} {price}",
+        "alert_triggered": "Ausgelöst bei",
+        "alert_footer": "Um deine Alarme zu verwalten oder E-Mail-Benachrichtigungen abzuschalten, geh zu deinen Einstellungen.",
+        "alert_cta": "Wallet76 öffnen",
     },
     "it": {
         "verify_subject": "Conferma la tua email Wallet76",
@@ -88,6 +128,16 @@ EMAIL_I18N = {
         "reset_body": "Ciao {name},<br><br>Abbiamo ricevuto una richiesta di reimpostazione della password di Wallet76. Il link qui sotto scade tra 1 ora.",
         "reset_cta": "Reimposta password",
         "link_hint": "Se il pulsante non funziona, copia questo link:",
+        "alert_subject": "{arrow} {name} ({symbol}) ha raggiunto {price}",
+        "alert_title": "{arrow} Avviso attivato: {symbol}",
+        "alert_intro": "Il tuo avviso di prezzo per {asset} è stato attivato.",
+        "alert_condition": "Condizione",
+        "alert_above": "sopra",
+        "alert_below": "sotto",
+        "alert_row": "Prezzo {direction} {price}",
+        "alert_triggered": "Attivato a",
+        "alert_footer": "Per gestire i tuoi avvisi o disattivare le email di notifica, vai nelle Impostazioni.",
+        "alert_cta": "Apri Wallet76",
     },
     "es": {
         "verify_subject": "Confirma tu correo de Wallet76",
@@ -99,6 +149,16 @@ EMAIL_I18N = {
         "reset_body": "Hola {name},<br><br>Recibimos una solicitud para restablecer tu contraseña de Wallet76. El enlace de abajo caduca en 1 hora.",
         "reset_cta": "Restablecer contraseña",
         "link_hint": "Si el botón no funciona, copia este enlace:",
+        "alert_subject": "{arrow} {name} ({symbol}) alcanzó {price}",
+        "alert_title": "{arrow} Alerta activada: {symbol}",
+        "alert_intro": "Tu alerta de precio para {asset} se ha activado.",
+        "alert_condition": "Condición",
+        "alert_above": "por encima de",
+        "alert_below": "por debajo de",
+        "alert_row": "Precio {direction} {price}",
+        "alert_triggered": "Activada a",
+        "alert_footer": "Para gestionar tus alertas o desactivar los correos de notificación, ve a tus Ajustes.",
+        "alert_cta": "Abrir Wallet76",
     },
 }
 
@@ -144,13 +204,25 @@ def alert_email_html(
     currency: str = "USD",
     note: str = "",
     app_url: str = "",
+    lang: str = "en",
 ) -> tuple[str, str]:
-    """Returns (subject, html) for a triggered price alert email."""
+    """Devolve (assunto, html) do email de um alerta de preço disparado.
+
+    28 jul 2026: este era o último email que ainda estava só em inglês. O
+    `alert_checker.py` já sabia a língua de cada pessoa e já a usava no push e
+    no Telegram (`_ALERT_TITLE[lang]`), mas na chamada do email não a passava —
+    por isso um utilizador português recebia a notificação em português no
+    telemóvel e o email em inglês, sobre o mesmo alerta. Agora os textos vêm do
+    `EMAIL_I18N`, como nos emails de confirmação e de reposição de password.
+    """
+    s = email_strings(lang)
     arrow = "▲" if condition == "above" else "▼"
-    direction = "above" if condition == "above" else "below"
+    direction = s["alert_above"] if condition == "above" else s["alert_below"]
     fmt = lambda p: f"${p:,.2f}" if currency == "USD" else f"€{p:,.2f}"
 
-    subject = f"{arrow} {name} ({symbol}) hit {fmt(target_price)}"
+    subject = s["alert_subject"].format(
+        arrow=arrow, name=name, symbol=symbol, price=fmt(target_price)
+    )
 
     note_block = (
         f'<div style="margin-top:12px;padding:12px 16px;background:#1f1f23;border-left:3px solid #3b82f6;'
@@ -158,28 +230,47 @@ def alert_email_html(
         if note else ""
     )
 
+    # Os textos saem do EMAIL_I18N para variáveis antes do bloco HTML: dentro de
+    # uma f-string com aspas triplas, indexar `s["chave"]` obrigava a alternar
+    # aspas e fica ilegível ao lado das centenas de aspas do CSS inline.
+    asset = f'<strong style="color:#fafafa;">{name} ({symbol})</strong>'
+    intro = s["alert_intro"].format(asset=asset)
+    condition_label = s["alert_condition"]
+    condition_value = s["alert_row"].format(direction=direction, price=fmt(target_price))
+    triggered_label = s["alert_triggered"]
+    footer = s["alert_footer"]
+
     body_html = f"""
-    <p style="margin:0 0 16px;">Your price alert for <strong style="color:#fafafa;">{name} ({symbol})</strong> has been triggered.</p>
+    <p style="margin:0 0 16px;">{intro}</p>
     <table width="100%" style="border-collapse:collapse;margin-bottom:16px;">
       <tr>
-        <td style="padding:10px 0;border-bottom:1px solid #27272a;color:#71717a;font-size:13px;">Condition</td>
-        <td style="padding:10px 0;border-bottom:1px solid #27272a;color:#fafafa;font-size:13px;text-align:right;">Price {direction} {fmt(target_price)}</td>
+        <td style="padding:10px 0;border-bottom:1px solid #27272a;color:#71717a;font-size:13px;">{condition_label}</td>
+        <td style="padding:10px 0;border-bottom:1px solid #27272a;color:#fafafa;font-size:13px;text-align:right;">{condition_value}</td>
       </tr>
       <tr>
-        <td style="padding:10px 0;color:#71717a;font-size:13px;">Triggered at</td>
+        <td style="padding:10px 0;color:#71717a;font-size:13px;">{triggered_label}</td>
         <td style="padding:10px 0;font-size:18px;font-weight:600;color:#86efac;text-align:right;">{fmt(triggered_price)}</td>
       </tr>
     </table>
     {note_block}
     <p style="margin:16px 0 0;font-size:13px;color:#71717a;">
-      To manage your alerts or disable email notifications, visit your Settings page.
+      {footer}
     </p>
     """
 
     html = email_layout(
-        title=f"{arrow} Alert triggered: {symbol}",
+        title=s["alert_title"].format(arrow=arrow, symbol=symbol),
         body_html=body_html,
-        cta_label="Open Wallet76",
-        cta_url=app_url or "https://wallet76.vercel.app/alerts",
+        cta_label=s["alert_cta"],
+        # 28 jul 2026: aqui estava "https://wallet76.vercel.app/alerts" cravado
+        # como reserva. Esse é o domínio antigo da Vercel, não o domínio
+        # público — quem recebesse o email com o APP_URL por definir ia parar a
+        # um endereço que não é o da app. E havia um segundo defeito ao lado:
+        # quando o `app_url` VINHA definido, o botão mandava a pessoa para a
+        # raiz do site em vez de a levar aos alertas, que são o assunto do
+        # email. Agora é sempre <domínio>/alerts, e a reserva é a mesma que o
+        # `onboarding.py` já usava.
+        cta_url=f"{(app_url or APP_URL or 'https://wallet76.com').rstrip('/')}/alerts",
+        link_hint=s["link_hint"],
     )
     return subject, html

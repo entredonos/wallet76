@@ -104,7 +104,9 @@ def _price_key(alert: dict) -> str:
     return alert["symbol"].upper()
 
 
-async def _send_alert_email(user_email: str, alert: dict, price_usd: float) -> None:
+async def _send_alert_email(
+    user_email: str, alert: dict, price_usd: float, lang: str = "en"
+) -> None:
     subject, html = alert_email_html(
         name=alert.get("name") or alert["symbol"],
         symbol=alert["symbol"],
@@ -113,6 +115,7 @@ async def _send_alert_email(user_email: str, alert: dict, price_usd: float) -> N
         triggered_price=price_usd,
         note=alert.get("note") or "",
         app_url=APP_URL,
+        lang=lang,
     )
     await send_email(to=user_email, subject=subject, html=html)
 
@@ -219,9 +222,14 @@ async def check_alerts_once() -> None:
             if lang not in _ALERT_TITLE:
                 lang = "en"
 
-            # Email (comportamento já existente, inalterado)
+            # Email — 28 jul 2026: o `lang` já estava calculado aqui em cima e já
+            # era usado no push e no Telegram; só faltava passá-lo ao email, que
+            # por isso saía sempre em inglês mesmo para quem tinha a app noutra
+            # língua. Agora os três canais falam a mesma língua.
             if prefs.get("alert_emails", True):
-                task = asyncio.create_task(_send_alert_email(user["email"], alert, price))
+                task = asyncio.create_task(
+                    _send_alert_email(user["email"], alert, price, lang)
+                )
                 task.add_done_callback(_task_error_logger)
 
             # Telegram

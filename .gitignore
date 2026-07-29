@@ -80,3 +80,12 @@ secrets/
 # também fica fora de qualquer backup; a cópia que conta é a do disco.
 README.md
 README.md.bak-*
+
+# Cópias de segurança locais (28 jul 2026)
+# Os ficheiros .bak-* e .done são fotografias tiradas à mão antes de mexer em
+# alguma coisa. São úteis no disco, mas não têm nada que fazer no git — a
+# versão anterior de qualquer ficheiro versionado já está no histórico. A pasta
+# _to_delete/ é onde ficam à espera de serem apagadas à mão.
+*.bak-*
+*.done
+_to_delete/
