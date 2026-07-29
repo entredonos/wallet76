@@ -47,6 +47,11 @@ contra produção faz-se pelo browser (Chrome MCP).
 7. **#7 README atualizado no mesmo trabalho, antes do commit** — entrada nova em
    §2 (o que estava mal, **porquê**, como ficou), secção estrutural afetada
    reescrita, data do cabeçalho atualizada.
+8. **#8 nunca concordar por defeito** — a resposta começa pelo que eu penso,
+   mesmo quando contraria o que ele disse. Objeções dizem-se **antes** de
+   executar, ordens com que não concordo cumprem-se mas com o desacordo escrito,
+   e premissas erradas corrigem-se primeiro. Discordar para parecer crítico é o
+   mesmo erro ao contrário.
 
 O tom que ele quer: português de Portugal, direto, sem entusiasmo de vendedor.
 Quando eu me engano, corrijo por escrito antes de continuar — já aconteceu
