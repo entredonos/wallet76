@@ -23,15 +23,17 @@ N_BARS = 70
 # Intraday native yfinance intervals. Rather than computing the "minimal"
 # number of calendar days that should contain N_BARS candles (fragile —
 # depends on exact trading hours, holidays, half-days, weekends, none of
-# which are known precisely up front), we just fetch a generously wide,
-# fixed window — Yahoo's own lookback cap for 15m/30m, and a wide-enough
-# multi-month window for 60m — and keep the last N_BARS candles from
-# whatever comes back. One API call either way; the only cost of asking for
-# "too much" is a slightly bigger response, not a slower or failed request.
+# which are known precisely up front), we fetch a window that is comfortably
+# wider than needed and keep the last N_BARS candles from whatever comes
+# back. The window is *sized*, not maximal: asking for "everything" is not
+# free — every extra row is parsed into a pandas DataFrame, and with 44
+# assets fanned out at once on 0.5 CPU that parsing is what blocks the event
+# loop. 70 hourly candles ≈ 10 trading days ≈ 14 calendar days, so 45d
+# leaves ~3x margin for holidays and thin trading.
 _INTRADAY = {
     "15m": {"interval": "15m", "period": "60d"},
     "30m": {"interval": "30m", "period": "60d"},
-    "1h":  {"interval": "60m", "period": "270d"},
+    "1h":  {"interval": "60m", "period": "45d"},
 }
 
 # Daily-or-coarser native yfinance intervals — Yahoo has no lookback cap for
@@ -45,9 +47,12 @@ _LONG_NATIVE = {
 
 # Yahoo has no native 4-hour or 1-year bars — build them ourselves by
 # merging consecutive candles into one OHLC candle each (60m→4h, 1mo→1y).
-# "period" reuses the same generously wide 60m window as the "1h" button.
+# "period" is sized the same way as _INTRADAY: 70 four-hour candles ≈ 35
+# trading days ≈ 49 calendar days, so 90d leaves ~1.8x margin. Output is
+# unchanged either way — both paths slice to [-N_BARS:] — but a narrower
+# window means ~3x fewer rows to parse per asset.
 _RESAMPLE = {
-    "4h": {"base_interval": "60m", "period": "270d", "factor": 4},
+    "4h": {"base_interval": "60m", "period": "90d", "factor": 4},
     "1y": {"base_interval": "1mo", "factor": 12},
 }
 

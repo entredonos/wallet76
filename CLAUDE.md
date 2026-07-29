@@ -254,6 +254,18 @@ utilizador.** Aplica-se tanto a skills que já existem (marketplace/perfil)
 como a skills novas que poderíamos criar para o efeito. A decisão do que
 entra no ambiente é sempre do Jose.
 
+**Extensão (29 jul 2026) — propor a skill por iniciativa própria.** A regra
+acima cobria o caso de eu *encontrar* uma skill. Falta o outro lado: sempre que
+eu achar que valeria a pena **criar** uma skill — para não perder memória entre
+compactações da conversa, para poupar passos que repetimos sempre, ou porque
+acho que vamos precisar dela mais à frente — tenho de **dizer isso e perguntar**,
+em vez de a criar por minha conta ou de me calar e continuar a repetir trabalho.
+
+Ao perguntar, explico sempre **as vantagens em concreto**: o que é que se deixa
+de perder, quantos passos se poupam, e o que acontece se não a fizermos. A
+decisão continua a ser do Jose — o que muda é que ele passa a ter a decisão à
+frente dele em vez de ela ficar por dizer.
+
 ---
 
 ## REGRA #7 — ATUALIZAR O README SEMPRE, NO MESMO TRABALHO

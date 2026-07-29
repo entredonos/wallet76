@@ -72,8 +72,12 @@ export default function Dashboard({ currency }) {
   // (unlike the other dashboard prefs below): toggling to "advanced" only
   // holds for the current visit, so leaving and coming back always lands
   // back on the fast/simple view instead of remembering the last mode.
-  // Purely a rendering toggle — doesn't change what load() fetches, so it
-  // never touches the history/snapshot logic (REGRA #2).
+  // Toggle de renderização — e, desde 29 jul 2026, também decide *quando* o
+  // histórico do gráfico avançado é pedido: em modo leve o load() salta o
+  // /history?range=<range>, porque esse gráfico está escondido (ver o efeito
+  // "modo avançado sem histórico" mais abaixo, que faz o pedido em falta na
+  // troca). A lógica de histórico/snapshot em si continua intocada
+  // (REGRA #2) — muda só o momento do pedido.
   const [dashMode, setDashMode] = useState("light");
   const [visibleCols, setVisibleCols] = useState(() => {
     try {
@@ -186,6 +190,17 @@ export default function Dashboard({ currency }) {
   // one and silently overwrite it — the chart then shows data for the
   // wrong range, or looks empty if the stale request itself came back empty.
   const historyReqIdRef = useRef(0);
+  // Em modo leve o load() não pede o histórico do gráfico avançado (está
+  // escondido). Esta ref regista que o pedido foi saltado, para que a troca
+  // para "avançado" saiba que tem de o ir buscar — sem isto, o gráfico
+  // aparecia vazio até ao reload seguinte.
+  const historySkippedRef = useRef(false);
+  // O load() é recriado a cada render, mas o intervalo dos 5 minutos guarda
+  // a versão do render em que [range, filterWallet, filterType] mudaram pela
+  // última vez. Ler o dashMode por ref evita que esse intervalo fique preso
+  // ao modo que estava activo nessa altura.
+  const dashModeRef = useRef(dashMode);
+  dashModeRef.current = dashMode;
   const loc = useLocation();
   const nav = useNavigate();
 
@@ -337,8 +352,14 @@ export default function Dashboard({ currency }) {
     // History can fail silently — it only affects the chart. Request-id
     // guard: only apply this response if no newer /history fetch has
     // started in the meantime (see historyReqIdRef declaration above).
-    const myReqId = ++historyReqIdRef.current;
-    const historyPromise = (async () => {
+    // Em modo leve este pedido é saltado (29 jul 2026): o gráfico avançado
+    // que o consome está escondido, e reconstruir o histórico dos 44 ativos
+    // custava ~18 s no arranque. Quem alimenta a vista leve é o
+    // LightEvolutionCard, com o seu próprio /history?range=4h.
+    const skipHistory = dashModeRef.current !== "advanced";
+    historySkippedRef.current = skipHistory;
+    const myReqId = skipHistory ? historyReqIdRef.current : ++historyReqIdRef.current;
+    const historyPromise = skipHistory ? Promise.resolve() : (async () => {
       try {
         const h = await withNetworkRetry(() => api.get(`/history?range=${range}${filterWallet !== "all" ? `&wallet_id=${filterWallet}` : ""}${filterType !== "all" ? `&asset_type=${filterType}` : ""}`), { retries: 2, delayMs: 2500, shouldRetry: isColdStartError });
         if (historyReqIdRef.current === myReqId) {
@@ -543,6 +564,7 @@ export default function Dashboard({ currency }) {
   useEffect(() => {
     if (rangeDidMountRef.current) { rangeDidMountRef.current = false; return; }
     const myReqId = ++historyReqIdRef.current;
+    historySkippedRef.current = false;
     (async () => {
       try {
         const h = await api.get(`/history?range=${range}${filterWallet !== "all" ? `&wallet_id=${filterWallet}` : ""}${filterType !== "all" ? `&asset_type=${filterType}` : ""}`);
@@ -554,6 +576,28 @@ export default function Dashboard({ currency }) {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range]);
+
+  // Modo avançado sem histórico: o load() salta o /history enquanto estamos
+  // em modo leve, por isso na primeira troca para "avançado" o gráfico não
+  // teria dados nenhuns. Este efeito faz só o pedido em falta — e só uma
+  // vez, porque a ref é limpa assim que o pedido arranca.
+  useEffect(() => {
+    if (dashMode !== "advanced") return;
+    if (!historySkippedRef.current) return;
+    historySkippedRef.current = false;
+    const myReqId = ++historyReqIdRef.current;
+    setChartLoading(true);
+    (async () => {
+      try {
+        const h = await api.get(`/history?range=${range}${filterWallet !== "all" ? `&wallet_id=${filterWallet}` : ""}${filterType !== "all" ? `&asset_type=${filterType}` : ""}`);
+        if (historyReqIdRef.current === myReqId) { setHistory(h.data || []); setChartLoading(false); writeCache("history", h.data || []); }
+      } catch (e) {
+        if (historyReqIdRef.current === myReqId) setChartLoading(false);
+        if (e?.response?.status === 401) toast.error(t("common.session_expired"), { id: "session-expired", duration: 15000 });
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dashMode]);
   // Full reload every 5 minutes (history + sparklines + portfolio)
   useEffect(() => {
     const t = setInterval(() => { load(true); }, 300_000);
