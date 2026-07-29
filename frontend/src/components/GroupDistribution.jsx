@@ -2,11 +2,16 @@ import React, { useMemo, useState } from "react";
 import AssetIcon from "./AssetIcon";
 import { WALLET_DOT_CLASS, walletColorKey } from "../lib/walletColors";
 
-// Painel "Distribuição do grupo" (Alocação, 29 jul 2026). Uma barra por ativo,
-// larga na proporção do MAIOR do grupo (não de 100%, senão os pequenos ficam
-// invisíveis), e partida pelas carteiras onde esse ativo está — assim a mesma
-// barra responde às duas perguntas de uma vez: quanto pesa este ativo, e onde
-// é que ele está.
+// Painel "Distribuição do grupo" (Alocação, 29 jul 2026). Fica POR BAIXO da
+// tabela: quem abre a página vem ver os números, e um gráfico entre o cabeçalho
+// e a tabela empurrava a tabela para fora do ecrã.
+//
+// Cada ativo tem uma calha da largura toda, como a barra de um slider, e por
+// cima o preenchimento na proporção do MAIOR do grupo (não de 100%, senão os
+// pequenos ficam invisíveis). A calha é o que dá a escala: sem ela uma barra
+// curta não se distingue de uma barra que não desenhou. O preenchimento vem
+// partido pelas carteiras onde esse ativo está — assim a mesma barra responde
+// às duas perguntas de uma vez: quanto pesa este ativo, e onde é que ele está.
 //
 // Duas decisões que não são óbvias:
 //  1. Ordena sempre por valor decrescente, mesmo que a tabela em baixo esteja
@@ -17,6 +22,13 @@ import { WALLET_DOT_CLASS, walletColorKey } from "../lib/walletColors";
 //     da tabela é do total; se aqui fosse igual, as barras da aba "Cripto"
 //     somariam 62% e ninguém percebia porquê. O cabeçalho diz "% do grupo".
 const TOP = 8;
+
+// Largura minima da barra, em % da calha. Sem isto um ativo que valha 0,2% do
+// grupo desenhava um fio de um pixel e nao se via la nada — e a pergunta que o
+// painel responde ("onde e que este ativo esta") continua a fazer sentido para
+// os pequenos. 6% e o ponto onde ainda cabem dois segmentos de carteira
+// distinguiveis lado a lado.
+const MIN_BAR = 6;
 
 export default function GroupDistribution({ rows, wallets, title, L, money, walletName }) {
   const [all, setAll] = useState(false);
@@ -40,7 +52,7 @@ export default function GroupDistribution({ rows, wallets, title, L, money, wall
   const shown = all ? list : list.slice(0, TOP);
 
   return (
-    <div className="bg-zinc-950/40 border border-zinc-800/60 rounded-lg p-3 sm:p-4 mb-4">
+    <div className="bg-zinc-950/40 border border-zinc-800/60 rounded-lg p-3 sm:p-4 mt-5">
       <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
         <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-zinc-400">
           {title} <span className="text-zinc-600">· {L("alloc2.pct_of_group", "% do grupo")}</span>
@@ -59,20 +71,22 @@ export default function GroupDistribution({ rows, wallets, title, L, money, wall
           const pct = total ? Number(r.value_usd || 0) / total * 100 : 0;
           const w = max ? Number(r.value_usd || 0) / max * 100 : 0;
           return (
-            <div key={r.sym} className="flex items-center gap-2 sm:gap-3 py-1">
+            <div key={r.sym} className="flex items-center gap-2 sm:gap-3 py-1.5">
               <AssetIcon asset={r} size={18} />
               <div className="w-16 sm:w-32 shrink-0 text-[11px] text-zinc-300 truncate">
                 {r.name || r.symbol}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="h-3 rounded-sm overflow-hidden flex"
-                  style={{ width: `${Math.max(w, 1.5)}%` }}>
-                  {(r.wallets || []).map((wl, i) => (
-                    <div key={i}
-                      title={`${walletName(wl.id)} · ${money(wl.value_usd)}`}
-                      className={dot(wl.id)}
-                      style={{ width: `${r.value_usd ? Number(wl.value_usd || 0) / r.value_usd * 100 : 0}%` }} />
-                  ))}
+                <div className="h-4 rounded bg-zinc-800/50 overflow-hidden">
+                  <div className="h-full rounded flex overflow-hidden"
+                    style={{ width: `${Math.max(w, MIN_BAR)}%` }}>
+                    {(r.wallets || []).map((wl, i) => (
+                      <div key={i}
+                        title={`${walletName(wl.id)} · ${money(wl.value_usd)}`}
+                        className={dot(wl.id)}
+                        style={{ width: `${r.value_usd ? Number(wl.value_usd || 0) / r.value_usd * 100 : 0}%` }} />
+                    ))}
+                  </div>
                 </div>
               </div>
               <div className="w-16 sm:w-24 shrink-0 text-right font-mono text-[11px] text-zinc-200">

@@ -466,10 +466,6 @@ export default function Alocacao({ currency = "USD" }) {
             </div>
           )}
 
-          <GroupDistribution
-            rows={rows} wallets={wallets} L={L} money={money} walletName={walletName}
-            title={`${L("alloc2.group_dist", "Distribuição do grupo")} · ${clsLabel(activeTab)}`} />
-
           {/* ===== PC: tabela ===== */}
           <div className="overflow-x-auto hidden sm:block">
             <table className="w-full text-sm">
@@ -736,6 +732,10 @@ export default function Alocacao({ currency = "USD" }) {
               })() : <div className="py-6 text-center text-zinc-500 font-mono text-sm">{L("alloc2.empty", "Sem ativos neste grupo.")}</div>
             )}
           </div>
+
+          <GroupDistribution
+            rows={rows} wallets={wallets} L={L} money={money} walletName={walletName}
+            title={`${L("alloc2.group_dist", "Distribuição do grupo")} · ${clsLabel(activeTab)}`} />
 
           {/* ===== Totais — PC: badges à direita; telemóvel (T2): 3 lado a lado ===== */}
           <div className="hidden sm:flex flex-wrap justify-end gap-3 mt-5 pt-4 border-t border-zinc-800/60">
