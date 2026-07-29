@@ -1149,6 +1149,77 @@ def _yf_detect_equity_strict(symbols: List[str]) -> dict:
                 out[sym] = "stock"
         except Exception:
             continue
+
+    # Rede de recurso para quando o `quoteType` simplesmente não vem. Ver o
+    # `_yf_probe_equity_chart` para o porquê.
+    unresolved = [s for s in symbols if s not in out]
+    if unresolved:
+        probed = _yf_probe_equity_chart(unresolved)
+        if probed:
+            logger.info(f"_yf_detect_equity_strict: sem quoteType para {unresolved}; "
+                        f"{probed} confirmados por cotação no Yahoo (chart) - assumidos como stock")
+        for sym in probed:
+            out[sym] = "stock"
+    return out
+
+
+def _yf_probe_equity_chart(symbols: List[str]) -> List[str]:
+    """Sync: dos `symbols`, quais é que têm cotação no Yahoo para o símbolo
+    simples. Um lote só, pela API de gráficos (v8) — a mesma que o
+    `yf.download` usa e que não pede autenticação.
+
+    Existe porque a fonte preferida desta família, o `quoteType`, vem do
+    `quoteSummary`, e o `quoteSummary` começou a responder **HTTP 401** (visto
+    a 29 jul 2026 no `SPY` e no `ADA`). Com o 401, o `_yf_detect_equity_strict`
+    devolvia sempre vazio e a auto-cura ficava inerte: uma ação gravada como
+    cripto continuava a valer $0,00 e a -100% indefinidamente, que é
+    exatamente o problema que a auto-cura foi escrita para resolver.
+
+    O que esta sonda responde não é "que instrumento é este" mas "existe
+    cotação para o símbolo simples". É menos informação do que o `quoteType`,
+    e por isso devolve sempre `stock`: a `detect_and_fix_equity_types` apura
+    depois para ETF/fundo, quando o `quoteSummary` voltar. É o mesmo
+    compromisso já assumido no caminho da importação, onde um Yahoo em baixo
+    faz entrar tudo como `stock` para ser corrigido a seguir.
+
+    Isto afrouxa de propósito a condição 2 das três da
+    `fix_crypto_typed_equities`: "o Yahoo confirma o tipo" passa a poder ser
+    "o Yahoo tem cotação para o símbolo simples". As outras duas continuam
+    inteiras e são elas que carregam a segurança — a posição já não tem preço
+    em fonte nenhuma (nem CoinGecko pelo id, nem cache, nem `SÍMBOLO-USD`) e
+    não veio de uma exchange de cripto. Uma cripto verdadeira com preço nunca
+    chega aqui."""
+    out = []
+    if not symbols:
+        return out
+    try:
+        data = yf.download(symbols, period="5d", interval="1d", group_by="ticker",
+                           auto_adjust=False, progress=False, threads=False)
+    except Exception as e:
+        logger.warning(f"_yf_probe_equity_chart error: {e}")
+        return out
+    try:
+        if data is None or data.empty:
+            return out
+        multi = data.columns.nlevels > 1
+        lvl0 = set(data.columns.get_level_values(0)) if multi else set()
+        for sym in symbols:
+            try:
+                if multi:
+                    if sym not in lvl0:
+                        continue
+                    df = data[sym]
+                else:
+                    df = data
+                if df is None or df.empty:
+                    continue
+                closes = df["Close"].dropna()
+                if len(closes) and float(closes.iloc[-1]) > 0:
+                    out.append(sym)
+            except Exception:
+                continue
+    finally:
+        del data
     return out
 
 
@@ -1177,8 +1248,12 @@ async def fix_crypto_typed_equities(user_id: str) -> dict:
          cripto que a CoinGecko conhece. Uma cripto real com preco nunca chega
          a ser candidata — e por isso que esta condicao vem primeiro: o `BTC` e
          tambem um ticker de bolsa e nunca chega ao teste do Yahoo;
-      2. o Yahoo diz explicitamente que o simbolo simples e ETF, fundo ou acao
-         (`quoteType`). Silencio do Yahoo nao conta como sim;
+      2. o Yahoo confirma o simbolo simples: ou diz explicitamente o tipo
+         (`quoteType` = ETF/fundo/acao), ou — se o `quoteType` nao vier, que e
+         o que acontece desde que o `quoteSummary` comecou a devolver 401 —
+         tem cotacao para o simbolo simples na API de graficos, e nesse caso
+         assume-se `stock` e a `detect_and_fix_equity_types` apura depois.
+         Silencio total do Yahoo continua a nao contar como sim;
       3. a transacao nao veio de uma exchange de cripto. Numa exchange tudo o
          que la esta e cripto por definicao, e uma coincidencia de ticker com a
          bolsa nao muda isso.

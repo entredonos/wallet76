@@ -1,5 +1,6 @@
 """Portfolio view (live prices) + FX + snapshots + history + per-asset sparklines."""
 import asyncio
+import gc
 import time
 from datetime import datetime, timezone, timedelta
 
@@ -1397,6 +1398,80 @@ async def _build_retro_history_intraday(user_id: str, range_key: str, wallet_id:
     return result
 
 
+# Lote de símbolos por pedido ao Yahoo nas sparklines. O mesmo número que o
+# `_MOVERS_CHUNK` do `routes/market.py`, e pela mesma razão: acima disto o
+# DataFrame que volta começa a pesar, e o backend tem 512 MB.
+_SPARK_CHUNK = 20
+
+
+def _spark_download(symbols: list, period: str, interval: str) -> dict:
+    """Descarrega UM lote e devolve { símbolo: [pontos] }. Só os símbolos com
+    dois pontos ou mais entram — um ponto não desenha uma linha."""
+    res = {}
+    if not symbols:
+        return res
+    try:
+        data = yf.download(symbols, period=period, interval=interval,
+                           group_by="ticker", auto_adjust=False,
+                           progress=False, threads=False)
+    except Exception as e:
+        logger.warning(f"sparkline batch err ({symbols[:3]}... {period}/{interval}): {e}")
+        return res
+    try:
+        if data is None or data.empty:
+            return res
+        multi = data.columns.nlevels > 1
+        lvl0 = set(data.columns.get_level_values(0)) if multi else set()
+        for sym in symbols:
+            try:
+                if multi:
+                    if sym not in lvl0:
+                        continue
+                    df = data[sym]
+                else:
+                    df = data
+                if df is None or df.empty:
+                    continue
+                closes = df["Close"].dropna()
+                pts = [{"t": int(ts.timestamp() * 1000), "p": round(float(v), 6)}
+                       for ts, v in closes.items() if float(v) > 0]
+                if len(pts) >= 2:
+                    res[sym] = pts
+            except Exception:
+                continue
+    finally:
+        del data
+    return res
+
+
+def _spark_batch(symbols: list) -> dict:
+    """Sync: { símbolo: [pontos] } para uma lista de símbolos já em formato
+    Yahoo (`BTC-USD`, `AAPL`).
+
+    Isto substituiu um `asyncio.gather` sobre um `yf.Ticker(...).history()` por
+    ativo. Com ~50 posições eram ~50 pedidos simultâneos ao Yahoo, e até ~100
+    porque cada símbolo sem dados intradiários repetia o pedido com `7d/1d` —
+    o Yahoo respondia `Too Many Requests` e os ativos ficavam sem sparkline na
+    Alocação (visto a 29 jul 2026 no HYPE, PEPE, PUMP e TAI). Agora são
+    `ceil(n/20)` pedidos, e o segundo passo `7d/1d` também vai em lote e só
+    leva os símbolos que voltaram vazios do primeiro.
+
+    `threads=False` e `del data` por lote são o mesmo cuidado do
+    `_yf_batch_changes` (routes/market.py): o pico de memória de puxar tudo de
+    uma vez é o que rebentava os 512 MB da Render."""
+    out = {}
+    missing = []
+    for i in range(0, len(symbols), _SPARK_CHUNK):
+        chunk = symbols[i:i + _SPARK_CHUNK]
+        got = _spark_download(chunk, "2d", "1h")
+        out.update(got)
+        missing.extend([s for s in chunk if s not in got])
+    for i in range(0, len(missing), _SPARK_CHUNK):
+        out.update(_spark_download(missing[i:i + _SPARK_CHUNK], "7d", "1d"))
+    gc.collect()
+    return out
+
+
 @router.get("/sparklines")
 async def get_sparklines(user=Depends(get_current_user)):
     """Returns ~24h price series for each held asset via yfinance (same source as wallet sparklines)."""
@@ -1405,37 +1480,34 @@ async def get_sparklines(user=Depends(get_current_user)):
     if not holdings:
         return {}
 
-    def _fetch_asset_spark(asset_type: str, symbol: str) -> list | None:
-        yf_sym = f"{symbol}-USD" if asset_type == "crypto" else symbol
-        cache_key = f"spark24:{asset_type}:{symbol}"
-        cached = _cache_get(cache_key, ttl=900)
-        if cached:
-            return cached
-        try:
-            hist = yf.Ticker(yf_sym).history(period="2d", interval="1h")
-            if hist.empty:
-                hist = yf.Ticker(yf_sym).history(period="7d", interval="1d")
-            if hist.empty:
-                return None
-            pts = [{"t": int(ts.timestamp() * 1000), "p": round(float(row["Close"]), 6)}
-                   for ts, row in hist.iterrows() if row["Close"] > 0]
-            if len(pts) >= 2:
-                _cache_set(cache_key, pts)
-                return pts
-        except Exception as e:
-            logger.warning(f"sparkline {yf_sym} err: {e}")
-        return None
-
-    tasks = [
-        asyncio.to_thread(_fetch_asset_spark, h["asset_type"], h["symbol"].upper())
-        for h in holdings
-    ]
-    keys = [f"{h['asset_type']}:{h['symbol'].upper()}" for h in holdings]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
+    # Primeiro a cache, ativo a ativo: o que já lá está nunca chega a pedido.
+    # `is not None` de propósito — uma lista vazia em cache é a marca de
+    # "este símbolo já falhou há menos de 15 min, não voltes a pedir". Com um
+    # `if cached:` a marca lia-se como ausência e o símbolo falhado era
+    # re-pedido em cada carregamento da página, que é metade do caudal que
+    # provocava o rate-limit.
     out = {}
-    for key, res in zip(keys, results):
-        if isinstance(res, list) and len(res) >= 2:
-            out[key] = res
+    wanted = {}
+    for h in holdings:
+        sym = (h["symbol"] or "").upper()
+        atype = h["asset_type"]
+        key = f"{atype}:{sym}"
+        if not sym or key in out or key in wanted:
+            continue
+        cached = _cache_get(f"spark24:{key}", ttl=900)
+        if cached is not None:
+            if len(cached) >= 2:
+                out[key] = cached
+            continue
+        wanted[key] = f"{sym}-USD" if atype == "crypto" else sym
+
+    if wanted:
+        fetched = await asyncio.to_thread(_spark_batch, list(dict.fromkeys(wanted.values())))
+        for key, yf_sym in wanted.items():
+            pts = fetched.get(yf_sym) or []
+            _cache_set(f"spark24:{key}", pts)
+            if len(pts) >= 2:
+                out[key] = pts
     return out
 
 
