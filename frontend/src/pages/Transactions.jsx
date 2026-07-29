@@ -339,6 +339,12 @@ function EditTransactionDialog({ txn, wallets, onClose, onSaved }) {
   const [price, setPrice] = useState("");
   const [fee, setFee] = useState("");
   const [notes, setNotes] = useState("");
+  // 29 jul 2026 — a classe do ativo passou a ser editavel aqui. Um ativo mal
+  // classificado (um ETF gravado como cripto) fica a valer 0 na carteira, e
+  // ate agora a unica saida era apagar a transacao e voltar a cria-la, com a
+  // data e o preco outra vez a mao. Duas classes chegam: o backend refina o
+  // "stock" para etf/fundo/reit sozinho, pelo Yahoo.
+  const [assetType, setAssetType] = useState("crypto");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -348,6 +354,7 @@ function EditTransactionDialog({ txn, wallets, onClose, onSaved }) {
       setPrice(String(txn.price ?? ""));
       setFee(String(txn.fee ?? "0"));
       setNotes(txn.notes || "");
+      setAssetType(txn.asset_type === "crypto" ? "crypto" : "stock");
     }
   }, [txn]);
 
@@ -364,6 +371,12 @@ function EditTransactionDialog({ txn, wallets, onClose, onSaved }) {
       if (price !== "" && !Number.isNaN(parseFloat(price))) body.price = parseFloat(price);
       if (fee !== "" && !Number.isNaN(parseFloat(fee))) body.fee = parseFloat(fee);
       body.notes = notes;
+      // So enviar a classe se ela mudou: reenviar "stock" numa transacao ja
+      // classificada como "etf" faria o backend voltar a perguntar ao Yahoo sem
+      // necessidade e, se o Yahoo estivesse em baixo nesse instante, despromovia
+      // um ETF a acao generica.
+      const currentClass = txn.asset_type === "crypto" ? "crypto" : "stock";
+      if (assetType !== currentClass) body.asset_type = assetType;
       await api.patch(`/transactions/${txn.id}`, body);
       toast.success(t("tx.updated"));
       onSaved();
@@ -394,6 +407,15 @@ function EditTransactionDialog({ txn, wallets, onClose, onSaved }) {
             <span className={`text-xs font-mono uppercase tracking-wider px-2 py-1 rounded border ${
               txn.type === "BUY" ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" : "text-rose-400 border-rose-500/30 bg-rose-500/10"
             }`}>{txn.type === "BUY" ? t("tx.buy") : t("tx.sell")}</span>
+          </div>
+          <div>
+            <Label className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">{t("tx.asset_type")}</Label>
+            <Tabs value={assetType} onValueChange={setAssetType}>
+              <TabsList className="mt-2 w-full bg-zinc-900/50 border border-zinc-800">
+                <TabsTrigger value="crypto" className="flex-1 data-[state=active]:bg-zinc-100 data-[state=active]:text-zinc-950" data-testid="edit-tx-type-crypto">{t("common.crypto")}</TabsTrigger>
+                <TabsTrigger value="stock" className="flex-1 data-[state=active]:bg-zinc-100 data-[state=active]:text-zinc-950" data-testid="edit-tx-type-stock">{t("tx.stock_etf")}</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>

@@ -4,9 +4,12 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends
 
-from core import db, get_current_user, require_active_subscription, is_pro_user, _cache_get, _cache_set, invalidate_history_cache
+from core import db, get_current_user, require_active_subscription, is_pro_user, _cache_get, _cache_set, invalidate_history_cache, logger
 from models import TransactionCreate, TransactionUpdate
-from prices import compute_holdings_from_txns, migrate_legacy_assets, get_fx_rates, resolve_asset_type
+from prices import (
+    compute_holdings_from_txns, migrate_legacy_assets, get_fx_rates,
+    resolve_asset_type, resolve_asset_types_bulk,
+)
 
 router = APIRouter()
 
@@ -81,6 +84,22 @@ async def update_transaction(txn_id: str, payload: TransactionUpdate, user=Depen
     upd = {k: v for k, v in payload.model_dump().items() if v is not None}
     if not upd:
         raise HTTPException(400, "Nothing to update")
+    # Mudar o tipo de ativo (29 jul 2026) nao e so gravar o campo: quem e cripto
+    # e avaliado pelo coingecko_id e quem e acao/ETF pelo simbolo no Yahoo, por
+    # isso uma transacao com o tipo novo e o resto do estado antigo ficava a
+    # pedir o preco a fonte errada. Aqui, "stock" passa pelo resolve_asset_type
+    # (que decide se e mesmo acao, etf, fundo ou reit) e tudo o que deixa de ser
+    # cripto larga o coingecko_id, que a partir dai so confundiria.
+    if "asset_type" in upd:
+        current = await db.transactions.find_one({"id": txn_id, "user_id": user["id"]}, {"_id": 0})
+        if not current:
+            raise HTTPException(404, "Transaction not found")
+        if upd["asset_type"] == "stock":
+            upd["asset_type"] = await resolve_asset_type((current.get("symbol") or "").upper().strip(), "stock")
+        if upd["asset_type"] == "crypto":
+            upd["coingecko_id"] = (upd.get("coingecko_id") or "").lower().strip()
+        else:
+            upd["coingecko_id"] = None
     res = await db.transactions.update_one({"id": txn_id, "user_id": user["id"]}, {"$set": upd})
     if res.matched_count == 0:
         raise HTTPException(404, "Transaction not found")
@@ -155,8 +174,18 @@ async def import_transactions(payload: dict, user=Depends(get_current_user)):
             if currency not in ("USD", "EUR", "GBP", "CHF", "JPY", "BRL", "CAD", "AUD"):
                 currency = wallet_currency
             fx_to_usd = 1.0 / fx_rates.get(currency, 1.0)
-            asset_type = (r.get("asset_type") or "crypto").lower()
-            if asset_type not in ("crypto", "stock", "etf", "fund", "bond", "cash", "reit"):
+            # 29 jul 2026 — o default de uma linha SEM asset_type era "crypto".
+            # Um ficheiro de acoes sem essa coluna virava uma carteira de cripto
+            # inteira: o preco passa a ser pedido a CoinGecko com o simbolo em
+            # minusculas como id, esse id nao existe, e a posicao fica a valer 0
+            # (foi assim que o SPY apareceu a $0,00 e -100%). O default seguro e
+            # o contrario — so e cripto quem trouxer um coingecko_id explicito;
+            # o resto entra como acao e e o Yahoo, mais abaixo, que decide se na
+            # verdade e etf, fundo ou reit.
+            asset_type = (r.get("asset_type") or "").lower().strip()
+            if not asset_type:
+                asset_type = "crypto" if (r.get("coingecko_id") or "").strip() else "stock"
+            elif asset_type not in ("crypto", "stock", "etf", "fund", "bond", "cash", "reit"):
                 asset_type = "stock"  # default for unknown equity types
             qty = float(r.get("quantity") or 0)
             price = float(r.get("price") or 0)
@@ -181,6 +210,25 @@ async def import_transactions(payload: dict, user=Depends(get_current_user)):
         except Exception as e:
             errors.append({"row": i, "error": str(e)})
             continue
+
+    # Os simbolos que ficaram como "stock" — por escolha explicita ou pelo
+    # default acima — ainda nao passaram pelo Yahoo. Sem isto, um SPY importado
+    # por ficheiro ficava como acao generica em vez de ETF e a alocacao por
+    # classe saia errada. O bulk resolve todos de uma vez e tem cache de 30
+    # dias, por isso um segundo import dos mesmos simbolos nao paga nada.
+    stock_syms = [d["symbol"] for d in docs if d["asset_type"] == "stock" and d["symbol"]]
+    if stock_syms:
+        try:
+            resolved = await resolve_asset_types_bulk(stock_syms)
+            for d in docs:
+                if d["asset_type"] == "stock":
+                    d["asset_type"] = resolved.get(d["symbol"].upper(), "stock")
+        except Exception as e:
+            # Classificar e um refinamento, nao uma condicao para importar: se o
+            # Yahoo estiver em baixo, entram como "stock" e o
+            # detect_and_fix_equity_types corrige-os no proximo carregamento do
+            # portfolio. Falhar o import inteiro por causa disto seria pior.
+            logger.warning(f"import: resolucao de tipos falhou ({e}) - entram como stock")
 
     if docs:
         await db.transactions.insert_many(docs)

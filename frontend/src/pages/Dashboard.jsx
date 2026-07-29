@@ -784,8 +784,15 @@ export default function Dashboard({ currency }) {
   // mostra os ATIVOS dessa carteira (valor + variação), em vez da lista das
   // outras carteiras — que não fazia sentido estando já dentro de uma. Em
   // "Todas as carteiras" (selectedWallet indefinido) volta à lista de carteiras.
+  //
+  // 29 jul 2026 — a lista vinha de `holdingsInWalletScope`, que só filtra por
+  // CARTEIRA. Resultado: escolher Cripto / Ações / ETFs mudava o título, o
+  // saldo, o investido, o lucro, a variação de 24 h e o gráfico, e a lista por
+  // baixo ficava exatamente igual — as mesmas cinco linhas nas três classes.
+  // O `filtered` é a mesma coisa com o filtro de classe também aplicado, que é
+  // o que o resto do cartão já usava.
   const walletAssets = selectedWallet
-    ? holdingsInWalletScope
+    ? filtered
         .slice()
         .sort((a, b) => (b.value_usd || 0) - (a.value_usd || 0))
         .map((a) => ({

@@ -163,6 +163,12 @@ export function parseNum(v) {
   return neg ? -Math.abs(n) : n;
 }
 
+// Palavras que os brokers europeus escrevem na coluna de tipo de instrumento.
+// Servem para decidir a classe a partir do que o ficheiro diz, em vez de deixar
+// tudo cair no tipo predefinido do dialogo (ver processRows).
+const EQUITY_WORDS = /(stock|share|equity|etf|fund|bond|reit|a[c\u00e7][a\u00e3]o|acci[o\u00f3]n|aktie|azione|obriga|anleihe)/i;
+const CRYPTO_WORDS = /(crypto|cripto|coin|token)/i;
+
 export function processRows(rows, defaultAssetType = "crypto") {
   if (!rows || rows.length < 2) return { items: [], skipped: [], error: "CSV/HTML is empty or invalid" };
   const header = rows[0];
@@ -209,9 +215,18 @@ export function processRows(rows, defaultAssetType = "crypto") {
     else if (dmy) date = `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
     const symbolLower = (r[cols.symbol] || "").toString().toLowerCase();
     const isCryptoSym = /(bitcoin|ethereum|btc|eth|sol|ada|doge|xrp|matic)/i.test(symbolLower) || /[a-z]{2,5}\/usd/i.test(symbolLower);
+    // A coluna de tipo do broker e a fonte mais fiavel que existe aqui, mas ate
+    // 29 jul 2026 so se procurava a palavra "stock": uma linha do XTB que diz
+    // "ETF" nao correspondia e caia no tipo predefinido, que e "crypto". O ativo
+    // entrava na base como cripto, o preco passava a ser pedido a CoinGecko com
+    // o simbolo como id, o id nao existia, e a posicao ficava a valer 0 — foi
+    // exatamente o que aconteceu ao SPY. O simbolo so decide quando a coluna nao
+    // diz nada, para nao passar a frente do que o broker afirma.
+    const classRaw = cols.asset_type >= 0 ? (r[cols.asset_type] || "").toString().toLowerCase() : "";
     let asset_type = defaultAssetType;
-    if (cols.asset_type >= 0 && (r[cols.asset_type] || "").toString().toLowerCase().includes("stock")) asset_type = "stock";
-    if (isCryptoSym) asset_type = "crypto";
+    if (classRaw && EQUITY_WORDS.test(classRaw)) asset_type = "stock";
+    else if (classRaw && CRYPTO_WORDS.test(classRaw)) asset_type = "crypto";
+    else if (isCryptoSym) asset_type = "crypto";
     const coingecko_id = cols.coingecko_id >= 0 ? (r[cols.coingecko_id] || "").toString().trim().toLowerCase() : "";
     items.push({ date, type, asset_type, symbol, quantity: qty, price, fee, currency, name: symbol, coingecko_id });
   }

@@ -12,6 +12,7 @@ import { WALLET_DOT_CLASS, walletColorKey } from "../lib/walletColors";
 import { renderPieSliceLabel } from "../constants/dashboardConstants";
 import { usePlan } from "../hooks/usePlan";
 import UpgradeOverlay from "../components/UpgradeOverlay";
+import Sparkline from "../components/Sparkline";
 
 // Página "Alocação" (Portfólio → Alocação) — alocação-alvo a 2 níveis.
 // Nível 1: % por grupo/classe (donut + editor, soma 100%).
@@ -39,6 +40,7 @@ export default function Alocacao({ currency = "USD" }) {
   const [mobileMode, setMobileMode] = useState("list"); // telemóvel: lista densa vs slide
   const [slideIdx, setSlideIdx] = useState(0);
   const [expanded, setExpanded] = useState({});
+  const [sparks, setSparks] = useState({});
   const touchX = useRef(null);
 
   const fx = summary?.fx_rates || {};
@@ -97,6 +99,18 @@ export default function Alocacao({ currency = "USD" }) {
     if (!activeTab && classesPresent.length) setActiveTab(classesPresent[0]);
   }, [classesPresent, activeTab]);
 
+  // Sparklines da coluna "24h" (29 jul 2026). Pedido separado e best-effort: o
+  // /sparklines e o mais lento dos tres e isto e um enfeite, por isso nunca
+  // segura a pagina nem estraga nada se falhar — a percentagem, essa, ja vem
+  // dentro do /portfolio e aparece de qualquer maneira.
+  useEffect(() => {
+    let cancel = false;
+    api.get("/sparklines")
+      .then((r) => { if (!cancel) setSparks(r.data || {}); })
+      .catch(() => {});
+    return () => { cancel = true; };
+  }, []);
+
   useEffect(() => { setSlideIdx(0); }, [activeTab]);
 
   const groupPie = useMemo(() => classesPresent.map((c) => {
@@ -123,7 +137,8 @@ export default function Alocacao({ currency = "USD" }) {
       let g = bySym.get(sym);
       if (!g) {
         g = { sym, symbol: a.symbol, name: a.name, asset_type: a.asset_type,
-              quantity: 0, value_usd: 0, cost_usd: 0, price_usd: Number(a.price_usd || 0), wallets: [] };
+              quantity: 0, value_usd: 0, cost_usd: 0, price_usd: Number(a.price_usd || 0),
+              change_24h: Number(a.change_24h || 0), wallets: [] };
         bySym.set(sym, g);
       }
       const q = Number(a.quantity || 0);
@@ -133,6 +148,7 @@ export default function Alocacao({ currency = "USD" }) {
       g.value_usd += v;
       g.cost_usd += c;
       if (Number(a.price_usd)) g.price_usd = Number(a.price_usd);
+      if (a.change_24h != null) g.change_24h = Number(a.change_24h);
       g.wallets.push({ id: a.wallet_id, quantity: q, value_usd: v });
     });
     const groups = [...bySym.values()].map((g) => ({
@@ -231,7 +247,26 @@ export default function Alocacao({ currency = "USD" }) {
     return <div className="min-h-screen bg-zinc-950 text-zinc-400 flex items-center justify-center font-mono text-sm">{L("common.loading", "A carregar…")}</div>;
   }
 
-  const colCount = mode === "full" ? 12 : 7;
+  // Movimento das ultimas 24 h: mini-grafico + percentagem. O grafico so
+  // aparece quando o /sparklines ja respondeu; sem dados o proprio Sparkline
+  // desenha um travessao do mesmo tamanho, para a coluna nao saltar de largura
+  // a meio do carregamento.
+  const move24h = (r, w = 56, h = 20) => {
+    const ch = Number(r.change_24h || 0);
+    const up = ch >= 0;
+    return (
+      <div className="flex items-center justify-center gap-1.5">
+        <Sparkline data={sparks[`${r.asset_type}:${r.sym}`]} positive={up} width={w} height={h} />
+        <span className={`font-mono text-[11px] whitespace-nowrap ${up ? "text-emerald-400" : "text-rose-400"}`}>
+          {up ? "+" : ""}{ch.toFixed(2)}%
+        </span>
+      </div>
+    );
+  };
+
+  // 13 no completo: as 12 de antes mais a coluna 24 h. No basico continuam 7 —
+  // o Grupo saiu e a 24 h ficou no lugar dele.
+  const colCount = mode === "full" ? 13 : 7;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white px-4 sm:px-6 py-8 relative">
@@ -351,18 +386,19 @@ export default function Alocacao({ currency = "USD" }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-[10px] uppercase tracking-wider text-zinc-500 font-mono border-b border-zinc-800">
-                  <th className="text-left py-2 px-2 w-8"></th>
-                  <th className="text-left py-2 px-2">{L("alloc2.asset", "Ativo")}</th>
-                  <th className="text-left py-2 px-2">{L("alloc2.group", "Grupo")}</th>
-                  {mode === "full" && <th className="text-left py-2 px-2">{L("alloc2.sector", "Setor")}</th>}
-                  {mode === "full" && <th className="text-right py-2 px-2">{L("alloc2.qty", "Qtd")}</th>}
-                  <th className="text-right py-2 px-2">{L("alloc2.avg_price", "Preço Médio")}</th>
-                  {mode === "full" && <th className="text-right py-2 px-2">{L("alloc2.price", "Cotação")}</th>}
-                  {mode === "full" && <th className="text-right py-2 px-2">{L("alloc2.value", "Valor Real")}</th>}
-                  {mode === "full" && <th className="text-right py-2 px-2">{L("alloc2.return", "Retorno")}</th>}
-                  <th className="text-right py-2 px-2">{L("alloc2.pct_now", "% Atual")}</th>
-                  <th className="text-right py-2 px-2">{L("alloc2.pct_sug", "% Sugerida")}</th>
-                  <th className="text-left py-2 px-2">{L("alloc2.orient", "Orient.")}</th>
+                  <th className="text-center py-2 px-2 w-8"></th>
+                  <th className="text-center py-2 px-2">{L("alloc2.asset", "Ativo")}</th>
+                  {mode === "full" && <th className="text-center py-2 px-2">{L("alloc2.sector", "Setor")}</th>}
+                  <th className="text-center py-2 px-2">{L("common.change_24h", "24h")}</th>
+                  {mode === "full" && <th className="text-center py-2 px-2">{L("alloc2.qty", "Qtd")}</th>}
+                  <th className="text-center py-2 px-2">{L("alloc2.avg_price", "Preço Médio")}</th>
+                  {mode === "full" && <th className="text-center py-2 px-2">{L("alloc2.price", "Cotação")}</th>}
+                  {mode === "full" && <th className="text-center py-2 px-2">{L("alloc2.value", "Valor Real")}</th>}
+                  {mode === "full" && <th className="text-center py-2 px-2">{L("alloc2.return", "Retorno")}</th>}
+                  <th className="text-center py-2 px-2">{L("alloc2.pct_now", "% Atual")}</th>
+                  <th className="text-center py-2 px-2">{L("alloc2.pct_sug", "% Sugerida")}</th>
+                  <th className="text-center py-2 px-2">{L("alloc2.orient", "Orient.")}</th>
+                  {mode === "full" && <th className="text-center py-2 px-2">{L("alloc2.group", "Grupo")}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -388,14 +424,8 @@ export default function Alocacao({ currency = "USD" }) {
                             </button>
                           )}
                         </td>
-                        <td className="py-2.5 px-2">
-                          <select value={effectiveClass(r, overrides)} onChange={(e) => reclassify(r.sym, e.target.value)}
-                            title={L("alloc2.reclassify", "Mudar de grupo")}
-                            className="text-[10px] font-mono bg-zinc-900 border border-zinc-700 rounded px-1.5 py-1 text-zinc-400 hover:text-zinc-200 outline-none cursor-pointer">
-                            {ALLOCATION_CLASSES.map((c) => <option key={c} value={c}>{clsLabel(c)}</option>)}
-                          </select>
-                        </td>
                         {mode === "full" && <td className="py-2.5 px-2 text-zinc-400 text-xs">{r.sector || "—"}</td>}
+                        <td className="py-2.5 px-2">{move24h(r)}</td>
                         {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-300">{fmtQty(r.quantity)}</td>}
                         <td className="py-2.5 px-2 text-right font-mono text-amber-400">{price(r.avg_price)}</td>
                         {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-300">{price(r.price_usd)}</td>}
@@ -417,6 +447,15 @@ export default function Alocacao({ currency = "USD" }) {
                           )}
                         </td>
                         <td className="py-2.5 px-2">{orientChip(r)}</td>
+                        {mode === "full" && (
+                          <td className="py-2.5 px-2">
+                            <select value={effectiveClass(r, overrides)} onChange={(e) => reclassify(r.sym, e.target.value)}
+                              title={L("alloc2.reclassify", "Mudar de grupo")}
+                              className="text-[10px] font-mono bg-zinc-900 border border-zinc-700 rounded px-1.5 py-1 text-zinc-400 hover:text-zinc-200 outline-none cursor-pointer">
+                              {ALLOCATION_CLASSES.map((c) => <option key={c} value={c}>{clsLabel(c)}</option>)}
+                            </select>
+                          </td>
+                        )}
                       </tr>
                       {multi && open && (
                         <tr className="bg-zinc-950/40">
@@ -451,17 +490,18 @@ export default function Alocacao({ currency = "USD" }) {
                 <table className="min-w-max text-[11px] font-mono border-separate border-spacing-0">
                   <thead>
                     <tr className="text-[9px] uppercase tracking-wide text-zinc-500">
-                      <th className="sticky left-0 z-20 bg-zinc-950 text-left py-2 pr-3 pl-1 border-b border-zinc-800">{L("alloc2.asset", "Ativo")}</th>
-                      <th className="text-left px-2 py-2 border-b border-zinc-800">{L("alloc2.group", "Grupo")}</th>
-                      {mode === "full" && <th className="text-left px-2 py-2 border-b border-zinc-800">{L("alloc2.sector", "Setor")}</th>}
-                      {mode === "full" && <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.qty", "Qtd")}</th>}
-                      <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.avg_price_short", "PM")}</th>
-                      {mode === "full" && <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.price", "Cotação")}</th>}
-                      {mode === "full" && <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.value_short", "Valor")}</th>}
-                      {mode === "full" && <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.return", "Retorno")}</th>}
-                      <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.pct_now_short", "% At")}</th>
-                      <th className="text-right px-2 py-2 border-b border-zinc-800">{L("alloc2.pct_sug_short", "% Sug")}</th>
-                      <th className="text-left px-2 py-2 border-b border-zinc-800">{L("alloc2.orient", "Orient.")}</th>
+                      <th className="sticky left-0 z-20 bg-zinc-950 text-center py-2 pr-3 pl-1 border-b border-zinc-800">{L("alloc2.asset", "Ativo")}</th>
+                      {mode === "full" && <th className="text-center px-2 py-2 border-b border-zinc-800">{L("alloc2.sector", "Setor")}</th>}
+                      <th className="text-center px-2 py-2 border-b border-zinc-800">{L("common.change_24h", "24h")}</th>
+                      {mode === "full" && <th className="text-center px-2 py-2 border-b border-zinc-800">{L("alloc2.qty", "Qtd")}</th>}
+                      <th className="text-center px-2 py-2 border-b border-zinc-800">{L("alloc2.avg_price_short", "PM")}</th>
+                      {mode === "full" && <th className="text-center px-2 py-2 border-b border-zinc-800">{L("alloc2.price", "Cotação")}</th>}
+                      {mode === "full" && <th className="text-center px-2 py-2 border-b border-zinc-800">{L("alloc2.value_short", "Valor")}</th>}
+                      {mode === "full" && <th className="text-center px-2 py-2 border-b border-zinc-800">{L("alloc2.return", "Retorno")}</th>}
+                      <th className="text-center px-2 py-2 border-b border-zinc-800">{L("alloc2.pct_now_short", "% At")}</th>
+                      <th className="text-center px-2 py-2 border-b border-zinc-800">{L("alloc2.pct_sug_short", "% Sug")}</th>
+                      <th className="text-center px-2 py-2 border-b border-zinc-800">{L("alloc2.orient", "Orient.")}</th>
+                      {mode === "full" && <th className="text-center px-2 py-2 border-b border-zinc-800">{L("alloc2.group", "Grupo")}</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -483,13 +523,8 @@ export default function Alocacao({ currency = "USD" }) {
                                 </button>
                               )}
                             </td>
-                            <td className="px-2 py-2">
-                              <select value={effectiveClass(r, overrides)} onChange={(e) => reclassify(r.sym, e.target.value)}
-                                className="text-[10px] font-mono bg-zinc-900 border border-zinc-700 rounded px-1 py-0.5 text-zinc-400 outline-none">
-                                {ALLOCATION_CLASSES.map((c) => <option key={c} value={c}>{clsLabel(c)}</option>)}
-                              </select>
-                            </td>
                             {mode === "full" && <td className="px-2 py-2 text-zinc-400 whitespace-nowrap">{r.sector || "—"}</td>}
+                            <td className="px-2 py-2">{move24h(r, 40, 18)}</td>
                             {mode === "full" && <td className="px-2 py-2 text-right text-zinc-300 whitespace-nowrap">{fmtQty(r.quantity)}</td>}
                             <td className="px-2 py-2 text-right text-amber-400 whitespace-nowrap">{price(r.avg_price)}</td>
                             {mode === "full" && <td className="px-2 py-2 text-right text-zinc-300 whitespace-nowrap">{price(r.price_usd)}</td>}
@@ -504,6 +539,14 @@ export default function Alocacao({ currency = "USD" }) {
                               ) : (<span className="text-zinc-400">{r.sug.toFixed(2)}% <span className="text-[8px] text-zinc-600">auto</span></span>)}
                             </td>
                             <td className="px-2 py-2">{orientChip(r)}</td>
+                            {mode === "full" && (
+                              <td className="px-2 py-2">
+                                <select value={effectiveClass(r, overrides)} onChange={(e) => reclassify(r.sym, e.target.value)}
+                                  className="text-[10px] font-mono bg-zinc-900 border border-zinc-700 rounded px-1 py-0.5 text-zinc-400 outline-none">
+                                  {ALLOCATION_CLASSES.map((c) => <option key={c} value={c}>{clsLabel(c)}</option>)}
+                                </select>
+                              </td>
+                            )}
                           </tr>
                           {multi && open && (
                             <tr className={bg}>

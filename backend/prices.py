@@ -1067,6 +1067,22 @@ async def detect_and_fix_equity_types(user_id: str) -> dict:
     return {"updated": total_updated, "changes": updates}
 
 
+# Corretoras de CRIPTO. Vive ao nivel do modulo porque duas auto-curas
+# precisam da mesma lista e com copias separadas elas iam divergir: a
+# `fix_exchange_asset_types` usa-a para dizer "aqui dentro e tudo cripto", e a
+# `fix_crypto_typed_equities` usa-a para o contrario — nao mexer no que veio
+# de uma exchange.
+CRYPTO_EXCHANGES = ["bybit", "okx", "kucoin", "bitget", "mexc", "cryptocom",
+                    "gateio", "htx", "binance", "coinbase", "kraken"]
+
+# Um `_broker` que nao seja exchange de cripto: ou o campo nem existe (entrada
+# manual), ou existe e nao esta na lista. Escrito uma vez para as duas queries
+# de baixo ficarem obrigatoriamente iguais.
+NOT_CRYPTO_EXCHANGE = [{"_broker": {"$exists": False}},
+                       {"_broker": None},
+                       {"_broker": {"$nin": CRYPTO_EXCHANGES}}]
+
+
 async def fix_exchange_asset_types(user_id: str) -> dict:
     """Auto-cura da classificação em transações importadas de EXCHANGES de
     cripto: stablecoins/fiat -> caixa (cash/liquidez), tudo o resto -> cripto.
@@ -1077,8 +1093,7 @@ async def fix_exchange_asset_types(user_id: str) -> dict:
     if _cache_get(cache_key, ttl=3600):
         return {"updated": 0, "cached": True}
 
-    crypto_exchanges = ["bybit", "okx", "kucoin", "bitget", "mexc", "cryptocom",
-                        "gateio", "htx", "binance", "coinbase", "kraken"]
+    crypto_exchanges = CRYPTO_EXCHANGES
     stable_fiat = ["USDT", "USDC", "USD", "DAI", "TUSD", "FDUSD", "BUSD", "USDP",
                    "PYUSD", "EUR", "GBP", "CHF", "JPY", "BRL", "CAD", "AUD"]
 
@@ -1098,6 +1113,129 @@ async def fix_exchange_asset_types(user_id: str) -> dict:
     if updated:
         logger.info(f"fix_exchange_asset_types user={user_id}: {updated} txns")
     return {"updated": updated}
+
+
+def _yf_detect_equity_strict(symbols: List[str]) -> dict:
+    """Sync: { simbolo: 'etf' | 'fund' | 'stock' } SO para os simbolos que o
+    Yahoo reconhece explicitamente como instrumento de capital.
+
+    A diferenca para o `_yf_detect_types` e o silencio. Aquele assume `stock`
+    quando nao sabe, e pode dar-se ao luxo disso porque so refina uma linha que
+    JA e `stock`. Aqui quem chama vai reclassificar uma linha de cripto, e
+    assumir por omissao seria transformar uma cripto obscura numa acao so
+    porque o Yahoo esteve em baixo. Simbolo desconhecido nao entra no
+    resultado."""
+    out = {}
+    if not symbols:
+        return out
+    try:
+        tickers = yf.Tickers(" ".join(symbols))
+    except Exception as e:
+        logger.warning(f"_yf_detect_equity_strict Tickers error: {e}")
+        tickers = None
+    for sym in symbols:
+        try:
+            t = (tickers.tickers.get(sym) if tickers else None) or yf.Ticker(sym)
+            info = t.info or {}
+            qt = (info.get("quoteType") or "").upper()
+            if not qt:
+                fi = getattr(t, "fast_info", None) or {}
+                qt = (fi.get("quoteType") or fi.get("quote_type") or "").upper()
+            if qt == "ETF":
+                out[sym] = "etf"
+            elif qt in ("MUTUALFUND", "FUND"):
+                out[sym] = "fund"
+            elif qt == "EQUITY":
+                out[sym] = "stock"
+        except Exception:
+            continue
+    return out
+
+
+async def fix_crypto_typed_equities(user_id: str) -> dict:
+    """Auto-cura do caso que deixou o `SPY` a $0,00 e a -100% (29 jul 2026):
+    uma acao ou um ETF gravados com `asset_type = "crypto"`.
+
+    Quem e cripto e avaliado pela CoinGecko; se o `coingecko_id` nao existir, a
+    posicao fica a valer zero e aparece como perda total — e esse zero entra no
+    total da carteira, por isso o dinheiro desaparece de um sitio onde ninguem
+    o procura. As duas portas por onde a classificacao errada entrava ja foram
+    fechadas, mas as linhas que ficaram na base nao se corrigem sozinhas. E
+    isto que esta funcao faz.
+
+    Esta e a terceira irma da familia: a `detect_and_fix_equity_types` apura
+    `stock` -> ETF/fundo, a `fix_exchange_asset_types` trata do que vem das
+    exchanges, e esta trata do sentido contrario, cripto -> capital.
+
+    Tres condicoes, todas obrigatorias, porque a reclassificacao errada no
+    sentido inverso (uma cripto verdadeira convertida em acao) seria igualmente
+    ma:
+
+      1. a posicao nao tem preco em fonte nenhuma. O `get_crypto_prices` ja
+         tenta a CoinGecko pelo id, o ultimo preco conhecido em cache e ainda
+         `SIMBOLO-USD` no Yahoo; se depois disso continua sem preco, nao e uma
+         cripto que a CoinGecko conhece. Uma cripto real com preco nunca chega
+         a ser candidata — e por isso que esta condicao vem primeiro: o `BTC` e
+         tambem um ticker de bolsa e nunca chega ao teste do Yahoo;
+      2. o Yahoo diz explicitamente que o simbolo simples e ETF, fundo ou acao
+         (`quoteType`). Silencio do Yahoo nao conta como sim;
+      3. a transacao nao veio de uma exchange de cripto. Numa exchange tudo o
+         que la esta e cripto por definicao, e uma coincidencia de ticker com a
+         bolsa nao muda isso.
+
+    Cache de 1 h por utilizador, como as irmas. O `coingecko_id` e limpo junto
+    com a reclassificacao: a partir dai so confundia a origem do preco."""
+    cache_key = f"fix_cry_eq:{user_id}"
+    if _cache_get(cache_key, ttl=3600):
+        return {"updated": 0, "cached": True}
+
+    txns = await db.transactions.find(
+        {"user_id": user_id, "asset_type": "crypto", "$or": NOT_CRYPTO_EXCHANGE},
+        {"_id": 0, "symbol": 1, "coingecko_id": 1},
+    ).to_list(5000)
+    if not txns:
+        _cache_set(cache_key, True)
+        return {"updated": 0}
+
+    # simbolo -> coingecko_id. Sem id, o id efetivo e o simbolo em minusculas —
+    # exatamente o que o /portfolio faz ao montar o pedido de precos, senao
+    # estariamos a testar um caminho diferente daquele que produz o zero.
+    by_sym = {}
+    for t in txns:
+        sym = (t.get("symbol") or "").upper().strip()
+        if sym:
+            by_sym.setdefault(sym, (t.get("coingecko_id") or "").lower().strip() or sym.lower())
+
+    symbol_map = {cg: sym for sym, cg in by_sym.items()}
+    prices = await get_crypto_prices(list(symbol_map.keys()), symbol_map)
+
+    candidates = [sym for sym, cg in by_sym.items()
+                  if float((prices.get(cg) or {}).get("usd") or 0) <= 0]
+    if not candidates:
+        _cache_set(cache_key, True)
+        return {"updated": 0}
+
+    detected = await asyncio.to_thread(_yf_detect_equity_strict, candidates)
+    if not detected:
+        # Sem preco e sem resposta do Yahoo: fica o aviso, mas nao se mexe.
+        logger.warning(f"[data-health] user={user_id}: {candidates} sem preco e "
+                       f"sem tipo confirmado pelo Yahoo - continuam como cripto")
+        _cache_set(cache_key, True)
+        return {"updated": 0}
+
+    total = 0
+    for sym, new_type in detected.items():
+        res = await db.transactions.update_many(
+            {"user_id": user_id, "asset_type": "crypto", "symbol": sym,
+             "$or": NOT_CRYPTO_EXCHANGE},
+            {"$set": {"asset_type": new_type, "coingecko_id": None}},
+        )
+        total += res.modified_count or 0
+
+    _cache_set(cache_key, True)
+    if total:
+        logger.info(f"fix_crypto_typed_equities user={user_id}: {total} txns ({detected})")
+    return {"updated": total, "changes": detected}
 
 
 async def migrate_legacy_assets(user_id: str):

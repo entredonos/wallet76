@@ -1038,6 +1038,26 @@ function HeatmapChart({ months, t }) {
 function HistogramChart({ m, t }) {
   const [period, setPeriod] = useState("month");
 
+  // O `t` devolve a propria chave quando a traducao falta, por isso
+  // `t("x") || "fb"` nunca cai no fallback. Este `tf` e que o faz de verdade.
+  const tf = (key, fb) => { const v = t(key); return v && v !== key ? v : fb; };
+
+  // 29 jul 2026 — o seletor semanal/mensal/anual trocava os numeros e mais
+  // nada: um "12" tanto podia ser 12 semanas como 12 anos, e o eixo horizontal
+  // (−10%, −5%, +5%…) tambem nao dizia percentagem de que periodo. A unidade
+  // passa a aparecer nos tres sitios onde a leitura se faz — legenda do eixo,
+  // balao e rodape.
+  const unitNoun = tf(`analytics.hist_unit_${period}`,
+    period === "week" ? "semanas" : period === "year" ? "anos" : "meses");
+  const unitTotal = tf(`analytics.histogram_total_${period}`,
+    period === "week" ? "semanas analisadas no total"
+    : period === "year" ? "anos analisados no total"
+    : "meses analisados no total");
+  const axisLabel = tf(`analytics.hist_axis_${period}`,
+    period === "week" ? "Retorno semanal (%)"
+    : period === "year" ? "Retorno anual (%)"
+    : "Retorno mensal (%)");
+
   const PERIODS = [
     { key: "week",  label: t("analytics.period_weekly")  || "Weekly"  },
     { key: "month", label: t("analytics.period_monthly") || "Monthly" },
@@ -1085,6 +1105,7 @@ function HistogramChart({ m, t }) {
           {t("analytics.no_period_data") || "Not enough data"}
         </div>
       ) : (
+        <>
         <div className="p-4 h-56">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={histData} margin={{ top: 12, right: 16, bottom: 0, left: 8 }}>
@@ -1095,7 +1116,7 @@ function HistogramChart({ m, t }) {
                 contentStyle={{ background: "#09090b", border: "1px solid #27272a", borderRadius: 8, fontSize: 11, fontFamily: "monospace", color: "#d4d4d8" }}
                 labelStyle={{ color: "#a1a1aa" }}
                 itemStyle={{ color: "#d4d4d8" }}
-                formatter={(value) => [`${value} ${t("analytics.histogram_periods") || "periods"}`, t("analytics.histogram_count") || "Count"]}
+                formatter={(value) => [`${value} ${unitNoun}`, tf("analytics.histogram_count", "Contagem")]}
               />
               <Bar dataKey="count" radius={[3, 3, 0, 0]} isAnimationActive={false} maxBarSize={48}>
                 {histData.map((entry, i) => (
@@ -1105,10 +1126,14 @@ function HistogramChart({ m, t }) {
             </ComposedChart>
           </ResponsiveContainer>
         </div>
+        <div className="px-5 -mt-2 pb-1 text-[10px] font-mono text-zinc-500 text-center">
+          {axisLabel}
+        </div>
+        </>
       )}
 
       <div className="px-5 pb-3 text-[10px] font-mono text-zinc-600">
-        {total} {t("analytics.histogram_total") || "periods analysed"}
+        {total} {unitTotal}
       </div>
     </div>
   );

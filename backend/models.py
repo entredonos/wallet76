@@ -75,6 +75,14 @@ class TransactionUpdate(BaseModel):
     price: Optional[float] = None
     fee: Optional[float] = None
     notes: Optional[str] = None
+    # 29 jul 2026 — o tipo de ativo passou a ser corrigivel sem apagar a
+    # transacao. Antes disto, um ETF gravado como "crypto" (o SPY, vindo de um
+    # CSV do XTB) so se arranjava apagando e voltando a criar, porque o PATCH
+    # nao aceitava o campo. E enquanto la estivesse errado, o preco era pedido
+    # a CoinGecko com o simbolo como id, id que nao existe, e a posicao ficava
+    # a valer 0 no portfolio — a aparecer a -100%.
+    asset_type: Optional[ASSET_TYPES] = None
+    coingecko_id: Optional[str] = None
 
 
 class AlertCreate(BaseModel):

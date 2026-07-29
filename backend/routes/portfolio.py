@@ -20,6 +20,7 @@ from prices import (
     compute_holdings_from_txns, migrate_legacy_assets,
     get_crypto_prices, get_stock_prices, get_fx_rates, get_crypto_images,
     detect_and_fix_equity_types, backfill_holding_names, fix_exchange_asset_types,
+    fix_crypto_typed_equities,
 )
 from routes.news import _fetch_yf, _fetch_crypto_ohlc
 
@@ -53,6 +54,18 @@ async def _price_holdings(user_id: str) -> dict:
         for h in holdings
         if h["asset_type"] == "crypto" and h["quantity"] > 0
     ]
+    # Mapa id->simbolo para o fallback do yfinance que ja existe dentro do
+    # get_crypto_prices (17 jul 2026) mas que so corre se o chamador der o mapa
+    # — ate 29 jul 2026 so os alertas o davam. Sem ele, um coingecko_id que a
+    # CoinGecko nao conhece (tipicamente adivinhado a partir do simbolo, porque
+    # o utilizador nunca escolheu um id) devolve "sem preco", e "sem preco" vira
+    # 0.0 mais abaixo: a posicao desaparece do total da carteira e aparece a
+    # -100%. Com o mapa tenta-se SIMBOLO-USD no Yahoo antes de desistir.
+    crypto_symbol_map = {
+        (h.get("coingecko_id") or h["symbol"].lower()): h["symbol"]
+        for h in holdings
+        if h["asset_type"] == "crypto" and h["quantity"] > 0
+    }
     # ETFs, funds and bonds are priced via yfinance just like stocks
     stock_syms = [
         h["symbol"] for h in holdings
@@ -64,7 +77,7 @@ async def _price_holdings(user_id: str) -> dict:
     # and runs gathered alongside the price/FX fetches so it adds no extra
     # serial latency beyond whichever of the four is already slowest.
     crypto_prices, stock_prices, fx_rates, _, crypto_images = await asyncio.gather(
-        get_crypto_prices(crypto_ids),
+        get_crypto_prices(crypto_ids, crypto_symbol_map),
         get_stock_prices(stock_syms),
         get_fx_rates(),
         backfill_holding_names(holdings),
@@ -90,6 +103,13 @@ async def _price_holdings(user_id: str) -> dict:
             price_usd = float(p.get("usd") or 0)
             change_24h = float(p.get("usd_24h_change") or 0)
             image_url = crypto_images.get(cg_id)
+            if price_usd <= 0:
+                # Nem a CoinGecko nem o fallback do Yahoo souberam quanto vale.
+                # Isto nao e ruido: a posicao entra no total a zero e aparece a
+                # -100%, e a causa habitual e estar classificada como cripto sem
+                # o ser. Mesmo prefixo [data-health] que o prices.py usa, para o
+                # alerta dos logs apanhar os dois casos.
+                logger.warning(f"[data-health] crypto:{cg_id} sem preco em nenhuma fonte (simbolo {h['symbol']}) - a posicao vai valer 0")
         elif h["asset_type"] in EQUITY_TYPES:
             p = stock_prices.get(h["symbol"].upper(), {})
             price_usd = float(p.get("usd") or 0)
@@ -301,6 +321,7 @@ async def get_portfolio(user=Depends(get_current_user)):
         try:
             await fix_exchange_asset_types(user["id"])   # cripto/caixa das exchanges
             await detect_and_fix_equity_types(user["id"])  # ETF/fundo das ações
+            await fix_crypto_typed_equities(user["id"])    # ações/ETFs gravados como cripto
         except Exception as e:
             logger.warning(f"fix_asset_types bg error: {e}")
     asyncio.create_task(_fix_types_bg())
@@ -397,13 +418,20 @@ async def get_live_prices(user=Depends(get_current_user)):
         for h in holdings
         if h["asset_type"] == "crypto"
     ]
+    # Mesmo mapa id->simbolo do /portfolio: sem ele este endpoint devolvia
+    # simplesmente nada para um ativo cripto com id desconhecido.
+    crypto_symbol_map = {
+        (h.get("coingecko_id") or h["symbol"].lower()): h["symbol"]
+        for h in holdings
+        if h["asset_type"] == "crypto"
+    }
     stock_syms = [
         h["symbol"] for h in holdings
         if h["asset_type"] in EQUITY_TYPES
     ]
 
     crypto_prices, stock_prices = await asyncio.gather(
-        get_crypto_prices(crypto_ids),
+        get_crypto_prices(crypto_ids, crypto_symbol_map),
         get_stock_prices(stock_syms),
     )
 
