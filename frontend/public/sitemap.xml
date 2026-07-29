@@ -1,52 +1,75 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  As datas em <lastmod> sao o sinal que o Google usa para decidir se vale a pena
+  voltar a rastrear uma pagina que ja conhece. Sem elas, uma pagina indexada so
+  e re-rastreada quando ao Google lhe apetecer, ou quando se pede a mao no
+  Search Console — foi o que aconteceu as comparacoes depois do b74460e.
+
+  Por isso: quem mexer no conteudo de uma destas paginas ACERTA aqui a data.
+  Uma data errada e pior do que nenhuma — o Google compara o <lastmod> com o
+  que encontra ao rastrear e, se apanhar o sitemap a mentir, passa a ignorar
+  este campo no site inteiro.
+
+  Formato: AAAA-MM-DD (W3C Datetime, so a data e valido).
+-->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://wallet76.com/</loc>
+    <lastmod>2026-07-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://wallet76.com/pricing</loc>
+    <lastmod>2026-07-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://wallet76.com/privacy</loc>
+    <lastmod>2026-07-19</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://wallet76.com/terms</loc>
+    <lastmod>2026-07-19</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://wallet76.com/comparativo.html</loc>
+    <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://wallet76.com/comparison.html</loc>
+    <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://wallet76.com/comparatif.html</loc>
+    <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://wallet76.com/vergleich.html</loc>
+    <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://wallet76.com/confronto.html</loc>
+    <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://wallet76.com/comparativa.html</loc>
+    <lastmod>2026-07-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
