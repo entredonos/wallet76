@@ -4,6 +4,8 @@ const STORAGE_KEY = "folio-lang";
 
 const TRANSLATIONS = {
   en: {
+    "meta.title": "Wallet76 — Investment Portfolio Tracker",
+    "meta.description": "Track stocks, ETFs and crypto in one place. Real-time prices, price alerts, multiple wallets and allocation targets — in six languages.",
     "nav.dashboard": "Dashboard",
     "nav.transactions": "Transactions",
     "nav.alerts": "Alerts",
@@ -1061,6 +1063,8 @@ const TRANSLATIONS = {
     "alloc.toast_target_disabled": "Allocation target disabled",
   },
   pt: {
+    "meta.title": "Wallet76 — Gestor de Carteira de Investimentos",
+    "meta.description": "Acompanha ações, ETF e cripto num só sítio. Preços em tempo real, alertas, várias carteiras e alvos de alocação — em seis línguas.",
     "nav.dashboard": "Painel",
     "nav.transactions": "Transações",
     "nav.alerts": "Alertas",
@@ -2118,6 +2122,8 @@ const TRANSLATIONS = {
     "alloc.toast_target_disabled": "Alvo de alocação desativado",
   },
   fr: {
+    "meta.title": "Wallet76 — Suivi de Portefeuille d'Investissement",
+    "meta.description": "Suivez actions, ETF et crypto au même endroit. Cours en temps réel, alertes de prix, plusieurs portefeuilles et objectifs d'allocation — en six langues.",
     "nav.dashboard": "Tableau",
     "nav.transactions": "Transactions",
     "nav.alerts": "Alertes",
@@ -3175,6 +3181,8 @@ const TRANSLATIONS = {
     "alloc.toast_target_disabled": "Cible d'allocation désactivée",
   },
   de: {
+    "meta.title": "Wallet76 — Portfolio-Tracker für Investments",
+    "meta.description": "Aktien, ETFs und Krypto an einem Ort verfolgen. Kurse in Echtzeit, Preisalarme, mehrere Wallets und Allokationsziele — in sechs Sprachen.",
     "nav.dashboard": "Übersicht",
     "nav.transactions": "Transaktionen",
     "nav.alerts": "Alarme",
@@ -4231,6 +4239,8 @@ const TRANSLATIONS = {
     "alloc.toast_target_disabled": "Allokationsziel deaktiviert",
   },
   it: {
+    "meta.title": "Wallet76 — Monitoraggio del Portafoglio di Investimenti",
+    "meta.description": "Segui azioni, ETF e cripto in un unico posto. Prezzi in tempo reale, avvisi, più portafogli e obiettivi di allocazione — in sei lingue.",
     "nav.dashboard": "Dashboard",
     "nav.transactions": "Transazioni",
     "nav.alerts": "Avvisi",
@@ -5283,6 +5293,8 @@ const TRANSLATIONS = {
     "alloc.toast_target_disabled": "Obiettivo di allocazione disattivato",
   },
   es: {
+    "meta.title": "Wallet76 — Seguimiento de Cartera de Inversión",
+    "meta.description": "Sigue acciones, ETF y cripto en un solo sitio. Precios en tiempo real, alertas, varias carteras y objetivos de asignación — en seis idiomas.",
     "nav.dashboard": "Dashboard",
     "nav.transactions": "Transacciones",
     "nav.alerts": "Alertas",
@@ -6350,17 +6362,67 @@ export const LANGUAGES = [
   { code: "es", label: "Español",    flag: "🇪🇸" },
 ];
 
+// A língua com que a app abre da primeira vez. Até 29 jul 2026 isto era
+// `localStorage.getItem(STORAGE_KEY) || "pt"`: quem abrisse o site de França
+// ou da Alemanha via tudo em português e tinha de descobrir o seletor
+// sozinho — e a maior parte não descobre, fecha o separador. A ordem agora é:
+// 1) a escolha guardada, que é uma decisão explícita da pessoa e ganha sempre;
+// 2) o que o browser diz que a pessoa fala (`navigator.languages` já vem
+//    ordenado por preferência, e comparamos só a base: "de-AT" conta como
+//    "de");
+// 3) inglês. Inglês e não português porque, das seis que temos, é a que mais
+//    gente percebe quando não acertamos.
+function detectInitialLang() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved && TRANSLATIONS[saved]) return saved;
+  } catch {}
+  try {
+    const codes = LANGUAGES.map((l) => l.code);
+    const prefs = (typeof navigator !== "undefined" && navigator.languages && navigator.languages.length)
+      ? navigator.languages
+      : [(typeof navigator !== "undefined" && navigator.language) || ""];
+    for (const p of prefs) {
+      const base = String(p).toLowerCase().split("-")[0];
+      if (codes.includes(base)) return base;
+    }
+  } catch {}
+  return "en";
+}
+
 const I18nContext = React.createContext(null);
 
 export function I18nProvider({ children }) {
-  const [lang, setLangState] = React.useState(() => {
-    try { return localStorage.getItem(STORAGE_KEY) || "pt"; } catch { return "pt"; }
-  });
+  const [lang, setLangState] = React.useState(detectInitialLang);
 
   const setLang = (l) => {
     try { localStorage.setItem(STORAGE_KEY, l); } catch {}
     setLangState(l);
   };
+
+  // O título do separador e a descrição são a primeira coisa que uma pessoa vê
+  // no Google, e estavam presos ao inglês do `index.html` mesmo com a app
+  // inteira noutra língua. Aqui passam a seguir a língua escolhida. O `lang`
+  // do `<html>` vai junto porque é o que diz aos motores de busca e aos
+  // leitores de ecrã em que língua está o conteúdo — e estava sempre "en".
+  useEffect(() => {
+    try {
+      const dict = TRANSLATIONS[lang] || TRANSLATIONS.en;
+      document.documentElement.lang = lang;
+      const title = dict["meta.title"];
+      if (title) document.title = title;
+      const desc = dict["meta.description"];
+      if (desc) {
+        let el = document.querySelector('meta[name="description"]');
+        if (!el) {
+          el = document.createElement("meta");
+          el.setAttribute("name", "description");
+          document.head.appendChild(el);
+        }
+        el.setAttribute("content", desc);
+      }
+    } catch {}
+  }, [lang]);
 
   const t = (key, vars) => {
     const dict = TRANSLATIONS[lang] || TRANSLATIONS.en;

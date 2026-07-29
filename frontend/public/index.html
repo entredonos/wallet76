@@ -45,18 +45,44 @@
          wallet76.com — o domínio que queremos que apareça na pesquisa. -->
     <link rel="canonical" href="https://wallet76.com/" />
 
-    <!-- Open Graph -->
+    <!-- Open Graph — 29 jul 2026: a imagem estava em
+         `%PUBLIC_URL%/icon-512x512.png`. Em produção o CRA substitui o
+         `%PUBLIC_URL%` por string vazia, por isso o que chegava ao WhatsApp,
+         ao Facebook e ao X era `/icon-512x512.png` — um caminho relativo.
+         Nenhum deles resolve caminhos relativos: o link aparecia sem imagem
+         nenhuma. Tem de ser URL absoluto. E o ícone quadrado de 512 também
+         não servia: o formato que estes sites recortam é 1200x630, daí o
+         `og-image.png` novo. -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Wallet76" />
     <meta property="og:title" content="Wallet76 — Investment Portfolio Tracker" />
     <meta property="og:description" content="Track stocks, ETFs and crypto in one place. Real-time prices, alerts, and multi-wallet support." />
-    <meta property="og:image" content="%PUBLIC_URL%/icon-512x512.png" />
-    <meta property="og:url" content="https://wallet76.com" />
+    <meta property="og:image" content="https://wallet76.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Wallet76 — wallet76.com" />
+    <meta property="og:url" content="https://wallet76.com/" />
 
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Wallet76" />
-    <meta name="twitter:description" content="Track stocks, ETFs and crypto in one place." />
-    <meta name="twitter:image" content="%PUBLIC_URL%/icon-512x512.png" />
+    <!-- As seis línguas vivem todas no mesmo URL (a app troca de língua sem
+         mudar de endereço), por isso não há `hreflang` aqui: o `hreflang`
+         precisa de um URL por língua e não temos. O que dá para declarar é o
+         conjunto de línguas em que o conteúdo existe. As páginas de
+         comparação — essas têm mesmo um ficheiro por língua — levam
+         `hreflang` a sério. -->
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="pt_PT" />
+    <meta property="og:locale:alternate" content="fr_FR" />
+    <meta property="og:locale:alternate" content="de_DE" />
+    <meta property="og:locale:alternate" content="it_IT" />
+    <meta property="og:locale:alternate" content="es_ES" />
+
+    <!-- Twitter Card — `summary` dá um quadrado pequeno ao lado do texto;
+         `summary_large_image` dá a imagem inteira por cima. Com uma imagem
+         1200x630 feita de propósito, era desperdício ficar no pequeno. -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Wallet76 — Investment Portfolio Tracker" />
+    <meta name="twitter:description" content="Track stocks, ETFs and crypto in one place. Real-time prices, alerts, and multi-wallet support." />
+    <meta name="twitter:image" content="https://wallet76.com/og-image.png" />
 
     <!-- ── Structured data (schema.org) ──────────────────────────────────
          Estático no HTML (não injetado via JS) de propósito — 7 jul 2026,
