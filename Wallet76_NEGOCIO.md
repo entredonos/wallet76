@@ -77,15 +77,16 @@
 
 ### P0 — antes de vender (bloqueadores)
 - [x] Ícones PWA corrompidos (144/152/384) — corrigido em 28 jul
-- [ ] Stripe live mode (produtos, chaves, webhook, cupão fundador)
+- [x] ~~Stripe live mode~~ **FEITO** — em live desde 26 jul (produtos, chaves, webhook, cupão: o Jose); customers órfãos do modo de teste corrigidos a 30 jul (README §2). Ver alerta 3.
 - [ ] Resend: domínio verificado + FROM_EMAIL de produção
 - [ ] Corrigir URL hardcoded `wallet76.vercel.app` no email de alertas (email_utils.py:183) e traduzi-lo (só existe em EN)
 - [ ] Backups Mongo: script mongodump semanal (grátis) OU Atlas Flex
-- [ ] Decidir Vercel Pro vs Cloudflare Pages
+- [x] ~~Decidir Vercel Pro vs Cloudflare Pages~~ **FEITO 30 jul** — migrado para Cloudflare Pages, $0 e uso comercial permitido (README §2). Desmantelar a Vercel a partir de 13 ago se estável.
 - [x] ~~Bug: `DELETE /transactions/all` nunca funciona (rota registada DEPOIS de `/transactions/{txn_id}`).~~ **FEITO 28 jul 2026** — rota movida para antes das irmãs parametrizadas (transactions.py:70); validado em produção. Ver README §2.
 - [x] ~~`PublicPortfolio.jsx:6` usa env var errada (`REACT_APP_API_URL`).~~ **FEITO 28 jul 2026** — passou a importar `API` do `lib/api.js`, como todas as outras páginas. Ver README §2 e §7.1.
 - [ ] `og:image` do index.html: URL relativo + ficheiro; usar URL absoluto `https://wallet76.com/...` com imagem 1200×630 (partilhas WhatsApp/redes saem sem imagem)
-- [ ] Teste ponta-a-ponta completo em live: registo → verificação → adicionar ativos → checkout fundador → cancelar no portal
+- [ ] **NOVO 30 jul — bloqueador de estabilidade:** o backend morre por falta de memória 2-3×/dia no Render (OOM >512 MB; memória em escada o dia todo — suspeitas: caches em processo sem teto). Investigar e corrigir ANTES de meter tráfego pago em cima. Plano combinado: tetos/TTL nas caches + endpoint `/api/admin/health` (RSS, tamanho das caches, dbStats) + relatório agendado por email/Telegram.
+- [ ] Teste ponta-a-ponta completo em live: registo → verificação → adicionar ativos → checkout fundador → cancelar no portal *(nota 30 jul: checkout normal + webhook + cancelamento já provados a 26 jul com conta secundária; falta o percurso do fundador completo)*
 
 ### P1 — primeiras semanas de vendas
 - [ ] Analytics de funil cookieless (Umami grátis ou Plausible): eventos signup / verified / first_asset / checkout_started / subscribed
@@ -133,7 +134,7 @@
 13. **Reddit**: r/eupersonalfinance, r/literaciafinanceira, r/financaspessoaispt, r/Finanzen (DE), r/vosfinances (FR) — posts honestos "construí isto", não spam
 14. **Product Hunt**: preparar bem (screenshots, GIF, primeira hora é crítica)
 15. **Comparativos SEO**: já no ar em 6 línguas — vão trazendo tráfego orgânico
-16. **Vídeos curtos**: TikTok/Shorts/Reels a mostrar o dashboard real (30s, "como sigo 5 corretoras num só sítio")
+16. **Vídeos curtos**: TikTok/Shorts/Reels a mostrar o dashboard real (30s, "como sigo 5 corretoras num só sítio") — **roteiros prontos** (15/30/60 s, personagem Miguel, falas e notas de produção): `marketing/wallet76-roteiros-anuncios.md`. Gravar com conta demo, nunca com saldos reais. Os 100 € de orçamento: guardar até um vídeo orgânico provar o gancho, e impulsionar esse.
 17. **Parcerias**: micro-criadores de finanças pessoais PT/ES/FR/DE (oferecer 6-12 meses Pro grátis)
 18. **Google Ads**: só DEPOIS de haver conversões orgânicas medidas — começar com €5-10/dia em "portfolio tracker" nas 6 línguas; CPC alto, cuidado
 19. Meta de validação: 10 pagantes fundadores → depois escalar publicidade
