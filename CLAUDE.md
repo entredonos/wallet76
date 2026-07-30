@@ -210,11 +210,11 @@ frontend chama sempre caminhos relativos; o alojamento reencaminha.
 
 **Como se implementa em cada casa:**
 
-- **Vercel (a casa até ao corte de DNS de 30 jul 2026):**
+- **Vercel (a casa antiga — o corte de DNS fez-se a 30 jul 2026):**
   `frontend/vercel.json`, dois `rewrites` (`/api/:path*` e `/ping`) para
   `https://wallet76-1.onrender.com`. Timeout de 120 s em qualquer plano,
   muito acima do arranque a frio do Render.
-- **Cloudflare Pages (o destino da migração):** o `_redirects` NÃO serve —
+- **Cloudflare Pages (a casa atual, desde 30 jul 2026):** o `_redirects` NÃO serve —
   "You cannot proxy external domains", está na documentação deles. É uma
   Pages Function: `frontend/functions/api/[[path]].js` (e
   `functions/ping.js`, que reexporta o mesmo handler). Três armadilhas

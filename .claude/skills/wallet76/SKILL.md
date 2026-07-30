@@ -1,6 +1,6 @@
 ---
 name: wallet76
-description: Método de trabalho no repositório Wallet76 (app de carteira de investimentos do Jose - FastAPI/MongoDB no Render + React/Vite na Vercel, domínio wallet76.com). Usa esta skill SEMPRE que o trabalho toque neste repositório - editar backend ou frontend, diagnosticar lentidão ou erros em produção, mexer no README/CLAUDE.md, preparar um commit, ou investigar logs do Render. Contém as regras do projeto, o procedimento obrigatório de edição através da ponte do dispositivo (acentos + CRLF), as armadilhas que já custaram tempo, e o método de medição de performance. Se a conversa foi compactada e perdeste o contexto do Wallet76, lê isto primeiro.
+description: Método de trabalho no repositório Wallet76 (app de carteira de investimentos do Jose - FastAPI/MongoDB no Render + React na Cloudflare Pages, domínio wallet76.com). Usa esta skill SEMPRE que o trabalho toque neste repositório - editar backend ou frontend, diagnosticar lentidão ou erros em produção, mexer no README/CLAUDE.md, preparar um commit, ou investigar logs do Render. Contém as regras do projeto, o procedimento obrigatório de edição através da ponte do dispositivo (acentos + CRLF), as armadilhas que já custaram tempo, e o método de medição de performance. Se a conversa foi compactada e perdeste o contexto do Wallet76, lê isto primeiro.
 ---
 
 # Wallet76 — método de trabalho
@@ -16,7 +16,7 @@ tempo a descobrir. Lê antes de mexer, não depois.
 | Repositório (máquina do Jose) | `/sessions/<sessao>/mnt/Wallet76` via `device_bash` |
 | Caminho Windows (para `device_stage_files`/`device_commit_files`) | `C:\Users\bruno\Desktop\APPS\Wallet76\...` |
 | Backend | FastAPI + MongoDB, Render (plano Starter: **512 MB / 0,5 CPU**) |
-| Frontend | React + CRA/craco; Vercel, em migração para Cloudflare Pages (30 jul 2026); domínio `wallet76.com` |
+| Frontend | React + CRA/craco; Cloudflare Pages (projeto `wallet76`, deploy automático no push ao `main`; `beta.wallet76.com` = teste); domínio `wallet76.com` |
 | API em produção | `https://wallet76.com/api/...` (mesmo domínio, via proxy — **não** `wallet76-1.onrender.com`) |
 | Regras do projeto | `CLAUDE.md` na raiz |
 | Registo de alterações | `README.md` na raiz — **não versionado, está no `.gitignore`, nunca o metas num commit** |
