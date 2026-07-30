@@ -58,9 +58,13 @@
 2. **MongoDB M0 não tem backups.** Um erro/incidente apaga os portefólios de
    todos os clientes sem recuperação. Mitigação grátis imediata: script
    `mongodump` semanal no PC. Solução real: Atlas Flex ($8+).
-3. **Stripe está em modo TEST.** Antes de vender: criar produtos/preços em
-   modo live, nova chave `sk_live`, novo webhook secret de produção no Render,
-   e recriar o cupão de fundador em live.
+3. **~~Stripe está em modo TEST~~ — LIVE confirmado a 30 jul 2026** (o Jose já
+   tinha feito a passagem: produtos, chave e webhook live no Render). A
+   transição deixou um resto: customers criados em modo de teste ficaram
+   gravados na BD e faziam o checkout rebentar com 500 ("No such customer")
+   para contas do período beta — corrigido no `billing.py` a 30 jul (README
+   §2). **Falta só:** um pagamento real com cartão próprio + reembolso, para
+   provar o circuito live de ponta a ponta.
 4. **Emails saem de `onboarding@resend.dev`** se `FROM_EMAIL` não estiver
    definido — mata a entregabilidade e a credibilidade. Verificar o domínio
    wallet76.com no Resend (SPF+DKIM) e definir `FROM_EMAIL` no Render (grátis).

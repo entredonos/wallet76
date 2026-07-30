@@ -40,6 +40,41 @@ def _price_id_for(plan: str, currency: str) -> str | None:
     return chosen.get(plan) or table["eur"].get(plan)
 
 
+async def _ensure_customer(user) -> str:
+    """Devolve um customer id do Stripe válido para este utilizador.
+
+    O id gravado na base de dados pode estar morto: foi o que aconteceu na
+    passagem de teste→live (30 jul 2026) — os customers criados com a chave
+    sk_test_ não existem do lado live, e o checkout rebentava com
+    "No such customer" (500) para qualquer conta que tivesse tocado no
+    billing durante os testes. Por isso verifica-se primeiro, e um id morto
+    é descartado e substituído por um novo, em vez de se confiar cegamente.
+    O custo é um retrieve por checkout — irrelevante ao pé de um 500 na cara
+    de quem quer pagar. O mesmo vale para uma futura troca de conta Stripe.
+    """
+    customer_id = user.get("stripe_customer_id")
+    if customer_id:
+        try:
+            existing = stripe.Customer.retrieve(customer_id)
+            if not existing.get("deleted"):
+                return customer_id
+        except stripe.InvalidRequestError:
+            pass
+        logger.warning(
+            "stripe_customer_id morto (%s) para o user %s — a recriar",
+            customer_id, user["id"],
+        )
+    customer = stripe.Customer.create(
+        email=user["email"],
+        metadata={"user_id": user["id"]},
+    )
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"stripe_customer_id": customer.id}},
+    )
+    return customer.id
+
+
 @router.post("/billing/create-checkout-session/{plan}")
 async def create_checkout_session(plan: str, currency: str = "eur", user=Depends(get_current_user)):
     if plan not in ["monthly", "yearly"]:
@@ -50,20 +85,7 @@ async def create_checkout_session(plan: str, currency: str = "eur", user=Depends
     if not price_id:
         raise HTTPException(status_code=500, detail="Preço Stripe não configurado")
 
-    customer_id = user.get("stripe_customer_id")
-
-    if not customer_id:
-        customer = stripe.Customer.create(
-            email=user["email"],
-            metadata={"user_id": user["id"]}
-        )
-
-        customer_id = customer.id
-
-        await db.users.update_one(
-            {"id": user["id"]},
-            {"$set": {"stripe_customer_id": customer_id}}
-        )
+    customer_id = await _ensure_customer(user)
 
     # Programa de referral (14 jul 2026) — quem se registou com um código de
     # convite ganha 15 dias extra de trial (30 -> 45), uma única vez. Marcado
@@ -146,11 +168,7 @@ async def create_founder_checkout(plan: str, currency: str = "eur", user=Depends
     if not price_id:
         raise HTTPException(status_code=500, detail="Preço Stripe não configurado")
 
-    customer_id = user.get("stripe_customer_id")
-    if not customer_id:
-        customer = stripe.Customer.create(email=user["email"], metadata={"user_id": user["id"]})
-        customer_id = customer.id
-        await db.users.update_one({"id": user["id"]}, {"$set": {"stripe_customer_id": customer_id}})
+    customer_id = await _ensure_customer(user)
 
     trial_days = 30
     if user.get("referred_by") and not user.get("referral_trial_bonus_applied"):
@@ -180,10 +198,20 @@ async def create_portal_session(user=Depends(get_current_user)):
     if not customer_id:
         raise HTTPException(status_code=400, detail="Cliente Stripe ainda não existe")
 
-    session = stripe.billing_portal.Session.create(
-        customer=customer_id,
-        return_url=f"{FRONTEND_URL}/settings"
-    )
+    try:
+        session = stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url=f"{FRONTEND_URL}/settings"
+        )
+    except stripe.InvalidRequestError:
+        # Id morto (resto do modo de teste). Não há portal para mostrar a um
+        # customer que não existe: limpa-se o id e devolve-se o mesmo 400 de
+        # "ainda não existe" — o customer novo nasce no próximo checkout.
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$unset": {"stripe_customer_id": ""}},
+        )
+        raise HTTPException(status_code=400, detail="Cliente Stripe ainda não existe")
 
     return {"url": session.url}
 
