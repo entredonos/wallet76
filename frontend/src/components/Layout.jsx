@@ -28,6 +28,16 @@ const TYPE_ICON = { broker: Briefcase, exchange: Coins, wallet: WalletIcon };
 // discutida com o utilizador em jul/2026: agrupar as páginas de "gerir o
 // que tenho" para reduzir o nº de linhas visíveis na sidebar).
 const NAV_DIV = { pt: "Dividendos", en: "Dividends", fr: "Dividendes", de: "Dividenden", it: "Dividendi", es: "Dividendos" };
+// "Aprender" e pagina publica (/aprender) mas fica na sidebar para os novatos
+// a descobrirem depois de entrar. Dict local como o NAV_DIV: e um rotulo de
+// navegacao isolado, nao vale uma chave no I18nContext.
+const NAV_LEARN = { pt: "Aprender", en: "Learn", fr: "Apprendre", de: "Lernen", it: "Impara", es: "Aprender" };
+const LearnIcon = (props) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M22 10 12 5 2 10l10 5 10-5Z" />
+    <path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5" />
+  </svg>
+);
 const PREVIEW_MSG = { pt: "Pré-visualização de plano:", en: "Plan preview:", fr: "Aperçu du plan :", de: "Plan-Vorschau:", it: "Anteprima piano:", es: "Vista previa de plan:" };
 const PREVIEW_BACK = { pt: "voltar ao normal", en: "back to normal", fr: "revenir à la normale", de: "zurück zum Normalzustand", it: "torna al normale", es: "volver a lo normal" };
 const PORTFOLIO_GROUP_ROUTES = ["/wallets", "/transactions", "/alerts", "/analytics", "/alocacao", "/dividends"];
@@ -255,6 +265,9 @@ export default function Layout({ children, currency, setCurrency }) {
           </div>
         )}
 
+        <NavLink to="/aprender" className={linkCls} data-testid="nav-learn" onClick={() => setOpen(false)}>
+          <LearnIcon className="w-4 h-4" /> {NAV_LEARN[lang] || NAV_LEARN.en}
+        </NavLink>
         <NavLink to="/connected-accounts" className={linkCls} data-testid="nav-brokers" onClick={() => setOpen(false)}>
           <Link2 className="w-4 h-4" /> {t("nav.brokers")}
         </NavLink>

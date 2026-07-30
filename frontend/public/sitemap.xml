@@ -26,6 +26,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://wallet76.com/aprender</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://wallet76.com/privacy</loc>
     <lastmod>2026-07-19</lastmod>
     <changefreq>yearly</changefreq>

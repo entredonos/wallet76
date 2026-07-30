@@ -11,7 +11,7 @@
 |---|---|---|---|
 | **Render** (backend FastAPI) | Starter | **$7/mês** | PAGO — always-on confirmado (planos pagos nunca adormecem) |
 | **Domínio wallet76.com** | anual | ~€10-15/ano | PAGO |
-| **Vercel** (frontend) | Hobby | $0 | ⚠️ ALERTA — ver secção 3 |
+| **Cloudflare Pages** (frontend) | Free | $0 | uso comercial permitido; migração feita a 30 jul 2026 (README §2). Vercel Hobby mantido só como reversão até ~13 ago |
 | **MongoDB Atlas** (base de dados) | M0 Free | $0 | 512 MB, 500 conexões, **SEM backups automáticos** |
 | **Resend** (emails) | Free | $0 | 3.000 emails/mês, máx. 100/dia, 1 domínio |
 | **Stripe** (pagamentos) | pay-per-use | ~1,5% + €0,25 por transação (cartões UE) | ⚠️ ainda em modo TEST |
@@ -47,11 +47,14 @@
 
 ## 3. ⚠️ Alertas importantes
 
-1. **Vercel Hobby proíbe uso comercial.** A documentação oficial é explícita:
-   plano Hobby é só para uso pessoal não-comercial. Vender subscrições no
-   Hobby viola os termos → risco de suspensão do site no pior momento.
-   **Opções:** (a) Vercel Pro $20/mês; (b) migrar o frontend para Cloudflare
-   Pages, que é grátis E permite uso comercial. Decidir ANTES de vender.
+1. **~~Vercel Hobby proíbe uso comercial~~ — RESOLVIDO a 30 jul 2026.** O
+   frontend migrou para a Cloudflare Pages (grátis, uso comercial permitido);
+   detalhes na entrada de 30 jul do README §2. **Pendente com data:** a partir
+   de **13 ago 2026**, se as duas semanas correram sem incidentes, desmantelar
+   o plano de reversão — apagar o projeto na Vercel, remover o
+   `frontend/vercel.json`, e limpar a parte da Vercel na REGRA #5 + README.
+   Se estás a ler isto depois dessa data e o projeto Vercel ainda existe,
+   lembra o Jose.
 2. **MongoDB M0 não tem backups.** Um erro/incidente apaga os portefólios de
    todos os clientes sem recuperação. Mitigação grátis imediata: script
    `mongodump` semanal no PC. Solução real: Atlas Flex ($8+).
