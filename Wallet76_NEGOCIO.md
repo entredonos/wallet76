@@ -63,8 +63,10 @@
    transição deixou um resto: customers criados em modo de teste ficaram
    gravados na BD e faziam o checkout rebentar com 500 ("No such customer")
    para contas do período beta — corrigido no `billing.py` a 30 jul (README
-   §2). **Falta só:** um pagamento real com cartão próprio + reembolso, para
-   provar o circuito live de ponta a ponta.
+   §2). **Circuito live provado a 26 jul** pelo próprio Jose (conta
+   secundária: checkout com cartão real, subscrição em trial, webhook OK
+   depois de acertar o `whsec_`, cancelada a 28) e re-verificado a 30 jul
+   depois da correção dos customers mortos (`cs_live_`, 200). Nada falta.
 4. **Emails saem de `onboarding@resend.dev`** se `FROM_EMAIL` não estiver
    definido — mata a entregabilidade e a credibilidade. Verificar o domínio
    wallet76.com no Resend (SPF+DKIM) e definir `FROM_EMAIL` no Render (grátis).
