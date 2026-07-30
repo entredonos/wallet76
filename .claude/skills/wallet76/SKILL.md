@@ -16,7 +16,7 @@ tempo a descobrir. Lê antes de mexer, não depois.
 | Repositório (máquina do Jose) | `/sessions/<sessao>/mnt/Wallet76` via `device_bash` |
 | Caminho Windows (para `device_stage_files`/`device_commit_files`) | `C:\Users\bruno\Desktop\APPS\Wallet76\...` |
 | Backend | FastAPI + MongoDB, Render (plano Starter: **512 MB / 0,5 CPU**) |
-| Frontend | React + Vite, Vercel, domínio `wallet76.com` |
+| Frontend | React + CRA/craco; Vercel, em migração para Cloudflare Pages (30 jul 2026); domínio `wallet76.com` |
 | API em produção | `https://wallet76.com/api/...` (mesmo domínio, via proxy — **não** `wallet76-1.onrender.com`) |
 | Regras do projeto | `CLAUDE.md` na raiz |
 | Registo de alterações | `README.md` na raiz — **não versionado, está no `.gitignore`, nunca o metas num commit** |
@@ -39,8 +39,10 @@ contra produção faz-se pelo browser (Chrome MCP).
 3. **#3 pergunta ≠ ordem** — quando ele pergunta, respondo com opinião e uma
    pergunta de volta. Não avanço sem ordem explícita.
 4. **#4 checklist de variáveis do Render** antes de deploy.
-5. **#5 proxy obrigatório na Vercel** (frontend e backend em domínios
-   diferentes).
+5. **#5 proxy same-origin obrigatório no alojamento** (frontend e backend em
+   domínios diferentes) — na Vercel são os `rewrites` do `vercel.json`; na
+   Cloudflare Pages é a Function `frontend/functions/api/[[path]].js`, porque
+   o `_redirects` não proxia domínios externos.
 6. **#6 skills: perguntar, nunca instalar/criar sem ordem** — e, pela extensão
    de 29 jul 2026, **propor por iniciativa própria** sempre que uma skill
    evitaria perder memória ou repetir passos, explicando as vantagens concretas.

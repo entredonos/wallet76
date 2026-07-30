@@ -189,7 +189,7 @@ se a chave mudar.
 
 ---
 
-## REGRA #5 — FRONTEND E BACKEND EM DOMÍNIOS DIFERENTES: PROXY OBRIGATÓRIO NA VERCEL
+## REGRA #5 — FRONTEND E BACKEND EM DOMÍNIOS DIFERENTES: PROXY SAME-ORIGIN OBRIGATÓRIO NO ALOJAMENTO
 
 **Incidente (6 jul 2026):** um utilizador testou a app no iPhone (Safari) e
 ao registar-se levou logo com "Sessão expirada. Por favor inicia sessão
@@ -204,25 +204,39 @@ que bloqueia o armazenamento desse cookie mesmo com
 Android não têm este problema, por isso passava despercebido nos testes
 habituais.
 
-**Correção aplicada:** `frontend/vercel.json` tem um `rewrites` que faz a
-Vercel servir `/api/*` e `/ping` como proxy para o Render
-(`wallet76-1cvt.onrender.com`), tornando o pedido same-origin do ponto de
-vista do browser — o cookie deixa de ser cross-site e o Safari deixa de o
-bloquear. Confirmado que isto não tem risco prático: um `rewrite` para
-destino externo na Vercel tem 120s de timeout (qualquer plano, mesmo
-gratuito), muito acima dos poucos segundos que o Render demora a
-responder mesmo a frio.
+**A regra, seja qual for o alojamento:** quem servir o frontend TEM de servir
+`/api/*` e `/ping` como proxy same-origin para o backend no Render. O
+frontend chama sempre caminhos relativos; o alojamento reencaminha.
 
-**Isto exige manter dois lados sincronizados — se um dos dois for editado
-sem o outro, volta a partir:**
+**Como se implementa em cada casa:**
 
-1. `frontend/vercel.json` — os dois `rewrites` (`/api/:path*` e `/ping`)
-   têm de apontar sempre para o URL atual do backend no Render. Se o
-   serviço no Render for recriado com outro URL, atualizar aqui.
-2. A variável `REACT_APP_BACKEND_URL` na Vercel deve ficar **vazia** em
+- **Vercel (a casa até ao corte de DNS de 30 jul 2026):**
+  `frontend/vercel.json`, dois `rewrites` (`/api/:path*` e `/ping`) para
+  `https://wallet76-1.onrender.com`. Timeout de 120 s em qualquer plano,
+  muito acima do arranque a frio do Render.
+- **Cloudflare Pages (o destino da migração):** o `_redirects` NÃO serve —
+  "You cannot proxy external domains", está na documentação deles. É uma
+  Pages Function: `frontend/functions/api/[[path]].js` (e
+  `functions/ping.js`, que reexporta o mesmo handler). Três armadilhas
+  conhecidas: os vários `Set-Cookie` têm de chegar separados ao browser
+  (`new Response(body, upstream)` copia-os bem; ler cabeçalhos um a um
+  colapsa-os num só e parte o login); o `_headers` NÃO se aplica a
+  respostas de Functions, por isso os cabeçalhos de segurança da API vão
+  no código da Function; e o `_routes.json` tem de limitar a Function a
+  `/api/*` e `/ping` — senão as páginas estáticas passam a contar para a
+  quota do Workers (100 000 pedidos/dia no plano gratuito; estáticos são
+  gratuitos e ilimitados, invocações de Function não).
+
+**Invariantes que não dependem do alojamento — se um for editado sem o
+resto, volta a partir:**
+
+1. O destino do proxy aponta sempre para o URL atual do backend no Render
+   (hoje `https://wallet76-1.onrender.com`) — nos DOIS sítios:
+   `vercel.json` E a constante `ORIGIN` da Function.
+2. A variável `REACT_APP_BACKEND_URL` no alojamento deve ficar **vazia** em
    produção (não apagada — vazia), para os pedidos serem feitos a
-   caminhos relativos (`/api/...`, `/ping`) que a Vercel intercepta com o
-   rewrite acima. Todo o código que lê esta variável
+   caminhos relativos (`/api/...`, `/ping`) que o proxy intercepta. Todo o
+   código que lê esta variável
    (`frontend/src/lib/api.js`, `BackendStatusBanner.jsx`,
    `VerifyEmail.jsx`, `ResetPassword.jsx`, `ForgotPassword.jsx`) já tem
    `|| ""` como fallback — sem isto, `${undefined}/api` vira a string
@@ -233,7 +247,7 @@ sem o outro, volta a partir:**
    eram same-origin/localhost.
 4. O `CORS`/`allow_origins` em `backend/server.py` mantém-se como estava
    — continua a ser necessário para a app Electron e para qualquer cliente
-   que fale diretamente com o Render sem passar pela Vercel.
+   que fale diretamente com o Render sem passar pelo proxy.
 
 ---
 
