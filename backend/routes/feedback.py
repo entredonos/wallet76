@@ -17,19 +17,32 @@ async def admin_health(user=Depends(require_admin)):
     (512 MB): o gráfico do painel diz QUANTO se gasta; isto diz EM QUÊ.
     Nota: por-worker, como o /admin/data-health."""
     from datetime import datetime, timezone
+    import os as _os
     mem = {}
+    threads = None
     try:
         with open("/proc/self/status") as f:
             for line in f:
                 if line.startswith(("VmRSS", "VmHWM")):
                     k, v = line.split(":", 1)
                     mem[k.strip().lower()] = round(int(v.strip().split()[0]) / 1024.0, 1)
+                elif line.startswith("Threads"):
+                    threads = int(line.split(":", 1)[1].strip())
     except OSError:
         mem = {"vmrss": None, "vmhwm": None}
+    # fds e threads distinguem teorias de fuga: fds a subir sem parar =
+    # sockets/sessões por fechar; fds estáveis com RSS a subir = alocador
+    # (fragmentação das arenas do glibc com pandas em threads).
+    try:
+        open_fds = len(_os.listdir("/proc/self/fd"))
+    except OSError:
+        open_fds = None
     stats = await db.command("dbStats")
     up = (datetime.now(timezone.utc) - PROCESS_STARTED).total_seconds()
     return {
         "memory_mb": mem,
+        "threads": threads,
+        "open_fds": open_fds,
         "uptime_h": round(up / 3600.0, 2),
         "cache": cache_stats(),
         "db": {

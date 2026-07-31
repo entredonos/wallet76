@@ -1,6 +1,7 @@
 """Wallet76 FastAPI entry point — thin router orchestration."""
 import asyncio
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import FastAPI, APIRouter
 from starlette.middleware.cors import CORSMiddleware
@@ -247,6 +248,21 @@ async def startup():
             "Set it in the environment before deploying."
         )
         raise RuntimeError("BROKER_ENCRYPTION_KEY is not set")
+
+    # 1 ago 2026 — trava de memória: TODO o trabalho síncrono pesado
+    # (yfinance/pandas nas pesquisas, sparklines, análises) chega aqui por
+    # asyncio.to_thread, que usa a piscina de threads POR OMISSÃO — e essa
+    # dimensiona-se pelos cores da MÁQUINA anfitriã (12+ threads), não pelos
+    # 0,5 CPU do plano. Resultado reproduzível: meia dúzia de pesquisas
+    # seguidas (cada falha tenta 17 sufixos com yf.Ticker) punham 10+ pandas
+    # a inflar EM PARALELO em cima dos ~400 MB de base — e o Render matava o
+    # processo nos 512. Com 4 workers, o mesmo trabalho faz-se em fila:
+    # imperceptível para o utilizador com 0,5 CPU, e o pico de memória fica
+    # limitado a 4 DataFrames simultâneos. (Par com MALLOC_ARENA_MAX=2, que
+    # trata da fragmentação; isto trata do pico agudo.)
+    asyncio.get_running_loop().set_default_executor(
+        ThreadPoolExecutor(max_workers=4, thread_name_prefix="w76")
+    )
 
     # Fire-and-forget — see _ensure_indexes() docstring for why this must
     # NOT be awaited here.
