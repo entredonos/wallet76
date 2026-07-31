@@ -332,26 +332,62 @@ async def delete_all_user_data(user_id: str) -> None:
 # chave exata que pode nunca vir a acontecer (ex.: chaves com data/intervalo
 # específicos, só consultadas uma vez).
 MAX_CACHE_ENTRIES = 3000
-_cache: "OrderedDict[str, tuple]" = OrderedDict()
+# 31 jul 2026 — o limite de ENTRADAS não chegou: os OOMs continuaram (2-3/dia,
+# "used over 512MB", memória em escada o dia todo no gráfico do Render).
+# 3000 entradas parecem inofensivas, mas há entradas que são séries de
+# histórico/análises inteiras — o limite contava cabeças, não quilos. A cache
+# passa a ter também um ORÇAMENTO DE BYTES (aproximado, medido ao gravar):
+# ao passar do orçamento, despeja-se do lado menos usado do LRU até caber.
+# O tamanho é estimado com json.dumps (fallback: str) — não é exato ao byte,
+# mas o erro é pequeno e o que interessa é travar o crescimento sem teto.
+# Um payload maior do que o orçamento inteiro simplesmente não fica em cache.
+MAX_CACHE_MB = int(os.environ.get("MAX_CACHE_MB", "128") or "128")
+_MAX_CACHE_BYTES = MAX_CACHE_MB * 1024 * 1024
+_cache: "OrderedDict[str, tuple]" = OrderedDict()  # key -> (ts, data, approx_bytes)
+_cache_bytes = 0
+
+# Início do processo — o /admin/health usa isto para o uptime, que por sua
+# vez diz "quando foi o último OOM/restart" sem ir aos logs do Render.
+PROCESS_STARTED = datetime.now(timezone.utc)
+
+
+def _approx_size(data) -> int:
+    import json
+    try:
+        return len(json.dumps(data, default=str))
+    except Exception:
+        try:
+            return len(str(data))
+        except Exception:
+            return 1024
 
 
 def cache_get(key: str, ttl: int):
+    global _cache_bytes
     entry = _cache.get(key)
     if not entry:
         return None
-    ts, data = entry
+    ts, data = entry[0], entry[1]
     if (datetime.now(timezone.utc) - ts).total_seconds() < ttl:
         _cache.move_to_end(key)
         return data
+    _cache_bytes -= entry[2]
     _cache.pop(key, None)
     return None
 
 
 def cache_set(key: str, data) -> None:
-    _cache[key] = (datetime.now(timezone.utc), data)
+    global _cache_bytes
+    size = _approx_size(data)
+    old = _cache.get(key)
+    if old:
+        _cache_bytes -= old[2]
+    _cache[key] = (datetime.now(timezone.utc), data, size)
+    _cache_bytes += size
     _cache.move_to_end(key)
-    while len(_cache) > MAX_CACHE_ENTRIES:
-        _cache.popitem(last=False)
+    while _cache and (len(_cache) > MAX_CACHE_ENTRIES or _cache_bytes > _MAX_CACHE_BYTES):
+        _k, evicted = _cache.popitem(last=False)
+        _cache_bytes -= evicted[2]
 
 
 def cache_get_stale(key: str):
@@ -379,6 +415,30 @@ def cache_count_prefix(prefix: str) -> int:
     return sum(1 for k in _cache if k.startswith(prefix))
 
 
+def cache_stats(top: int = 12) -> dict:
+    """Radiografia da cache para o /admin/health: totais e os prefixos que
+    mais pesam (prefixo = tudo até ao primeiro ':'). Responde a "QUEM está a
+    comer a memória?" com dados em vez de palpites — foi para acabar com os
+    palpites que isto nasceu (OOMs de jul/2026)."""
+    by = {}
+    for k, entry in _cache.items():
+        p = k.split(":", 1)[0]
+        agg = by.setdefault(p, [0, 0])
+        agg[0] += 1
+        agg[1] += entry[2]
+    ordered = sorted(by.items(), key=lambda it: it[1][1], reverse=True)
+    return {
+        "entries": len(_cache),
+        "approx_mb": round(_cache_bytes / 1048576.0, 1),
+        "budget_mb": MAX_CACHE_MB,
+        "max_entries": MAX_CACHE_ENTRIES,
+        "top_prefixes": [
+            {"prefix": p, "entries": c, "approx_mb": round(b / 1048576.0, 2)}
+            for p, (c, b) in ordered[:top]
+        ],
+    }
+
+
 def cache_clear_prefix(prefix: str) -> int:
     """Remove todas as entradas cuja chave começa por `prefix`. Usado quando
     transações mudam (criar/editar/apagar/importar/reset) para invalidar de
@@ -387,8 +447,10 @@ def cache_clear_prefix(prefix: str) -> int:
     mudança até o TTL expirar (ex.: depois de um reset de ativos de teste,
     as gamas testadas nos 15 minutos anteriores ficavam presas ao resultado
     antigo, mesmo com os dados novos já na DB)."""
+    global _cache_bytes
     keys = [k for k in _cache if k.startswith(prefix)]
     for k in keys:
+        _cache_bytes -= _cache[k][2]
         del _cache[k]
     return len(keys)
 

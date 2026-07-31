@@ -2,11 +2,42 @@
 import re
 from datetime import datetime, timezone, timedelta
 
-from core import db, get_current_user, require_admin, delete_all_user_data, logger
+from core import db, get_current_user, require_admin, delete_all_user_data, logger, cache_stats, PROCESS_STARTED
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 router = APIRouter()
+
+
+@router.get("/admin/health")
+async def admin_health(user=Depends(require_admin)):
+    """Admin only — saúde do PROCESSO: memória real (RSS/pico, lidos do
+    /proc), uptime, radiografia da cache por prefixo e tamanho da base de
+    dados (dbStats). Criado a 31 jul 2026 por causa dos OOMs no Render
+    (512 MB): o gráfico do painel diz QUANTO se gasta; isto diz EM QUÊ.
+    Nota: por-worker, como o /admin/data-health."""
+    from datetime import datetime, timezone
+    mem = {}
+    try:
+        with open("/proc/self/status") as f:
+            for line in f:
+                if line.startswith(("VmRSS", "VmHWM")):
+                    k, v = line.split(":", 1)
+                    mem[k.strip().lower()] = round(int(v.strip().split()[0]) / 1024.0, 1)
+    except OSError:
+        mem = {"vmrss": None, "vmhwm": None}
+    stats = await db.command("dbStats")
+    up = (datetime.now(timezone.utc) - PROCESS_STARTED).total_seconds()
+    return {
+        "memory_mb": mem,
+        "uptime_h": round(up / 3600.0, 2),
+        "cache": cache_stats(),
+        "db": {
+            "data_mb": round(stats.get("dataSize", 0) / 1048576.0, 1),
+            "storage_mb": round(stats.get("storageSize", 0) / 1048576.0, 1),
+            "objects": stats.get("objects"),
+        },
+    }
 
 
 @router.get("/admin/data-health")
