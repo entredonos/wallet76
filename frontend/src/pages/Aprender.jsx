@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "../context/I18nContext";
+import logo from "../assets/wallet76-logo.png";
 
 // Página pública de educação financeira ("Aprender"), acessível sem login —
 // como o /pricing. Objetivo duplo: apoiar quem está a começar E ser encontrada
@@ -496,7 +497,10 @@ export default function Aprender() {
     <div className="min-h-screen bg-[#0b0e11] text-zinc-100" style={{ font: "16px/1.55 system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
       <header className="sticky top-0 z-10 border-b border-zinc-800 bg-[#0b0e11]/90 backdrop-blur px-6 py-3.5">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link to="/" className="font-bold">W⁷ Wallet76</Link>
+          <Link to="/" className="flex items-center gap-2 min-w-0">
+            <img src={logo} alt="Wallet76" className="h-8 w-auto shrink-0" />
+            <span className="font-extrabold tracking-tight text-white truncate">Wallet76</span>
+          </Link>
           <div className="flex items-center gap-2.5">
             <Link to="/" className="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:inline">{c.back}</Link>
             <Link to="/register" className={btn}>{c.start}</Link>
