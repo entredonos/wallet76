@@ -222,9 +222,24 @@ export default function Alocacao({ currency = "USD" }) {
       const sym = (a.symbol || "").toUpperCase();
       if (sym) by.set(sym, (by.get(sym) || 0) + Number(a.value_usd || 0));
     });
-    return [...by.entries()].map(([sym, v]) => ({ sym, v, pct: totalValue ? v / totalValue * 100 : 0 }))
-      .sort((a, b) => b.v - a.v);
-  }, [assets, overrides, totalValue]);
+    const list = [...by.entries()].map(([sym, v]) => ({ sym, v, pct: totalValue ? v / totalValue * 100 : 0 }));
+    // Alvo por ativo: a MESMA regra da tabela — fixado a cadeado vale o que
+    // esta fixado; os restantes repartem por igual o que sobra do alvo do
+    // grupo. Progresso = atual/alvo, e e por ele que se ordena: o mais
+    // atrasado primeiro, que e por ai que se comeca a reforcar.
+    const groupTarget = Number(savedTargets[cls] || 0);
+    const locked = list.filter((x) => assetTargets[x.sym]?.locked);
+    const sumLocked = locked.reduce((s, x) => s + Number(assetTargets[x.sym].pct || 0), 0);
+    const unlockedN = list.length - locked.length;
+    const perUnlocked = unlockedN > 0 ? Math.max(0, groupTarget - sumLocked) / unlockedN : 0;
+    return list.map((x) => {
+      const lk = assetTargets[x.sym]?.locked;
+      const sug = lk ? Number(assetTargets[x.sym].pct || 0) : perUnlocked;
+      const prog = sug > 0 ? (x.pct / sug) * 100 : (x.pct > 0 ? 200 : 100);
+      return { ...x, sug, prog, over: x.pct > sug + 0.05,
+               eurGap: totalValue * Math.abs(sug - x.pct) / 100 };
+    }).sort((a, b) => a.prog - b.prog);
+  }, [assets, overrides, totalValue, savedTargets, assetTargets]);
 
   const draftSum = useMemo(
     () => Object.values(groupDraft).reduce((s, v) => s + Number(v || 0), 0),
@@ -409,12 +424,38 @@ export default function Alocacao({ currency = "USD" }) {
         </button>
       </div>
       {actOpen[g.cls] && (
-        <div className="border-t border-dashed border-zinc-800 mt-2.5 pt-2">
-          {classAssets(g.cls).map((a) => (
-            <div key={a.sym} className="flex justify-between text-[11px] text-zinc-400 py-0.5">
-              <span>{a.sym}</span><span className="tabular-nums text-zinc-200">{a.pct.toFixed(1)}% {"·"} {moneyK(a.v)}</span>
-            </div>
-          ))}
+        <div className="border-t border-dashed border-zinc-800 mt-2.5 pt-2.5 space-y-2.5">
+          {classAssets(g.cls).map((a) => {
+            const C = 2 * Math.PI * 16;
+            const cor = a.over ? "#fbbf24" : a.prog < 40 ? "#ef4444" : a.prog < 80 ? "#fbbf24" : "#34d399";
+            const shown = Math.min(100, a.prog);
+            return (
+              <div key={a.sym} className="flex items-center gap-2.5">
+                <svg width="38" height="38" viewBox="0 0 40 40" className="flex-none" aria-hidden="true">
+                  <circle cx="20" cy="20" r="16" fill="none" stroke="#0a0d10" strokeWidth="5" />
+                  <circle cx="20" cy="20" r="16" fill="none" stroke={cor} strokeWidth="5" strokeLinecap="round"
+                    strokeDasharray={`${(shown / 100) * C} ${C}`} transform="rotate(-90 20 20)" />
+                  <text x="20" y="24" textAnchor="middle" style={{ font: "9px system-ui", fill: "#e4e4e7" }}>{Math.round(Math.min(199, a.prog))}%</text>
+                </svg>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between text-[12px]">
+                    <b className="text-zinc-100">{a.sym}</b>
+                    <span style={{ color: cor }} className="font-semibold">
+                      {a.over ? L("alloc2.act_trim", "Aliviar") : a.prog >= 90 ? L("alloc2.act_almost", "Quase lá") : L("alloc2.act_add", "Reforçar")}
+                    </span>
+                  </div>
+                  <div className="text-[10.5px] text-zinc-500">
+                    <b className="text-zinc-200 tabular-nums">{a.pct.toFixed(1)}%</b> {"→"} <b className="text-zinc-200 tabular-nums">{a.sug.toFixed(1)}%</b>
+                    {" · "}{Math.round(Math.min(199, a.prog))}% {L("alloc2.act_path", "do caminho")}
+                    {" · "}{"≈"} {money(a.eurGap)} {a.over ? L("alloc2.act_above", "acima do alvo") : L("alloc2.act_to_target", "para o alvo")}
+                  </div>
+                  <div className="h-1.5 rounded bg-zinc-950 overflow-hidden mt-1">
+                    <div className="h-full rounded" style={{ width: `${shown}%`, background: cor }} />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
