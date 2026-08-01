@@ -51,6 +51,10 @@ export default function Alocacao({ currency = "USD" }) {
   // valor, decrescente —, so que agora esta escrito e a seta mostra-o.
   const [sortKey, setSortKey] = useState("value_usd");
   const [sortDir, setSortDir] = useState("desc");
+  // Vista de Acao + paginacao (1 ago 2026): actOpen expande os ativos de uma
+  // classe na vista de acao; tPage e a pagina da tabela/lista (10 por pagina).
+  const [actOpen, setActOpen] = useState({});
+  const [tPage, setTPage] = useState(0);
   const touchX = useRef(null);
 
   const fx = summary?.fx_rates || {};
@@ -182,13 +186,45 @@ export default function Alocacao({ currency = "USD" }) {
 
   // Volta ao primeiro cartao quando se muda de aba OU de ordenacao — senao o
   // slide ficava no indice 5 a mostrar um ativo completamente diferente.
-  useEffect(() => { setSlideIdx(0); }, [activeTab, sortKey, sortDir]);
+  useEffect(() => { setSlideIdx(0); setTPage(0); }, [activeTab, sortKey, sortDir]);
 
   const groupPie = useMemo(() => classesPresent.map((c) => {
     const val = assets.filter((a) => (effectiveClass(a, overrides) || "other") === c)
       .reduce((s, a) => s + Number(a.value_usd || 0), 0);
     return { cls: c, name: clsLabel(c), value: val, pct: totalValue ? val / totalValue * 100 : 0 };
   }), [classesPresent, assets, overrides, totalValue, clsLabel]);
+
+  // ---- Vista de Acao (1 ago 2026) ----------------------------------------
+  // Por CLASSE, agrupado pela acao a tomar: Reforcar (abaixo do plano),
+  // Aliviar (acima) e No alvo (a menos de ACT_MARGIN pontos). E a resposta a
+  // "o que faco a seguir?" sem obrigar a ler a tabela; a ideia visual (duas
+  // barras Alvo/Atual por classe) veio de uma foto que o Jose trouxe a
+  // 1 ago 2026 — ver README 2. Os euros dizem QUANTO falta/sobra, que decide
+  // mais do que os pontos percentuais.
+  const ACT_MARGIN = 1;
+  const actionGroups = useMemo(() => groupPie.map((g) => {
+    const alvo = Number(savedTargets[g.cls] || 0);
+    const delta = alvo - g.pct;
+    return { ...g, alvo, delta, eur: totalValue * Math.abs(delta) / 100,
+             color: ALLOCATION_CLASS_COLOR[g.cls] || ALLOCATION_CLASS_COLOR.other };
+  }), [groupPie, savedTargets, totalValue]);
+  const actAdd = useMemo(() => actionGroups.filter((g) => g.delta > ACT_MARGIN)
+    .sort((a, b) => b.delta - a.delta), [actionGroups]);
+  const actTrim = useMemo(() => actionGroups.filter((g) => g.delta < -ACT_MARGIN)
+    .sort((a, b) => a.delta - b.delta), [actionGroups]);
+  const actOk = useMemo(() => actionGroups.filter((g) => Math.abs(g.delta) <= ACT_MARGIN),
+    [actionGroups]);
+  // Ativos de uma classe para a expansao "ver ativos" — agregado leve por
+  // simbolo (nao reutiliza `rows`, que so existe para a aba ativa).
+  const classAssets = useCallback((cls) => {
+    const by = new Map();
+    assets.filter((a) => (effectiveClass(a, overrides) || "other") === cls).forEach((a) => {
+      const sym = (a.symbol || "").toUpperCase();
+      if (sym) by.set(sym, (by.get(sym) || 0) + Number(a.value_usd || 0));
+    });
+    return [...by.entries()].map(([sym, v]) => ({ sym, v, pct: totalValue ? v / totalValue * 100 : 0 }))
+      .sort((a, b) => b.v - a.v);
+  }, [assets, overrides, totalValue]);
 
   const draftSum = useMemo(
     () => Object.values(groupDraft).reduce((s, v) => s + Number(v || 0), 0),
@@ -242,6 +278,15 @@ export default function Alocacao({ currency = "USD" }) {
                orient: atual < sug - MARGIN ? "buy" : "wait" };
     }).sort(cmp);
   }, [activeTab, assets, overrides, savedTargets, assetTargets, totalValue, sectors, cmp]);
+
+  // Paginacao da tabela e da lista (1 ago 2026): 10 por pagina DENTRO do
+  // grupo ativo — um grupo nunca se parte entre paginas. O modo Slide navega
+  // as linhas todas (ja e um-a-um por natureza).
+  const PAGE_SIZE = 10;
+  const nPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const pagedRows = useMemo(
+    () => rows.slice(tPage * PAGE_SIZE, tPage * PAGE_SIZE + PAGE_SIZE),
+    [rows, tPage]);
 
   const groupOver = useMemo(() => {
     if (!activeTab) return false;
@@ -340,6 +385,81 @@ export default function Alocacao({ currency = "USD" }) {
   // 14 no completo e 8 no basico: as de antes mais a coluna "Carteira".
   const colCount = mode === "full" ? 14 : 8;
 
+  const actionCard = (g, kind) => (
+    <div key={g.cls} className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3.5">
+      <div className="flex items-center justify-between mb-2.5">
+        <span className="flex items-center gap-2 text-sm font-semibold text-zinc-100">
+          <span className="w-2 h-2 rounded-sm" style={{ background: g.color }} />{g.name}
+        </span>
+        <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${kind === "add" ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"}`}>
+          {kind === "add" ? "+" : "−"}{Math.abs(g.delta).toFixed(0)} {L("alloc2.pts", "pts")}
+        </span>
+      </div>
+      {[[L("alloc2.act_target", "Alvo"), g.alvo, "#059669"], [L("alloc2.act_current", "Atual"), g.pct, "#3b82f6"]].map(([lab, v, cor]) => (
+        <div key={lab} className="grid grid-cols-[44px_1fr_46px] gap-2 items-center my-1">
+          <span className="text-[10px] text-zinc-500">{lab}</span>
+          <span className="h-2 rounded bg-zinc-950 overflow-hidden"><span className="block h-full rounded" style={{ width: `${Math.min(100, v)}%`, background: cor }} /></span>
+          <span className="text-[11px] text-right tabular-nums text-zinc-200">{Number(v).toFixed(1)}%</span>
+        </div>
+      ))}
+      <div className="flex items-center justify-between mt-2 text-[11px] text-zinc-500">
+        <span>{"≈"} {money(g.eur)} {kind === "add" ? L("alloc2.act_to_target", "para o alvo") : L("alloc2.act_above", "acima do alvo")}</span>
+        <button onClick={() => setActOpen((p) => ({ ...p, [g.cls]: !p[g.cls] }))} className="text-blue-400 hover:underline">
+          {L("alloc2.act_assets", "ver ativos")} {actOpen[g.cls] ? "▴" : "▾"}
+        </button>
+      </div>
+      {actOpen[g.cls] && (
+        <div className="border-t border-dashed border-zinc-800 mt-2.5 pt-2">
+          {classAssets(g.cls).map((a) => (
+            <div key={a.sym} className="flex justify-between text-[11px] text-zinc-400 py-0.5">
+              <span>{a.sym}</span><span className="tabular-nums text-zinc-200">{a.pct.toFixed(1)}% {"·"} {moneyK(a.v)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const actionView = (
+    <div>
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div>
+          <div className="flex items-center justify-between px-1 pb-2">
+            <span className="text-sm font-bold text-emerald-400">{"▲"} {L("alloc2.act_add", "Reforçar")}</span>
+            <span className="text-[10px] text-zinc-600 font-mono">{actAdd.length}</span>
+          </div>
+          <div className="space-y-2.5">
+            {actAdd.map((g) => actionCard(g, "add"))}
+            {!actAdd.length && <div className="text-center text-zinc-600 text-xs py-4 font-mono">{"—"}</div>}
+          </div>
+        </div>
+        <div>
+          <div className="flex items-center justify-between px-1 pb-2">
+            <span className="text-sm font-bold text-amber-400">{"▼"} {L("alloc2.act_trim", "Aliviar")}</span>
+            <span className="text-[10px] text-zinc-600 font-mono">{actTrim.length}</span>
+          </div>
+          <div className="space-y-2.5">
+            {actTrim.map((g) => actionCard(g, "trim"))}
+            {!actTrim.length && <div className="text-center text-zinc-600 text-xs py-4 font-mono">{"—"}</div>}
+          </div>
+        </div>
+      </div>
+      {!!actOk.length && (
+        <div className="mt-4">
+          <div className="text-sm font-bold text-zinc-500 px-1 pb-2">{L("alloc2.act_ok", "No alvo")}</div>
+          <div className="space-y-1.5">
+            {actOk.map((g) => (
+              <div key={g.cls} className="flex items-center justify-between bg-zinc-900/40 border border-zinc-800/60 rounded-lg px-3.5 py-2 text-xs text-zinc-400">
+                <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-sm" style={{ background: g.color }} /><b className="text-zinc-200 font-semibold">{g.name}</b> {"·"} {g.pct.toFixed(1)}% {"→"} {g.alvo.toFixed(0)}%</span>
+                <span className="text-emerald-400">{"✓"}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   // Cabecalho clicavel. A seta dupla cinzenta diz "isto ordena"; a azul diz
   // qual esta ativa e em que sentido.
   const th = (k, label, cls) => (
@@ -426,13 +546,14 @@ export default function Alocacao({ currency = "USD" }) {
           {/* Telemóvel: Básico/Completo + Lista/Slide na mesma linha, por cima das abas. */}
           <div className="sm:hidden flex items-center justify-between gap-2 mb-3">
             <div className="inline-flex rounded-md border border-zinc-800 bg-zinc-900/60 p-0.5">
-              {["basic", "full"].map((m) => (
+              {["basic", "full", "action"].map((m) => (
                 <button key={m} onClick={() => setMode(m)}
                   className={`px-2 py-1 text-[11px] font-mono rounded transition ${mode === m ? "bg-zinc-100 text-zinc-950" : "text-zinc-400 hover:text-zinc-200"}`}>
-                  {m === "basic" ? L("alloc2.basic", "Básico") : L("alloc2.full", "Completo")}
+                  {m === "basic" ? L("alloc2.basic", "Básico") : m === "full" ? L("alloc2.full", "Completo") : L("alloc2.action", "Ação")}
                 </button>
               ))}
             </div>
+            {mode !== "action" && (
             <div className="inline-flex rounded-md border border-zinc-800 bg-zinc-900/60 p-0.5">
               {["list", "slide"].map((m) => (
                 <button key={m} onClick={() => setMobileMode(m)}
@@ -441,10 +562,11 @@ export default function Alocacao({ currency = "USD" }) {
                 </button>
               ))}
             </div>
+            )}
           </div>
           <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
             <div className="flex gap-1 flex-wrap">
-              {classesPresent.map((c) => (
+              {mode !== "action" && classesPresent.map((c) => (
                 <button key={c} onClick={() => setActiveTab(c)}
                   className={`text-xs font-mono px-2.5 py-1.5 rounded-md transition-colors ${activeTab === c ? "bg-blue-500/20 text-blue-300 border border-blue-500/40" : "text-zinc-400 hover:text-zinc-200 border border-transparent"}`}>
                   {clsLabel(c)}
@@ -452,10 +574,10 @@ export default function Alocacao({ currency = "USD" }) {
               ))}
             </div>
             <div className="hidden sm:inline-flex rounded-md border border-zinc-800 bg-zinc-900/60 p-0.5">
-              {["basic", "full"].map((m) => (
+              {["basic", "full", "action"].map((m) => (
                 <button key={m} onClick={() => setMode(m)}
                   className={`px-2.5 py-1 text-[11px] font-mono rounded transition ${mode === m ? "bg-zinc-100 text-zinc-950" : "text-zinc-400 hover:text-zinc-200"}`}>
-                  {m === "basic" ? (L("alloc2.basic", "Básico")) : (L("alloc2.full", "Completo"))}
+                  {m === "basic" ? (L("alloc2.basic", "Básico")) : m === "full" ? (L("alloc2.full", "Completo")) : (L("alloc2.action", "Ação"))}
                 </button>
               ))}
             </div>
@@ -467,6 +589,7 @@ export default function Alocacao({ currency = "USD" }) {
             </div>
           )}
 
+          {mode === "action" ? actionView : (<>
           {/* ===== PC: tabela ===== */}
           <div className="overflow-x-auto hidden sm:block">
             <table className="w-full text-sm">
@@ -491,7 +614,7 @@ export default function Alocacao({ currency = "USD" }) {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => {
+                {pagedRows.map((r) => {
                   const multi = r.wallets.length > 1;
                   const open = !!expanded[r.sym];
                   return (
@@ -598,7 +721,7 @@ export default function Alocacao({ currency = "USD" }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map((r, ri) => {
+                    {pagedRows.map((r, ri) => {
                       const multi = r.wallets.length > 1;
                       const open = !!expanded[r.sym];
                       const bg = ri % 2 ? "bg-zinc-900" : "bg-zinc-950"; // xadrez (opaco p/ coluna fixa)
@@ -738,9 +861,20 @@ export default function Alocacao({ currency = "USD" }) {
             )}
           </div>
 
+          {rows.length > PAGE_SIZE && (
+            <div className={`${mobileMode === "list" ? "flex" : "hidden sm:flex"} items-center justify-center gap-2 mt-3 text-[11px] font-mono`}>
+              <button onClick={() => setTPage(Math.max(0, tPage - 1))} disabled={tPage === 0}
+                className="px-2.5 py-1 rounded border border-zinc-800 text-zinc-400 disabled:opacity-30 hover:text-zinc-200">{"‹"}</button>
+              <span className="text-zinc-500">{tPage * PAGE_SIZE + 1}{"–"}{Math.min(rows.length, (tPage + 1) * PAGE_SIZE)} {L("alloc2.page_of", "de")} {rows.length}</span>
+              <button onClick={() => setTPage(Math.min(nPages - 1, tPage + 1))} disabled={tPage >= nPages - 1}
+                className="px-2.5 py-1 rounded border border-zinc-800 text-zinc-400 disabled:opacity-30 hover:text-zinc-200">{"›"}</button>
+            </div>
+          )}
+
           <GroupDistribution
             rows={rows} wallets={wallets} L={L} money={money} walletName={walletName}
             title={`${L("alloc2.group_dist", "Distribuição do grupo")} · ${clsLabel(activeTab)}`} />
+          </>)}
 
           {/* ===== Totais — PC: badges à direita; telemóvel (T2): 3 lado a lado ===== */}
           <div className="hidden sm:flex flex-wrap justify-end gap-3 mt-5 pt-4 border-t border-zinc-800/60">
