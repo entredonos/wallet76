@@ -87,7 +87,11 @@ class TransactionUpdate(BaseModel):
 
 class AlertCreate(BaseModel):
     symbol: str
-    asset_type: Literal["stock", "crypto"]
+    # 1 ago 2026: era Literal["stock", "crypto"] e recusava ETFs e fundos com
+    # um 422 — o unico bloqueio do circuito, porque o /alerts/quote e o
+    # alert_checker ja tratam tudo o que nao e cripto pelo caminho do Yahoo
+    # (que cota ETFs e REITs como acoes). Os 4 tipos que a app conhece:
+    asset_type: Literal["stock", "crypto", "etf", "fund"]
     coingecko_id: Optional[str] = None
     name: Optional[str] = None
     condition: Literal["above", "below"]
