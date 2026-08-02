@@ -148,6 +148,8 @@ const More = lazy(() => import("./pages/More"));
 const AssetChart = lazy(() => import("./pages/AssetChart"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Aprender = lazy(() => import("./pages/Aprender"));
+const Ajudas = lazy(() => import("./pages/Ajudas"));
+const AjudasAlocacoes = lazy(() => import("./pages/AjudasAlocacoes"));
 const BillingSuccess = lazy(() => import("./pages/BillingSuccess"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const PublicPortfolio = lazy(() => import("./pages/PublicPortfolio"));
@@ -304,6 +306,8 @@ function AppRoutes() {
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/aprender" element={<Aprender />} />
+        <Route path="/ajudas" element={<Ajudas />} />
+        <Route path="/ajudas/alocacoes" element={<AjudasAlocacoes />} />
         <Route path="/billing-success" element={<BillingSuccess />} />
         <Route path="/p/:slug" element={<PublicPortfolio />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />

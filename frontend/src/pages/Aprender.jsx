@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "../context/I18nContext";
+import { useAuth } from "../context/AuthContext";
 import logo from "../assets/wallet76-logo.png";
 
 // Página pública de educação financeira ("Aprender"), acessível sem login —
@@ -48,7 +49,7 @@ const COPY = {
     badge: "Conteúdo educativo — não é aconselhamento financeiro",
     title: "Quanto pode render o teu dinheiro?",
     sub: "Simula com os teus números, percebe os perfis de risco e vê onde a cripto encaixa. Sem jargão e sem promessas.",
-    back: "Voltar ao site", start: "Começar grátis",
+    back: "Voltar ao site", start: "Começar grátis", back_app: "← Voltar à app",
     assets: { obr: "Obrigações e depósitos", acc: "Ações e ETFs", acc7030: "Ações e ETFs (globais)", imo: "Imobiliário (REITs)", cri: "Cripto", liq: "Liquidez" },
     tabs: { dep: "Só depósitos", cons: "Conservador", mod: "Moderado", s7030: "70/30", agr: "Agressivo" },
     sim: {
@@ -102,7 +103,7 @@ const COPY = {
     badge: "Educational content — not financial advice",
     title: "How much could your money grow?",
     sub: "Run your own numbers, understand risk profiles, and see where crypto fits. No jargon, no promises.",
-    back: "Back to site", start: "Start for free",
+    back: "Back to site", start: "Start for free", back_app: "← Back to the app",
     assets: { obr: "Bonds & deposits", acc: "Stocks & ETFs", acc7030: "Stocks & ETFs (global)", imo: "Real estate (REITs)", cri: "Crypto", liq: "Cash" },
     tabs: { dep: "Deposits only", cons: "Conservative", mod: "Moderate", s7030: "70/30", agr: "Aggressive" },
     sim: {
@@ -156,7 +157,7 @@ const COPY = {
     badge: "Contenu éducatif — pas un conseil financier",
     title: "Combien votre argent peut-il rapporter ?",
     sub: "Simulez avec vos chiffres, comprenez les profils de risque et voyez où la crypto s'intègre. Sans jargon et sans promesses.",
-    back: "Retour au site", start: "Commencer gratuitement",
+    back: "Retour au site", start: "Commencer gratuitement", back_app: "← Retour à l’app",
     assets: { obr: "Obligations et dépôts", acc: "Actions et ETF", acc7030: "Actions et ETF (monde)", imo: "Immobilier (REIT)", cri: "Crypto", liq: "Liquidités" },
     tabs: { dep: "Dépôts seuls", cons: "Prudent", mod: "Équilibré", s7030: "70/30", agr: "Dynamique" },
     sim: {
@@ -210,7 +211,7 @@ const COPY = {
     badge: "Bildungsinhalt — keine Finanzberatung",
     title: "Wie viel kann aus Ihrem Geld werden?",
     sub: "Rechnen Sie mit Ihren Zahlen, verstehen Sie Risikoprofile und sehen Sie, wo Krypto hineinpasst. Ohne Jargon, ohne Versprechen.",
-    back: "Zurück zur Website", start: "Kostenlos starten",
+    back: "Zurück zur Website", start: "Kostenlos starten", back_app: "← Zurück zur App",
     assets: { obr: "Anleihen & Einlagen", acc: "Aktien & ETFs", acc7030: "Aktien & ETFs (global)", imo: "Immobilien (REITs)", cri: "Krypto", liq: "Liquidität" },
     tabs: { dep: "Nur Einlagen", cons: "Konservativ", mod: "Ausgewogen", s7030: "70/30", agr: "Offensiv" },
     sim: {
@@ -264,7 +265,7 @@ const COPY = {
     badge: "Contenuto educativo — non è consulenza finanziaria",
     title: "Quanto può rendere il tuo denaro?",
     sub: "Simula con i tuoi numeri, capisci i profili di rischio e scopri dove entra la crypto. Senza gergo e senza promesse.",
-    back: "Torna al sito", start: "Inizia gratis",
+    back: "Torna al sito", start: "Inizia gratis", back_app: "← Torna all’app",
     assets: { obr: "Obbligazioni e depositi", acc: "Azioni ed ETF", acc7030: "Azioni ed ETF (globali)", imo: "Immobiliare (REIT)", cri: "Crypto", liq: "Liquidità" },
     tabs: { dep: "Solo depositi", cons: "Prudente", mod: "Moderato", s7030: "70/30", agr: "Aggressivo" },
     sim: {
@@ -318,7 +319,7 @@ const COPY = {
     badge: "Contenido educativo — no es asesoramiento financiero",
     title: "¿Cuánto puede rendir tu dinero?",
     sub: "Simula con tus números, entiende los perfiles de riesgo y mira dónde encaja la cripto. Sin jerga y sin promesas.",
-    back: "Volver al sitio", start: "Empezar gratis",
+    back: "Volver al sitio", start: "Empezar gratis", back_app: "← Volver a la app",
     assets: { obr: "Bonos y depósitos", acc: "Acciones y ETFs", acc7030: "Acciones y ETFs (globales)", imo: "Inmobiliario (REITs)", cri: "Cripto", liq: "Liquidez" },
     tabs: { dep: "Solo depósitos", cons: "Conservador", mod: "Moderado", s7030: "70/30", agr: "Agresivo" },
     sim: {
@@ -492,6 +493,9 @@ export default function Aprender() {
   const chipUp = "bg-emerald-600/15 text-emerald-400";
   const chipDown = "bg-amber-600/15 text-amber-400";
   const chipOk = "bg-[#1a1f26] text-zinc-400";
+  // 2 ago 2026 (pedido do Jose): quem ja tem sessao nao pode ter de voltar
+  // pelo landing — o CTA do topo passa a «Voltar a app» → /dashboard.
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-[#0b0e11] text-zinc-100" style={{ font: "16px/1.55 system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
@@ -503,7 +507,7 @@ export default function Aprender() {
           </Link>
           <div className="flex items-center gap-2.5">
             <Link to="/" className="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:inline">{c.back}</Link>
-            <Link to="/register" className={btn}>{c.start}</Link>
+            <Link to={user ? "/dashboard" : "/register"} className={btn}>{user ? c.back_app : c.start}</Link>
           </div>
         </div>
       </header>
