@@ -9,6 +9,7 @@ from routes import billing as billing_routes
 
 from core import db, client, logger, APP_URL, TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET  # noqa: F401  (loads .env via core import)
 from alert_checker import run_alert_checker
+from health_report import run_health_reporter
 from onboarding import run_onboarding_emailer
 from routes.portfolio import run_snapshot_scheduler
 from telegram_utils import set_telegram_webhook
@@ -276,6 +277,10 @@ async def startup():
     # Was previously imported but never started — price alerts (and their
     # email notifications) were not actually being checked periodically.
     asyncio.create_task(run_alert_checker())
+
+    # Relatório agendado de saúde (2 ago 2026) — email aos admins de X em X
+    # dias (HEALTH_REPORT_DAYS, omissão 7; 0 desliga). Ver health_report.py.
+    asyncio.create_task(run_health_reporter())
 
     # Sequência de emails de onboarding (welcome no verify; 2-4 aqui).
     asyncio.create_task(run_onboarding_emailer())
