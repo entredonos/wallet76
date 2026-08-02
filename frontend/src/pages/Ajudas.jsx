@@ -82,15 +82,15 @@ const PHASES = [
     label: "ph2",
     items: [
       { key: "aloc", emoji: "🎯", to: "/ajudas/alocacoes" },
-      { key: "div", emoji: "💶", to: null },
-      { key: "alert", emoji: "🔔", to: null },
+      { key: "div", emoji: "💶", to: "/ajudas/dividendos" },
+      { key: "alert", emoji: "🔔", to: "/ajudas/alertas" },
     ],
   },
   {
     label: "ph3",
     items: [
       { key: "hist", emoji: "📈", to: null },
-      { key: "panel", emoji: "🧭", to: null },
+      { key: "panel", emoji: "🧭", to: "/ajudas/painel" },
     ],
   },
 ];

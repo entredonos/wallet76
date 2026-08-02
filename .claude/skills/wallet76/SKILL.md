@@ -54,6 +54,11 @@ contra produção faz-se pelo browser (Chrome MCP).
    executar, ordens com que não concordo cumprem-se mas com o desacordo escrito,
    e premissas erradas corrigem-se primeiro. Discordar para parecer crítico é o
    mesmo erro ao contrário.
+9. **#9 as ajudas acompanham os ecrãs** — os artigos de `/ajudas/*` citam
+   labels e capturas reais; quem altera um ecrã documentado (Dashboard,
+   Alocação, Dividendos, Alertas) atualiza o artigo na mesma sessão (texto ×6
+   e, se preciso, captura refeita). Capturas: um só conjunto em PT, sem email
+   nem blocos ADMIN.
 
 O tom que ele quer: português de Portugal, direto, sem entusiasmo de vendedor.
 Quando eu me engano, corrijo por escrito antes de continuar — já aconteceu

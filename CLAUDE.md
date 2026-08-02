@@ -338,3 +338,29 @@ dados para ter opinião, digo isso em vez de inventar uma posição.
 Isto liga-se à REGRA #3 (pergunta ≠ ordem) e ao tom combinado: português de
 Portugal, direto, sem entusiasmo de vendedor. E quando sou eu que me engano, a
 correção é escrita antes de continuar, não enterrada numa frase a meio.
+## REGRA #9 — AS AJUDAS ACOMPANHAM OS ECRÃS: MUDOU O PAINEL, MUDA O ARTIGO
+
+Criada a 2 ago de 2026, quando a central de ajudas nasceu, por ordem direta do
+Jose: «se houver alguma alteração nestes painéis tens que alterar também aqui
+nas instruções».
+
+Os artigos de `/ajudas/*` citam labels reais dos ecrãs e usam capturas reais
+anotadas — o que os torna mentira no dia em que um ecrã documentado muda sem
+que o artigo mude com ele. Por isso:
+
+1. **Quem altera um ecrã documentado atualiza o artigo correspondente NA MESMA
+   sessão de trabalho**, como o README (REGRA #7): o texto nas 6 línguas e,
+   se a zona alterada aparece numa captura, a captura refeita e reanotada.
+2. **Mapa do que está documentado** (manter em dia quando nascerem artigos):
+   - `/ajudas/alocacoes` ← `Alocacao.jsx` (cita o editor de percentagens, o
+     cartão fechado, o modo Ação com a margem `ACT_MARGIN` = 1 ponto, os anéis
+     de «ver ativos»)
+   - `/ajudas/dividendos` ← `Dividends.jsx` (cita as labels do COPY: «Próximos
+     30 dias», «Confirmado»/«Estimado», etc.)
+   - `/ajudas/alertas` ← `Alerts.jsx` + chaves `alert.*` do I18nContext
+   - `/ajudas/painel` ← `Dashboard.jsx` (6 capturas anotadas em
+     `frontend/src/assets/ajudas/painel-*.webp`)
+   - hub `/ajudas` ← `Ajudas.jsx` (array PHASES)
+3. **As capturas são um só conjunto, tiradas da app em PT** (conta do Jose,
+   aprovadas por ele; email e blocos ADMIN sempre fora do recorte). Só o texto
+   à volta vai nas 6 línguas — 6 conjuntos de imagens seriam incomportáveis.
