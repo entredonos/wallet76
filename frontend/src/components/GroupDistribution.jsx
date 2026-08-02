@@ -66,7 +66,35 @@ export default function GroupDistribution({ rows, wallets, title, L, money, wall
         </div>
       </div>
 
-      <div>
+      {/* Telemovel (2 ago 2026): "velas" — colunas verticais, altura na
+          proporcao do maior do grupo, empilhadas por carteira, com deslize
+          lateral. No telemovel a barra horizontal ficava fina demais ("quase
+          como nao ter" — o Jose); no PC as barras horizontais mantem-se, que
+          la ha largura para elas. */}
+      <div className="sm:hidden">
+        <div className="flex items-end gap-2.5 overflow-x-auto pb-1" style={{ height: 158 }}>
+          {shown.map((r) => {
+            const pct = total ? Number(r.value_usd || 0) / total * 100 : 0;
+            const h = Math.max(8, max ? Number(r.value_usd || 0) / max * 112 : 0);
+            return (
+              <div key={r.sym} className="flex-none w-12 flex flex-col items-center justify-end gap-1">
+                <span className="text-[9px] font-mono text-zinc-500">{pct.toFixed(1)}%</span>
+                <div className="w-6 rounded-t-md overflow-hidden flex flex-col-reverse" style={{ height: h }}>
+                  {(r.wallets || []).map((wl, i) => (
+                    <div key={i} className={dot(wl.id)}
+                      title={`${walletName(wl.id)} · ${money(wl.value_usd)}`}
+                      style={{ height: `${r.value_usd ? Number(wl.value_usd || 0) / r.value_usd * 100 : 0}%` }} />
+                  ))}
+                </div>
+                <span className="text-[9px] font-semibold text-zinc-200 max-w-[48px] truncate">{r.symbol || r.sym}</span>
+                <span className="text-[8.5px] font-mono text-zinc-500">{money(r.value_usd)}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="hidden sm:block">
         {shown.map((r) => {
           const pct = total ? Number(r.value_usd || 0) / total * 100 : 0;
           const w = max ? Number(r.value_usd || 0) / max * 100 : 0;

@@ -55,6 +55,10 @@ export default function Alocacao({ currency = "USD" }) {
   // classe na vista de acao; tPage e a pagina da tabela/lista (10 por pagina).
   const [actOpen, setActOpen] = useState({});
   const [tPage, setTPage] = useState(0);
+  // Editor "Alocacao por grupos" nasce FECHADO (2 ago 2026, pedido do Jose):
+  // quem so vem ver, ve o resumo por classe (barra do atual + risco do alvo +
+  // chip de acao — a mesma linguagem da vista de Acao); quem vem editar abre.
+  const [editTargets, setEditTargets] = useState(false);
   const touchX = useRef(null);
 
   const fx = summary?.fx_rates || {};
@@ -553,6 +557,34 @@ export default function Alocacao({ currency = "USD" }) {
             </div>
 
             <div className="flex-1 w-full">
+              {!editTargets ? (
+                <>
+                  {actionGroups.map((g) => (
+                    <div key={g.cls} className="py-1.5">
+                      <div className="flex items-center justify-between text-[12.5px] mb-1">
+                        <span className="flex items-center gap-2 text-zinc-200">
+                          <span className="w-2 h-2 rounded-full" style={{ background: g.color }} />{g.name}
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <span className="font-mono text-[11.5px] text-zinc-500"><b className="text-zinc-100 text-[12.5px]">{g.pct.toFixed(1)}%</b> {"→"} {g.alvo.toFixed(0)}%</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${Math.abs(g.delta) <= ACT_MARGIN ? "bg-zinc-800 text-zinc-400" : g.delta > 0 ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"}`}>
+                            {Math.abs(g.delta) <= ACT_MARGIN ? "✓" : g.delta > 0 ? `▲ ${L("alloc2.act_add", "Reforçar")}` : `▼ ${L("alloc2.act_trim", "Aliviar")}`}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="relative h-2 rounded-md bg-zinc-950">
+                        <div className="absolute inset-y-0 left-0 rounded-md" style={{ width: `${Math.min(100, g.pct)}%`, background: g.color }} />
+                        <div className="absolute -top-[3px] -bottom-[3px] w-[2.5px] rounded bg-zinc-100/85" style={{ left: `${Math.min(100, g.alvo)}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                  <button onClick={() => setEditTargets(true)}
+                    className="w-full text-center text-[12.5px] text-blue-400 hover:text-blue-300 pt-2.5">
+                    {L("alloc2.edit_targets", "Editar percentagens")} {"▾"}
+                  </button>
+                </>
+              ) : (
+                <>
               {classesPresent.map((c) => (
                 <div key={c} className="flex items-center gap-3 py-1.5 border-b border-zinc-800/50">
                   <span className="w-2.5 h-2.5 rounded-full" style={{ background: ALLOCATION_CLASS_COLOR[c] || ALLOCATION_CLASS_COLOR.other }} />
@@ -579,6 +611,12 @@ export default function Alocacao({ currency = "USD" }) {
                   {L("common.save", "Guardar")}
                 </button>
               </div>
+                  <button onClick={() => setEditTargets(false)}
+                    className="w-full text-center text-[12.5px] text-blue-400 hover:text-blue-300 pt-2.5">
+                    {L("alloc2.edit_targets", "Editar percentagens")} {"▴"}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -596,10 +634,15 @@ export default function Alocacao({ currency = "USD" }) {
             </div>
             {mode !== "action" && (
             <div className="inline-flex rounded-md border border-zinc-800 bg-zinc-900/60 p-0.5">
+              {/* Icones em vez de texto (2 ago 2026): com o 3.o modo "Acao" os
+                  botoes por extenso saiam do cartao em 360px. O nome vive no
+                  title/aria-label — o simbolo e igual nas 6 linguas. */}
               {["list", "slide"].map((m) => (
                 <button key={m} onClick={() => setMobileMode(m)}
-                  className={`px-2 py-1 text-[11px] font-mono rounded transition ${mobileMode === m ? "bg-zinc-100 text-zinc-950" : "text-zinc-400 hover:text-zinc-200"}`}>
-                  {m === "list" ? L("alloc2.list", "Lista") : L("alloc2.slide", "Slide")}
+                  title={m === "list" ? L("alloc2.list", "Lista") : L("alloc2.slide", "Slide")}
+                  aria-label={m === "list" ? L("alloc2.list", "Lista") : L("alloc2.slide", "Slide")}
+                  className={`w-7 py-1 text-[13px] leading-none rounded transition ${mobileMode === m ? "bg-zinc-100 text-zinc-950" : "text-zinc-400 hover:text-zinc-200"}`}>
+                  {m === "list" ? "☰" : "▤"}
                 </button>
               ))}
             </div>
