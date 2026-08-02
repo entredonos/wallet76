@@ -360,6 +360,11 @@ que o artigo mude com ele. Por isso:
    - `/ajudas/alertas` ← `Alerts.jsx` + chaves `alert.*` do I18nContext
    - `/ajudas/painel` ← `Dashboard.jsx` (6 capturas anotadas em
      `frontend/src/assets/ajudas/painel-*.webp`)
+   - `/ajudas/primeiros-passos` ← fluxo de onboarding (chaves `onboarding.*`
+     do I18nContext: nome da 1.ª carteira → 3 caminhos corretora/ficheiro/à
+     mão) + limite de 1 carteira do plano gratuito (`wallets.limit_msg`)
+   - `/ajudas/historico` ← evolução do Dashboard (snapshots de 15 em 15 min,
+     reconstrução + rede de segurança da REGRA #2, janelas 15m..ALL)
    - hub `/ajudas` ← `Ajudas.jsx` (array PHASES)
 3. **As capturas são um só conjunto, tiradas da app em PT** (conta do Jose,
    aprovadas por ele; email e blocos ADMIN sempre fora do recorte). Só o texto

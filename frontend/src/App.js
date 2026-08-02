@@ -153,6 +153,8 @@ const AjudasAlocacoes = lazy(() => import("./pages/AjudasAlocacoes"));
 const AjudasDividendos = lazy(() => import("./pages/AjudasDividendos"));
 const AjudasAlertas = lazy(() => import("./pages/AjudasAlertas"));
 const AjudasPainel = lazy(() => import("./pages/AjudasPainel"));
+const AjudasPrimeirosPassos = lazy(() => import("./pages/AjudasPrimeirosPassos"));
+const AjudasHistorico = lazy(() => import("./pages/AjudasHistorico"));
 const BillingSuccess = lazy(() => import("./pages/BillingSuccess"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const PublicPortfolio = lazy(() => import("./pages/PublicPortfolio"));
@@ -314,6 +316,8 @@ function AppRoutes() {
         <Route path="/ajudas/dividendos" element={<AjudasDividendos />} />
         <Route path="/ajudas/alertas" element={<AjudasAlertas />} />
         <Route path="/ajudas/painel" element={<AjudasPainel />} />
+        <Route path="/ajudas/primeiros-passos" element={<AjudasPrimeirosPassos />} />
+        <Route path="/ajudas/historico" element={<AjudasHistorico />} />
         <Route path="/billing-success" element={<BillingSuccess />} />
         <Route path="/p/:slug" element={<PublicPortfolio />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />

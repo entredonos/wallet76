@@ -77,7 +77,7 @@ const COPY = {
 
 // A ordem do percurso. `to: null` = artigo ainda não escrito → chip «em breve».
 const PHASES = [
-  { label: "ph1", items: [{ key: "first", emoji: "🚀", to: null }] },
+  { label: "ph1", items: [{ key: "first", emoji: "🚀", to: "/ajudas/primeiros-passos" }] },
   {
     label: "ph2",
     items: [
@@ -89,7 +89,7 @@ const PHASES = [
   {
     label: "ph3",
     items: [
-      { key: "hist", emoji: "📈", to: null },
+      { key: "hist", emoji: "📈", to: "/ajudas/historico" },
       { key: "panel", emoji: "🧭", to: "/ajudas/painel" },
     ],
   },
