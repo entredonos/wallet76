@@ -1,11 +1,13 @@
 import os
 import time
+import html
 from datetime import datetime, timezone
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request
-from core import db, logger
+from core import db, logger, ADMIN_EMAILS
 from routes.auth import get_current_user
 from referral_utils import grant_referrer_reward_if_needed
+from email_utils import send_email, email_layout
 
 router = APIRouter()
 
@@ -226,6 +228,20 @@ async def subscription_status(user=Depends(get_current_user)):
         "stripe_subscription_id": user.get("stripe_subscription_id"),
     }
 
+# Motivos predefinidos do questionario de cancelamento do portal Stripe
+# (cancellation_details.feedback), traduzidos para o email do dono.
+_CANCEL_FB_PT = {
+    "too_expensive": "Demasiado caro",
+    "missing_features": "Faltam funcionalidades",
+    "switched_service": "Mudou para outro serviço",
+    "unused": "Não usa o suficiente",
+    "customer_service": "Apoio ao cliente",
+    "too_complex": "Demasiado complexo",
+    "low_quality": "Qualidade abaixo do esperado",
+    "other": "Outro motivo",
+}
+
+
 @router.post("/stripe/webhook")
 async def stripe_webhook(request: Request):
     payload = await request.body()
@@ -303,6 +319,54 @@ async def stripe_webhook(request: Request):
                 )
         except Exception as e:
             logger.warning(f"founder: falha a marcar fundador ({customer_id}): {e}")
+
+        # Motivo de cancelamento (2 ago 2026, pedido do Jose): o portal do
+        # Stripe pergunta porquê ao cancelar (motivos predefinidos +
+        # comentário livre) e a resposta viaja no próprio objeto da
+        # subscrição em cancellation_details. Guarda-se no user e o dono
+        # recebe email na hora. O cancellation_sig evita repetir o email
+        # quando o mesmo detalhe volta em eventos seguintes (updated →
+        # deleted trazem o mesmo conteúdo).
+        try:
+            cd = subscription.get("cancellation_details") or {}
+            fb = cd.get("feedback")
+            comment = (cd.get("comment") or "").strip()
+            if fb or comment:
+                sig = f"{fb}|{comment}"
+                prev = await db.users.find_one(
+                    {"stripe_customer_id": customer_id},
+                    {"_id": 0, "email": 1, "cancellation_sig": 1},
+                ) or {}
+                if prev.get("cancellation_sig") != sig:
+                    await db.users.update_one(
+                        {"stripe_customer_id": customer_id},
+                        {"$set": {
+                            "cancellation_sig": sig,
+                            "cancellation_feedback": {
+                                "feedback": fb,
+                                "comment": comment,
+                                "event": event["type"],
+                                "at": datetime.now(timezone.utc).isoformat(),
+                            },
+                        }},
+                    )
+                    who = prev.get("email") or customer_id
+                    fb_label = _CANCEL_FB_PT.get(fb, fb or "—")
+                    body = (
+                        "<p style='margin:0 0 12px'>O portal do Stripe registou um cancelamento com o questionário preenchido.</p>"
+                        "<table style='font-size:14px; border-collapse:collapse'>"
+                        f"<tr><td style='padding:3px 12px 3px 0; color:#52525b'>Quem</td><td><b>{html.escape(str(who))}</b></td></tr>"
+                        f"<tr><td style='padding:3px 12px 3px 0; color:#52525b'>Motivo</td><td><b>{html.escape(fb_label)}</b></td></tr>"
+                        f"<tr><td style='padding:3px 12px 3px 0; color:#52525b'>Comentário</td><td>{html.escape(comment) or '—'}</td></tr>"
+                        f"<tr><td style='padding:3px 12px 3px 0; color:#52525b'>Evento</td><td>{event['type']}</td></tr>"
+                        "</table>"
+                    )
+                    subj = f"Wallet76 · cancelamento — {who} ({fb_label})"
+                    for _adm in sorted(ADMIN_EMAILS):
+                        await send_email(_adm, subj, email_layout("Cancelamento de subscrição", body))
+                    logger.info(f"[cancelamento] motivo registado e email enviado ({customer_id}: {fb})")
+        except Exception as e:
+            logger.warning(f"[cancelamento] falha a registar motivo ({customer_id}): {e}")
 
         if existing_user and prev_status != "active" and status == "active":
             referral = await db.referrals.find_one({
