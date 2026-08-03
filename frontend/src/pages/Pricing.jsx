@@ -4,6 +4,7 @@ import { Check } from "lucide-react";
 import { api } from "../lib/api";
 import { useI18n } from "../context/I18nContext";
 import { useAuth } from "../context/AuthContext";
+import { saveCheckoutIntent, readCheckoutIntent, clearCheckoutIntent } from "../lib/checkoutIntent";
 
 const PRICES = {
   eur: { sym: "€",   pos: "suffix", monthly: "5,99",  yearly: "49,99"  },
@@ -100,6 +101,10 @@ export default function Pricing() {
 
   async function goCheckout(isFounder) {
     if (!user) {
+      // Intenção de compra (3 ago 2026): guarda o plano escolhido para o
+      // retomar depois do registo — ver lib/checkoutIntent.js e o efeito
+      // de consumo mais abaixo.
+      saveCheckoutIntent({ plan: period, founder: isFounder, cur });
       window.location.href = "/register";
       return;
     }
@@ -117,6 +122,36 @@ export default function Pricing() {
       setCheckoutErr(true);
     }
   }
+
+  // Consumo da intenção de compra: quem chega aqui COM sessão e com uma
+  // intenção guardada (clicou num plano antes de ter conta) vai direto ao
+  // checkout desse plano — o fio que antes se partia no registo. A limpeza
+  // é síncrona e vem primeiro, para um remount (StrictMode) não disparar
+  // duas sessões Stripe. Usa os valores da intenção diretamente porque o
+  // setPeriod/setCur ainda não refrescaram o estado neste render.
+  useEffect(() => {
+    if (!user) return;
+    const intent = readCheckoutIntent();
+    if (!intent) return;
+    clearCheckoutIntent();
+    setPeriod(intent.plan);
+    if (intent.cur) setCur(intent.cur);
+    (async () => {
+      setBusy(true);
+      try {
+        const q = `?currency=${intent.cur || "eur"}`;
+        const path = intent.founder
+          ? `/billing/create-founder-checkout/${intent.plan}${q}`
+          : `/billing/create-checkout-session/${intent.plan}${q}`;
+        const res = await api.post(path);
+        window.location.href = res.data.url;
+      } catch (e) {
+        setBusy(false);
+        setCheckoutErr(true);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   function choosePlan() { goCheckout(false); }
 
@@ -180,11 +215,11 @@ export default function Pricing() {
               ))}
             </ul>
             {user ? (
-              <Link to="/dashboard" className="w-full text-center border border-zinc-700 text-zinc-200 rounded-xl py-3 font-semibold hover:bg-zinc-800 transition-colors">
+              <Link to="/dashboard" onClick={clearCheckoutIntent} className="w-full text-center border border-zinc-700 text-zinc-200 rounded-xl py-3 font-semibold hover:bg-zinc-800 transition-colors">
                 {c.free_cta}
               </Link>
             ) : (
-              <Link to="/login" className="w-full text-center border border-zinc-700 text-zinc-200 rounded-xl py-3 font-semibold hover:bg-zinc-800 transition-colors">
+              <Link to="/login" onClick={clearCheckoutIntent} className="w-full text-center border border-zinc-700 text-zinc-200 rounded-xl py-3 font-semibold hover:bg-zinc-800 transition-colors">
                 {c.free_cta}
               </Link>
             )}

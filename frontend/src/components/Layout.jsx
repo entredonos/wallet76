@@ -20,6 +20,7 @@ import Sparkline from "./Sparkline";
 import FeedbackWidget from "./FeedbackWidget";
 import PullToRefresh from "./PullToRefresh";
 import { onSidebarRefreshRequested } from "../lib/sidebarRefresh";
+import { readCheckoutIntent } from "../lib/checkoutIntent";
 import { walletColorKey, WALLET_TEXT_CLASS, WALLET_TILE_CLASS } from "../lib/walletColors";
 import { usePlan } from "../hooks/usePlan";
 
@@ -80,6 +81,16 @@ export default function Layout({ children, currency, setCurrency }) {
   useEffect(() => {
     if (isPortfolioRouteActive) setPortfolioOpen(true);
   }, [loc.pathname, isPortfolioRouteActive]);
+
+  // Intenção de compra pendente (3 ago 2026, lib/checkoutIntent.js): quem
+  // clicou num plano ANTES de ter conta e acabou de entrar não é largado no
+  // painel — vai ao /pricing, que consome a intenção e abre logo o Stripe.
+  // Corre uma vez por montagem do Layout (= uma vez por sessão de navegação
+  // nas páginas protegidas); quem não tem intenção guardada não nota nada.
+  useEffect(() => {
+    if (readCheckoutIntent()) nav("/pricing");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Poll unread feedback count (admin only). Skips the request while the
   // tab is backgrounded (no point polling a hidden tab every 30s), and

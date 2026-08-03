@@ -4,6 +4,7 @@ import { useI18n } from "../context/I18nContext";
 import logo from "../assets/wallet76-logo.png";
 import dividendsShot from "../assets/dividends-shot.png";
 import { api } from "../lib/api";
+import { saveCheckoutIntent, clearCheckoutIntent } from "../lib/checkoutIntent";
 import {
   Bell, Globe2, Wallet, ShieldCheck, MonitorSmartphone,
   Lock, Server, FileText, RefreshCw, Newspaper, PieChart, Zap,
@@ -1480,7 +1481,7 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="block w-full text-center py-2.5 border border-zinc-700 rounded-xl text-zinc-300 font-medium hover:border-zinc-500 hover:text-white transition-colors text-sm">
+              <Link to="/register" onClick={(e) => { clearCheckoutIntent(); handleEntryClick(e, "/register"); }} className="block w-full text-center py-2.5 border border-zinc-700 rounded-xl text-zinc-300 font-medium hover:border-zinc-500 hover:text-white transition-colors text-sm">
                 {c.btn_free}
               </Link>
             </div>
@@ -1505,7 +1506,10 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="block w-full text-center py-2.5 bg-[#14306E] hover:bg-[#20489E] rounded-xl text-white font-semibold transition-colors text-sm">
+              {/* Intenção de compra (3 ago 2026, lib/checkoutIntent.js): o clique
+                  guarda o plano; depois do registo+login, o Layout leva a pessoa
+                  ao checkout que ela pediu, em vez de a largar no painel. */}
+              <Link to="/register" onClick={(e) => { saveCheckoutIntent({ plan: "monthly" }); handleEntryClick(e, "/register"); }} className="block w-full text-center py-2.5 bg-[#14306E] hover:bg-[#20489E] rounded-xl text-white font-semibold transition-colors text-sm">
                 {c.btn_monthly}
               </Link>
               <p className="text-center text-[11px] text-zinc-600 mt-2">{c.pro_trial}</p>
@@ -1534,7 +1538,7 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <Link to="/register" onClick={(e) => handleEntryClick(e, "/register")} className="block w-full text-center py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white font-semibold transition-colors text-sm">
+              <Link to="/register" onClick={(e) => { saveCheckoutIntent({ plan: "yearly" }); handleEntryClick(e, "/register"); }} className="block w-full text-center py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white font-semibold transition-colors text-sm">
                 {c.btn_annual}
               </Link>
               <p className="text-center text-[11px] text-zinc-600 mt-2">{c.pro_trial}</p>
