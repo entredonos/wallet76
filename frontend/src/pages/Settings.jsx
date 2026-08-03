@@ -15,6 +15,7 @@ import { useI18n } from "../context/I18nContext";
 import { Capacitor } from "@capacitor/core";
 import * as SimpleBiometric from "../lib/simpleBiometric";
 import { enablePush, disablePush, isPushSubscribed, pushSupported } from "../lib/push";
+import { enableNativePush, disableNativePush } from "../lib/nativePush";
 
 function b64urlToBuf(b64url) {
   const pad = "=".repeat((4 - (b64url.length % 4)) % 4);
@@ -211,25 +212,35 @@ export default function Settings() {
     }
   };
 
-  // Push: ligar pede permissão + subscreve o browser + regista no backend
-  // (lib/push.js). Desligar cancela a subscrição real E a preferência —
-  // as duas coisas juntas, para não ficar "desligado" na preferência mas
-  // continuar tecnicamente subscrito (ou vice-versa).
+  // Push: ligar pede permissão + subscreve/regista no backend. Desligar
+  // cancela a subscrição/token real E a preferência — as duas coisas
+  // juntas, para não ficar "desligado" na preferência mas continuar
+  // tecnicamente subscrito (ou vice-versa).
+  //
+  // 3 ago 2026 — passou a haver dois caminhos: Web Push (lib/push.js,
+  // browser/PWA/Electron) e FCM nativo (lib/nativePush.js, dentro da app
+  // Android/iOS via Capacitor — o WebView nativo não suporta a Web Push
+  // API, por isso usa outro mecanismo). `notifStatus.push_subscribed` e
+  // `notifStatus.push_available` são do Web Push; `fcm_registered`/
+  // `fcm_available` são do FCM — o JSX escolhe qual par ler consoante
+  // Capacitor.isNativePlatform() (ver isNative/pushSubscribedNow abaixo).
+  const isNative = Capacitor.isNativePlatform();
+  const pushSubscribedNow = isNative ? notifStatus.fcm_registered : notifStatus.push_subscribed;
   const togglePush = async () => {
     if (pushBusy) return;
     setPushBusy(true);
     try {
-      if (!alertPush || !notifStatus.push_subscribed) {
-        await enablePush();
+      if (!alertPush || !pushSubscribedNow) {
+        if (isNative) await enableNativePush(); else await enablePush();
         setAlertPush(true);
         await api.put("/preferences", { alert_push: true });
-        setNotifStatus((s) => ({ ...s, push_subscribed: true }));
+        setNotifStatus((s) => (isNative ? { ...s, fcm_registered: true } : { ...s, push_subscribed: true }));
         toast.success(t("settings.alert_push_on"));
       } else {
-        await disablePush();
+        if (isNative) await disableNativePush(); else await disablePush();
         setAlertPush(false);
         await api.put("/preferences", { alert_push: false });
-        setNotifStatus((s) => ({ ...s, push_subscribed: false }));
+        setNotifStatus((s) => (isNative ? { ...s, fcm_registered: false } : { ...s, push_subscribed: false }));
         toast.success(t("settings.alert_push_off"));
       }
     } catch (e) {
@@ -238,6 +249,7 @@ export default function Settings() {
       else if (reason === "unsupported") toast.error(t("settings.alert_push_unsupported"));
       else if (reason === "not_configured") toast.error(t("settings.alert_push_unavailable"));
       else if (reason === "sw_timeout") toast.error(t("settings.alert_push_sw_timeout"));
+      else if (reason === "timeout") toast.error(t("settings.alert_push_sw_timeout"));
       else toast.error(t("common.error"));
     } finally {
       setPushBusy(false);
@@ -623,10 +635,17 @@ export default function Settings() {
       {/* Push notifications (11 jul 2026) — canal em tempo real, funciona
           com a app fechada (ao contrário do botão "Ativar notificações do
           navegador" mais antigo em Alerts.jsx, que só dispara com o
-          separador aberto). Não aparece se o browser não suportar Push API
-          (ex.: Safari em iOS fora de PWA instalada) nem se o servidor não
-          tiver chaves VAPID configuradas. */}
-      {pushSupported() && (
+          separador aberto).
+          3 ago 2026 — antes só aparecia com pushSupported() (deteção de Web
+          Push API), que é sempre falso dentro do WebView Android/iOS do
+          Capacitor: a secção desaparecia por completo na app nativa, mesmo
+          já existindo um caminho FCM funcional por baixo (nativePush.js,
+          ligado desde 17 jul mas sem interruptor visível). Passa a aparecer
+          também quando Capacitor.isNativePlatform() é verdadeiro, lendo o
+          par fcm_available/fcm_registered em vez de push_available/
+          push_subscribed (ver isNative/pushSubscribedNow definidos acima,
+          em togglePush). */}
+      {(pushSupported() || isNative) && (
         <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -635,22 +654,22 @@ export default function Settings() {
             </div>
             <button
               onClick={togglePush}
-              disabled={pushBusy || !notifStatus.push_available}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none disabled:opacity-40 ${alertPush && notifStatus.push_subscribed ? "bg-emerald-500" : "bg-zinc-700"}`}
-              aria-checked={alertPush && notifStatus.push_subscribed}
+              disabled={pushBusy || !(isNative ? notifStatus.fcm_available : notifStatus.push_available)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none disabled:opacity-40 ${alertPush && pushSubscribedNow ? "bg-emerald-500" : "bg-zinc-700"}`}
+              aria-checked={alertPush && pushSubscribedNow}
               role="switch"
               data-testid="toggle-alert-push"
             >
               {pushBusy
                 ? <Loader2 className="w-3.5 h-3.5 mx-auto animate-spin text-zinc-300" />
-                : <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${alertPush && notifStatus.push_subscribed ? "translate-x-6" : "translate-x-1"}`} />
+                : <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${alertPush && pushSubscribedNow ? "translate-x-6" : "translate-x-1"}`} />
               }
             </button>
           </div>
           <div className="mt-3 flex items-center gap-1.5 text-xs text-zinc-400">
-            {!notifStatus.push_available
+            {!(isNative ? notifStatus.fcm_available : notifStatus.push_available)
               ? <><BellOff className="w-3.5 h-3.5" /> {t("settings.alert_push_unavailable")}</>
-              : alertPush && notifStatus.push_subscribed
+              : alertPush && pushSubscribedNow
                 ? <><Smartphone className="w-3.5 h-3.5 text-emerald-400" /> {t("settings.alert_push_active")}</>
                 : <><BellOff className="w-3.5 h-3.5" /> {t("settings.alert_push_inactive")}</>
             }
