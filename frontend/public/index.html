@@ -162,5 +162,19 @@
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+
+    <!-- ── Cloudflare Web Analytics (3 ago 2026) ─────────────────────────
+         O topo anónimo do funil (NEGOCIO P1): sem cookies, não identifica
+         pessoas — o banner de cookies continua válido tal como está. O
+         snippet é MANUAL de propósito: o site esteve um mês em "Automatic
+         setup" no painel com 0 visitas registadas, porque a injeção
+         automática da Cloudflare não toca no HTML servido pela Pages
+         (confirmado a 3 ago: HTML fresco da rede sem beacon, 7 min depois
+         do Enable). O modo no painel (Web Analytics → wallet76.com →
+         Manage site) tem de ficar em "Enable with JS Snippet installation"
+         — é o par deste bloco; mudá-lo lá não muda nada aqui. O beacon
+         mede as rotas do SPA sozinho (History API). -->
+    <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "a2c510f1ff504e0ab02bbdcb2abfbdf9"}'></script>
+    <!-- End Cloudflare Web Analytics -->
   </body>
 </html>
