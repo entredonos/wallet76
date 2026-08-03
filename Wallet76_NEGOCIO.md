@@ -79,7 +79,7 @@
 - [x] Ícones PWA corrompidos (144/152/384) — corrigido em 28 jul
 - [x] ~~Stripe live mode~~ **FEITO** — em live desde 26 jul (produtos, chaves, webhook, cupão: o Jose); customers órfãos do modo de teste corrigidos a 30 jul (README §2). Ver alerta 3.
 - [ ] Resend: domínio verificado + FROM_EMAIL de produção
-- [ ] Corrigir URL hardcoded `wallet76.vercel.app` no email de alertas (email_utils.py:183) e traduzi-lo (só existe em EN)
+- [x] ~~Corrigir URL hardcoded `wallet76.vercel.app` no email de alertas (email_utils.py:183) e traduzi-lo (só existe em EN)~~ **JÁ ESTAVA FEITO desde 28 jul 2026** (caixa ficou por marcar; verificado a 3 ago): o `cta_url` usa `APP_URL` com reserva `wallet76.com` e aponta para `/alerts`, e o email sai do `EMAIL_I18N` ×6 — o comentário em `alert_email_html` (email_utils.py) documenta a correção
 - [ ] Backups Mongo: script mongodump semanal (grátis) OU Atlas Flex
 - [x] ~~Decidir Vercel Pro vs Cloudflare Pages~~ **FEITO 30 jul** — migrado para Cloudflare Pages, $0 e uso comercial permitido (README §2). Desmantelar a Vercel a partir de 13 ago se estável.
 - [x] ~~Bug: `DELETE /transactions/all` nunca funciona (rota registada DEPOIS de `/transactions/{txn_id}`).~~ **FEITO 28 jul 2026** — rota movida para antes das irmãs parametrizadas (transactions.py:70); validado em produção. Ver README §2.
