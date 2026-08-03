@@ -284,6 +284,10 @@ USER_DATA_COLLECTIONS = [
     "watchlist_groups", "feedback", "user_prefs", "allocation_prefs",
     "share_links", "broker_connections", "audit_logs", "user_security",
     "user_keys",
+    # Funil de eventos (3 ago 2026, funnel.py) — nasceu no mesmo dia em que
+    # quase ficou de fora desta lista: apagar a conta (RGPD) tem de levar
+    # também os eventos do funil, que estão indexados por user_id.
+    "events",
 ]
 
 
