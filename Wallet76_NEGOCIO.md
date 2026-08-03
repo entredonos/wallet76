@@ -106,7 +106,7 @@
 - [ ] Idioma inicial: detetar `navigator.language` em vez de PT fixo (um alemão novo vê tudo em português) (I18nContext.jsx)
 - [ ] `PublicPortfolio.jsx` todo em inglês hardcoded — é a montra dos links partilhados; adicionar COPY 6 línguas
 - [ ] Empty state do Dashboard: fraco ("Sem ativos…"); adicionar CTA direto + considerar modo demo
-- [ ] Monitorização: UptimeRobot no /ping + Sentry no frontend (ambos grátis)
+- [x] ~~Monitorização: UptimeRobot no /ping + Sentry no frontend (ambos grátis)~~ **QUASE FECHADO 3 ago 2026:** UptimeRobot no ar (2 monitores de 5 min: via Cloudflare e Render direto; o /ping ganhou HEAD para o monitor não dar 405 — README §2); Sentry backend já estava vivo (DSN no Render). **Resta 1 clique:** `REACT_APP_SENTRY_DSN` no projeto da Cloudflare Pages (a variável ficou na Vercel na migração de 30 jul) + redeploy
 - [ ] Watchlists: o router NÃO está montado no server.py (289 linhas de código com endpoints 404) — montar ou apagar
 
 ### P2 — melhoria contínua

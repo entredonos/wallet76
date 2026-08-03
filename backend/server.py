@@ -109,7 +109,12 @@ app = FastAPI(
     openapi_url=None if _is_production else "/openapi.json",
 )
 api_router = APIRouter(prefix="/api")
-@app.get("/ping")
+# GET e HEAD (3 ago 2026): o UptimeRobot — e a maioria dos monitores de
+# uptime — verifica com HEAD por omissao, e o @app.get do FastAPI so aceita
+# GET (ao contrario do Route puro do Starlette, nao acrescenta HEAD
+# sozinho). Resultado: o monitor via 405 Method Not Allowed e declarava o
+# servico Down com ele saudavel. Para HEAD, o Starlette descarta o corpo.
+@app.api_route("/ping", methods=["GET", "HEAD"])
 async def ping():
     return {"ok": True, "app": "wallet76"}
 
