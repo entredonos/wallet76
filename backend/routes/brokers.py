@@ -280,6 +280,12 @@ async def _import_transactions(
         except Exception as e:
             errors.append(f"{t.get('symbol', '?')}: {e}")
 
+    if imported > 0:
+        # Funil (3 ago 2026): a sincronização de corretora é o 3.º caminho do
+        # onboarding — também conta como primeiro ativo. once=True: só o 1.º.
+        from funnel import log_event  # lazy: evita import à cabeça num módulo pesado
+        await log_event(user_id, "first_asset", meta={"via": "broker"}, once=True)
+
     return imported, errors
 
 

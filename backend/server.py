@@ -232,6 +232,11 @@ async def _ensure_indexes():
     await _idx(db.users, "referral_code", unique=True, sparse=True)
     await _idx(db.referrals, [("referrer_id", 1), ("status", 1)])
     await _idx(db.referrals, [("referred_user_id", 1)], unique=True, sparse=True)
+    # Funil de eventos (3 ago 2026) — ver funnel.py: (user_id, event) serve o
+    # once=True do log_event; (event, at) serve as contagens por janela do
+    # GET /admin/funnel.
+    await _idx(db.events, [("user_id", 1), ("event", 1)])
+    await _idx(db.events, [("event", 1), ("at", 1)])
     logger.info("MongoDB indexes ensured.")
 
 

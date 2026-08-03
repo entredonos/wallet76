@@ -5,6 +5,7 @@ import {
   Star, MessageSquare, Lightbulb, Bug, HelpCircle,
   RefreshCw, ThumbsUp, Users, UserCheck, CalendarClock,
   CalendarDays, Search, Trash2, AlertTriangle, X, ShieldCheck, Activity,
+  Filter, Landmark,
 } from "lucide-react";
 
 const CAT_META = {
@@ -33,6 +34,24 @@ function TierBadge({ tier }) {
   const c = cfg[tier] || cfg.free;
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border ${c.cls}`}>
+      {c.label}
+    </span>
+  );
+}
+
+// Estado da subscrição além do tier (3 ago 2026): o TierBadge só distingue
+// quem paga; isto conta o resto da história — trial a decorrer, pagamento em
+// atraso, cancelado. "active"/"none" não mostram chip (já está no tier).
+function SubStatusChip({ status }) {
+  if (!status || status === "none" || status === "active") return null;
+  const cfg = {
+    trialing: { label: "Trial",    cls: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
+    past_due: { label: "Em atraso", cls: "bg-rose-500/15 text-rose-400 border-rose-500/30" },
+    canceled: { label: "Cancelou", cls: "bg-zinc-800 text-zinc-500 border-zinc-700" },
+  };
+  const c = cfg[status] || { label: status, cls: "bg-zinc-800 text-zinc-500 border-zinc-700" };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono border ${c.cls}`}>
       {c.label}
     </span>
   );
@@ -106,11 +125,21 @@ function UserRow({ u, onDelete }) {
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-zinc-200 font-mono truncate">{u.email}</span>
           <TierBadge tier={u.tier} />
+          <SubStatusChip status={u.subscription_status} />
           {u.email_verified && <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" title="Email verificado" />}
         </div>
         <div className="text-xs text-zinc-500 font-mono mt-0.5">
           {u.name && u.name !== u.email ? `${u.name} · ` : ""}{date}
+          {typeof u.assets_count === "number" ? ` · ${u.assets_count} ativo${u.assets_count === 1 ? "" : "s"}` : ""}
         </div>
+        {Array.isArray(u.brokers) && u.brokers.length > 0 && (
+          <div className="flex items-center gap-1 flex-wrap mt-1 text-[10px] font-mono text-zinc-500">
+            <Landmark className="w-3 h-3 text-zinc-600 shrink-0" />
+            {u.brokers.map(b => (
+              <span key={b} className="px-1.5 py-px rounded bg-zinc-800/70 border border-zinc-700/50">{b}</span>
+            ))}
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-1.5 shrink-0 text-xs font-mono text-zinc-400" title={activity.label}>
         <span className={`w-1.5 h-1.5 rounded-full ${activity.dot} shrink-0`} />
@@ -502,6 +531,116 @@ function DataHealthTab() {
   );
 }
 
+// Funil de conversão (3 ago 2026) — lê o GET /admin/funnel (coleção events,
+// ver backend/funnel.py). Sete números e as % entre degraus; o desenho
+// aprovado no NEGOCIO diz explicitamente "nada de BI" — é isto e chega.
+const FUNNEL_LABELS = {
+  registered:          "Registos",
+  email_verified:      "Email verificado",
+  first_asset:         "Primeiro ativo",
+  checkout_started:    "Checkout iniciado",
+  trial_started:       "Trial iniciado",
+  subscription_active: "Subscrição ativa",
+  cancelled:           "Cancelamentos",
+};
+
+function FunnelTab() {
+  const [days, setDays]       = useState(30);
+  const [data, setData]       = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true); setError(false);
+    try {
+      const { data: d } = await api.get(`/admin/funnel?days=${days}`);
+      setData(d);
+    } catch { setError(true); }
+    finally { setLoading(false); }
+  }, [days]);
+  useEffect(() => { load(); }, [load]);
+
+  const steps = data?.steps || [];
+  const funnelSteps = steps.filter(s => s.event !== "cancelled");
+  const cancelled = steps.find(s => s.event === "cancelled");
+  const maxN = Math.max(1, ...funnelSteps.map(s => s.users));
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="text-sm text-zinc-400">
+          Utilizadores distintos por degrau e conversão face ao degrau anterior.
+          A recolha começou a 3 ago 2026 — janelas que recuem para lá dessa data ficam incompletas.
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {[7, 30, 90].map(d => (
+            <button
+              key={d}
+              onClick={() => setDays(d)}
+              className={`text-xs font-mono px-3 py-1.5 rounded-lg border transition-colors ${
+                days === d ? "bg-zinc-100 text-zinc-950 border-zinc-100" : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300"
+              }`}
+            >
+              {d} dias
+            </button>
+          ))}
+          <button onClick={load} className="flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-zinc-200 border border-zinc-800 hover:border-zinc-700 rounded-lg px-3 py-1.5">
+            <RefreshCw className="w-3.5 h-3.5" /> Atualizar
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-zinc-500 font-mono text-sm py-10 text-center">A carregar…</div>
+      ) : error || !data ? (
+        <div className="text-rose-400 font-mono text-sm py-10 text-center">Falha a carregar o funil.</div>
+      ) : (
+        <>
+          <div className="border border-zinc-800/60 rounded-xl divide-y divide-zinc-800/50 overflow-hidden">
+            {funnelSteps.map((s, i) => (
+              <div key={s.event} className="px-4 py-3 space-y-1.5">
+                <div className="flex items-center justify-between gap-3 text-sm font-mono">
+                  <span className="text-zinc-300">{FUNNEL_LABELS[s.event] || s.event}</span>
+                  <span className="flex items-baseline gap-3 shrink-0">
+                    {i > 0 && (
+                      <span className="text-xs text-zinc-500">
+                        {s.pct_of_prev == null ? "—" : `${s.pct_of_prev}%`}
+                      </span>
+                    )}
+                    <span className="text-zinc-100 text-lg font-light">{s.users}</span>
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full bg-zinc-800/60 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-emerald-500/70"
+                    style={{ width: `${Math.max(s.users > 0 ? 4 : 0, (s.users / maxN) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {cancelled && (
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border border-rose-500/20 bg-rose-500/5 rounded-xl text-sm font-mono">
+              <span className="text-rose-300">{FUNNEL_LABELS.cancelled}</span>
+              <span className="flex items-baseline gap-3">
+                <span className="text-xs text-zinc-500">
+                  {cancelled.pct_of_prev == null ? "" : `${cancelled.pct_of_prev}% dos que pagaram`}
+                </span>
+                <span className="text-rose-300 text-lg font-light">{cancelled.users}</span>
+              </span>
+            </div>
+          )}
+
+          <div className="text-[11px] text-zinc-600 font-mono leading-relaxed">
+            O topo anónimo (visitas à landing) vive no Cloudflare Web Analytics; a receita fina vive no painel do Stripe. Isto é o meio do funil: contas identificadas.
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function TabBadge({ n }) {
   if (!n) return null;
   return (
@@ -570,6 +709,7 @@ export default function AdminFeedback() {
         {[
           { key: "feedback", label: "Feedback",     icon: MessageSquare, badge: feedbackUnread },
           { key: "users",    label: "Utilizadores",  icon: Users,         badge: usersUnread },
+          { key: "funnel",   label: "Funil",         icon: Filter,        badge: 0 },
           { key: "data",     label: "Dados",         icon: Activity,      badge: 0 },
         ].map(({ key, label, icon: Icon, badge }) => (
           <button
@@ -586,7 +726,7 @@ export default function AdminFeedback() {
         ))}
       </div>
 
-      {tab === "feedback" ? <FeedbackTab /> : tab === "users" ? <UsersTab /> : <DataHealthTab />}
+      {tab === "feedback" ? <FeedbackTab /> : tab === "users" ? <UsersTab /> : tab === "funnel" ? <FunnelTab /> : <DataHealthTab />}
     </div>
   );
 }

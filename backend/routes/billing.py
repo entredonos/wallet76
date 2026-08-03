@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request
 from core import db, logger, ADMIN_EMAILS
+from funnel import log_event
 from routes.auth import get_current_user
 from referral_utils import grant_referrer_reward_if_needed
 from email_utils import send_email, email_layout
@@ -126,6 +127,11 @@ async def create_checkout_session(plan: str, currency: str = "eur", user=Depends
         cancel_url=f"{FRONTEND_URL}/pricing"
     )
 
+    # Funil (3 ago 2026): 4.º degrau — sessão de checkout criada (não é
+    # pagamento; isso é o webhook). O funil conta utilizadores distintos,
+    # por isso repetir o checkout não infla o número.
+    await log_event(user["id"], "checkout_started", meta={"plan": plan, "founder": False})
+
     return {"url": session.url}
 
 
@@ -190,6 +196,8 @@ async def create_founder_checkout(plan: str, currency: str = "eur", user=Depends
         success_url=f"{FRONTEND_URL}/billing-success",
         cancel_url=f"{FRONTEND_URL}/pricing",
     )
+    # Funil (3 ago 2026): mesmo degrau do checkout normal.
+    await log_event(user["id"], "checkout_started", meta={"plan": plan, "founder": True})
     return {"url": session.url}
 
 
@@ -307,6 +315,17 @@ async def stripe_webhook(request: Request):
             {"$set": updates}
         )
 
+        # Funil (3 ago 2026) — os degraus que só o webhook conhece. As
+        # transições comparam com o prev_status lido acima; once=True nos
+        # dois primeiros porque o Stripe reenvia eventos e manda vários
+        # updated com o mesmo estado.
+        if existing_user:
+            if status == "trialing" and prev_status != "trialing":
+                await log_event(existing_user["id"], "trial_started", once=True)
+            if event["type"] == "customer.subscription.deleted":
+                await log_event(existing_user["id"], "cancelled",
+                                meta={"subscription_id": subscription_id})
+
         # Fundadores (X/100): marca o utilizador como fundador se a subscrição
         # traz o cupão/código de fundador aplicado. Só marca True, nunca desmarca
         # (um evento posterior pode não trazer o desconto expandido).
@@ -369,6 +388,9 @@ async def stripe_webhook(request: Request):
             logger.warning(f"[cancelamento] falha a registar motivo ({customer_id}): {e}")
 
         if existing_user and prev_status != "active" and status == "active":
+            # Funil (3 ago 2026): 6.º degrau — primeiro pagamento processado
+            # (a mesma transição que valida o referral, logo abaixo).
+            await log_event(existing_user["id"], "subscription_active", once=True)
             referral = await db.referrals.find_one({
                 "referred_user_id": existing_user["id"],
                 "status": "pending",

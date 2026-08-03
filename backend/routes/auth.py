@@ -22,6 +22,7 @@ from core import (
 )
 from broker_connectors.crypto import decrypt_totp_secret
 from email_utils import send_email, email_layout, email_strings, _log_email_task_result
+from funnel import log_event
 from models import (
     UserRegister, UserLogin, ForgotPasswordBody, ResetPasswordBody, TokenBody,
     ResendVerificationBody, DeleteAccountBody, TwoFactorLoginVerifyBody,
@@ -97,6 +98,9 @@ async def register(payload: UserRegister, request: Request, response: Response):
         link_hint=_es["link_hint"],
     )
     asyncio.create_task(send_email(email, _es["verify_subject"], html)).add_done_callback(_log_email_task_result)
+
+    # Funil (3 ago 2026): 1.º degrau. log_event nunca levanta exceção.
+    await log_event(user_id, "registered", meta={"referred": bool(referred_by)})
 
     # Do NOT auto-login. User must verify email before signing in.
     return {"ok": True, "email": email, "email_verified": False, "verification_sent": True}
@@ -385,6 +389,9 @@ async def verify_email(payload: TokenBody):
             "$unset": {"verify_token_hash": "", "verify_token_expires": ""},
         },
     )
+    # Funil (3 ago 2026): 2.º degrau. once=True porque um reenvio do link
+    # não é uma verificação nova.
+    await log_event(user["id"], "email_verified", once=True)
     # Email de boas-vindas (1.º da sequência de onboarding) — fire-and-forget.
     try:
         from onboarding import send_welcome_email

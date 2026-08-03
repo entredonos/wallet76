@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Depends
 
 from core import db, get_current_user, require_active_subscription, is_pro_user, _cache_get, _cache_set, invalidate_history_cache, logger
+from funnel import log_event
 from models import TransactionCreate, TransactionUpdate
 from prices import (
     compute_holdings_from_txns, migrate_legacy_assets, get_fx_rates,
@@ -61,6 +62,9 @@ async def create_transaction(payload: TransactionCreate, user=Depends(get_curren
     await db.transactions.insert_one(doc)
     doc.pop("_id", None)
     invalidate_history_cache(user["id"])
+    # Funil (3 ago 2026): 3.º degrau — o primeiro ativo é o momento em que a
+    # conta deixa de estar vazia. once=True: só o primeiro conta.
+    await log_event(user["id"], "first_asset", meta={"via": "manual"}, once=True)
     return doc
 
 
@@ -233,5 +237,7 @@ async def import_transactions(payload: dict, user=Depends(get_current_user)):
     if docs:
         await db.transactions.insert_many(docs)
         invalidate_history_cache(user["id"])
+        # Funil (3 ago 2026): o import também conta como primeiro ativo.
+        await log_event(user["id"], "first_asset", meta={"via": "import"}, once=True)
 
     return {"imported": len(docs), "errors": errors}

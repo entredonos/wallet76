@@ -3,6 +3,7 @@ import re
 from datetime import datetime, timezone, timedelta
 
 from core import db, get_current_user, require_admin, delete_all_user_data, logger, cache_stats, PROCESS_STARTED
+from funnel import FUNNEL_STEPS
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
@@ -63,6 +64,34 @@ async def admin_data_health(user=Depends(require_admin)):
     from prices import get_data_health  # lazy: evita import circular
     return get_data_health()
 
+@router.get("/admin/funnel")
+async def admin_funnel(
+    days: int = Query(30, ge=1, le=365),
+    user=Depends(require_admin),
+):
+    """Admin only — o funil de conversão (3 ago 2026; desenho no NEGOCIO,
+    P1). Conta utilizadores DISTINTOS por degrau na janela pedida e a % de
+    conversão face ao degrau anterior. São os 7 números combinados — isto
+    não é um BI: o topo anónimo vive no Cloudflare Web Analytics e o
+    dinheiro fino no painel do Stripe.
+
+    O 7.º degrau ("cancelled") não é conversão, é churn: a sua % é
+    calculada face ao subscription_active, e não entra na cadeia (um
+    cancelamento não é o degrau seguinte de uma subscrição no funil de
+    aquisição)."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    steps = []
+    prev_n = None
+    for ev in FUNNEL_STEPS:
+        uids = await db.events.distinct("user_id", {"event": ev, "at": {"$gte": cutoff}})
+        n = len(uids)
+        pct = round(n / prev_n * 100.0, 1) if prev_n else None
+        steps.append({"event": ev, "users": n, "pct_of_prev": pct})
+        if ev != "cancelled":
+            prev_n = n
+    return {"days": days, "since": cutoff, "steps": steps}
+
+
 # Safe projection for admin user listings — never pull password_hash or
 # reset/verify token hashes into Python just to discard them in _safe_user.
 _USER_LIST_PROJECTION = {
@@ -70,6 +99,40 @@ _USER_LIST_PROJECTION = {
     "email_verified": 1, "subscription_plan": 1, "subscription_status": 1,
     "last_active_at": 1,
 }
+
+
+async def _enrich_users(docs: list[dict]) -> list[dict]:
+    """Junta a cada utilizador o nº de ativos e as corretoras ligadas
+    (lista enriquecida do admin, 3 ago 2026 — desenho no NEGOCIO, P1).
+
+    "Nº de ativos" = símbolos distintos com transações — deliberadamente
+    uma aproximação: calcular holdings reais (compute_holdings_from_txns)
+    para cada utilizador da lista custaria carregar as transações todas
+    de toda a gente; contar símbolos é uma aggregation no Mongo e chega
+    para a pergunta do admin ("esta conta está vazia ou a sério?")."""
+    ids = [u.get("id") for u in docs if u.get("id")]
+    safe = [_safe_user(u) for u in docs]
+    if not ids:
+        return safe
+    try:
+        rows = await db.transactions.aggregate([
+            {"$match": {"user_id": {"$in": ids}}},
+            {"$group": {"_id": {"u": "$user_id", "s": "$symbol"}}},
+            {"$group": {"_id": "$_id.u", "n": {"$sum": 1}}},
+        ]).to_list(len(ids) + 10)
+        assets = {r["_id"]: r["n"] for r in rows}
+        rows = await db.broker_connections.aggregate([
+            {"$match": {"user_id": {"$in": ids}}},
+            {"$group": {"_id": "$user_id", "brokers": {"$addToSet": "$broker"}}},
+        ]).to_list(len(ids) + 10)
+        brokers = {r["_id"]: sorted(r["brokers"]) for r in rows}
+    except Exception as e:
+        logger.warning(f"admin: enriquecimento da lista falhou ({e}) — lista simples")
+        return safe
+    for u, s in zip(docs, safe):
+        s["assets_count"] = assets.get(u.get("id"), 0)
+        s["brokers"] = brokers.get(u.get("id"), [])
+    return safe
 
 
 def _tier_filter(tier: str) -> dict:
@@ -146,6 +209,9 @@ def _safe_user(u: dict) -> dict:
         "created_at":     u.get("created_at", ""),
         "email_verified": u.get("email_verified", False),
         "last_active_at": u.get("last_active_at", ""),
+        # 3 ago 2026 — o tier resume "quem paga"; o status conta o resto da
+        # história (trialing, past_due, canceled) e o admin quer vê-la.
+        "subscription_status": sub_status,
     }
 
 
@@ -174,7 +240,7 @@ async def admin_user_stats(user=Depends(require_admin)):
     free, monthly, yearly = counts.get("free", 0), counts.get("monthly", 0), counts.get("yearly", 0)
 
     last10_docs = await db.users.find({}, _USER_LIST_PROJECTION).sort("created_at", -1).to_list(10)
-    last10 = [_safe_user(u) for u in last10_docs]
+    last10 = await _enrich_users(last10_docs)
 
     # Ativos nas últimas 24h — last_active_at é uma string ISO 8601, que
     # ordena/compara lexicograficamente igual a cronologicamente (mesmo
@@ -215,7 +281,7 @@ async def admin_user_list(
     query itself (see _tier_filter) rather than after loading every user."""
     query = _tier_filter(tier) if tier in ("free", "monthly", "yearly") else {}
     docs = await db.users.find(query, _USER_LIST_PROJECTION).sort("created_at", -1).to_list(10000)
-    return [_safe_user(u) for u in docs]
+    return await _enrich_users(docs)
 
 
 @router.get("/admin/users/search")
@@ -230,7 +296,7 @@ async def admin_user_search(
         _USER_LIST_PROJECTION,
     ).sort("created_at", -1).to_list(50)
 
-    return [_safe_user(u) for u in results]
+    return await _enrich_users(results)
 
 
 @router.get("/admin/users/unread-count")
