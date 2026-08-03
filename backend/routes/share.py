@@ -194,6 +194,26 @@ async def public_portfolio(slug: str):
     holdings = compute_holdings_from_txns(txns)
     holdings = [h for h in holdings if h.get("quantity", 0) > 0]
 
+    # Agregar por ativo (3 ago 2026): compute_holdings_from_txns devolve uma
+    # posicao POR CARTEIRA, e a pagina publica listava-as tal e qual — quem
+    # tivesse BTC em duas carteiras aparecia com duas linhas "BTC" sem
+    # etiqueta nenhuma, o que aos olhos de quem recebe o link parece um erro
+    # (visto num link real partilhado por WhatsApp). A vista publica nao
+    # mostra carteiras, por isso consolida-se: soma das quantidades e custo
+    # medio ponderado. O nome fica o da primeira ocorrencia.
+    _merged: dict = {}
+    for h in holdings:
+        key = (h["asset_type"], h["symbol"].upper(), (h.get("coingecko_id") or "").lower())
+        m = _merged.get(key)
+        if m is None:
+            _merged[key] = dict(h)
+        else:
+            q_total = m["quantity"] + h["quantity"]
+            cost_total = m["avg_cost_usd"] * m["quantity"] + h["avg_cost_usd"] * h["quantity"]
+            m["quantity"] = q_total
+            m["avg_cost_usd"] = (cost_total / q_total) if q_total > 0 else 0.0
+    holdings = list(_merged.values())
+
     if not holdings:
         result = {
             "display_name": display_name,

@@ -104,7 +104,7 @@
 - [ ] Bónus referral de 45 dias perde-se se o checkout for abandonado (flag gravada cedo demais; mover para o webhook) (billing.py:73)
 - [ ] Registo duplicado simultâneo dá 500 em vez de 400 (auth.py:38)
 - [ ] Idioma inicial: detetar `navigator.language` em vez de PT fixo (um alemão novo vê tudo em português) (I18nContext.jsx)
-- [ ] `PublicPortfolio.jsx` todo em inglês hardcoded — é a montra dos links partilhados; adicionar COPY 6 línguas
+- [x] ~~`PublicPortfolio.jsx` todo em inglês hardcoded~~ **FEITO 3 ago 2026** — COPY ×6 na língua do browser do visitante; no mesmo trabalho corrigiram-se o P&L sem sinal (perda aparecia como lucro!) e os ativos duplicados entre carteiras (README §2)
 - [ ] Empty state do Dashboard: fraco ("Sem ativos…"); adicionar CTA direto + considerar modo demo
 - [x] ~~Monitorização: UptimeRobot no /ping + Sentry no frontend (ambos grátis)~~ **QUASE FECHADO 3 ago 2026:** UptimeRobot no ar (2 monitores de 5 min: via Cloudflare e Render direto; o /ping ganhou HEAD para o monitor não dar 405 — README §2); Sentry backend já estava vivo (DSN no Render). **Resta 1 clique:** `REACT_APP_SENTRY_DSN` no projeto da Cloudflare Pages (a variável ficou na Vercel na migração de 30 jul) + redeploy
 - [ ] Watchlists: o router NÃO está montado no server.py (289 linhas de código com endpoints 404) — montar ou apagar
