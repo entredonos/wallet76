@@ -67,9 +67,13 @@
    secundária: checkout com cartão real, subscrição em trial, webhook OK
    depois de acertar o `whsec_`, cancelada a 28) e re-verificado a 30 jul
    depois da correção dos customers mortos (`cs_live_`, 200). Nada falta.
-4. **Emails saem de `onboarding@resend.dev`** se `FROM_EMAIL` não estiver
-   definido — mata a entregabilidade e a credibilidade. Verificar o domínio
-   wallet76.com no Resend (SPF+DKIM) e definir `FROM_EMAIL` no Render (grátis).
+4. **~~Emails saem de `onboarding@resend.dev`~~ — RESOLVIDO, confirmado a
+   3 ago 2026.** O Jose já tinha feito as duas partes: domínio wallet76.com
+   verificado no Resend (provado por DNS: DKIM `resend._domainkey`, MX/SPF de
+   `send.wallet76.com` no SES eu-west-1) e `FROM_EMAIL` no Render — os emails
+   chegam como `Wallet76 <noreply@wallet76.com>` (verificado no remetente do
+   relatório de saúde). Opcional pendente: DMARC (`_dmarc` TXT
+   `v=DMARC1; p=none;` na Cloudflare) para reputação extra.
 
 ---
 
@@ -78,7 +82,7 @@
 ### P0 — antes de vender (bloqueadores)
 - [x] Ícones PWA corrompidos (144/152/384) — corrigido em 28 jul
 - [x] ~~Stripe live mode~~ **FEITO** — em live desde 26 jul (produtos, chaves, webhook, cupão: o Jose); customers órfãos do modo de teste corrigidos a 30 jul (README §2). Ver alerta 3.
-- [ ] Resend: domínio verificado + FROM_EMAIL de produção
+- [x] ~~Resend: domínio verificado + FROM_EMAIL de produção~~ **FEITO — confirmado a 3 ago 2026** (o Jose já tinha configurado ambos; prova por DNS + remetente real; ver alerta 4 da secção 3)
 - [x] ~~Corrigir URL hardcoded `wallet76.vercel.app` no email de alertas (email_utils.py:183) e traduzi-lo (só existe em EN)~~ **JÁ ESTAVA FEITO desde 28 jul 2026** (caixa ficou por marcar; verificado a 3 ago): o `cta_url` usa `APP_URL` com reserva `wallet76.com` e aponta para `/alerts`, e o email sai do `EMAIL_I18N` ×6 — o comentário em `alert_email_html` (email_utils.py) documenta a correção
 - [ ] Backups Mongo: script mongodump semanal (grátis) OU Atlas Flex
 - [x] ~~Decidir Vercel Pro vs Cloudflare Pages~~ **FEITO 30 jul** — migrado para Cloudflare Pages, $0 e uso comercial permitido (README §2). Desmantelar a Vercel a partir de 13 ago se estável.
