@@ -48,6 +48,15 @@ _SENTRY_NOISE = (
     "possibly delisted", "no price data found", "no data found",
     "failed download", "quote not found", "symbol may be delisted",
     "not found for symbol",
+    # 3 ago 2026 — rate limits e timeouts das fontes de preços (yfinance/
+    # CoinGecko) estavam a encher o feed e a gastar a quota de 5.000/mês,
+    # enterrando os erros a sério (um InvalidRequestError do Stripe passou
+    # dias no meio desta lama). Continuam nos logs do Render e no
+    # /admin/data-health; o Sentry é para o que é acionável. Nota: os 429
+    # do NOSSO check_rate_limit não passam por aqui — HTTPException vira
+    # resposta normal, não evento de erro.
+    "too many requests", "rate limited", "yfratelimiterror",
+    "gateway timeout",
 )
 
 
