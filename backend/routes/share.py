@@ -154,6 +154,36 @@ async def update_share_settings(body: ShareSettingsBody, user=Depends(get_curren
 # Public read endpoint — no authentication required
 # ---------------------------------------------------------------------------
 
+@router.get("/p/{slug}/meta")
+async def public_portfolio_meta(slug: str):
+    """Nome do dono + lingua dele, para a Pages Function reescrever na edge
+    o <title> e os og:* da pagina partilhada (3 ago 2026). Porque: o WhatsApp
+    e os outros crawlers NAO correm JavaScript — leem as meta tags estaticas
+    do index.html, que sao uma so (em ingles) para as 6 linguas. Ao servir
+    /p/{slug}, a Function pergunta aqui a lingua DE QUEM PARTILHOU e reescreve
+    o titulo/descricao nessa lingua — quem recebe o link ve a pre-visualizacao
+    na lingua de quem lho mandou. Sem valores, sem email: nome + lingua.
+    Cache com o MESMO prefixo do payload publico, para a revogacao/regeneracao
+    (que faz _cache_clear_prefix do prefixo) matar as duas entradas de uma vez.
+    """
+    cache_key = _public_cache_key(slug) + ":meta"
+    cached = _cache_get(cache_key, 300)
+    if cached:
+        return cached
+    link = await db.share_links.find_one({"slug": slug}, {"_id": 0, "user_id": 1})
+    if not link:
+        raise HTTPException(404, "Portfolio not found or link has been revoked.")
+    user = await db.users.find_one({"id": link["user_id"]}, {"name": 1, "_id": 0})
+    prefs = await db.user_prefs.find_one(
+        {"user_id": link["user_id"]}, {"_id": 0, "language": 1})
+    result = {
+        "display_name": (user or {}).get("name") or "Anonymous",
+        "lang": (((prefs or {}).get("language")) or "en").lower()[:2],
+    }
+    _cache_set(cache_key, result)
+    return result
+
+
 @router.get("/p/{slug}")
 async def public_portfolio(slug: str):
     """Return a sanitised, read-only portfolio snapshot for a share slug."""
