@@ -55,9 +55,14 @@
    `frontend/vercel.json`, e limpar a parte da Vercel na REGRA #5 + README.
    Se estás a ler isto depois dessa data e o projeto Vercel ainda existe,
    lembra o Jose.
-2. **MongoDB M0 não tem backups.** Um erro/incidente apaga os portefólios de
-   todos os clientes sem recuperação. Mitigação grátis imediata: script
-   `mongodump` semanal no PC. Solução real: Atlas Flex ($8+).
+2. **MongoDB M0 não tem backups — mitigação NO AR desde 3 ago 2026.**
+   Backup semanal automático no PC do Jose: tarefa «Wallet76MongoBackup» no
+   Agendador do Windows (domingos 21:00; corre ao ligar o PC se estava
+   desligado), script `backend/scripts/backup_mongo.ps1` (mongodump gzip,
+   retenção 8 = 2 meses, log em `C:\Users\bruno\Backups\Wallet76Mongo`).
+   Primeiro backup provado a 3 ago: 75,7 MB, gzip íntegro. Continua a valer:
+   a solução a sério quando houver clientes pagos é o Atlas Flex ($8+) —
+   um backup no mesmo PC não protege contra o PC morrer.
 3. **~~Stripe está em modo TEST~~ — LIVE confirmado a 30 jul 2026** (o Jose já
    tinha feito a passagem: produtos, chave e webhook live no Render). A
    transição deixou um resto: customers criados em modo de teste ficaram
@@ -84,7 +89,7 @@
 - [x] ~~Stripe live mode~~ **FEITO** — em live desde 26 jul (produtos, chaves, webhook, cupão: o Jose); customers órfãos do modo de teste corrigidos a 30 jul (README §2). Ver alerta 3.
 - [x] ~~Resend: domínio verificado + FROM_EMAIL de produção~~ **FEITO — confirmado a 3 ago 2026** (o Jose já tinha configurado ambos; prova por DNS + remetente real; ver alerta 4 da secção 3)
 - [x] ~~Corrigir URL hardcoded `wallet76.vercel.app` no email de alertas (email_utils.py:183) e traduzi-lo (só existe em EN)~~ **JÁ ESTAVA FEITO desde 28 jul 2026** (caixa ficou por marcar; verificado a 3 ago): o `cta_url` usa `APP_URL` com reserva `wallet76.com` e aponta para `/alerts`, e o email sai do `EMAIL_I18N` ×6 — o comentário em `alert_email_html` (email_utils.py) documenta a correção
-- [ ] Backups Mongo: script mongodump semanal (grátis) OU Atlas Flex
+- [x] ~~Backups Mongo: script mongodump semanal (grátis) OU Atlas Flex~~ **FEITO 3 ago 2026** — script + tarefa agendada semanal no PC (ver alerta 2 da secção 3 e README §2/§13); Atlas Flex fica para quando houver pagantes
 - [x] ~~Decidir Vercel Pro vs Cloudflare Pages~~ **FEITO 30 jul** — migrado para Cloudflare Pages, $0 e uso comercial permitido (README §2). Desmantelar a Vercel a partir de 13 ago se estável.
 - [x] ~~Bug: `DELETE /transactions/all` nunca funciona (rota registada DEPOIS de `/transactions/{txn_id}`).~~ **FEITO 28 jul 2026** — rota movida para antes das irmãs parametrizadas (transactions.py:70); validado em produção. Ver README §2.
 - [x] ~~`PublicPortfolio.jsx:6` usa env var errada (`REACT_APP_API_URL`).~~ **FEITO 28 jul 2026** — passou a importar `API` do `lib/api.js`, como todas as outras páginas. Ver README §2 e §7.1.
