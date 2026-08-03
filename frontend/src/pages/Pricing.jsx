@@ -23,6 +23,7 @@ const COPY = {
     title: "Escolhe o teu plano", subtitle: "Começa grátis. Muda para Pro quando precisares de mais.",
     currency_label: "Moeda", monthly: "Mensal", yearly: "Anual", per_month: "/mês", per_year: "/ano",
     best_value: "Poupa 30%", free_name: "Grátis", pro_name: "Pro",
+    checkout_error: "Não foi possível abrir o pagamento. Tenta outra vez; se persistir, fala connosco.",
     free_cta: "Continuar grátis", pro_cta: "Começar teste de 30 dias", founder_cta: "Torna-te fundador", founder_left: "vagas de fundador restantes",
     trial_note: "Teste Pro de 30 dias. Cartão necessário para ativar; sem cobrança se cancelares antes do fim do teste.",
     free_feats: ["1 carteira", "Até 15 posições", "3 alertas de preço", "Registo manual de transações", "Alertas por email"],
@@ -32,6 +33,7 @@ const COPY = {
     title: "Choose your plan", subtitle: "Start free. Upgrade to Pro when you need more.",
     currency_label: "Currency", monthly: "Monthly", yearly: "Yearly", per_month: "/mo", per_year: "/yr",
     best_value: "Save 30%", free_name: "Free", pro_name: "Pro",
+    checkout_error: "Couldn't open the checkout. Please try again — if it persists, contact us.",
     free_cta: "Continue for free", pro_cta: "Start 30-day trial", founder_cta: "Become a founder", founder_left: "founder seats left",
     trial_note: "30-day Pro trial. Card required to activate; no charge if you cancel before the trial ends.",
     free_feats: ["1 portfolio", "Up to 15 holdings", "3 price alerts", "Manual transaction entry", "Email alerts"],
@@ -41,6 +43,7 @@ const COPY = {
     title: "Choisissez votre formule", subtitle: "Commencez gratuitement. Passez à Pro quand vous en avez besoin.",
     currency_label: "Devise", monthly: "Mensuel", yearly: "Annuel", per_month: "/mois", per_year: "/an",
     best_value: "Économisez 30 %", free_name: "Gratuit", pro_name: "Pro",
+    checkout_error: "Impossible d'ouvrir le paiement. Réessayez — si le problème persiste, contactez-nous.",
     free_cta: "Continuer gratuitement", pro_cta: "Démarrer l'essai de 30 jours", founder_cta: "Devenir fondateur", founder_left: "places fondateur restantes",
     trial_note: "Essai Pro de 30 jours. Carte requise pour activer ; aucun débit si vous annulez avant la fin de l'essai.",
     free_feats: ["1 portefeuille", "Jusqu'à 15 positions", "3 alertes de prix", "Saisie manuelle des transactions", "Alertes par e-mail"],
@@ -50,6 +53,7 @@ const COPY = {
     title: "Wählen Sie Ihren Plan", subtitle: "Kostenlos starten. Auf Pro upgraden, wenn Sie mehr brauchen.",
     currency_label: "Währung", monthly: "Monatlich", yearly: "Jährlich", per_month: "/Mon.", per_year: "/Jahr",
     best_value: "30 % sparen", free_name: "Kostenlos", pro_name: "Pro",
+    checkout_error: "Der Bezahlvorgang konnte nicht geöffnet werden. Bitte versuche es erneut — falls es weiterhin auftritt, kontaktiere uns.",
     free_cta: "Kostenlos fortfahren", pro_cta: "30-Tage-Test starten", founder_cta: "Gründer werden", founder_left: "Gründerplätze frei",
     trial_note: "30-tägiger Pro-Test. Karte zur Aktivierung erforderlich; keine Belastung, wenn Sie vor Testende kündigen.",
     free_feats: ["1 Portfolio", "Bis zu 15 Positionen", "3 Preisalarme", "Manuelle Transaktionserfassung", "E-Mail-Alarme"],
@@ -59,6 +63,7 @@ const COPY = {
     title: "Scegli il tuo piano", subtitle: "Inizia gratis. Passa a Pro quando ti serve di più.",
     currency_label: "Valuta", monthly: "Mensile", yearly: "Annuale", per_month: "/mese", per_year: "/anno",
     best_value: "Risparmia il 30%", free_name: "Gratis", pro_name: "Pro",
+    checkout_error: "Impossibile aprire il pagamento. Riprova — se il problema persiste, contattaci.",
     free_cta: "Continua gratis", pro_cta: "Inizia la prova di 30 giorni", founder_cta: "Diventa fondatore", founder_left: "posti fondatore rimasti",
     trial_note: "Prova Pro di 30 giorni. Carta richiesta per attivare; nessun addebito se annulli prima della fine della prova.",
     free_feats: ["1 portafoglio", "Fino a 15 posizioni", "3 avvisi di prezzo", "Inserimento manuale delle transazioni", "Avvisi via email"],
@@ -68,6 +73,7 @@ const COPY = {
     title: "Elige tu plan", subtitle: "Empieza gratis. Cambia a Pro cuando necesites más.",
     currency_label: "Moneda", monthly: "Mensual", yearly: "Anual", per_month: "/mes", per_year: "/año",
     best_value: "Ahorra un 30%", free_name: "Gratis", pro_name: "Pro",
+    checkout_error: "No se pudo abrir el pago. Inténtalo de nuevo; si persiste, contáctanos.",
     free_cta: "Continuar gratis", pro_cta: "Empezar prueba de 30 días", founder_cta: "Hazte fundador", founder_left: "plazas de fundador restantes",
     trial_note: "Prueba Pro de 30 días. Tarjeta necesaria para activar; sin cargo si cancelas antes de que termine la prueba.",
     free_feats: ["1 cartera", "Hasta 15 posiciones", "3 alertas de precio", "Registro manual de transacciones", "Alertas por correo"],
@@ -83,10 +89,36 @@ export default function Pricing() {
   const [cur, setCur] = useState("eur");
   const [period, setPeriod] = useState("yearly");
 
-  async function choosePlan() {
-    const res = await api.post(`/billing/create-checkout-session/${period}?currency=${cur}`);
-    window.location.href = res.data.url;
+  // 3 ago 2026 — descoberto no teste de fundador do Jose: os dois botões de
+  // checkout chamavam a API sem try/catch nem verificação de sessão. Um 401
+  // (janela sem cookie) ou qualquer falha morria EM SILÊNCIO: clique sem
+  // efeito nenhum, cliente a pagar perdido sem mensagem. Agora: sem sessão
+  // vai para o registo; com erro, mensagem visível; e o botão bloqueia
+  // enquanto o checkout abre (duplo clique = duas sessões Stripe).
+  const [busy, setBusy] = useState(false);
+  const [checkoutErr, setCheckoutErr] = useState(false);
+
+  async function goCheckout(isFounder) {
+    if (!user) {
+      window.location.href = "/register";
+      return;
+    }
+    if (busy) return;
+    setBusy(true);
+    setCheckoutErr(false);
+    try {
+      const path = isFounder
+        ? `/billing/create-founder-checkout/${period}?currency=${cur}`
+        : `/billing/create-checkout-session/${period}?currency=${cur}`;
+      const res = await api.post(path);
+      window.location.href = res.data.url;
+    } catch (e) {
+      setBusy(false);
+      setCheckoutErr(true);
+    }
   }
+
+  function choosePlan() { goCheckout(false); }
 
   // Fundador: vagas livres para mostrar (e ativar) o botão de fundador.
   const [founder, setFounder] = useState({ livres: 0 });
@@ -100,10 +132,7 @@ export default function Pricing() {
     return () => { ignore = true; };
   }, []);
 
-  async function chooseFounderPlan() {
-    const res = await api.post(`/billing/create-founder-checkout/${period}?currency=${cur}`);
-    window.location.href = res.data.url;
-  }
+  function chooseFounderPlan() { goCheckout(true); }
 
   const priceVal = PRICES[cur][period];
   const periodLabel = period === "yearly" ? c.per_year : c.per_month;
@@ -182,13 +211,16 @@ export default function Pricing() {
               ))}
             </ul>
             {founder.livres > 0 && (
-              <button onClick={chooseFounderPlan} className="w-full mb-3 rounded-xl py-3 font-bold text-black bg-gradient-to-r from-[#FCD34D] to-[#F59E0B] hover:brightness-110 transition">
-                {c.founder_cta} · {founder.livres} {c.founder_left}
+              <button onClick={chooseFounderPlan} disabled={busy} className="w-full mb-3 rounded-xl py-3 font-bold text-black bg-gradient-to-r from-[#FCD34D] to-[#F59E0B] hover:brightness-110 transition disabled:opacity-60 disabled:cursor-wait">
+                {busy ? "…" : <>{c.founder_cta} · {founder.livres} {c.founder_left}</>}
               </button>
             )}
-            <button onClick={choosePlan} className="w-full bg-emerald-400 text-black rounded-xl py-3 font-bold hover:bg-emerald-300 transition-colors">
-              {c.pro_cta}
+            <button onClick={choosePlan} disabled={busy} className="w-full bg-emerald-400 text-black rounded-xl py-3 font-bold hover:bg-emerald-300 transition-colors disabled:opacity-60 disabled:cursor-wait">
+              {busy ? "…" : c.pro_cta}
             </button>
+            {checkoutErr && (
+              <p className="text-sm text-rose-400 text-center mt-3">{c.checkout_error}</p>
+            )}
           </div>
         </div>
 
