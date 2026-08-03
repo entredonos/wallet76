@@ -215,3 +215,26 @@ o pandas. `/portfolio`, `/sparklines` e `/prices/live` são os outros pesados.
 5. Entregar o bloco PowerShell com os ficheiros listados um a um.
 6. Dizer o que ficou por fazer e porquê — o backlog vive no
    `Wallet76_NEGOCIO.md` e as pendências técnicas no fim do README.
+## Cowork (nuvem) vs Claude Code local — que procedimentos se aplicam
+
+Este SKILL.md nasceu em sessões Cowork na NUVEM, onde o disco do Jose está do
+outro lado de uma ponte. Vários procedimentos existem SÓ por causa disso. Num
+Claude Code a correr LOCALMENTE na pasta do repo:
+
+- **Edita os ficheiros diretamente** (Edit/Write). NADA de scripts `_rNN.py`
+  com âncoras, nem SendUserFile/device_commit_files, nem pasta `_to_delete/`
+  — eram muletas da distância. (A `_to_delete/` acumulada pode ser apagada
+  pelo Jose quando quiser.)
+- **Corre o git tu próprio**, com as manias da casa: `git add` ficheiro a
+  ficheiro, NUNCA `git add .`; o ` M frontend/src/components/Sparkline.jsx`
+  é um fantasma com diff vazio — nunca o adicionar; mensagens de commit sem
+  acentos (armadilha antiga de encoding no PowerShell).
+- **Mantém tudo o resto, sem exceção:** as 9 regras do CLAUDE.md; o README
+  atualizado no MESMO trabalho (REGRA #7) e o README é untracked — NUNCA
+  commitar; UTF-8 sem CRLF; verificação de sintaxe antes de qualquer commit
+  (`python3 -c "import ast..."` para .py, o parser do @babel para .jsx);
+  i18n ×6 em todo o texto visível (REGRA #1); ajudas acompanham os ecrãs
+  (REGRA #9).
+- **O que fica na sessão Cowork:** lembretes agendados (ex.: teardown do
+  Vercel a 13 ago 2026 — mas o essencial está no NEGOCIO) e verificações no
+  browser com as sessões autenticadas dele (Render, Stripe, Search Console).
