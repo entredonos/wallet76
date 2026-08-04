@@ -77,7 +77,11 @@ export default function AssetDetail({ currency = "USD" }) {
     if (!symbol) return;
     if (!urlAssetType) setLoading(true);
     setError(null);
-    api.get(`/asset/${symbol}`)
+    // asset_type como dica (4 ago 2026): sem ela, um ticker de cripto nu
+    // tanto dava 404 no Yahoo como — pior — devolvia um HOMÓNIMO errado
+    // (há ETFs/ações com os mesmos tickers das criptos; um "BTC" a $28 que
+    // não é a Bitcoin). Com a dica, o backend vai direto ao par -USD.
+    api.get(`/asset/${symbol}`, { params: urlAssetType ? { asset_type: urlAssetType } : {} })
       .then(r => setDetail(r.data))
       .catch(e => {
         if (!urlAssetType) {

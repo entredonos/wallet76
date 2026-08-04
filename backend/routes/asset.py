@@ -373,13 +373,26 @@ def _fetch_dividend_info(sym: str) -> dict:
 # -- Asset detail endpoint -----------------------------------------------------
 
 @router.get("/asset/{symbol}")
-async def get_asset_detail(symbol: str, user=Depends(get_current_user)):
+async def get_asset_detail(symbol: str, asset_type: str | None = None, user=Depends(get_current_user)):
+    # asset_type (4 ago 2026): dica opcional vinda da rota tipada do
+    # frontend. Sem ela, um simbolo de cripto "nu" no Yahoo tanto da 404
+    # ("BTC" nao existe la — o par chama-se "BTC-USD") como, PIOR, devolve
+    # um homonimo errado: ha ETFs/acoes com os mesmos tickers das criptos
+    # (um "BTC" a $28 que nao e a Bitcoin — apanhado ao testar a correcao
+    # do 404). Com asset_type=crypto vai-se direto ao par -USD e o homonimo
+    # nunca entra na frente.
     sym = symbol.upper()
-    cache_key = f"asset_detail2:{sym}"
+    is_crypto_hint = (asset_type or "").lower() == "crypto"
+    cache_key = f"asset_detail2:{sym}" + (":crypto" if is_crypto_hint else "")
     cached = _cache_get(cache_key, ttl=300)
 
     if cached:
         detail = cached
+    elif is_crypto_hint:
+        detail = await _yf_fast_info_fallback(f"{sym}-USD")
+        if detail and detail.get("price"):
+            detail["symbol"] = sym
+            detail["asset_type"] = "crypto"
     else:
         qs = await _yf_quote_summary(sym)
         if qs:
@@ -387,18 +400,19 @@ async def get_asset_detail(symbol: str, user=Depends(get_current_user)):
         else:
             detail = None
 
-        if not detail or not detail.get("price"):
+        if (not detail or not detail.get("price")) and not is_crypto_hint:
             logger.info(f"quoteSummary failed for {sym}, trying fast_info fallback")
             detail = await _yf_fast_info_fallback(sym)
 
-        if not detail or not detail.get("price"):
-            # Cripto (4 ago 2026): o Yahoo nao resolve "BTC" sozinho — o
-            # ticker de cripto la chama-se "BTC-USD". Qualquer clique que
-            # chegasse aqui com um simbolo de cripto nu levava 404
-            # ("Asset 'BTC' not found", visto pelo Jose no proprio BTC).
+        if (not detail or not detail.get("price")) and not is_crypto_hint:
+            # Cripto sem dica (4 ago 2026): o Yahoo nao resolve "BTC"
+            # sozinho — o ticker de cripto la chama-se "BTC-USD" — e o
+            # clique levava 404 ("Asset 'BTC' not found", visto pelo Jose).
             # Ultima tentativa antes de desistir: o par -USD; se resolver,
-            # o simbolo mostrado volta a ser o nu (e o que o utilizador
-            # conhece) e o tipo fica cravado a crypto.
+            # o simbolo mostrado volta a ser o nu e o tipo fica crypto.
+            # (Com is_crypto_hint os dois blocos acima ficam de fora de
+            # proposito: tentar o simbolo nu podia devolver o HOMONIMO
+            # errado em vez de falhar.)
             detail = await _yf_fast_info_fallback(f"{sym}-USD")
             if detail and detail.get("price"):
                 detail["symbol"] = sym
