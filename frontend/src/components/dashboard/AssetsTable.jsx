@@ -145,7 +145,7 @@ export default function AssetsTable({
                   <td className="px-5 py-4">
                     <button
                       type="button"
-                      onClick={() => nav(`/asset/${a.symbol}`)}
+                      onClick={() => nav(a.asset_type ? `/asset/${a.asset_type}/${a.symbol}` : `/asset/${a.symbol}`)}
                       className="flex items-center gap-3 text-left hover:opacity-80 transition-opacity"
                       data-testid={`asset-link-${a.symbol}`}
                     >

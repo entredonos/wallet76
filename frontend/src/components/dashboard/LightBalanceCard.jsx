@@ -46,7 +46,7 @@ export default function LightBalanceCard({
               {assets.map((a) => (
                 <Link
                   key={a.symbol + a.asset_type}
-                  to={`/asset/${encodeURIComponent(a.symbol)}?type=${a.asset_type}`}
+                  to={a.asset_type ? `/asset/${a.asset_type}/${encodeURIComponent(a.symbol)}` : `/asset/${encodeURIComponent(a.symbol)}`}
                   className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-zinc-950/40 border border-zinc-800/40 hover:border-zinc-700 hover:bg-zinc-950/70 transition-colors"
                   data-testid={`light-balance-asset-${a.symbol}`}
                 >

@@ -36,7 +36,7 @@ export default function AssetCard({
       <div className="flex items-start justify-between gap-3">
         <button
           type="button"
-          onClick={() => nav(`/asset/${a.symbol}`)}
+          onClick={() => nav(a.asset_type ? `/asset/${a.asset_type}/${a.symbol}` : `/asset/${a.symbol}`)}
           className="flex items-center gap-3 text-left min-w-0"
           data-testid={`asset-link-${a.symbol}`}
         >

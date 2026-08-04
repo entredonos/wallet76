@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { Lock, Unlock, PieChart as PieIcon, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
@@ -55,6 +56,9 @@ export default function Alocacao({ currency = "USD" }) {
   // classe na vista de acao; tPage e a pagina da tabela/lista (10 por pagina).
   const [actOpen, setActOpen] = useState({});
   const [tPage, setTPage] = useState(0);
+  // Ver todos (4 ago 2026): desliga a paginacao de 10 dentro do grupo ativo.
+  const [showAll, setShowAll] = useState(false);
+  const nav = useNavigate();
   // Editor "Alocacao por grupos" nasce FECHADO (2 ago 2026, pedido do Jose):
   // quem so vem ver, ve o resumo por classe (barra do atual + risco do alvo +
   // chip de acao — a mesma linguagem da vista de Acao); quem vem editar abre.
@@ -304,8 +308,8 @@ export default function Alocacao({ currency = "USD" }) {
   const PAGE_SIZE = 10;
   const nPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const pagedRows = useMemo(
-    () => rows.slice(tPage * PAGE_SIZE, tPage * PAGE_SIZE + PAGE_SIZE),
-    [rows, tPage]);
+    () => (showAll ? rows : rows.slice(tPage * PAGE_SIZE, tPage * PAGE_SIZE + PAGE_SIZE)),
+    [rows, tPage, showAll]);
 
   const groupOver = useMemo(() => {
     if (!activeTab) return false;
@@ -402,7 +406,13 @@ export default function Alocacao({ currency = "USD" }) {
   };
 
   // 14 no completo e 8 no basico: as de antes mais a coluna "Carteira".
-  const colCount = mode === "full" ? 14 : 8;
+  // 4 ago 2026 — contagem nova: o cadeado deixou de ter coluna propria
+  // (vive dentro da % Sugerida), o Retorno entrou no Basico e a Orientacao
+  // saiu dele (continua no Completo; deriva 100% de atual-vs-sugerida e o
+  // modo Acao responde melhor ao "que faco"). Completo: Ativo, Setor, 24h,
+  // Retorno, PM, Cotacao, Valor, Qtd, %At, %Sug, Orient, C, Grupo = 13.
+  // Basico: Ativo, 24h, Retorno, PM, %At, %Sug, C = 7.
+  const colCount = mode === "full" ? 13 : 7;
 
   const actionCard = (g, kind) => (
     <div key={g.cls} className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3.5">
@@ -678,19 +688,23 @@ export default function Alocacao({ currency = "USD" }) {
           <div className="overflow-x-auto hidden sm:block">
             <table className="w-full text-sm">
               <thead>
+                {/* 4 ago 2026 — ordem nova (pedido do Jose): Retorno trocou de
+                    lugar com a Qtd e entrou no Basico (a Orientacao saiu de la
+                    — deriva de atual-vs-sugerida e o modo Acao ja diz "o que
+                    fazer"); o cadeado deixou de ter coluna propria e vive na
+                    celula da % Sugerida, que e o que ele fixa. */}
                 <tr className="text-[10px] uppercase tracking-wider text-zinc-500 font-mono border-b border-zinc-800">
-                  <th className="text-center py-2 px-2 w-8"></th>
                   {th("symbol", L("alloc2.asset", "Ativo"), "text-center py-2 px-2")}
                   {mode === "full" && th("sector", L("alloc2.sector", "Setor"), "text-center py-2 px-2")}
                   {th("change_24h", L("common.change_24h", "24h"), "text-center py-2 px-2")}
-                  {mode === "full" && th("quantity", L("alloc2.qty", "Qtd"), "text-center py-2 px-2")}
+                  {th("pnl_pct", L("alloc2.return", "Retorno"), "text-center py-2 px-2")}
                   {th("avg_price", L("alloc2.avg_price", "Preço Médio"), "text-center py-2 px-2")}
                   {mode === "full" && th("price_usd", L("alloc2.price", "Cotação"), "text-center py-2 px-2")}
                   {mode === "full" && th("value_usd", L("alloc2.value", "Valor Real"), "text-center py-2 px-2")}
-                  {mode === "full" && th("pnl_pct", L("alloc2.return", "Retorno"), "text-center py-2 px-2")}
+                  {mode === "full" && th("quantity", L("alloc2.qty", "Qtd"), "text-center py-2 px-2")}
                   {th("atual", L("alloc2.pct_now", "% Atual"), "text-center py-2 px-2")}
                   {th("sug", L("alloc2.pct_sug", "% Sugerida"), "text-center py-2 px-2")}
-                  {th("orient", L("alloc2.orient", "Orient."), "text-center py-2 px-2")}
+                  {mode === "full" && th("orient", L("alloc2.orient", "Orient."), "text-center py-2 px-2")}
                   <th className="text-center py-2 px-1.5 w-px whitespace-nowrap" title={L("alloc2.wallet", "Carteira")}>
                     {L("alloc2.wallet_letter", "C")}
                   </th>
@@ -704,13 +718,12 @@ export default function Alocacao({ currency = "USD" }) {
                   return (
                     <React.Fragment key={r.sym}>
                       <tr className="border-b border-zinc-800/40 hover:bg-zinc-900/40">
-                        <td className="py-2.5 px-2">
-                          <button onClick={() => toggleLock(r)} title={r.locked ? "Desbloquear" : "Fixar"}>
-                            {r.locked ? <Lock className="w-4 h-4 text-amber-400" /> : <Unlock className="w-4 h-4 text-zinc-600 hover:text-zinc-400" />}
-                          </button>
-                        </td>
                         <td className="py-2.5 px-2 font-mono">
-                          <span className="font-bold text-zinc-100">{r.symbol}</span>
+                          <button onClick={() => nav(`/asset/${r.asset_type || "stock"}/${r.symbol}`)}
+                            className="font-bold text-zinc-100 hover:text-blue-300 transition-colors"
+                            title={L("alloc2.open_chart", "Abrir gráfico")}>
+                            {r.symbol}
+                          </button>
                           {r.name && <span className="text-zinc-500 ml-2 text-xs">{r.name}</span>}
                           {multi && (
                             <button onClick={() => toggleExpand(r.sym)}
@@ -722,27 +735,32 @@ export default function Alocacao({ currency = "USD" }) {
                         </td>
                         {mode === "full" && <td className="py-2.5 px-2 text-zinc-400 text-xs">{r.sector || "—"}</td>}
                         <td className="py-2.5 px-2">{move24h(r)}</td>
-                        {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-300">{fmtQty(r.quantity)}</td>}
+                        <td className={`py-2.5 px-2 text-right font-mono ${r.pnl_pct >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{r.pnl_pct >= 0 ? "+" : ""}{Number(r.pnl_pct || 0).toFixed(1)}%</td>
                         <td className="py-2.5 px-2 text-right font-mono text-amber-400">{price(r.avg_price)}</td>
                         {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-300">{price(r.price_usd)}</td>}
                         {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-200">{money(r.value_usd)}</td>}
-                        {mode === "full" && <td className={`py-2.5 px-2 text-right font-mono ${r.pnl_pct >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{r.pnl_pct >= 0 ? "+" : ""}{Number(r.pnl_pct || 0).toFixed(1)}%</td>}
+                        {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-300">{fmtQty(r.quantity)}</td>}
                         <td className="py-2.5 px-2 text-right font-mono text-zinc-300">{r.atual.toFixed(2)}%</td>
-                        <td className="py-2.5 px-2 text-right font-mono">
-                          {r.locked ? (
-                            <span className="inline-flex items-center gap-1">
-                              <input type="number" min="0" max="100" step="0.5"
-                                value={assetTargets[r.sym]?.pct ?? ""}
-                                onChange={(e) => editLocked(r.sym, e.target.value)}
-                                onBlur={() => commitLocked(r.sym)}
-                                className="w-16 text-right font-mono text-xs bg-amber-500/10 border border-amber-500/40 rounded px-2 py-0.5 text-amber-300 outline-none" />
-                              <span className="text-xs text-zinc-500">%</span>
-                            </span>
-                          ) : (
-                            <span className="text-zinc-400">{r.sug.toFixed(2)}% <span className="text-[9px] text-zinc-600">auto</span></span>
-                          )}
+                        <td className="py-2.5 px-2 text-right font-mono whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5">
+                            <button onClick={() => toggleLock(r)} title={r.locked ? "Desbloquear" : "Fixar"}>
+                              {r.locked ? <Lock className="w-3.5 h-3.5 text-amber-400" /> : <Unlock className="w-3.5 h-3.5 text-zinc-600 hover:text-zinc-400" />}
+                            </button>
+                            {r.locked ? (
+                              <span className="inline-flex items-center gap-1">
+                                <input type="number" min="0" max="100" step="0.5"
+                                  value={assetTargets[r.sym]?.pct ?? ""}
+                                  onChange={(e) => editLocked(r.sym, e.target.value)}
+                                  onBlur={() => commitLocked(r.sym)}
+                                  className="w-16 text-right font-mono text-xs bg-amber-500/10 border border-amber-500/40 rounded px-2 py-0.5 text-amber-300 outline-none" />
+                                <span className="text-xs text-zinc-500">%</span>
+                              </span>
+                            ) : (
+                              <span className="text-zinc-400">{r.sug.toFixed(2)}% <span className="text-[9px] text-zinc-600">auto</span></span>
+                            )}
+                          </span>
                         </td>
-                        <td className="py-2.5 px-2">{orientChip(r)}</td>
+                        {mode === "full" && <td className="py-2.5 px-2">{orientChip(r)}</td>}
                         <td className="py-2.5 px-1.5 text-center w-px">{walletDots(r)}</td>
                         {mode === "full" && (
                           <td className="py-2.5 px-2">
@@ -790,14 +808,14 @@ export default function Alocacao({ currency = "USD" }) {
                       {th("symbol", L("alloc2.asset", "Ativo"), "sticky left-0 z-20 bg-zinc-950 text-center py-2 pr-3 pl-1 border-b border-zinc-800")}
                       {mode === "full" && th("sector", L("alloc2.sector", "Setor"), "text-center px-2 py-2 border-b border-zinc-800")}
                       {th("change_24h", L("common.change_24h", "24h"), "text-center px-2 py-2 border-b border-zinc-800")}
-                      {mode === "full" && th("quantity", L("alloc2.qty", "Qtd"), "text-center px-2 py-2 border-b border-zinc-800")}
+                      {th("pnl_pct", L("alloc2.return", "Retorno"), "text-center px-2 py-2 border-b border-zinc-800")}
                       {th("avg_price", L("alloc2.avg_price_short", "PM"), "text-center px-2 py-2 border-b border-zinc-800")}
                       {mode === "full" && th("price_usd", L("alloc2.price", "Cotação"), "text-center px-2 py-2 border-b border-zinc-800")}
                       {mode === "full" && th("value_usd", L("alloc2.value_short", "Valor"), "text-center px-2 py-2 border-b border-zinc-800")}
-                      {mode === "full" && th("pnl_pct", L("alloc2.return", "Retorno"), "text-center px-2 py-2 border-b border-zinc-800")}
+                      {mode === "full" && th("quantity", L("alloc2.qty", "Qtd"), "text-center px-2 py-2 border-b border-zinc-800")}
                       {th("atual", L("alloc2.pct_now_short", "% At"), "text-center px-2 py-2 border-b border-zinc-800")}
                       {th("sug", L("alloc2.pct_sug_short", "% Sug"), "text-center px-2 py-2 border-b border-zinc-800")}
-                      {th("orient", L("alloc2.orient", "Orient."), "text-center px-2 py-2 border-b border-zinc-800")}
+                      {mode === "full" && th("orient", L("alloc2.orient", "Orient."), "text-center px-2 py-2 border-b border-zinc-800")}
                       <th className="text-center px-1.5 py-2 w-px whitespace-nowrap border-b border-zinc-800" title={L("alloc2.wallet", "Carteira")}>
                         {L("alloc2.wallet_letter", "C")}
                       </th>
@@ -813,10 +831,10 @@ export default function Alocacao({ currency = "USD" }) {
                         <React.Fragment key={r.sym}>
                           <tr className={bg}>
                             <td className={`sticky left-0 z-10 ${bg} py-2 pr-3 pl-1 whitespace-nowrap`}>
-                              <button onClick={() => toggleLock(r)} className="mr-1 align-middle">
-                                {r.locked ? <Lock className="w-3.5 h-3.5 text-amber-400 inline" /> : <Unlock className="w-3.5 h-3.5 text-zinc-600 inline" />}
+                              <button onClick={() => nav(`/asset/${r.asset_type || "stock"}/${r.symbol}`)}
+                                className="font-bold text-zinc-100 align-middle">
+                                {r.symbol}
                               </button>
-                              <span className="font-bold text-zinc-100">{r.symbol}</span>
                               {multi && (
                                 <button onClick={() => toggleExpand(r.sym)} className="ml-1 inline-flex items-center align-middle text-[9px] text-blue-400/80">
                                   <ChevronDown className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} />{r.wallets.length}
@@ -825,20 +843,25 @@ export default function Alocacao({ currency = "USD" }) {
                             </td>
                             {mode === "full" && <td className="px-2 py-2 text-zinc-400 whitespace-nowrap">{r.sector || "—"}</td>}
                             <td className="px-2 py-2">{move24h(r, 40, 18)}</td>
-                            {mode === "full" && <td className="px-2 py-2 text-right text-zinc-300 whitespace-nowrap">{fmtQty(r.quantity)}</td>}
+                            <td className={`px-2 py-2 text-right whitespace-nowrap ${r.pnl_pct >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{r.pnl_pct >= 0 ? "+" : ""}{Number(r.pnl_pct || 0).toFixed(1)}%</td>
                             <td className="px-2 py-2 text-right text-amber-400 whitespace-nowrap">{price(r.avg_price)}</td>
                             {mode === "full" && <td className="px-2 py-2 text-right text-zinc-300 whitespace-nowrap">{price(r.price_usd)}</td>}
                             {mode === "full" && <td className="px-2 py-2 text-right text-zinc-200 whitespace-nowrap">{money(r.value_usd)}</td>}
-                            {mode === "full" && <td className={`px-2 py-2 text-right whitespace-nowrap ${r.pnl_pct >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{r.pnl_pct >= 0 ? "+" : ""}{Number(r.pnl_pct || 0).toFixed(1)}%</td>}
+                            {mode === "full" && <td className="px-2 py-2 text-right text-zinc-300 whitespace-nowrap">{fmtQty(r.quantity)}</td>}
                             <td className="px-2 py-2 text-right text-zinc-300 whitespace-nowrap">{r.atual.toFixed(2)}%</td>
                             <td className="px-2 py-2 text-right whitespace-nowrap">
-                              {r.locked ? (
-                                <input type="number" min="0" max="100" step="0.5" value={assetTargets[r.sym]?.pct ?? ""}
-                                  onChange={(e) => editLocked(r.sym, e.target.value)} onBlur={() => commitLocked(r.sym)}
-                                  className="w-14 text-right bg-amber-500/10 border border-amber-500/40 rounded px-1.5 py-0.5 text-amber-300 outline-none" />
-                              ) : (<span className="text-zinc-400">{r.sug.toFixed(2)}% <span className="text-[8px] text-zinc-600">auto</span></span>)}
+                              <span className="inline-flex items-center gap-1">
+                                <button onClick={() => toggleLock(r)} className="align-middle">
+                                  {r.locked ? <Lock className="w-3.5 h-3.5 text-amber-400 inline" /> : <Unlock className="w-3.5 h-3.5 text-zinc-600 inline" />}
+                                </button>
+                                {r.locked ? (
+                                  <input type="number" min="0" max="100" step="0.5" value={assetTargets[r.sym]?.pct ?? ""}
+                                    onChange={(e) => editLocked(r.sym, e.target.value)} onBlur={() => commitLocked(r.sym)}
+                                    className="w-14 text-right bg-amber-500/10 border border-amber-500/40 rounded px-1.5 py-0.5 text-amber-300 outline-none" />
+                                ) : (<span className="text-zinc-400">{r.sug.toFixed(2)}% <span className="text-[8px] text-zinc-600">auto</span></span>)}
+                              </span>
                             </td>
-                            <td className="px-2 py-2">{orientChip(r)}</td>
+                            {mode === "full" && <td className="px-2 py-2">{orientChip(r)}</td>}
                             <td className="px-1.5 py-2 text-center w-px">{walletDots(r)}</td>
                             {mode === "full" && (
                               <td className="px-2 py-2">
@@ -947,11 +970,17 @@ export default function Alocacao({ currency = "USD" }) {
 
           {rows.length > PAGE_SIZE && (
             <div className={`${mobileMode === "list" ? "flex" : "hidden sm:flex"} items-center justify-center gap-2 mt-3 text-[11px] font-mono`}>
-              <button onClick={() => setTPage(Math.max(0, tPage - 1))} disabled={tPage === 0}
-                className="px-2.5 py-1 rounded border border-zinc-800 text-zinc-400 disabled:opacity-30 hover:text-zinc-200">{"‹"}</button>
-              <span className="text-zinc-500">{tPage * PAGE_SIZE + 1}{"–"}{Math.min(rows.length, (tPage + 1) * PAGE_SIZE)} {L("alloc2.page_of", "de")} {rows.length}</span>
-              <button onClick={() => setTPage(Math.min(nPages - 1, tPage + 1))} disabled={tPage >= nPages - 1}
-                className="px-2.5 py-1 rounded border border-zinc-800 text-zinc-400 disabled:opacity-30 hover:text-zinc-200">{"›"}</button>
+              {!showAll && (<>
+                <button onClick={() => setTPage(Math.max(0, tPage - 1))} disabled={tPage === 0}
+                  className="px-2.5 py-1 rounded border border-zinc-800 text-zinc-400 disabled:opacity-30 hover:text-zinc-200">{"‹"}</button>
+                <span className="text-zinc-500">{tPage * PAGE_SIZE + 1}{"–"}{Math.min(rows.length, (tPage + 1) * PAGE_SIZE)} {L("alloc2.page_of", "de")} {rows.length}</span>
+                <button onClick={() => setTPage(Math.min(nPages - 1, tPage + 1))} disabled={tPage >= nPages - 1}
+                  className="px-2.5 py-1 rounded border border-zinc-800 text-zinc-400 disabled:opacity-30 hover:text-zinc-200">{"›"}</button>
+              </>)}
+              <button onClick={() => { setShowAll(!showAll); setTPage(0); }}
+                className="px-2.5 py-1 rounded border border-zinc-800 text-zinc-400 hover:text-zinc-200">
+                {showAll ? L("alloc2.show_paged", "10 em 10") : `${L("alloc2.show_all", "Ver todos")} (${rows.length})`}
+              </button>
             </div>
           )}
 

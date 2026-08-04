@@ -61,7 +61,18 @@ export default function GlobalSearch({ open, onClose }) {
 
   const goTo = (item) => {
     onClose();
-    nav(`/asset/${item.symbol}`);
+    // 4 ago 2026 — a rota SEM tipo (/asset/BTC) rebenta para cripto: o
+    // lookup do Yahoo nao resolve tickers de cripto nus e a pagina mostrava
+    // "Asset 'BTC' not found". Os resultados da pesquisa trazem o quoteType
+    // do Yahoo — mapeia-se para o tipo da app e vai-se pela rota tipada,
+    // que ja tratava cripto bem (grafico via CoinGecko).
+    const t = (item.type || "").toUpperCase();
+    const assetType =
+      t === "CRYPTOCURRENCY" ? "crypto" :
+      t === "ETF" ? "etf" :
+      t === "MUTUALFUND" ? "fund" :
+      t ? "stock" : null;
+    nav(assetType ? `/asset/${assetType}/${item.symbol}` : `/asset/${item.symbol}`);
   };
 
   if (!open) return null;

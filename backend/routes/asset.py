@@ -392,6 +392,19 @@ async def get_asset_detail(symbol: str, user=Depends(get_current_user)):
             detail = await _yf_fast_info_fallback(sym)
 
         if not detail or not detail.get("price"):
+            # Cripto (4 ago 2026): o Yahoo nao resolve "BTC" sozinho — o
+            # ticker de cripto la chama-se "BTC-USD". Qualquer clique que
+            # chegasse aqui com um simbolo de cripto nu levava 404
+            # ("Asset 'BTC' not found", visto pelo Jose no proprio BTC).
+            # Ultima tentativa antes de desistir: o par -USD; se resolver,
+            # o simbolo mostrado volta a ser o nu (e o que o utilizador
+            # conhece) e o tipo fica cravado a crypto.
+            detail = await _yf_fast_info_fallback(f"{sym}-USD")
+            if detail and detail.get("price"):
+                detail["symbol"] = sym
+                detail["asset_type"] = "crypto"
+
+        if not detail or not detail.get("price"):
             raise HTTPException(404, f"Asset '{sym}' not found")
 
         # Enrich with dividend data (best-effort)
