@@ -21,6 +21,7 @@ import FeedbackWidget from "./FeedbackWidget";
 import PullToRefresh from "./PullToRefresh";
 import { onSidebarRefreshRequested } from "../lib/sidebarRefresh";
 import { readCheckoutIntent } from "../lib/checkoutIntent";
+import { detectPlatform, isStandalone } from "../lib/pwaInstall";
 import { walletColorKey, WALLET_TEXT_CLASS, WALLET_TILE_CLASS } from "../lib/walletColors";
 import { usePlan } from "../hooks/usePlan";
 
@@ -81,6 +82,28 @@ export default function Layout({ children, currency, setCurrency }) {
   useEffect(() => {
     if (isPortfolioRouteActive) setPortfolioOpen(true);
   }, [loc.pathname, isPortfolioRouteActive]);
+
+  // Dica de instalação no iPhone (4 ago 2026). O iOS não tem prompt de
+  // instalação nenhum — o caminho vive escondido em Partilhar → «Adicionar
+  // ao ecrã principal» — e o único aviso que existia (modal da landing ao
+  // clicar Entrar/Começar) mostra-se UMA vez por browser, para sempre: quem
+  // o fechasse sem ler usava a app no Safari meses convencido de que "não
+  // há app" (aconteceu ao próprio dono no teste da PWA). Este é o lembrete
+  // DENTRO da app: só iOS, só fora do modo standalone, dispensável, e volta
+  // ao fim de 30 dias em vez de nunca mais.
+  const IOS_HINT_KEY = "w76-ios-hint-dismissed";
+  const [iosHint, setIosHint] = useState(false);
+  useEffect(() => {
+    if (detectPlatform() !== "ios" || isStandalone()) return;
+    try {
+      const dismissed = Number(localStorage.getItem(IOS_HINT_KEY) || 0);
+      if (Date.now() - dismissed > 30 * 24 * 60 * 60 * 1000) setIosHint(true);
+    } catch { setIosHint(true); }
+  }, []);
+  const dismissIosHint = () => {
+    setIosHint(false);
+    try { localStorage.setItem(IOS_HINT_KEY, String(Date.now())); } catch { /* sem storage */ }
+  };
 
   // Intenção de compra pendente (3 ago 2026, lib/checkoutIntent.js): quem
   // clicou num plano ANTES de ter conta e acabou de entrar não é largado no
@@ -537,6 +560,12 @@ export default function Layout({ children, currency, setCurrency }) {
           <div className="bg-amber-500/10 border-b border-amber-500/30 text-amber-300 text-xs px-4 py-2 flex items-center justify-center gap-3">
             <span>{PREVIEW_MSG[lang] || PREVIEW_MSG.en} <b className="uppercase">{previewPlan}</b></span>
             <a href="?plan=reset" className="underline hover:text-amber-200">{PREVIEW_BACK[lang] || PREVIEW_BACK.en}</a>
+          </div>
+        )}
+        {iosHint && (
+          <div className="bg-blue-500/10 border-b border-blue-500/30 text-blue-200 text-xs px-4 py-2 flex items-center justify-center gap-3">
+            <span>{t("pwa.ios_hint")}</span>
+            <button onClick={dismissIosHint} aria-label={t("common.close")} className="shrink-0 text-blue-300/70 hover:text-blue-100">✕</button>
           </div>
         )}
         {/* Main content */}
