@@ -1,7 +1,7 @@
-# Wallet76 — Lote 1 de abordagens (19 contactos, preparado a 4 ago 2026)
+# Wallet76 — Lote 1 de abordagens (19 contactos, preparado a 5 ago 2026)
 
 > 14 emails + 5 DMs/formulários. Ganchos de personalização vêm de conteúdo
-> real e recente de cada criador (pesquisa de 4 ago). Regra de envio:
+> real e recente de cada criador (pesquisa de 5 ago). Regra de envio:
 > 7-10/dia. O assunto começa sempre por «Wallet76» — é o que faz as
 > respostas caírem no marcador do Gmail.
 >

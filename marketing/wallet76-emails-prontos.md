@@ -1,6 +1,6 @@
 # Wallet76 — 14 emails prontos a copiar e colar (lote 1)
 
-> Preparado a 4 ago 2026. Cada bloco tem **Para**, **Assunto** e **Corpo**
+> Preparado a 5 ago 2026. Cada bloco tem **Para**, **Assunto** e **Corpo**
 > completo — copia, cola no Gmail, envia. Nada para editar (a personalização
 > já está feita no 1.º parágrafo de cada um).
 >
@@ -381,13 +381,13 @@ Jose Bruno · wallet76.com
 
 | # | Alvo | Email | Enviado | Resposta | Estado |
 |---|---|---|---|---|---|
-| 1 | Investidor Prudente | info@investidorprudente.com | | | |
-| 2 | César Borja | geral@borjaonstocks.com | | | |
-| 3 | Catarina Borja | catarina@catarinaborja.com | | | |
-| 4 | Clube Finanças (3 em 1) | geral@clubefinancas.pt | | | |
-| 5 | João Zoio | hey@joaozoio.com | | | |
-| 6 | Gonçalo Malheiro | goncalomalheirofinance@gmail.com | | | |
-| 7 | Finanças com JP | financas.com.jp@gmail.com | | | |
+| 1 | Investidor Prudente | info@investidorprudente.com | 5 ago | |
+| 2 | César Borja | geral@borjaonstocks.com | 5 ago | |
+| 3 | Catarina Borja | catarina@catarinaborja.com | 5 ago | |
+| 4 | Clube Finanças (3 em 1) | geral@clubefinancas.pt | 5 ago | |
+| 5 | João Zoio | hey@joaozoio.com | 5 ago | |
+| 6 | Gonçalo Malheiro | goncalomalheirofinance@gmail.com | 5 ago | |
+| 7 | Finanças com JP | financas.com.jp@gmail.com | 5 ago | |
 | 8 | Investimentos Lucrativos | suporte@investimentoslucrativos.pt | | | |
 | 9 | FIRE Talks Portugal | luis.lobo.jordao@gmail.com | | | |
 | 10 | Dama de Ouros | ola@damadeouros.com | | | |
