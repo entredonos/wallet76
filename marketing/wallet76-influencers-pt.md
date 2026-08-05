@@ -106,29 +106,29 @@ O público destes usa literalmente as corretoras que a app integra.
 
 ### DM (Instagram/TikTok)
 
-> Olá [nome]! Sigo o teu conteúdo sobre [tema concreto — ex.: ETFs na DEGIRO] e é dos poucos em português de Portugal que não vende banha da cobra.
+> Olá [nome]! Sigo o teu conteúdo sobre [tema concreto] e é dos poucos em português que não vende banha da cobra.
 >
-> Sou o Jose, português na Suíça. Construí uma app que junta as carteiras todas num só sítio — DEGIRO, XTB, Trading 212, cripto — com preços ao vivo e em português: wallet76.com
+> Sou o Jose, criador da Wallet76 — uma app que junta as carteiras todas num só sítio (DEGIRO, XTB, Trading 212, cripto), com preços ao vivo e em português: wallet76.com. Está a abrir agora e estás entre os primeiros a quem a mostro.
 >
-> Queria dar-te o plano completo grátis por 12 meses, sem contrapartida obrigatória. Se depois de a usares achares que vale a pena mostrá-la à tua audiência, tens um link de convite teu (quem entrar por ele ganha 45 dias de teste em vez de 30, e tu acumulas meses grátis). Se achares que não presta, também quero saber — estou a afinar isto com as primeiras opiniões a sério.
+> Queria dar-te o plano completo grátis 12 meses, sem contrapartida. Se gostares e quiseres mostrá-la, tens um link teu — a tua audiência apanha as vagas de fundador (−40% para sempre, primeiros 100) e tu acumulas meses grátis. Se não gostares, também quero saber porquê.
 >
 > Digo mais em dois parágrafos se tiveres interesse. Abraço!
 
 ### Email
 
-> **Assunto:** Uma app portuguesa para seguir carteiras — 12 meses Pro para ti, opinião honesta em troca
+> **Assunto:** Wallet76 — acesso antecipado a uma app portuguesa para seguir carteiras
 >
 > Olá [nome],
 >
-> Sou o Jose, português a viver na Suíça. Sigo o teu trabalho sobre [tema concreto] e escrevo-te diretamente — sem agência nem template, como se nota.
+> Sou o Jose, o criador da Wallet76. Sigo o teu trabalho sobre [tema concreto] e escrevo-te diretamente — sem agência nem template, como se nota.
 >
-> Nos últimos meses construí a Wallet76 (wallet76.com): uma app que agrega carteiras de investimento — ações, ETFs e cripto de corretoras como a DEGIRO, XTB, Trading 212 ou Binance — numa vista só, com preços ao vivo, alertas, calendário de dividendos e mais-valias por ano. Em português, dados em servidores na UE, e as ligações às corretoras são só de leitura (a app não consegue mexer no dinheiro de ninguém).
+> A Wallet76 (wallet76.com) junta carteiras de investimento — ações, ETFs e cripto de corretoras como a DEGIRO, XTB, Trading 212 ou Binance — numa vista só: preços ao vivo, alertas, calendário de dividendos, mais-valias por ano. Em português, dados em servidores na UE, e as ligações às corretoras são só de leitura — a app não consegue mexer no dinheiro de ninguém.
 >
-> A proposta é simples e sem letras pequenas:
+> Está a abrir ao público agora, e estás entre os primeiros a quem a mostro. A proposta, sem letras pequenas:
 >
-> 1. Dou-te o plano Pro por 12 meses, grátis, para usares com a tua carteira real — sem obrigação de publicar nada.
-> 2. Se, depois de a usares, achares que vale a pena falar dela, tens um link de convite teu: quem entrar por ele ganha 45 dias de teste (em vez de 30) e tu acumulas meses Pro por cada subscritor. Consigo dizer-te ao certo quantas pessoas vieram de ti.
-> 3. Se achares que não vale a pena, diz-me porquê — nesta fase, uma crítica fundamentada vale-me mais do que um elogio.
+> 1. Plano Pro grátis durante 12 meses para usares com a tua carteira real — sem obrigação de publicar nada.
+> 2. Se depois de a usares achares que vale a pena mostrá-la, tens um link de convite teu: a tua audiência ganha 45 dias de teste (em vez de 30) e pode apanhar as vagas de fundador — 40% de desconto para sempre, só para os primeiros 100, ainda praticamente todas livres. Tu acumulas meses Pro por cada subscritor, e eu digo-te ao certo quantas pessoas vieram de ti.
+> 3. Se achares que não vale a pena, diz-me porquê — nesta fase, uma crítica fundamentada vale-me mais do que dez elogios.
 >
 > Não peço guião nem publicidade disfarçada; o que fizeres com a tua audiência é decisão tua e assim deve ser dito. A app não dá conselhos de investimento — é uma ferramenta de acompanhamento — e é assim que deve ser apresentada.
 >
