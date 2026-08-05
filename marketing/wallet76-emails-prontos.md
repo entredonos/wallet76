@@ -381,20 +381,20 @@ Jose Bruno · wallet76.com
 
 | # | Alvo | Email | Enviado | Resposta | Estado |
 |---|---|---|---|---|---|
-| 1 | Investidor Prudente | info@investidorprudente.com | 5 ago | |
-| 2 | César Borja | geral@borjaonstocks.com | 5 ago | |
-| 3 | Catarina Borja | catarina@catarinaborja.com | 5 ago | |
-| 4 | Clube Finanças (3 em 1) | geral@clubefinancas.pt | 5 ago | |
-| 5 | João Zoio | hey@joaozoio.com | 5 ago | |
-| 6 | Gonçalo Malheiro | goncalomalheirofinance@gmail.com | 5 ago | |
-| 7 | Finanças com JP | financas.com.jp@gmail.com | 5 ago | |
-| 8 | Investimentos Lucrativos | suporte@investimentoslucrativos.pt | | | |
-| 9 | FIRE Talks Portugal | luis.lobo.jordao@gmail.com | | | |
-| 10 | Dama de Ouros | ola@damadeouros.com | | | |
-| 11 | António Vilaça Pacheco | bitcointalks@editoraself.pt | | | |
-| 12 | Admirável Cripto Mundo Novo | geral@acmn.pt | | | |
-| 13 | Luis Pinto (TekTest) | tektestportugal@gmail.com | | | |
-| 14 | Aceita Bitcoin | aceitabitcoin@substack.com | | | |
+| 1 | Investidor Prudente | info@investidorprudente.com | 5 ago |  |  |
+| 2 | César Borja | geral@borjaonstocks.com | 5 ago |  |  |
+| 3 | Catarina Borja | catarina@catarinaborja.com | 5 ago |  |  |
+| 4 | Clube Finanças (3 em 1) | geral@clubefinancas.pt | 5 ago |  |  |
+| 5 | João Zoio | hey@joaozoio.com | 5 ago |  |  |
+| 6 | Gonçalo Malheiro | goncalomalheirofinance@gmail.com | 5 ago |  |  |
+| 7 | Finanças com JP | financas.com.jp@gmail.com | 5 ago |  |  |
+| 8 | Investimentos Lucrativos | suporte@investimentoslucrativos.pt |  |  |  |
+| 9 | FIRE Talks Portugal | luis.lobo.jordao@gmail.com |  |  |  |
+| 10 | Dama de Ouros | ola@damadeouros.com |  |  |  |
+| 11 | António Vilaça Pacheco | bitcointalks@editoraself.pt |  |  |  |
+| 12 | Admirável Cripto Mundo Novo | geral@acmn.pt |  |  |  |
+| 13 | Luis Pinto (TekTest) | tektestportugal@gmail.com |  |  |  |
+| 14 | Aceita Bitcoin | aceitabitcoin@substack.com |  |  |  |
 
 **Sugestão de ritmo:** hoje os n.º 1 a 7; amanhã os n.º 8 a 14.
 Os 5 contactos por DM/Instagram estão no `wallet76-outreach-lote1.md`.
