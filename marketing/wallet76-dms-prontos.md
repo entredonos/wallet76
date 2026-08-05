@@ -105,6 +105,26 @@ Jose Bruno · wallet76.com
 
 ---
 
+## 20 · Aceita Bitcoin (Tiago Vasconcelos) — Telegram
+
+**Onde:** t.me/aceitabitcoin (é onde a comunidade vive e onde ele responde). Alternativa:
+DM no X @aceitabitcoinpt. **Não há email público** — o endereço de Substack que andámos
+a usar era deduzido e devolveria.
+
+Olá Tiago,
+
+O Aceita Bitcoin e o Sparkpay são das poucas coisas por cá que saíram do discurso e foram para o terreno. Escrevo de construtor para construtor.
+
+Fiz a Wallet76 (wallet76.com): junta carteiras de investimento num sítio só, cripto ao lado de ações e ETFs, com preços ao vivo e as mais-valias do ano calculadas a partir das transações. Ligações às exchanges só de leitura, dados na UE.
+
+Dou-te o Pro durante 12 meses, sem contrapartida. Se gostares e quiseres partilhar, arranjo-te um link — quem entrar apanha as vagas de fundador (40% para sempre, primeiras 100) e tu acumulas meses.
+
+Se não for para ti, o motivo interessa-me.
+
+Jose Bruno · wallet76.com
+
+---
+
 ## Registo
 
 | # | Alvo | Canal | Enviado | Resposta | Estado |
@@ -114,3 +134,4 @@ Jose Bruno · wallet76.com
 | 17 | 100Mesada | Substack (responder à newsletter) | | | |
 | 18 | Sérgio Rodrigues | IG @sergiorodrigues.pt | | | |
 | 19 | Renda Maior | formulário rendamaior.pt | | | |
+| 20 | Aceita Bitcoin | Telegram t.me/aceitabitcoin | | | |

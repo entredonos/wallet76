@@ -41,9 +41,9 @@ Jose Bruno · wallet76.com
 
 ---
 
-## 2 · César Borja (Borja on Stocks + Camaradas Investidores)
+## 2 · César Borja (Borja on Stocks + Camaradas Investidores)  ⚠️ REENVIAR — o geral@ foi devolvido a 5 ago
 
-**Para:** geral@borjaonstocks.com
+**Para:** suporte@borjaonstocks.com
 **Assunto:** Wallet76 — acesso antecipado a uma app portuguesa para seguir carteiras
 
 Olá César,
@@ -199,7 +199,7 @@ Jose Bruno · wallet76.com
 
 ## 8 · Investimentos Lucrativos (Frederico Santarém)
 
-**Para:** suporte@investimentoslucrativos.pt
+**Para:** contacto@investimentoslucrativos.pt
 **Assunto:** Wallet76 — acesso antecipado a uma app portuguesa para seguir carteiras
 
 Olá Frederico,
@@ -323,22 +323,13 @@ Jose Bruno · wallet76.com
 
 ---
 
-## 14 · Aceita Bitcoin (Tiago Vasconcelos)  ⚠️ newsletter parada desde 2023 — se não responder, tenta X @talvasconcelos
+## 14 · Aceita Bitcoin (Tiago Vasconcelos)  ⛔ NÃO ENVIAR POR EMAIL
 
-**Para:** aceitabitcoin@substack.com
-**Assunto:** Wallet76 — acesso antecipado a uma app portuguesa para seguir carteiras
-
-Tiago,
-
-O Aceita Bitcoin e o Sparkpay são das poucas coisas por cá que saíram do discurso e foram para o terreno. Escrevo-te de construtor para construtor.
-
-Fiz a Wallet76 (wallet76.com): junta carteiras de investimento num sítio só, cripto ao lado de ações e ETFs, com preços ao vivo e as mais-valias do ano calculadas a partir das transações. Ligações às exchanges só de leitura, dados na UE.
-
-Dou-te o Pro durante 12 meses, sem contrapartida. Se gostares e quiseres partilhar, arranjo-te um link — quem entrar apanha as vagas de fundador (40% para sempre, primeiras 100) e tu acumulas meses.
-
-Se não for para ti, o motivo interessa-me.
-
-Jose Bruno · wallet76.com
+**Não há email público.** O `aceitabitcoin@substack.com` era deduzido do formato de
+remetente do Substack — o Substack não atribui caixas de correio às publicações, por
+isso quase de certeza devolvia, tal como o do Borja. **Vai por Telegram**
+(t.me/aceitabitcoin, que é onde a comunidade vive e onde ele responde) ou por DM no
+X/@aceitabitcoinpt. O texto está no `wallet76-dms-prontos.md`, n.º 20.
 
 ---
 
@@ -347,19 +338,19 @@ Jose Bruno · wallet76.com
 | # | Alvo | Email | Enviado | Resposta | Estado |
 |---|---|---|---|---|---|
 | 1 | Investidor Prudente | info@investidorprudente.com | 5 ago |  |  |
-| 2 | César Borja | geral@borjaonstocks.com | 5 ago |  |  |
+| 2 | César Borja | suporte@borjaonstocks.com | 5 ago (devolvido) | — | REENVIAR para o endereço novo |
 | 3 | Catarina Borja | catarina@catarinaborja.com | 5 ago |  |  |
 | 4 | Clube Finanças (3 em 1) | geral@clubefinancas.pt | 5 ago |  |  |
 | 5 | João Zoio | hey@joaozoio.com | 5 ago |  |  |
-| 6 | Gonçalo Malheiro | goncalomalheirofinance@gmail.com | 5 ago |  |  |
+| 6 | Gonçalo Malheiro | goncalomalheirofinance@gmail.com | 5 ago | sem devolução = chegou | se não responder: geral@engageagency.pt (agência dele) |
 | 7 | Finanças com JP | financas.com.jp@gmail.com | 5 ago |  |  |
-| 8 | Investimentos Lucrativos | suporte@investimentoslucrativos.pt |  |  |  |
+| 8 | Investimentos Lucrativos | contacto@investimentoslucrativos.pt |  |  |  |
 | 9 | FIRE Talks Portugal | luis.lobo.jordao@gmail.com |  |  |  |
 | 10 | Dama de Ouros | ola@damadeouros.com |  |  |  |
 | 11 | António Vilaça Pacheco | bitcointalks@editoraself.pt |  |  |  |
 | 12 | Admirável Cripto Mundo Novo | geral@acmn.pt |  |  |  |
 | 13 | Luis Pinto (TekTest) | tektestportugal@gmail.com |  |  |  |
-| 14 | Aceita Bitcoin | aceitabitcoin@substack.com |  |  |  |
+| 14 | Aceita Bitcoin | — sem email público | — | — | vai por Telegram (ver DMs, n.º 20) |
 
 **Sugestão de ritmo:** hoje os n.º 1 a 7; amanhã os n.º 8 a 14.
 Os 5 contactos por DM/Instagram estão no `wallet76-outreach-lote1.md`.
