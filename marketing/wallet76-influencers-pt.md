@@ -120,7 +120,7 @@ O público destes usa literalmente as corretoras que a app integra.
 >
 > Olá [nome],
 >
-> Sou o Jose, o criador da Wallet76. Sigo o teu trabalho sobre [tema concreto] e escrevo-te diretamente — sem agência nem template, como se nota.
+> Sou o Jose Bruno, o criador da Wallet76. Sigo o teu trabalho sobre [tema concreto] e escrevo-te diretamente — sem agência nem template, como se nota.
 >
 > A Wallet76 (wallet76.com) junta carteiras de investimento — ações, ETFs e cripto de corretoras como a DEGIRO, XTB, Trading 212 ou Binance — numa vista só: preços ao vivo, alertas, calendário de dividendos, mais-valias por ano. Em português, dados em servidores na UE, e as ligações às corretoras são só de leitura — a app não consegue mexer no dinheiro de ninguém.
 >
@@ -128,7 +128,7 @@ O público destes usa literalmente as corretoras que a app integra.
 >
 > 1. Plano Pro grátis durante 12 meses para usares com a tua carteira real — sem obrigação de publicar nada.
 > 2. Se depois de a usares achares que vale a pena mostrá-la, tens um link de convite teu: a tua audiência ganha 45 dias de teste (em vez de 30) e pode apanhar as vagas de fundador — 40% de desconto para sempre, só para os primeiros 100, ainda praticamente todas livres. Tu acumulas meses Pro por cada subscritor, e eu digo-te ao certo quantas pessoas vieram de ti.
-> 3. Se achares que não vale a pena, diz-me porquê — nesta fase, uma crítica fundamentada vale-me mais do que dez elogios.
+> 3. Se achares que não vale a pena, gostava que me dissesses o motivo — nesta fase, uma crítica fundamentada vale-me mais do que dez elogios.
 >
 > Não peço guião nem publicidade disfarçada; o que fizeres com a tua audiência é decisão tua e assim deve ser dito. A app não dá conselhos de investimento — é uma ferramenta de acompanhamento — e é assim que deve ser apresentada.
 >
