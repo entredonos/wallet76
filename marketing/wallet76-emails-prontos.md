@@ -204,19 +204,15 @@ Jose Bruno · wallet76.com
 
 Olá Frederico,
 
-Sou o Jose Bruno, o criador da Wallet76. Vi este fim de semana o teu vídeo sobre a Uber e ações subavaliadas — escrevo-te diretamente, sem agência nem template.
+O vídeo da Uber apanhou-me no fim de semana. A tese de estar subavaliada é discutível, mas gostei da forma como a puseste em cima da mesa.
 
-A Wallet76 (wallet76.com) junta carteiras de investimento — ações, ETFs e cripto de corretoras como a DEGIRO, XTB, Trading 212 ou Binance — numa vista só: preços ao vivo, alertas, calendário de dividendos, mais-valias por ano. Em português, dados em servidores na UE, e as ligações às corretoras são só de leitura — a app não consegue mexer no dinheiro de ninguém.
+Escrevo-te por outra razão: construí uma app e queria que fosses dos primeiros a vê-la. Chama-se Wallet76 (wallet76.com) e junta as carteiras de várias corretoras num sítio só — DEGIRO, XTB, Trading 212, Binance e outras — com preços ao vivo, calendário de dividendos e as mais-valias do ano feitas sozinhas. Está tudo em português, os dados ficam em servidores na UE, e as ligações às corretoras são sempre só de leitura: a app não consegue mexer no dinheiro de ninguém.
 
-Está a abrir ao público agora, e estás entre os primeiros a quem a mostro. A proposta, sem letras pequenas:
+Ofereço-te o plano Pro durante 12 meses, sem contrapartida nenhuma. Não peço vídeo, não peço menção, não peço guião. Usa-a com a tua carteira a sério e diz-me o que está mal.
 
-1. Plano Pro grátis durante 12 meses para usares com a tua carteira real — sem obrigação de publicar nada.
-2. Se depois de a usares achares que vale a pena mostrá-la, tens um link de convite teu: a tua audiência ganha 45 dias de teste (em vez de 30) e pode apanhar as vagas de fundador — 40% de desconto para sempre, só para os primeiros 100, ainda praticamente todas livres. Tu acumulas meses Pro por cada subscritor, e eu digo-te ao certo quantas pessoas vieram de ti.
-3. Se achares que não vale a pena, gostava que me dissesses o motivo — nesta fase, uma crítica fundamentada vale-me mais do que dez elogios.
+Se por acaso gostares e quiseres falar dela, arranjo-te um link de convite: quem entrar por aí ganha 45 dias de teste em vez de 30 e pode apanhar as vagas de fundador — 40% de desconto para sempre, limitadas às primeiras 100 pessoas — e tu acumulas meses Pro por cada assinatura. Consigo dizer-te ao certo quantas vieram de ti.
 
-Não peço guião nem publicidade disfarçada; o que disseres à tua audiência é decisão tua. A app não dá conselhos de investimento — é uma ferramenta de acompanhamento — e é assim que deve ser apresentada.
-
-Se tiveres 15 minutos, mostro-ta numa chamada; se preferires explorar sozinho, responde «quero» e ativo-te o acesso.
+Se achares que não vale a pena, gostava que me dissesses o motivo. É o que me ajuda mais nesta altura.
 
 Obrigado pelo tempo,
 Jose Bruno · wallet76.com
@@ -228,21 +224,17 @@ Jose Bruno · wallet76.com
 **Para:** luis.lobo.jordao@gmail.com
 **Assunto:** Wallet76 — acesso antecipado a uma app portuguesa para seguir carteiras
 
-Olá Luís,
+Luís,
 
-Sou o Jose Bruno, o criador da Wallet76. Ouvi o #114 sobre o balanço dos mercados — e uma comunidade FIRE, que acompanha carteiras a 20 anos, é exatamente para quem construí isto. Escrevo-te diretamente, sem agência nem template.
+Ouvi o #114, o do balanço dos mercados com o Tiago Guedes. Escrevo-lhe porque quem acompanha carteiras em horizontes de vinte anos é, muito literalmente, a pessoa para quem construí o que se segue.
 
-A Wallet76 (wallet76.com) junta carteiras de investimento — ações, ETFs e cripto de corretoras como a DEGIRO, XTB, Trading 212 ou Binance — numa vista só: preços ao vivo, evolução do património ao longo do tempo, calendário de dividendos, mais-valias por ano. Em português, dados em servidores na UE, e as ligações às corretoras são só de leitura — a app não consegue mexer no dinheiro de ninguém.
+A Wallet76 (wallet76.com) agrega carteiras de investimento de várias corretoras numa vista só: DEGIRO, XTB, Trading 212, Binance e por aí fora. Mostra a evolução do património ao longo do tempo, o calendário de dividendos e as mais-valias por ano. Dados em servidores na UE; as ligações às corretoras são só de leitura, sem exceção.
 
-Está a abrir ao público agora, e estás entre os primeiros a quem a mostro. A proposta, sem letras pequenas:
+O que lhe proponho é simples. Dou-lhe o plano Pro durante 12 meses, sem qualquer contrapartida — nem menção no podcast, nem nada. Se depois de a usar achar que faz sentido para a comunidade FIRE, faço-lhe um link de convite: quem entrar ganha 45 dias de teste e pode apanhar as vagas de fundador, 40% de desconto vitalício reservado às primeiras 100 pessoas. Por cada assinatura, acumula meses Pro.
 
-1. Plano Pro grátis durante 12 meses para usares com a tua carteira real — sem obrigação de publicar nada.
-2. Se depois de a usares achares que vale a pena mostrá-la, tens um link de convite teu: a tua audiência ganha 45 dias de teste (em vez de 30) e pode apanhar as vagas de fundador — 40% de desconto para sempre, só para os primeiros 100, ainda praticamente todas livres. Tu acumulas meses Pro por cada subscritor, e eu digo-te ao certo quantas pessoas vieram de ti.
-3. Se achares que não vale a pena, gostava que me dissesses o motivo — nesta fase, uma crítica fundamentada vale-me mais do que dez elogios.
+E se a conclusão for que não vale a pena, gostava que me dissesse o motivo. Uma crítica fundamentada, nesta fase, vale-me mais do que dez elogios.
 
-Não peço guião nem publicidade disfarçada; o que disseres à tua audiência é decisão tua. A app não dá conselhos de investimento — é uma ferramenta de acompanhamento — e é assim que deve ser apresentada.
-
-Se tiveres 15 minutos, mostro-ta numa chamada; se preferires explorar sozinho, responde «quero» e ativo-te o acesso.
+A app não dá conselhos de investimento. É uma ferramenta de acompanhamento, e é assim que deve ser apresentada.
 
 Obrigado pelo tempo,
 Jose Bruno · wallet76.com
@@ -256,21 +248,15 @@ Jose Bruno · wallet76.com
 
 Olá,
 
-Sou o Jose Bruno, o criador da Wallet76. Li o teu artigo sobre a regra dos 4% (agora 4,7%) — quem faz FIRE a sério precisa de ver o património todo num sítio, e foi precisamente para isso que construí isto. Escrevo-te diretamente, sem agência nem template.
+Li o artigo sobre a regra dos 4% ter passado a 4,7%. Fiquei a pensar numa coisa que aparece sempre nessas contas e quase nunca se resolve bem: para saber a que taxa se pode levantar, é preciso ver o património todo — e a maior parte das pessoas tem-no espalhado por três ou quatro sítios.
 
-A Wallet76 (wallet76.com) junta carteiras de investimento — ações, ETFs e cripto de corretoras como a DEGIRO, XTB, Trading 212 ou Binance — numa vista só: preços ao vivo, evolução do património, calendário de dividendos, mais-valias por ano. Em português, dados em servidores na UE, e as ligações às corretoras são só de leitura — a app não consegue mexer no dinheiro de ninguém.
+Foi para isso que construí a Wallet76 (wallet76.com). Junta carteiras de várias corretoras num ecrã, com a evolução ao longo do tempo, os dividendos que aí vêm e as mais-valias por ano. Em português, dados na UE, ligações só de leitura.
 
-Está a abrir ao público agora, e estás entre as primeiras pessoas a quem a mostro. A proposta, sem letras pequenas:
+Está a abrir agora e queria oferecer-te o Pro durante um ano, sem contrapartida. Usa-a com a tua carteira e diz-me o que falta. Se mais tarde quiseres mostrá-la à comunidade, faço-te um link: quem entrar ganha 45 dias de teste e pode apanhar as vagas de fundador (40% para sempre, primeiras 100 pessoas), e tu acumulas meses Pro.
 
-1. Plano Pro grátis durante 12 meses para usares com a tua carteira real — sem obrigação de publicar nada.
-2. Se depois de a usares achares que vale a pena mostrá-la, tens um link de convite teu: a tua audiência ganha 45 dias de teste (em vez de 30) e pode apanhar as vagas de fundador — 40% de desconto para sempre, só para os primeiros 100, ainda praticamente todas livres. Tu acumulas meses Pro por cada subscritor, e eu digo-te ao certo quantas pessoas vieram de ti.
-3. Se achares que não vale a pena, gostava que me dissesses o motivo — nesta fase, uma crítica fundamentada vale-me mais do que dez elogios.
+Se achares que não presta, o motivo interessa-me mais do que a delicadeza.
 
-Não peço guião nem publicidade disfarçada; o que disseres à tua audiência é decisão tua. A app não dá conselhos de investimento — é uma ferramenta de acompanhamento — e é assim que deve ser apresentada.
-
-Se tiveres 15 minutos, mostro-ta numa chamada; se preferires explorar sozinha, responde «quero» e ativo-te o acesso.
-
-Obrigado pelo tempo,
+Obrigado,
 Jose Bruno · wallet76.com
 
 ---
@@ -282,19 +268,15 @@ Jose Bruno · wallet76.com
 
 Olá António,
 
-Sou o Jose Bruno, o criador da Wallet76. Apanhei a Live #51 sobre investimento consciente em cripto — e é precisamente esse o tom da app: acompanhar, não apostar. Escrevo-te diretamente, sem agência nem template.
+Apanhei a Live #51 há dias. «Investimento consciente» é uma expressão gasta por toda a gente menos por quem escreveu o primeiro livro sobre Bitcoin em português — daí eu escrever-lhe a si e não a uma lista.
 
-A Wallet76 (wallet76.com) junta carteiras de investimento numa vista só — cripto (Binance, Kraken, Coinbase, entre outras) ao lado de ações e ETFs, com preços ao vivo, alertas e mais-valias por ano, que em cripto é o que mais dores de cabeça dá no IRS. Em português, dados em servidores na UE, e as ligações às exchanges são só de leitura — a app não consegue mexer no dinheiro de ninguém.
+Construí a Wallet76 (wallet76.com): uma app que junta as carteiras todas num sítio, com a cripto ao lado das ações e dos ETFs. Binance, Kraken, Coinbase, DEGIRO, XTB e outras. Preços ao vivo, alertas, e as mais-valias do ano calculadas sozinhas — que em cripto é onde as pessoas mais se perdem quando chega o IRS. Ligações às exchanges sempre só de leitura, dados em servidores na UE.
 
-Está a abrir ao público agora, e estás entre os primeiros a quem a mostro. A proposta, sem letras pequenas:
+O tom da app é o mesmo do seu: acompanhar, não apostar. Não há sinais, não há recomendações, não há promessas de rentabilidade — é uma ferramenta de acompanhamento e é assim que deve ser apresentada.
 
-1. Plano Pro grátis durante 12 meses para usares com a tua carteira real — sem obrigação de publicar nada.
-2. Se depois de a usares achares que vale a pena mostrá-la, tens um link de convite teu: a tua audiência ganha 45 dias de teste (em vez de 30) e pode apanhar as vagas de fundador — 40% de desconto para sempre, só para os primeiros 100, ainda praticamente todas livres. Tu acumulas meses Pro por cada subscritor, e eu digo-te ao certo quantas pessoas vieram de ti.
-3. Se achares que não vale a pena, gostava que me dissesses o motivo — nesta fase, uma crítica fundamentada vale-me mais do que dez elogios.
+Ofereço-lhe o plano Pro durante 12 meses, sem contrapartida nenhuma. Se depois de a usar achar que vale a pena mencioná-la, faço-lhe um link de convite: quem entrar ganha 45 dias de teste e pode apanhar as vagas de fundador — 40% para sempre, só as primeiras 100 — e acumula meses Pro por cada assinatura.
 
-Não peço guião nem publicidade disfarçada; o que disseres à tua audiência é decisão tua. A app não dá conselhos de investimento — é uma ferramenta de acompanhamento — e é assim que deve ser apresentada.
-
-Se tiveres 15 minutos, mostro-ta numa chamada; se preferires explorar sozinho, responde «quero» e ativo-te o acesso.
+E se achar que não vale, gostava que me dissesse o motivo.
 
 Obrigado pelo tempo,
 Jose Bruno · wallet76.com
@@ -308,19 +290,13 @@ Jose Bruno · wallet76.com
 
 Olá Eduardo,
 
-Sou o Jose Bruno, o criador da Wallet76. Vi o teu vídeo sobre a ameaça quântica à Bitcoin — educação cripto deste nível em português é rara, e é para essa audiência que escrevo. Sem agência nem template.
+O vídeo sobre a ameaça quântica à Bitcoin é o género de conteúdo que quase não existe em português: explica sem alarmismo e sem vender nada. Escrevo-lhe por causa disso.
 
-A Wallet76 (wallet76.com) junta carteiras de investimento numa vista só — cripto (Binance, Kraken, Coinbase, entre outras) ao lado de ações e ETFs, com preços ao vivo, alertas e mais-valias por ano. Em português, dados em servidores na UE, e as ligações às exchanges são só de leitura — a app não consegue mexer no dinheiro de ninguém.
+Fiz uma app chamada Wallet76 (wallet76.com). Junta as carteiras de investimento num sítio só — a cripto ao lado das ações e dos ETFs — com preços ao vivo, alertas e as mais-valias do ano feitas sozinhas. As ligações às exchanges são só de leitura e os dados ficam em servidores na UE. Nada de sinais nem de recomendações: é para acompanhar o que já se tem.
 
-Está a abrir ao público agora, e estás entre os primeiros a quem a mostro. A proposta, sem letras pequenas:
+Queria dar-lhe o plano Pro durante 12 meses, sem pedir nada em troca. Se depois achar que serve para quem o segue, faço-lhe um link de convite: a audiência ganha 45 dias de teste e pode apanhar as vagas de fundador (40% de desconto para sempre, primeiras 100 pessoas), e acumula meses Pro por cada assinatura.
 
-1. Plano Pro grátis durante 12 meses para usares com a tua carteira real — sem obrigação de publicar nada.
-2. Se depois de a usares achares que vale a pena mostrá-la, tens um link de convite teu: a tua audiência ganha 45 dias de teste (em vez de 30) e pode apanhar as vagas de fundador — 40% de desconto para sempre, só para os primeiros 100, ainda praticamente todas livres. Tu acumulas meses Pro por cada subscritor, e eu digo-te ao certo quantas pessoas vieram de ti.
-3. Se achares que não vale a pena, gostava que me dissesses o motivo — nesta fase, uma crítica fundamentada vale-me mais do que dez elogios.
-
-Não peço guião nem publicidade disfarçada; o que disseres à tua audiência é decisão tua. A app não dá conselhos de investimento — é uma ferramenta de acompanhamento — e é assim que deve ser apresentada.
-
-Se tiveres 15 minutos, mostro-ta numa chamada; se preferires explorar sozinho, responde «quero» e ativo-te o acesso.
+Se a app não lhe parecer útil, diga-me porquê — é isso que me faz avançar mais depressa nesta fase.
 
 Obrigado pelo tempo,
 Jose Bruno · wallet76.com
@@ -334,19 +310,13 @@ Jose Bruno · wallet76.com
 
 Olá Luis,
 
-Sou o Jose Bruno, o criador da Wallet76. Vi o teu vídeo desta semana sobre investir em imobiliário com pouco dinheiro — escrevo-te diretamente, sem agência nem template.
+Vi o vídeo desta semana sobre investir em imobiliário com pouco dinheiro. Escrevo-te porque tens um canal que olha para a tecnologia por dentro, e o que se segue tem as duas coisas.
 
-A Wallet76 (wallet76.com) junta carteiras de investimento — ações, ETFs e cripto de corretoras como a DEGIRO, XTB, Trading 212 ou Binance — numa vista só: preços ao vivo, alertas, calendário de dividendos, mais-valias por ano. Em português, dados em servidores na UE, e as ligações às corretoras são só de leitura — a app não consegue mexer no dinheiro de ninguém. Sendo um canal que também olha para a tecnologia por dentro, se quiseres espreitar a arquitetura (PWA, cifra das credenciais, RGPD) tenho todo o gosto em explicar.
+Construí a Wallet76 (wallet76.com), uma app que junta carteiras de investimento de várias corretoras num ecrã: ações, ETFs e cripto, com preços ao vivo, dividendos e mais-valias por ano. Do lado técnico, se te apetecer espreitar: é uma PWA que se instala sem loja, as credenciais das corretoras vão cifradas com AES-256 e as ligações são sempre só de leitura, e os dados ficam em servidores na UE. Tenho todo o gosto em abrir o capot e explicar como está feita.
 
-Está a abrir ao público agora, e estás entre os primeiros a quem a mostro. A proposta, sem letras pequenas:
+Dou-te o Pro durante 12 meses, sem contrapartida. Se depois quiseres falar dela, arranjo-te um link de convite — quem entrar ganha 45 dias de teste e pode apanhar as vagas de fundador (40% vitalício, primeiras 100 pessoas) e tu acumulas meses Pro.
 
-1. Plano Pro grátis durante 12 meses para usares com a tua carteira real — sem obrigação de publicar nada.
-2. Se depois de a usares achares que vale a pena mostrá-la, tens um link de convite teu: a tua audiência ganha 45 dias de teste (em vez de 30) e pode apanhar as vagas de fundador — 40% de desconto para sempre, só para os primeiros 100, ainda praticamente todas livres. Tu acumulas meses Pro por cada subscritor, e eu digo-te ao certo quantas pessoas vieram de ti.
-3. Se achares que não vale a pena, gostava que me dissesses o motivo — nesta fase, uma crítica fundamentada vale-me mais do que dez elogios.
-
-Não peço guião nem publicidade disfarçada; o que disseres à tua audiência é decisão tua. A app não dá conselhos de investimento — é uma ferramenta de acompanhamento — e é assim que deve ser apresentada.
-
-Se tiveres 15 minutos, mostro-ta numa chamada; se preferires explorar sozinho, responde «quero» e ativo-te o acesso.
+Se achares que não vale a pena, diz-me o motivo.
 
 Obrigado pelo tempo,
 Jose Bruno · wallet76.com
@@ -358,21 +328,16 @@ Jose Bruno · wallet76.com
 **Para:** aceitabitcoin@substack.com
 **Assunto:** Wallet76 — acesso antecipado a uma app portuguesa para seguir carteiras
 
-Olá Tiago,
+Tiago,
 
-Sou o Jose Bruno, o criador da Wallet76. O teu trabalho no Aceita Bitcoin e no Sparkpay é do mais concreto que se fez por cá na adoção de Bitcoin — escrevo-te pela fatia cripto da app, e diretamente, sem agência nem template.
+O Aceita Bitcoin e o Sparkpay são das poucas coisas por cá que saíram do discurso e foram para o terreno. Escrevo-te de construtor para construtor.
 
-A Wallet76 (wallet76.com) junta carteiras de investimento numa vista só — cripto ao lado de ações e ETFs, com preços ao vivo, alertas e mais-valias por ano. Em português, dados em servidores na UE, e as ligações às exchanges são só de leitura — a app não consegue mexer no dinheiro de ninguém.
+Fiz a Wallet76 (wallet76.com): junta carteiras de investimento num sítio só, cripto ao lado de ações e ETFs, com preços ao vivo e as mais-valias do ano calculadas a partir das transações. Ligações às exchanges só de leitura, dados na UE.
 
-Está a abrir ao público agora, e estás entre os primeiros a quem a mostro. A proposta, sem letras pequenas:
+Dou-te o Pro durante 12 meses, sem contrapartida. Se gostares e quiseres partilhar, arranjo-te um link — quem entrar apanha as vagas de fundador (40% para sempre, primeiras 100) e tu acumulas meses.
 
-1. Plano Pro grátis durante 12 meses para usares com a tua carteira real — sem obrigação de publicar nada.
-2. Se depois de a usares achares que vale a pena mostrá-la, tens um link de convite teu: quem entrar ganha 45 dias de teste (em vez de 30) e pode apanhar as vagas de fundador — 40% de desconto para sempre, só para os primeiros 100. Tu acumulas meses Pro por cada subscritor.
-3. Se achares que não vale a pena, gostava que me dissesses o motivo — nesta fase, uma crítica fundamentada vale-me mais do que dez elogios.
+Se não for para ti, o motivo interessa-me.
 
-A app não dá conselhos de investimento — é uma ferramenta de acompanhamento — e é assim que deve ser apresentada.
-
-Obrigado pelo tempo,
 Jose Bruno · wallet76.com
 
 ---
