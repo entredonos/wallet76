@@ -56,7 +56,7 @@ Está a abrir ao público agora, e estás entre os primeiros a quem a mostro. A 
 
 1. Plano Pro grátis durante 12 meses para usares com a tua carteira real — sem obrigação de publicar nada.
 2. Se depois de a usares achares que vale a pena mostrá-la, tens um link de convite teu: a tua audiência ganha 45 dias de teste (em vez de 30) e pode apanhar as vagas de fundador — 40% de desconto para sempre, só para os primeiros 100, ainda praticamente todas livres. Tu acumulas meses Pro por cada subscritor, e eu digo-te ao certo quantas pessoas vieram de ti.
-3. Se achares que não vale a pena, gostava que me dissesses o motivo — nesta fase, uma crítica fundamentada vale-me mais do que dez elogios.
+3. Se achares que não vale a pena, gostava que me dissesses o motivo. E se houver alguma coisa a faltar que fizesse diferença para quem te segue, diz qual — se fizer sentido, acrescento com todo o gosto e aviso-te quando estiver feito.
 
 Não peço guião nem publicidade disfarçada; o que disseres à tua audiência é decisão tua. A app não dá conselhos de investimento — é uma ferramenta de acompanhamento — e é assim que deve ser apresentada.
 
@@ -212,7 +212,7 @@ Ofereço-te o plano Pro durante 12 meses, sem contrapartida nenhuma. Não peço 
 
 Se por acaso gostares e quiseres falar dela, arranjo-te um link de convite: quem entrar por aí ganha 45 dias de teste em vez de 30 e pode apanhar as vagas de fundador — 40% de desconto para sempre, limitadas às primeiras 100 pessoas — e tu acumulas meses Pro por cada assinatura. Consigo dizer-te ao certo quantas vieram de ti.
 
-Se achares que não vale a pena, gostava que me dissesses o motivo. É o que me ajuda mais nesta altura.
+Se achares que não vale a pena, gostava que me dissesses o motivo. E se faltar alguma coisa que fizesse diferença para quem te segue, diz qual: se fizer sentido, acrescento com todo o gosto e aviso-te quando estiver feito. É assim que a app tem crescido.
 
 Obrigado pelo tempo,
 Jose Bruno · wallet76.com
@@ -232,7 +232,7 @@ A Wallet76 (wallet76.com) agrega carteiras de investimento de várias corretoras
 
 O que lhe proponho é simples. Dou-lhe o plano Pro durante 12 meses, sem qualquer contrapartida — nem menção no podcast, nem nada. Se depois de a usar achar que faz sentido para a comunidade FIRE, faço-lhe um link de convite: quem entrar ganha 45 dias de teste e pode apanhar as vagas de fundador, 40% de desconto vitalício reservado às primeiras 100 pessoas. Por cada assinatura, acumula meses Pro.
 
-E se a conclusão for que não vale a pena, gostava que me dissesse o motivo. Uma crítica fundamentada, nesta fase, vale-me mais do que dez elogios.
+E se a conclusão for que não vale a pena, gostava que me dissesse o motivo. Uma crítica fundamentada, nesta fase, vale-me mais do que dez elogios. O mesmo para o que falta: se houver alguma coisa que fizesse diferença para quem segue o FIRE Talks, diga qual — se fizer sentido, acrescento com todo o gosto e digo-lhe quando estiver feito.
 
 A app não dá conselhos de investimento. É uma ferramenta de acompanhamento, e é assim que deve ser apresentada.
 
@@ -254,7 +254,7 @@ Foi para isso que construí a Wallet76 (wallet76.com). Junta carteiras de vária
 
 Está a abrir agora e queria oferecer-te o Pro durante um ano, sem contrapartida. Usa-a com a tua carteira e diz-me o que falta. Se mais tarde quiseres mostrá-la à comunidade, faço-te um link: quem entrar ganha 45 dias de teste e pode apanhar as vagas de fundador (40% para sempre, primeiras 100 pessoas), e tu acumulas meses Pro.
 
-Se achares que não presta, o motivo interessa-me mais do que a delicadeza.
+Se achares que não presta, o motivo interessa-me mais do que a delicadeza. E se faltar alguma coisa que desse jeito a quem te lê, diz qual — se fizer sentido, acrescento e digo-te quando estiver.
 
 Obrigado,
 Jose Bruno · wallet76.com
@@ -276,7 +276,7 @@ O tom da app é o mesmo do seu: acompanhar, não apostar. Não há sinais, não 
 
 Ofereço-lhe o plano Pro durante 12 meses, sem contrapartida nenhuma. Se depois de a usar achar que vale a pena mencioná-la, faço-lhe um link de convite: quem entrar ganha 45 dias de teste e pode apanhar as vagas de fundador — 40% para sempre, só as primeiras 100 — e acumula meses Pro por cada assinatura.
 
-E se achar que não vale, gostava que me dissesse o motivo.
+E se achar que não vale, gostava que me dissesse o motivo. O mesmo para o que falta — se houver alguma coisa que fizesse diferença para quem o ouve, diga qual: se fizer sentido, acrescento com todo o gosto e digo-lhe quando estiver feito.
 
 Obrigado pelo tempo,
 Jose Bruno · wallet76.com
@@ -296,7 +296,7 @@ Fiz uma app chamada Wallet76 (wallet76.com). Junta as carteiras de investimento 
 
 Queria dar-lhe o plano Pro durante 12 meses, sem pedir nada em troca. Se depois achar que serve para quem o segue, faço-lhe um link de convite: a audiência ganha 45 dias de teste e pode apanhar as vagas de fundador (40% de desconto para sempre, primeiras 100 pessoas), e acumula meses Pro por cada assinatura.
 
-Se a app não lhe parecer útil, diga-me porquê — é isso que me faz avançar mais depressa nesta fase.
+Se a app não lhe parecer útil, diga-me porquê — é isso que me faz avançar mais depressa nesta fase. E se faltar alguma coisa que desse jeito a quem o segue, diga qual: se fizer sentido, acrescento com todo o gosto e digo-lhe quando estiver.
 
 Obrigado pelo tempo,
 Jose Bruno · wallet76.com
@@ -316,7 +316,7 @@ Construí a Wallet76 (wallet76.com), uma app que junta carteiras de investimento
 
 Dou-te o Pro durante 12 meses, sem contrapartida. Se depois quiseres falar dela, arranjo-te um link de convite — quem entrar ganha 45 dias de teste e pode apanhar as vagas de fundador (40% vitalício, primeiras 100 pessoas) e tu acumulas meses Pro.
 
-Se achares que não vale a pena, diz-me o motivo.
+Se achares que não vale a pena, diz-me o motivo. E se faltar alguma coisa — no produto ou por baixo do capot — diz qual: se fizer sentido, acrescento com todo o gosto e aviso-te quando estiver feito.
 
 Obrigado pelo tempo,
 Jose Bruno · wallet76.com
@@ -330,6 +330,29 @@ remetente do Substack — o Substack não atribui caixas de correio às publica�
 isso quase de certeza devolvia, tal como o do Borja. **Vai por Telegram**
 (t.me/aceitabitcoin, que é onde a comunidade vive e onde ele responde) ou por DM no
 X/@aceitabitcoinpt. O texto está no `wallet76-dms-prontos.md`, n.º 20.
+
+---
+
+## 15 · Pedro Andersson / Contas-Poupança (SIC)  ⚠️ nota de imprensa — SEM oferta
+
+**Para:** podcasts@impresa.pt
+**Assunto:** Wallet76 — uma app portuguesa para quem tem investimentos em várias corretoras
+
+Bom dia,
+
+Escrevo para a redação do Contas-Poupança com uma informação, e sem pedido nenhum atrás.
+
+Chamo-me Jose Bruno e sou o criador da Wallet76 (wallet76.com), uma app portuguesa que junta numa vista só os investimentos que uma pessoa tem espalhados por várias corretoras: ações e ETFs na DEGIRO, na XTB ou na Trading 212, cripto na Binance ou na Kraken. Mostra o total, os dividendos que aí vêm e as mais-valias por ano, que é a parte que dá trabalho quando chega o IRS. Está em português, os dados ficam em servidores na União Europeia e as ligações às corretoras são só de leitura — a app não consegue movimentar dinheiro de ninguém.
+
+O problema que resolve é banal e é de muita gente: contas em três ou quatro sítios, e a pessoa sem saber ao certo quanto tem ao todo nem quanto já pagou de comissões. Costuma acabar numa folha de Excel que ninguém atualiza há meses.
+
+Há um plano gratuito e um plano pago de 5,99 € por mês. Não há publicidade dentro da app nem venda de dados a terceiros.
+
+Não proponho patrocínio nem parceria — sei que não seria próprio. Fica só a informação, e a disponibilidade para esclarecer o que for preciso ou mostrar como funciona, se em algum momento for tema.
+
+Com os melhores cumprimentos,
+Jose Bruno
+wallet76.com
 
 ---
 
@@ -351,6 +374,7 @@ X/@aceitabitcoinpt. O texto está no `wallet76-dms-prontos.md`, n.º 20.
 | 12 | Admirável Cripto Mundo Novo | geral@acmn.pt |  |  |  |
 | 13 | Luis Pinto (TekTest) | tektestportugal@gmail.com |  |  |  |
 | 14 | Aceita Bitcoin | — sem email público | — | — | vai por Telegram (ver DMs, n.º 20) |
+| 15 | Pedro Andersson (SIC) | podcasts@impresa.pt | | | nota de imprensa, sem oferta |
 
 **Sugestão de ritmo:** hoje os n.º 1 a 7; amanhã os n.º 8 a 14.
 Os 5 contactos por DM/Instagram estão no `wallet76-outreach-lote1.md`.
