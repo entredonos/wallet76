@@ -1,4 +1,4 @@
-// Topo do funil: os dois eventos de quem ainda não tem conta (5 ago 2026).
+// Topo do funil: os dois eventos de quem ainda não tem conta (7 ago 2026).
 //
 // O funil do admin começava no registo, e faltava-lhe o princípio da história:
 // quantas pessoas chegaram à landing e quantas chegaram a carregar num botão
