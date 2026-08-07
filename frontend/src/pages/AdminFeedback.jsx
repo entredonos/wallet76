@@ -535,6 +535,8 @@ function DataHealthTab() {
 // ver backend/funnel.py). Sete números e as % entre degraus; o desenho
 // aprovado no NEGOCIO diz explicitamente "nada de BI" — é isto e chega.
 const FUNNEL_LABELS = {
+  landing_view:        "Visitas à landing",
+  register_clicked:    "Cliques em registar",
   registered:          "Registos",
   email_verified:      "Email verificado",
   first_asset:         "Primeiro ativo",
@@ -600,7 +602,12 @@ function FunnelTab() {
             {funnelSteps.map((s, i) => (
               <div key={s.event} className="px-4 py-3 space-y-1.5">
                 <div className="flex items-center justify-between gap-3 text-sm font-mono">
-                  <span className="text-zinc-300">{FUNNEL_LABELS[s.event] || s.event}</span>
+                  <span className="text-zinc-300">
+                    {FUNNEL_LABELS[s.event] || s.event}
+                    {/* Os dois primeiros degraus são anónimos: contam eventos,
+                        não pessoas distintas (não há id de visitante nenhum). */}
+                    {s.anon && <span className="ml-2 text-[10px] text-zinc-600">anónimo</span>}
+                  </span>
                   <span className="flex items-baseline gap-3 shrink-0">
                     {i > 0 && (
                       <span className="text-xs text-zinc-500">
@@ -633,7 +640,7 @@ function FunnelTab() {
           )}
 
           <div className="text-[11px] text-zinc-600 font-mono leading-relaxed">
-            O topo anónimo (visitas à landing) vive no Cloudflare Web Analytics; a receita fina vive no painel do Stripe. Isto é o meio do funil: contas identificadas.
+            Os dois primeiros degraus são visitas e cliques, contados sem cookies e sem identificar ninguém (por isso são visitas, não visitantes únicos, e apagam-se ao fim de 90 dias). Do «Registos» para baixo já são pessoas distintas. A receita ao cêntimo vive no painel do Stripe.
           </div>
         </>
       )}

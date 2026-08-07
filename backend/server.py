@@ -251,6 +251,11 @@ async def _ensure_indexes():
     # GET /admin/funnel.
     await _idx(db.events, [("user_id", 1), ("event", 1)])
     await _idx(db.events, [("event", 1), ("at", 1)])
+    # TTL dos eventos anonimos (5 ago 2026): so os documentos com `exp` sao
+    # apagados, e apagam-se quando essa data chega (expireAfterSeconds=0). Os
+    # eventos identificados nao levam `exp` — o indice esparso ignora-os e
+    # ficam para sempre.
+    await _idx(db.events, [("exp", 1)], expireAfterSeconds=0, sparse=True)
     logger.info("MongoDB indexes ensured.")
 
 

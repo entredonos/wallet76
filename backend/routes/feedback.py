@@ -2,9 +2,12 @@
 import re
 from datetime import datetime, timezone, timedelta
 
-from core import db, get_current_user, require_admin, delete_all_user_data, logger, cache_stats, PROCESS_STARTED
-from funnel import FUNNEL_STEPS
-from fastapi import APIRouter, Depends, HTTPException, Query
+from core import (
+    db, get_current_user, require_admin, delete_all_user_data, logger,
+    cache_stats, PROCESS_STARTED, check_rate_limit,
+)
+from funnel import FUNNEL_STEPS, ANON_STEPS, log_anon_event
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -64,6 +67,29 @@ async def admin_data_health(user=Depends(require_admin)):
     from prices import get_data_health  # lazy: evita import circular
     return get_data_health()
 
+class AnonEventIn(BaseModel):
+    event: str
+
+
+@router.post("/events/anon")
+async def track_anon_event(body: AnonEventIn, request: Request):
+    """PÚBLICO, sem autenticação — o topo do funil vem de quem ainda não tem
+    conta (5 ago 2026). Regista só os dois eventos da lista branca e nada mais:
+    sem id de visitante, sem cookie, sem IP guardado.
+
+    Duas guardas, porque uma porta aberta que escreve na base de dados é um
+    convite: a lista branca (ANON_STEPS) impede que se encham a coleção de
+    eventos inventados, e o rate limit por IP trava quem tente. 60/hora é muito
+    acima de um visitante real (que gera 1 ou 2) e muito abaixo do que faria
+    mossa nos 512 MB do Atlas.
+    """
+    check_rate_limit(request, "anon-event", max_attempts=60, window_seconds=3600)
+    if body.event not in ANON_STEPS:
+        raise HTTPException(400, "Unknown event")
+    await log_anon_event(body.event)
+    return {"ok": True}
+
+
 @router.get("/admin/funnel")
 async def admin_funnel(
     days: int = Query(30, ge=1, le=365),
@@ -83,10 +109,16 @@ async def admin_funnel(
     steps = []
     prev_n = None
     for ev in FUNNEL_STEPS:
-        uids = await db.events.distinct("user_id", {"event": ev, "at": {"$gte": cutoff}})
-        n = len(uids)
+        if ev in ANON_STEPS:
+            # Anónimos não têm user_id: contam-se EVENTOS (o browser já evitou
+            # repetir na mesma sessão). São "visitas", não "visitantes únicos",
+            # e o rótulo no admin diz isso.
+            n = await db.events.count_documents({"event": ev, "at": {"$gte": cutoff}})
+        else:
+            uids = await db.events.distinct("user_id", {"event": ev, "at": {"$gte": cutoff}})
+            n = len(uids)
         pct = round(n / prev_n * 100.0, 1) if prev_n else None
-        steps.append({"event": ev, "users": n, "pct_of_prev": pct})
+        steps.append({"event": ev, "users": n, "pct_of_prev": pct, "anon": ev in ANON_STEPS})
         if ev != "cancelled":
             prev_n = n
     return {"days": days, "since": cutoff, "steps": steps}

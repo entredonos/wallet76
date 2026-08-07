@@ -5,6 +5,7 @@ import logo from "../assets/wallet76-logo.png";
 import dividendsShot from "../assets/dividends-shot.png";
 import { api } from "../lib/api";
 import { saveCheckoutIntent, clearCheckoutIntent } from "../lib/checkoutIntent";
+import { trackAnon } from "../lib/anonEvents";
 import {
   Bell, Globe2, Wallet, ShieldCheck, MonitorSmartphone,
   Lock, Server, FileText, RefreshCw, Newspaper, PieChart, Zap,
@@ -927,6 +928,13 @@ export default function LandingPage() {
   // disponível, sem precisar de recarregar a página.
   useEffect(() => subscribeInstallState(() => setCanPrompt(canPromptInstall())), []);
 
+  // Visita à landing — 1.º degrau do funil. Uma vez por sessão do browser
+  // (ver lib/anonEvents.js); quem já tem sessão iniciada não conta, porque
+  // esses são utilizadores, não visitantes a chegar.
+  useEffect(() => {
+    if (!isInstalled()) trackAnon("landing_view");
+  }, []);
+
   // "Quando tentarem entrar" (6 jul 2026): em vez de um banner permanente,
   // intercetamos o clique nos botões de Entrar/Começar — só nessa altura
   // é que faz sentido perguntar se querem instalar a app antes de seguir
@@ -937,6 +945,11 @@ export default function LandingPage() {
   // beforeinstallprompt (Chrome/Edge — Firefox/Safari desktop não o
   // suportam, e nesse caso deixamos o clique seguir normalmente).
   function handleEntryClick(e, path) {
+    // Topo do funil (5 ago 2026): conta-se a INTENÇÃO de registar, seja qual
+    // for o botão que a pessoa carregou (nav, herói, planos, rodapé — passam
+    // todos por aqui). Vai antes de qualquer return: o modal de instalação
+    // pode interromper a navegação, mas o clique já aconteceu na mesma.
+    if (path === "/register") trackAnon("register_clicked");
     if (isInstalled()) return;
     if (localStorage.getItem(INSTALL_SEEN_KEY)) return;
     const actionable = platform === "ios" || canPrompt;
