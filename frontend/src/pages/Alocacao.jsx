@@ -105,6 +105,7 @@ export default function Alocacao({ currency = "USD" }) {
       case "quantity": return Number(r.quantity || 0);
       case "avg_price": return Number(r.avg_price || 0);
       case "price_usd": return Number(r.price_usd || 0);
+      case "cost_usd": return Number(r.cost_usd || 0);
       case "pnl_pct": return Number(r.pnl_pct || 0);
       case "atual": return Number(r.atual || 0);
       case "sug": return Number(r.sug || 0);
@@ -305,6 +306,15 @@ export default function Alocacao({ currency = "USD" }) {
   // Paginacao da tabela e da lista (1 ago 2026): 10 por pagina DENTRO do
   // grupo ativo — um grupo nunca se parte entre paginas. O modo Slide navega
   // as linhas todas (ja e um-a-um por natureza).
+  // Cor do Valor Investido face ao Valor Real (5 ago 2026): verde se o que
+  // esta la hoje vale mais do que o que se meta, vermelho se vale menos,
+  // cinzento sem custo conhecido. Mesma convenção do Retorno.
+  const gainCls = useCallback((r) => {
+    const c = Number(r.cost_usd || 0);
+    if (!c) return "text-zinc-300";
+    return Number(r.value_usd || 0) >= c ? "text-emerald-400" : "text-rose-400";
+  }, []);
+
   const PAGE_SIZE = 10;
   const nPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const pagedRows = useMemo(
@@ -411,8 +421,13 @@ export default function Alocacao({ currency = "USD" }) {
   // saiu dele (continua no Completo; deriva 100% de atual-vs-sugerida e o
   // modo Acao responde melhor ao "que faco"). Completo: Ativo, Setor, 24h,
   // Retorno, PM, Cotacao, Valor, Qtd, %At, %Sug, Orient, C, Grupo = 13.
-  // Basico: Ativo, 24h, Retorno, PM, %At, %Sug, C = 7.
-  const colCount = mode === "full" ? 13 : 7;
+  // 5 ago 2026 — o Completo ganhou o Valor Investido e a Cotacao mudou de
+  // sitio (passou a chamar-se Preco Atual e vive ao lado do Preco Medio,
+  // para se lerem em par: "comprei a X, esta a Y"). O mesmo par em dinheiro:
+  // investido ao lado do real. Completo: Ativo, Setor, 24h, Retorno, Preco
+  // Atual, PM, Investido, Valor Real, Qtd, %At, %Sug, Orient, C, Grupo = 14.
+  // Basico: Ativo, 24h, Retorno, PM, %At, %Sug, C = 7 (inalterado).
+  const colCount = mode === "full" ? 14 : 7;
 
   const actionCard = (g, kind) => (
     <div key={g.cls} className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3.5">
@@ -698,8 +713,9 @@ export default function Alocacao({ currency = "USD" }) {
                   {mode === "full" && th("sector", L("alloc2.sector", "Setor"), "text-center py-2 px-2")}
                   {th("change_24h", L("common.change_24h", "24h"), "text-center py-2 px-2")}
                   {th("pnl_pct", L("alloc2.return", "Retorno"), "text-center py-2 px-2")}
+                  {mode === "full" && th("price_usd", L("alloc2.price_now", "Preço Atual"), "text-center py-2 px-2")}
                   {th("avg_price", L("alloc2.avg_price", "Preço Médio"), "text-center py-2 px-2")}
-                  {mode === "full" && th("price_usd", L("alloc2.price", "Cotação"), "text-center py-2 px-2")}
+                  {mode === "full" && th("cost_usd", L("alloc2.invested_col", "Valor Investido"), "text-center py-2 px-2")}
                   {mode === "full" && th("value_usd", L("alloc2.value", "Valor Real"), "text-center py-2 px-2")}
                   {mode === "full" && th("quantity", L("alloc2.qty", "Qtd"), "text-center py-2 px-2")}
                   {th("atual", L("alloc2.pct_now", "% Atual"), "text-center py-2 px-2")}
@@ -736,8 +752,12 @@ export default function Alocacao({ currency = "USD" }) {
                         {mode === "full" && <td className="py-2.5 px-2 text-zinc-400 text-xs">{r.sector || "—"}</td>}
                         <td className="py-2.5 px-2">{move24h(r)}</td>
                         <td className={`py-2.5 px-2 text-right font-mono ${r.pnl_pct >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{r.pnl_pct >= 0 ? "+" : ""}{Number(r.pnl_pct || 0).toFixed(1)}%</td>
+                        {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-100">{price(r.price_usd)}</td>}
                         <td className="py-2.5 px-2 text-right font-mono text-amber-400">{price(r.avg_price)}</td>
-                        {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-300">{price(r.price_usd)}</td>}
+                        {/* Investido vs Real: verde quando o real esta acima do que se
+                            meta (ganho), vermelho quando esta abaixo — a mesma
+                            convenção do Retorno e do resto da app. */}
+                        {mode === "full" && <td className={`py-2.5 px-2 text-right font-mono ${gainCls(r)}`}>{money(r.cost_usd)}</td>}
                         {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-200">{money(r.value_usd)}</td>}
                         {mode === "full" && <td className="py-2.5 px-2 text-right font-mono text-zinc-300">{fmtQty(r.quantity)}</td>}
                         <td className="py-2.5 px-2 text-right font-mono text-zinc-300">{r.atual.toFixed(2)}%</td>
@@ -809,8 +829,9 @@ export default function Alocacao({ currency = "USD" }) {
                       {mode === "full" && th("sector", L("alloc2.sector", "Setor"), "text-center px-2 py-2 border-b border-zinc-800")}
                       {th("change_24h", L("common.change_24h", "24h"), "text-center px-2 py-2 border-b border-zinc-800")}
                       {th("pnl_pct", L("alloc2.return", "Retorno"), "text-center px-2 py-2 border-b border-zinc-800")}
+                      {mode === "full" && th("price_usd", L("alloc2.price_now_short", "Atual"), "text-center px-2 py-2 border-b border-zinc-800")}
                       {th("avg_price", L("alloc2.avg_price_short", "PM"), "text-center px-2 py-2 border-b border-zinc-800")}
-                      {mode === "full" && th("price_usd", L("alloc2.price", "Cotação"), "text-center px-2 py-2 border-b border-zinc-800")}
+                      {mode === "full" && th("cost_usd", L("alloc2.invested_short", "Investido"), "text-center px-2 py-2 border-b border-zinc-800")}
                       {mode === "full" && th("value_usd", L("alloc2.value_short", "Valor"), "text-center px-2 py-2 border-b border-zinc-800")}
                       {mode === "full" && th("quantity", L("alloc2.qty", "Qtd"), "text-center px-2 py-2 border-b border-zinc-800")}
                       {th("atual", L("alloc2.pct_now_short", "% At"), "text-center px-2 py-2 border-b border-zinc-800")}
@@ -844,8 +865,9 @@ export default function Alocacao({ currency = "USD" }) {
                             {mode === "full" && <td className="px-2 py-2 text-zinc-400 whitespace-nowrap">{r.sector || "—"}</td>}
                             <td className="px-2 py-2">{move24h(r, 40, 18)}</td>
                             <td className={`px-2 py-2 text-right whitespace-nowrap ${r.pnl_pct >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{r.pnl_pct >= 0 ? "+" : ""}{Number(r.pnl_pct || 0).toFixed(1)}%</td>
+                            {mode === "full" && <td className="px-2 py-2 text-right text-zinc-100 whitespace-nowrap">{price(r.price_usd)}</td>}
                             <td className="px-2 py-2 text-right text-amber-400 whitespace-nowrap">{price(r.avg_price)}</td>
-                            {mode === "full" && <td className="px-2 py-2 text-right text-zinc-300 whitespace-nowrap">{price(r.price_usd)}</td>}
+                            {mode === "full" && <td className={`px-2 py-2 text-right whitespace-nowrap ${gainCls(r)}`}>{money(r.cost_usd)}</td>}
                             {mode === "full" && <td className="px-2 py-2 text-right text-zinc-200 whitespace-nowrap">{money(r.value_usd)}</td>}
                             {mode === "full" && <td className="px-2 py-2 text-right text-zinc-300 whitespace-nowrap">{fmtQty(r.quantity)}</td>}
                             <td className="px-2 py-2 text-right text-zinc-300 whitespace-nowrap">{r.atual.toFixed(2)}%</td>
