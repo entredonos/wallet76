@@ -306,7 +306,7 @@ export default function Alocacao({ currency = "USD" }) {
   // Paginacao da tabela e da lista (1 ago 2026): 10 por pagina DENTRO do
   // grupo ativo — um grupo nunca se parte entre paginas. O modo Slide navega
   // as linhas todas (ja e um-a-um por natureza).
-  // Cor do Valor Investido face ao Valor Real (5 ago 2026): verde se o que
+  // Cor do Valor Investido face ao Valor Real (7 ago 2026): verde se o que
   // esta la hoje vale mais do que o que se meta, vermelho se vale menos,
   // cinzento sem custo conhecido. Mesma convenção do Retorno.
   const gainCls = useCallback((r) => {
@@ -421,7 +421,7 @@ export default function Alocacao({ currency = "USD" }) {
   // saiu dele (continua no Completo; deriva 100% de atual-vs-sugerida e o
   // modo Acao responde melhor ao "que faco"). Completo: Ativo, Setor, 24h,
   // Retorno, PM, Cotacao, Valor, Qtd, %At, %Sug, Orient, C, Grupo = 13.
-  // 5 ago 2026 — o Completo ganhou o Valor Investido e a Cotacao mudou de
+  // 7 ago 2026 — o Completo ganhou o Valor Investido e a Cotacao mudou de
   // sitio (passou a chamar-se Preco Atual e vive ao lado do Preco Medio,
   // para se lerem em par: "comprei a X, esta a Y"). O mesmo par em dinheiro:
   // investido ao lado do real. Completo: Ativo, Setor, 24h, Retorno, Preco

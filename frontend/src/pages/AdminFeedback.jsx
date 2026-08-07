@@ -712,7 +712,7 @@ export default function AdminFeedback() {
         <h1 className="font-display text-4xl font-light tracking-tight mt-2">Dashboard</h1>
       </div>
 
-      {/* 5 ago 2026 — no telemóvel as quatro abas não cabem na largura do
+      {/* 7 ago 2026 — no telemóvel as quatro abas não cabem na largura do
           ecrã e a última («Dados») ficava fora, sem forma de lá chegar: o
           `flex` encolhia-as sem deixar deslizar. Passa a deslizar na
           horizontal com `overflow-x-auto` + `shrink-0` em cada botão (a

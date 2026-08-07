@@ -74,7 +74,7 @@ class AnonEventIn(BaseModel):
 @router.post("/events/anon")
 async def track_anon_event(body: AnonEventIn, request: Request):
     """PÚBLICO, sem autenticação — o topo do funil vem de quem ainda não tem
-    conta (5 ago 2026). Regista só os dois eventos da lista branca e nada mais:
+    conta (7 ago 2026). Regista só os dois eventos da lista branca e nada mais:
     sem id de visitante, sem cookie, sem IP guardado.
 
     Duas guardas, porque uma porta aberta que escreve na base de dados é um

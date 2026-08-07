@@ -945,7 +945,7 @@ export default function LandingPage() {
   // beforeinstallprompt (Chrome/Edge — Firefox/Safari desktop não o
   // suportam, e nesse caso deixamos o clique seguir normalmente).
   function handleEntryClick(e, path) {
-    // Topo do funil (5 ago 2026): conta-se a INTENÇÃO de registar, seja qual
+    // Topo do funil (7 ago 2026): conta-se a INTENÇÃO de registar, seja qual
     // for o botão que a pessoa carregou (nav, herói, planos, rodapé — passam
     // todos por aqui). Vai antes de qualquer return: o modal de instalação
     // pode interromper a navegação, mas o clique já aconteceu na mesma.
