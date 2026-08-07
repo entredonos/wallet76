@@ -73,3 +73,12 @@ body {
     -moz-user-select: none;
     user-select: none;
 }
+
+/* .scrollbar-hide — esconde a barra de deslize mantendo o deslizar (5 ago
+   2026). Nasceu para as abas do painel de administração no telemóvel: as
+   quatro (Feedback, Utilizadores, Funil, Dados) não cabem na largura do
+   ecrã e a última ficava inalcançável. Com overflow-x-auto passa a
+   deslizar; esta classe tira a barra, que numa fila de abas fica feia e
+   no telemóvel nem é precisa (o dedo chega lá). */
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }

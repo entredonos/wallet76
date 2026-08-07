@@ -705,7 +705,13 @@ export default function AdminFeedback() {
         <h1 className="font-display text-4xl font-light tracking-tight mt-2">Dashboard</h1>
       </div>
 
-      <div className="flex gap-1 border-b border-zinc-800">
+      {/* 5 ago 2026 — no telemóvel as quatro abas não cabem na largura do
+          ecrã e a última («Dados») ficava fora, sem forma de lá chegar: o
+          `flex` encolhia-as sem deixar deslizar. Passa a deslizar na
+          horizontal com `overflow-x-auto` + `shrink-0` em cada botão (a
+          barra de deslize fica escondida pelo utilitário scrollbar-hide,
+          como no resto da app). No PC nada muda — as quatro cabem. */}
+      <div className="flex gap-1 border-b border-zinc-800 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
         {[
           { key: "feedback", label: "Feedback",     icon: MessageSquare, badge: feedbackUnread },
           { key: "users",    label: "Utilizadores",  icon: Users,         badge: usersUnread },
